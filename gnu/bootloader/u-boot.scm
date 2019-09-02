@@ -23,6 +23,7 @@
   #:use-module (gnu bootloader extlinux)
   #:use-module (gnu bootloader)
   #:use-module (gnu packages bootloaders)
+  #:use-module (gnu packages genimage)
   #:use-module (guix gexp)
   #:export (u-boot-bootloader
             u-boot-a20-olinuxino-lime-bootloader
@@ -126,6 +127,12 @@
                               image (* 16384 512)))))
 
 (define install-pinebook-pro-rk3399-u-boot install-rockpro64-rk3399-u-boot)
+
+(define install-buildroot-u-boot
+  #~(lambda (bootloader device mount-point)
+      ;; FIXME: Take genimage and a custom config from buildroot in order to install bootloader.
+      #$genimage
+      #f))
 
 
 

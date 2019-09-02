@@ -249,6 +249,7 @@ MODULES =					\
   guix/build/make-bootstrap.scm			\
   guix/search-paths.scm				\
   guix/packages.scm				\
+  guix/import/buildroot.scm			\
   guix/import/cabal.scm				\
   guix/import/cpan.scm				\
   guix/import/cran.scm				\
@@ -301,6 +302,7 @@ MODULES =					\
   guix/scripts/home/import.scm			\
   guix/scripts/lint.scm				\
   guix/scripts/challenge.scm			\
+  guix/scripts/import/buildroot.scm		\
   guix/scripts/import/crate.scm			\
   guix/scripts/import/cran.scm			\
   guix/scripts/import/egg.scm   		\
