@@ -128,10 +128,13 @@
 
 (define install-pinebook-pro-rk3399-u-boot install-rockpro64-rk3399-u-boot)
 
-(define install-buildroot-u-boot
+(define (install-buildroot-u-boot post-image-script post-script-args)
   #~(lambda (bootloader device mount-point)
       ;; FIXME: Take genimage and a custom config from buildroot in order to install bootloader.
       #$genimage
+      #$buildroot-boards
+      #$post-image-script
+      #$post-script-args
       #f))
 
 
