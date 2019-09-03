@@ -130,6 +130,7 @@ GNU_SYSTEM_MODULES =				\
   %D%/packages/bootstrap.scm			\
   %D%/packages/browser-extensions.scm		\
   %D%/packages/build-tools.scm			\
+  %D%/packages/buildroot.scm			\
   %D%/packages/busybox.scm			\
   %D%/packages/c.scm				\
   %D%/packages/calcurse.scm			\
