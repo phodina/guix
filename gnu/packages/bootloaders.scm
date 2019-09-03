@@ -673,7 +673,10 @@ board-independent tools.")))
          #:phases
          (modify-phases %standard-phases
            (replace 'configure
-             (lambda* (#:key outputs make-flags #:allow-other-keys)
+             (lambda* (#:key inputs outputs make-flags #:allow-other-keys)
+               (and=> (assoc-ref inputs "bl31")
+                      (lambda (bl31)
+                        (setenv "BL31" (string-append bl31 "/bl31.bin"))))
                (let ((config-name (string-append ,board "_defconfig")))
                  (if (file-exists? (string-append "configs/" config-name))
                      (apply invoke "make" `(,@make-flags ,config-name))
@@ -726,6 +729,15 @@ board-independent tools.")))
                   uboot-files)
                  #t)))))))))
 
+(define-public (make-buildroot-u-boot-package board buildroot-configuration-flags triplet)
+  "Given a BUILDROOT-CONFIGURATION-FLAGS (the 'y and 'n parts of a
+BUILDROOT-CONFIGURATION), return a fitting u-boot package"
+  (let ((base (make-u-boot-package board triplet)))
+    (package (inherit base))))
+
+(define-public u-boot-vexpress
+  (make-u-boot-package "vexpress_ca9x4" "arm-linux-gnueabihf"))
+
 (define-public u-boot-malta
   (make-u-boot-package "malta" "mips64el-linux-gnuabi64"))
 
@@ -777,7 +789,7 @@ it fits within common partitioning schemes.")
                     )
                   #t))))))
       (native-inputs
-       `(("firmware" ,arm-trusted-firmware-sun50i-a64)
+       `(("bl31" ,arm-trusted-firmware-sun50i-a64)
          ,@(package-native-inputs base))))))
 
 (define-public u-boot-pine64-plus
