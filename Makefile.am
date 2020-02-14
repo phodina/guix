@@ -411,6 +411,7 @@ EXAMPLES =					\
   gnu/system/examples/desktop.tmpl		\
   gnu/system/examples/lightweight-desktop.tmpl	\
   gnu/system/examples/docker-image.tmpl		\
+  gnu/system/examples/pinebook-pro.tmpl		\
   gnu/system/examples/vm-image.tmpl
 
 GOBJECTS = $(MODULES:%.scm=%.go) guix/config.go $(dist_noinst_DATA:%.scm=%.go)

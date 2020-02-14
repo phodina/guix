@@ -15,6 +15,7 @@
 ;;; Copyright © 2020, 2021 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2021 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -73,7 +74,8 @@
   #:use-module (guix utils)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
-  #:use-module (ice-9 regex))
+  #:use-module (ice-9 regex)
+  #:export (make-u-boot-package))
 
 (define unifont
   ;; GNU Unifont, <http://gnu.org/s/unifont>.
@@ -643,7 +645,7 @@ def test_ctrl_c"))
 also initializes the boards (RAM etc).  This package provides its
 board-independent tools.")))
 
-(define-public (make-u-boot-package board triplet)
+(define* (make-u-boot-package board triplet #:key (u-boot u-boot))
   "Returns a u-boot package for BOARD cross-compiled for TRIPLET."
   (let ((same-arch? (lambda ()
                       (string=? (%current-system)

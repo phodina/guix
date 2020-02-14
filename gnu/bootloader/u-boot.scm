@@ -127,6 +127,8 @@
 
 (define install-pinebook-pro-rk3399-u-boot install-rockpro64-rk3399-u-boot)
 
+(define install-pinebook-pro-rk3399-u-boot install-rockpro64-rk3399-u-boot)
+
 
 
 ;;;
@@ -255,3 +257,4 @@
    (inherit u-boot-bootloader)
    (package u-boot-pinebook-pro-rk3399)
    (disk-image-installer install-pinebook-pro-rk3399-u-boot)))
+   (installer install-pinebook-pro-rk3399-u-boot)))
