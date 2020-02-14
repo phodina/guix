@@ -53,6 +53,8 @@
 ;;; Copyright © 2021 B. Wilson <elaexuotee@wilsonb.com>
 ;;; Copyright © 2021 Ivan Gankevich <i.gankevich@spbu.ru>
 ;;; Copyright © 2021 Olivier Dion <olivier.dion@polymtl.ca>
+;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -1160,6 +1162,52 @@ It has been modified to remove all non-free binary blobs.")
       (inherit base-linux-libre)
       (inputs `(("cpio" ,cpio) ,@(package-inputs base-linux-libre))))))
 
+;; Distribute a patched version of deblob-5.5 to accomodate for
+;; the file rename
+;;    drivers/crypto/ccp/psp-dev.c -> drivers/crypto/ccp/sev-dev.c
+(define (deblob-scripts-pinebook-pro version)
+  (list (version-major+minor version)
+        (origin
+          (method url-fetch)
+          (uri (string-append "https://lilypond.org/janneke/pinebook-pro/"
+                              "deblob-pinebook-pro-"
+                              (version-major+minor version)))
+          (file-name (string-append "deblob-" (version-major+minor version)))
+          (sha256
+           (base32 "15xpmn93mibgh3zlmbzfxx6hfk6y7vrwqc46gx7r87hrwhg0q4hj")))
+        (origin
+          (method url-fetch)
+          (uri (string-append "https://linux-libre.fsfla.org"
+                              "/pub/linux-libre/releases/" version "-gnu/"
+                              "deblob-check"))
+          (sha256
+           (base32 "12v9n7qf67vilwi2bkzbn1sbamhaw60rk79v3y2lm8bprgpy958l")))))
+
+;; This is apparently the least patched kernel (people call it "mainline",
+;; although it's not upstream), at the moment (Fri Feb 14 2020).  The exact
+;; version, branching, patchset is as yet unclear to me; the repository comes
+;; without any tags or upstream branches.
+(define-public linux-libre-pinebook-pro
+  (let* ((version "5.5.0")
+         (source
+          (origin
+            (method git-fetch)
+            (uri (git-reference
+                  (url "https://gitlab.manjaro.org/tsys/linux-pinebook-pro.git")
+                  (commit "9564c96de3d1e7a19fbfed075333bf414fa1749f")))
+            (file-name (git-file-name "linux-libre-pinebook-pro" version))
+            (sha256
+             (base32
+              "0q4mrjvv7bpavd5r8k9njm0md0lymwcnjpd9nggb8vwffdgbchys"))))
+         (pristine-source (make-linux-libre-source
+                           "5.5.0-pinebook-pro" source
+                           (deblob-scripts-pinebook-pro version))))
+    (make-linux-libre*
+     version
+     pristine-source
+     '("aarch64-linux")
+     #:defconfig "pinebook_pro_defconfig"
+     #:extra-version "pinebook-pro")))
 
 
 ;;;
