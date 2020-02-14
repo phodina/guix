@@ -11,6 +11,7 @@
 ;;; Copyright © 2019 nee <nee@cock.li>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
+;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -68,7 +69,8 @@
   #:use-module (guix utils)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
-  #:use-module (ice-9 regex))
+  #:use-module (ice-9 regex)
+  #:export (make-u-boot-package))
 
 (define unifont
   ;; GNU Unifont, <http://gnu.org/s/unifont>.
@@ -529,7 +531,7 @@ def test_ctrl_c"))
 also initializes the boards (RAM etc).  This package provides its
 board-independent tools.")))
 
-(define-public (make-u-boot-package board triplet)
+(define* (make-u-boot-package board triplet #:key (u-boot u-boot))
   "Returns a u-boot package for BOARD cross-compiled for TRIPLET."
   (let ((same-arch? (lambda ()
                       (string=? (%current-system)
@@ -799,6 +801,45 @@ to Novena upstream, does not load u-boot.img from the first partition.")
            `(modify-phases ,phases
               (add-after 'unpack 'set-environment
                 (lambda* (#:key inputs #:allow-other-keys)
+                  (setenv "BL31" (string-append (assoc-ref inputs "firmware")
+                                                "/bl31.elf"))
+                  #t))
+              ;; Phases do not succeed on the bl31 ELF.
+              (delete 'strip)
+              (delete 'validate-runpath)))))
+      (native-inputs
+       `(("firmware" ,arm-trusted-firmware-rk3399)
+         ,@(package-native-inputs base))))))
+
+(define u-boot-pbp
+  (let ((commit "365495a329c8e92ca4c134562d091df71b75845e"))
+    (package
+      (inherit u-boot)
+      (name "u-boot")
+      (version (git-version (package-version u-boot) "pinebook-pro-1" commit))
+      (source (origin
+                ;; XXX: Snapshots are available but changes timestamps every download.
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://git.eno.space/pbp-uboot.git")
+                      (commit commit)))
+                (file-name (string-append name "-" version "-checkout"))
+                (sha256
+                 (base32
+                  "092dxcvsk40fclks0lrg2caigzjhw9axjg936w5fs6aj7c0qxzjy")))))))
+
+(define-public u-boot-pinebook-pro-rk3399
+  (let ((base (make-u-boot-package "pinebook_pro-rk3399" "aarch64-linux-gnu"
+                                   #:u-boot u-boot-pbp)))
+    (package
+      (inherit base)
+      (arguments
+        (substitute-keyword-arguments (package-arguments base)
+          ((#:phases phases)
+           `(modify-phases ,phases
+              (add-after 'unpack 'set-environment
+                (lambda* (#:key inputs #:allow-other-keys)
+                  (setenv "CPATH" (string-join (cdr (string-split (getenv "CPATH") #\:)) ":"))
                   (setenv "BL31" (string-append (assoc-ref inputs "firmware")
                                                 "/bl31.elf"))
                   #t))
