@@ -1188,20 +1188,20 @@ It has been modified to remove all non-free binary blobs.")
 ;; version, branching, patchset is as yet unclear to me; the repository comes
 ;; without any tags or upstream branches.
 (define-public linux-libre-pinebook-pro
-  (let* ((version "5.5.0")
+  (let* ((version "5.6.0")
          (source
           (origin
             (method git-fetch)
             (uri (git-reference
                   (url "https://gitlab.manjaro.org/tsys/linux-pinebook-pro.git")
-                  (commit "9564c96de3d1e7a19fbfed075333bf414fa1749f")))
+                  (commit "93293259039d6fc3a725961d42b4f11bfc3f5127")))
             (file-name (git-file-name "linux-libre-pinebook-pro" version))
             (sha256
              (base32
-              "0q4mrjvv7bpavd5r8k9njm0md0lymwcnjpd9nggb8vwffdgbchys"))))
+	       "0yrn22j10f3f6hxmbd23ccis35f9s8cbjvzxiyxnsch2zab9349s"))))
          (pristine-source (make-linux-libre-source
-                           "5.5.0-pinebook-pro" source
-                           (deblob-scripts-pinebook-pro version))))
+                           "5.6.0-pinebook-pro" source
+                           deblob-scripts-5.6)))
     (make-linux-libre*
      version
      pristine-source
