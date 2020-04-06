@@ -6,6 +6,8 @@
 ;;; Copyright © 2017 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2020 Sebastian Schott <sschott@mailbox.org>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -26,6 +28,7 @@
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system perl)
+  #:use-module (guix build-system python)
   #:use-module (guix download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
@@ -37,12 +40,15 @@
   #:use-module (gnu packages boost)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
+  #:use-module (gnu packages file)
+  #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages gl)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages graphics)
+  #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
   #:use-module (gnu packages imagemagick)
@@ -56,9 +62,13 @@
   #:use-module (gnu packages popt)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages python-web)
+  #:use-module (gnu packages qt)
   #:use-module (gnu packages readline)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages tex)
+  #:use-module (gnu packages time)
+  #:use-module (gnu packages video)
   #:use-module (gnu packages web)
   #:use-module (gnu packages wxwidgets)
   #:use-module (gnu packages xfig)
@@ -66,6 +76,91 @@
   #:use-module (gnu packages xml)
   #:use-module ((srfi srfi-1) #:hide (zip))
   #:use-module (srfi srfi-26))
+
+(define-public rapid-photo-downloader
+  (package
+    (name "rapid-photo-downloader")
+    (version "0.9.18")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://launchpad.net/rapid/pyqt/"
+                                  version "/+download/" name "-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "15p7sssg6vmqbm5xnc4j5dr89d7gl7y5qyq44a240yl5aqkjnybw"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("file" ,file)
+       ("intltool" ,intltool)
+       ("gobject-introspection" ,gobject-introspection)))
+    (inputs
+     `(("gdk-pixbuf" ,gdk-pixbuf)
+       ("gexiv2" ,gexiv2)
+       ("gst-libav" ,gst-libav)
+       ("gst-plugins-base" ,gst-plugins-base)
+       ("gst-plugins-good" ,gst-plugins-good)
+       ("gstreamer" ,gstreamer)
+       ("libgudev" ,libgudev)
+       ("libnotify" ,libnotify)
+       ("libmediainfo" ,libmediainfo)
+       ("usdisks" ,udisks)
+       ("python-pyqt" ,python-pyqt)
+       ("python-pygobject" ,python-pygobject)
+       ("python-gphoto2" ,python-gphoto2)
+       ("python-pyzmq" ,python-pyzmq)
+       ("python-tornado" ,python-tornado)
+       ("python-psutil" ,python-psutil)
+       ("python-pyxdg" ,python-pyxdg)
+       ("python-arrow" ,python-arrow)
+       ("python-dateutil" ,python-dateutil)
+       ("python-easygui" ,python-easygui)
+       ("python-colour" ,python-colour)
+       ("python-pymediainfo" ,python-pymediainfo)
+       ("python-sortedcontainers" ,python-sortedcontainers)
+       ("python-rawkit" ,python-rawkit)
+       ("python-requests" ,python-requests)
+       ("python-colorlog" ,python-colorlog)
+       ("python-pyprind" ,python-pyprind)
+       ("python-tenacity" ,python-tenacity)
+       ("perl-image-exiftool" ,perl-image-exiftool)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-libmediainfo
+           (lambda _
+             (substitute* "raphodo/metadatavideo.py"
+               (("pymedia_library_file = 'libmediainfo.so.0'")
+                (string-append "pymedia_library_file = '"
+                               (assoc-ref %build-inputs "libmediainfo")
+                               "/lib/libmediainfo.so.0'")))
+             #t))
+         (add-after 'install 'wrap
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out               (assoc-ref outputs "out"))
+                   (path              (string-join
+                                       (list (string-append
+                                              (assoc-ref inputs "perl-image-exiftool")
+                                              "/bin"))
+                                       ":"))
+                   (gi-typelib-path   (getenv "GI_TYPELIB_PATH"))
+                   (python-path       (getenv "PYTHONPATH")))
+               (for-each
+                (lambda (program)
+                  (wrap-program program
+                    `("PATH" ":" prefix (,path))
+                    `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))
+                    `("PYTHONPATH"             ":" prefix (,python-path))))
+                (map (lambda (name)
+                       (string-append out "/bin/" name))
+                     '("analyze-pv-structure"
+                       "rapid-photo-downloader"))))
+             #t)))))
+    (home-page "https://www.damonlynch.net/rapid/")
+    (synopsis "Import photos and videos from cameras, phones and memory cards")
+    (description "Import photos and videos from cameras, phones and memory
+cards and generate meaningful file and folder names.")
+    (license license:gpl2+)))
 
 (define-public libraw
   (package
@@ -133,14 +228,14 @@ data as produced by digital cameras.")
 (define-public libgphoto2
   (package
     (name "libgphoto2")
-    (version "2.5.23")
+    (version "2.5.24")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/gphoto/libgphoto/"
                                   version "/libgphoto2-" version ".tar.bz2"))
               (sha256
                (base32
-                "0bc5x2bkqbfi4hbkz8ab5xc0bkks9vvks1vygxhdh3x498v27byq"))))
+                "0cgvsk06c4kcfj16plc27nm7g16r9ci0y4k83sf3iyphd63mfg7x"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs
@@ -211,7 +306,7 @@ MTP, and much more.")
 (define-public perl-image-exiftool
   (package
     (name "perl-image-exiftool")
-    (version "11.30")
+    (version "11.85")
     (source
      (origin
        (method url-fetch)
@@ -222,7 +317,8 @@ MTP, and much more.")
              (string-append "https://www.sno.phy.queensu.ca/~phil/exiftool/"
                             "Image-ExifTool-" version ".tar.gz")))
        (sha256
-        (base32 "0vkjb2c1a3jdlq8rx1jywx4p3f1bmgjn7rzfwx6dxgij2lx76lrs"))))
+        (base32
+         "15zqm0ly2b3paqg0ym44ib2mvh6k18a9q5rvdirwipqa127al2lb"))))
     (build-system perl-build-system)
     (arguments
      '(#:phases
@@ -388,6 +484,10 @@ photographic equipment.")
                      (string-append (assoc-ref inputs "ilmbase")
                                     "/include/OpenEXR:" (or (getenv "CPATH") "")))
              #t)))))
+    (native-inputs
+     `(("intltool" ,intltool)
+       ("perl" ,perl)
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("libxslt" ,libxslt)
        ("libxml2" ,libxml2)
@@ -407,9 +507,6 @@ photographic equipment.")
        ("ilmbase" ,ilmbase)
        ("libsoup" ,libsoup)
        ("python-jsonschema" ,python-jsonschema)
-       ("intltool" ,intltool)
-       ("perl" ,perl)
-       ("pkg-config" ,pkg-config)
        ("libwebp" ,libwebp)
        ("lensfun" ,lensfun)
        ("librsvg" ,librsvg)
@@ -439,7 +536,7 @@ and enhance them.")
                 "1l925qslp98gg7yzmgps10h6dq0nb60wbfk345anlxsv0g2ifizr"))))
     (build-system cmake-build-system)
     (native-inputs
-     `(("gettext" ,gnu-gettext)
+     `(("gettext" ,gettext-minimal)
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("boost" ,boost)
@@ -498,14 +595,14 @@ a complete panorama and stitch any series of overlapping pictures.")
 (define-public rawtherapee
   (package
     (name "rawtherapee")
-    (version "5.6")
+    (version "5.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://rawtherapee.com/shared/source/"
                                   "rawtherapee-" version ".tar.xz"))
               (sha256
                (base32
-                "0x0dcfp6f3j08gr11wq5ah4prp790xy4iadbgsm9kgc0jlalpspr"))))
+                "0lq8qi7g0a28h3rab7bk5bbbd4gvfma42bvlz1dfn8p9mah2h19n"))))
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f                      ; no test suite

@@ -1,11 +1,14 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017 Ethan R. Jones <doubleplusgood23@gmail.com>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
 ;;; Copyright © 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2019 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2019 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
+;;; Copyright © 2020 Nicolò Balzarotti <nicolo@nixo.xyz>
+;;; Copyright © 2020 Roel Janssen <roel@gnu.org>
+;;; Copyright © 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -259,7 +262,7 @@ intuitive syntax and trivial integration.")
 (define-public xtl
   (package
     (name "xtl")
-    (version "0.6.8")
+    (version "0.6.13")
     (source (origin
               (method git-fetch)
               (uri
@@ -268,7 +271,7 @@ intuitive syntax and trivial integration.")
                 (commit version)))
               (sha256
                (base32
-                "13gm8vm1b9nzvlcc632f9khnjw1xdjqj6c7k51r173y1hlk0div7"))
+                "0py70lm2i3sxzpgca2cic8zfn6dn18q837h76a5fchl2c0kpxm91"))
               (file-name (git-file-name name version))))
     (native-inputs
      `(("googletest" ,googletest)
@@ -410,3 +413,75 @@ SObjectizer supports not only the Actor Model but also the Publish-Subscribe
 Model and CSP-like channels.  The goal of SObjectizer is to simplify
 development of concurrent and multithreaded applications in C++.")
     (license license:bsd-3)))
+
+(define-public tweeny
+  (package
+    (name "tweeny")
+    (version "3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/mobius3/tweeny.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1adm4c17pi7xf3kf6sjyxibz5rdg1ka236p72xsm6js4j9gzlbp4"))))
+    (arguments
+     '(#:tests? #f))                    ;no check target
+    (build-system cmake-build-system)
+    (home-page "https://mobius3.github.io/tweeny/")
+    (synopsis "Modern C++ tweening library")
+    (description "@code{Tweeny} is an inbetweening library designed for the
+creation of complex animations for games and other beautiful interactive
+software.  It leverages features of modern @code{C++} to empower developers with
+an intuitive API for declaring tweenings of any type of value, as long as they
+support arithmetic operations.  The goal of @code{Tweeny} is to provide means to
+create fluid interpolations when animating position, scale, rotation, frames or
+other values of screen objects, by setting their values as the tween starting
+point and then, after each tween step, plugging back the result.")
+    (license license:expat)))
+
+(define-public abseil-cpp
+  (package
+    (name "abseil-cpp")
+    (version "20200225.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/abseil/abseil-cpp.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "035bffayslawc19q2gmlkr6n6r7k7mvriaq7352rv6gyzaplr98w"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags (list "-DBUILD_SHARED_LIBS=ON"
+                               "-DABSL_RUN_TESTS=ON"
+                               ;; Needed, else we get errors like:
+                               ;;
+                               ;; ld: CMakeFiles/absl_periodic_sampler_test.dir/internal/periodic_sampler_test.cc.o:
+                               ;;   undefined reference to symbol '_ZN7testing4Mock16UnregisterLockedEPNS_8internal25UntypedFunctionMockerBaseE'
+                               ;; ld: /gnu/store/...-googletest-1.10.0/lib/libgmock.so:
+                               ;;   error adding symbols: DSO missing from command line
+                               ;; collect2: error: ld returned 1 exit status
+                               "-DCMAKE_EXE_LINKER_FLAGS=-lgtest -lpthread -lgmock")
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'remove-gtest-check
+           ;; The CMakeLists fails to find our googletest for some reason, but
+           ;; it works nonetheless.
+           (lambda _
+             (substitute* "CMakeLists.txt"
+               (("check_target\\(gtest\\)") "")
+               (("check_target\\(gtest_main\\)") "")
+               (("check_target\\(gmock\\)") "")))))))
+    (native-inputs
+     `(("googletest" ,googletest)))
+    (home-page "https://abseil.io")
+    (synopsis "Augmented C++ standard library")
+    (description "Abseil is a collection of C++ library code designed to
+augment the C++ standard library.  The Abseil library code is collected from
+Google's C++ code base.")
+    (license license:asl2.0)))

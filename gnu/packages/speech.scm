@@ -1,10 +1,11 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2016 David Thompson <davet@gnu.org>
-;;; Copyright © 2016, 2019 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -31,15 +32,21 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages audio)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages base)            ;for 'which'
+  #:use-module (gnu packages bison)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages documentation)
   #:use-module (gnu packages emacs)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages glib)
+  #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages swig)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages textutils))
 
@@ -101,14 +108,18 @@ based on human speech recordings.")
 (define-public espeak-ng
   (package
     (name "espeak-ng")
-    (version "1.49.2")
+    (version "1.50")
     (home-page "https://github.com/espeak-ng/espeak-ng")
+    ;; Note: eSpeak NG publishes release tarballs, but the 1.50 tarball is
+    ;; broken: <https://github.com/espeak-ng/espeak-ng/issues/683>.
+    ;; Download the raw repository to work around it; remove 'native-inputs'
+    ;; below when switching back to the release tarball.
     (source (origin
-              (method url-fetch)
-              (uri (string-append home-page "/releases/download/" version
-                                  "/espeak-ng-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference (url home-page) (commit version)))
+              (file-name (git-file-name name version))
               (sha256
-               (base32 "1d10x9rbvqi2zwcz65fxh04k0x0scnk7732l37laz6xra1ldhzng"))))
+               (base32 "0jkqhf2h94vbqq7mg7mmm23bq372fa7mdk941my18c3vkldcir1b"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--disable-static")
@@ -116,6 +127,11 @@ based on human speech recordings.")
        #:parallel-build? #f
        ;; XXX: Some tests require an audio device.
        #:tests? #f))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("which" ,which)))
     (inputs
      `(("libcap" ,libcap)
        ("pcaudiolib" ,pcaudiolib)))
@@ -210,12 +226,20 @@ stable and well documented interface.")
                "08xwnpw9cnaix1n1i7gvpq5hrfrqc2z1snjhjapfam506hrc77g4"))))
     (build-system gnu-build-system)
     (arguments
-      `(#:tests? #f ; No test suite.
-        #:make-flags
-         (list (string-append "DESTDIR=" (assoc-ref %outputs "out")))
-        #:phases
-        (modify-phases %standard-phases
-          (delete 'configure)))) ; No ./configure script.
+     `(#:tests? #f                      ; no test suite
+       #:make-flags
+       (list (string-append "PREFIX=" (assoc-ref %outputs "out"))
+             (string-append "LDFLAGS=-Wl,-rpath="
+                            (assoc-ref %outputs "out") "/lib"))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'respect-LDFLAGS
+           (lambda _
+             (substitute* "Makefile"
+               ((" -o sonic " match)
+                (string-append " $(LDFLAGS)" match)))
+             #t))
+         (delete 'configure))))        ; no ./configure script
     (synopsis "Speed up or slow down speech")
     (description "Sonic implements a simple algorithm for speeding up or slowing
 down speech.  However, it's optimized for speed ups of over 2X, unlike previous
@@ -461,3 +485,64 @@ The system is written in C++ and uses the Edinburgh Speech Tools Library for
 low level architecture and has a Scheme (SIOD) based command interpreter for
 control.")
     (license (license:non-copyleft "file://COPYING"))))
+
+(define-public sphinxbase
+  (package
+    (name "sphinxbase")
+    (version "5prealpha")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://sourceforge/cmusphinx/"
+                           "sphinxbase/" version "/"
+                           "sphinxbase-" version ".tar.gz"))
+       (sha256
+        (base32 "0vr4k8pv5a8nvq9yja7kl13b5lh0f9vha8fc8znqnm8bwmcxnazp"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:parallel-tests? #f))           ;tests fail otherwise
+    (native-inputs
+     `(("bison" ,bison)
+       ("doxygen" ,doxygen)
+       ("perl" ,perl)                   ;for tests
+       ("python" ,python)
+       ("swig" ,swig)))
+    (inputs
+     `(("pulseaudio" ,pulseaudio)))
+    (home-page "https://cmusphinx.github.io/")
+    (synopsis "Support library required by Pocketsphinx and Sphinxtrain")
+    (description "This package contains the basic libraries shared by
+the CMU Sphinx trainer and all the Sphinx decoders (Sphinx-II,
+Sphinx-III, and PocketSphinx), as well as some common utilities for
+manipulating acoustic feature and audio files.")
+    (license license:bsd-4)))
+
+(define-public pocketsphinx
+  (package
+    (name "pocketsphinx")
+    (version "5prealpha")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://sourceforge/cmusphinx/"
+                           "pocketsphinx/" version "/"
+                           "pocketsphinx-" version ".tar.gz"))
+       (sha256
+        (base32 "1n9yazzdgvpqgnfzsbl96ch9cirayh74jmpjf7svs4i7grabanzg"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("perl" ,perl)                   ;for tests
+       ("python" ,python)
+       ("swig" ,swig)))
+    (inputs
+     `(("gstreamer" ,gstreamer)
+       ("libcap" ,libcap)
+       ("pulseaudio" ,pulseaudio)
+       ("sphinxbase" ,sphinxbase)))
+    (home-page "https://cmusphinx.github.io/")
+    (synopsis "Recognizer library written in C")
+    (description "PocketSphinx is one of Carnegie Mellon University's
+large vocabulary, speaker-independent continuous speech recognition
+engine.")
+    (license license:bsd-2)))

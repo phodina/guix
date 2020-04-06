@@ -63,6 +63,10 @@
             inferior-eval
             inferior-eval-with-store
             inferior-object?
+            inferior-exception?
+            inferior-exception-arguments
+            inferior-exception-inferior
+            inferior-exception-stack
             read-repl-response
 
             inferior-packages
@@ -156,6 +160,15 @@ inferior."
      (letrec ((result (inferior 'pipe pipe close (cons 0 rest)
                                 (delay (%inferior-packages result))
                                 (delay (%inferior-package-table result)))))
+
+       ;; For protocol (0 1) and later, send the protocol version we support.
+       (match rest
+         ((n _ ...)
+          (when (>= n 1)
+            (send-inferior-request '(() repl-version 0 1 1) result)))
+         (_
+          #t))
+
        (inferior-eval '(use-modules (guix)) result)
        (inferior-eval '(use-modules (gnu)) result)
        (inferior-eval '(use-modules (ice-9 match)) result)
@@ -195,8 +208,16 @@ equivalent.  Return #f if the inferior could not be launched."
 
 (set-record-type-printer! <inferior-object> write-inferior-object)
 
-(define (read-repl-response port)
-  "Read a (guix repl) response from PORT and return it as a Scheme object."
+;; Reified exception thrown by an inferior.
+(define-condition-type &inferior-exception &error
+  inferior-exception?
+  (arguments  inferior-exception-arguments)       ;key + arguments
+  (inferior   inferior-exception-inferior)        ;<inferior> | #f
+  (stack      inferior-exception-stack))          ;list of (FILE COLUMN LINE)
+
+(define* (read-repl-response port #:optional inferior)
+  "Read a (guix repl) response from PORT and return it as a Scheme object.
+Raise '&inferior-exception' when an exception is read from PORT."
   (define sexp->object
     (match-lambda
       (('value value)
@@ -207,11 +228,23 @@ equivalent.  Return #f if the inferior could not be launched."
   (match (read port)
     (('values objects ...)
      (apply values (map sexp->object objects)))
+    (('exception ('arguments key objects ...)
+                 ('stack frames ...))
+     ;; Protocol (0 1 1) and later.
+     (raise (condition (&inferior-exception
+                        (arguments (cons key (map sexp->object objects)))
+                        (inferior inferior)
+                        (stack frames)))))
     (('exception key objects ...)
-     (apply throw key (map sexp->object objects)))))
+     ;; Protocol (0 0).
+     (raise (condition (&inferior-exception
+                        (arguments (cons key (map sexp->object objects)))
+                        (inferior inferior)
+                        (stack '())))))))
 
 (define (read-inferior-response inferior)
-  (read-repl-response (inferior-socket inferior)))
+  (read-repl-response (inferior-socket inferior)
+                      inferior))
 
 (define (send-inferior-request exp inferior)
   (write exp (inferior-socket inferior))

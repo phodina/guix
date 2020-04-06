@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2018, 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2019 Vagrant Cascadian <vagrant@reproducible-builds.org>
@@ -44,6 +44,7 @@
   #:use-module (gnu packages java)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages llvm)
+  #:use-module (gnu packages man)
   #:use-module (gnu packages mono)
   #:use-module (gnu packages ocaml)
   #:use-module (gnu packages package-management)
@@ -67,7 +68,7 @@
   #:use-module (ice-9 match))
 
 (define-public diffoscope
-  (let ((version "135"))
+  (let ((version "138"))
     (package
       (name "diffoscope")
       (version version)
@@ -79,7 +80,7 @@
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "0rkpvajkp3qryi6dxkrh8aq5xg79aybnw8iy73wsblcnfq6yhba7"))))
+                  "1lsxwyqaaxmin8h06l0352f0kh0l9brbqfn0zv8hmb64bp5r20nr"))))
       (build-system python-build-system)
       (arguments
        `(#:phases (modify-phases %standard-phases
@@ -217,8 +218,78 @@
        "Diffoscope tries to get to the bottom of what makes files or directories
 different.  It recursively unpacks archives of many kinds and transforms
 various binary formats into more human readable forms to compare them.  It can
-compare two tarballs, ISO images, or PDFs just as easily.")
+compare two tarballs, ISO images, or PDFs just as easily.
+
+Diffoscope has many optional dependencies; @code{diffoscope
+--list-missing-tools guix} will display optional packages to
+install.")
       (license license:gpl3+))))
+
+(define-public reprotest
+  (package
+    (name "reprotest")
+    (version "0.7.14")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://salsa.debian.org/reproducible-builds/reprotest.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "12d07xq5zx5dfbsgakm6zcn7hgf0h9f5kvfjqkiyak4ix5aa6xkf"))))
+    (inputs
+     `(("python-debian" ,python-debian)
+       ("python-distro" ,python-distro)
+       ("python-libarchive-c", python-libarchive-c)
+       ("python-rstr" ,python-rstr)))
+    (native-inputs
+     `(("diffoscope" ,diffoscope)
+       ("help2man" ,help2man)
+       ("libfaketime" ,libfaketime)
+       ("python-coverage" ,python-coverage)
+       ("python-docutils" ,python-docutils)
+       ("python-pytest " ,python-pytest)
+       ("python-tlsh" ,python-tlsh)
+       ("python-tox" ,python-tox)
+       ("unzip" ,unzip)
+       ("xxd" ,xxd)))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         ;; Neither glibc-locales nor glibc-utf8-locales have the C.UTF-8
+         ;; locale or several other locales used in reprotest.
+         (add-after 'unpack 'adjust-locales
+           (lambda _
+             (substitute* "reprotest/build.py"
+               (("'C.UTF-8'") "'en_US.UTF-8'")
+               (("'ru_RU.CP1251'") "'ru_RU.KOI8-R'")
+               (("'kk_KZ.RK1048'") "'kk_KZ'"))
+             (substitute* "reprotest/lib/adt_testbed.py"
+               (("export LANG=C.UTF-8") "export LANG=en_US.UTF-8"))
+             #t))
+         (add-after 'install 'install-doc
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((mandir1 (string-append
+                              (assoc-ref outputs "out") "/share/man/man1"))
+                    (docdir (string-append
+                             (assoc-ref outputs "out") "/share/doc/" ,name "-" ,version)))
+               (invoke "make" "-C" "doc")
+               (mkdir-p mandir1)
+               (install-file "doc/reprotest.1" mandir1)
+               (mkdir-p docdir)
+               (install-file "./README.rst" docdir)
+               (install-file "./README-dev.rst" docdir))
+             #t)))))
+    (home-page "https://salsa.debian.org/reproducible-builds/reprotest")
+    (synopsis "Build software and check it for reproducibility")
+    (description "Reprotest builds the same source code twice in different
+environments, and then checks the binaries produced by each build for
+differences.  If any are found, then diffoscope or diff is used to display
+them in detail for later analysis.")
+    (license (list license:gpl3+ license:gpl2+))))
 
 (define-public trydiffoscope
  (package

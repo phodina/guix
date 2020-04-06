@@ -42,8 +42,6 @@
   #:autoload   (guix store roots) (gc-roots user-owned?)
   #:use-module ((guix build utils)
                 #:select (directory-exists? mkdir-p))
-  #:use-module ((guix build syscalls)
-                #:select (with-file-lock/no-wait))
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
   #:use-module (ice-9 regex)
@@ -81,12 +79,15 @@
   "Ensure the default profile symlink and directory exist and are writable."
   (ensure-profile-directory)
 
-  ;; Create ~/.guix-profile if it doesn't exist yet.
+  ;; Try to create ~/.guix-profile if it doesn't exist yet.
   (when (and %user-profile-directory
              %current-profile
              (not (false-if-exception
                    (lstat %user-profile-directory))))
-    (symlink %current-profile %user-profile-directory)))
+    (catch 'system-error
+      (lambda ()
+        (symlink %current-profile %user-profile-directory))
+      (const #t))))
 
 (define (delete-generations store profile generations)
   "Delete GENERATIONS from PROFILE.
@@ -131,8 +132,7 @@ denote ranges as interpreted by 'matching-generations'."
                                 #:key
                                 (hooks %default-profile-hooks)
                                 allow-collisions?
-                                bootstrap? use-substitutes?
-                                dry-run?)
+                                bootstrap?)
   "Build a new generation of PROFILE, a file name, using the packages
 specified in MANIFEST, a manifest object.  When ALLOW-COLLISIONS? is true,
 do not treat collisions in MANIFEST as an error.  HOOKS is a list of \"profile
@@ -143,12 +143,8 @@ hooks\" run when building the profile."
                                          #:hooks (if bootstrap? '() hooks)
                                          #:locales? (not bootstrap?))))
          (prof     (derivation->output-path prof-drv)))
-    (show-what-to-build store (list prof-drv)
-                        #:use-substitutes? use-substitutes?
-                        #:dry-run? dry-run?)
 
     (cond
-     (dry-run? #t)
      ((and (file-exists? profile)
            (and=> (readlink* profile) (cut string=? prof <>)))
       (format (current-error-port) (G_ "nothing to be done~%")))
@@ -165,10 +161,6 @@ hooks\" run when building the profile."
                (switch-symlinks profile (basename name))
                (unless (string=? profile %current-profile)
                  (register-gc-root store name))
-               (format #t (N_ "~a package in profile~%"
-                              "~a packages in profile~%"
-                              count)
-                       count)
                (display-search-path-hint entries profile)))
 
         (warn-about-disk-space profile))))))
@@ -207,6 +199,10 @@ non-zero relevance score."
 (define (transaction-upgrade-entry store entry transaction)
   "Return a variant of TRANSACTION that accounts for the upgrade of ENTRY, a
 <manifest-entry>."
+  (define (lower-manifest-entry* entry)
+    (run-with-store store
+      (lower-manifest-entry entry (%current-system))))
+
   (define (supersede old new)
     (info (G_ "package '~a' has been superseded by '~a'~%")
           (manifest-entry-name old) (package-name new))
@@ -219,40 +215,44 @@ non-zero relevance score."
         (output (manifest-entry-output old)))
       transaction)))
 
-  (match (if (manifest-transaction-removal-candidate? entry transaction)
-             'dismiss
-             entry)
-    ('dismiss
-     transaction)
-    (($ <manifest-entry> name version output (? string? path))
-     (match (find-best-packages-by-name name #f)
-       ((pkg . rest)
-        (let ((candidate-version (package-version pkg)))
-          (match (package-superseded pkg)
-            ((? package? new)
-             (supersede entry new))
-            (#f
-             (case (version-compare candidate-version version)
-               ((>)
-                (manifest-transaction-install-entry
-                 (package->manifest-entry* pkg output)
-                 transaction))
-               ((<)
-                transaction)
-               ((=)
-                (let ((candidate-path (derivation->output-path
-                                       (package-derivation store pkg))))
-                  ;; XXX: When there are propagated inputs, assume we need to
-                  ;; upgrade the whole entry.
-                  (if (and (string=? path candidate-path)
-                           (null? (package-propagated-inputs pkg)))
-                      transaction
-                      (manifest-transaction-install-entry
-                       (package->manifest-entry* pkg output)
-                       transaction)))))))))
-       (()
-        (warning (G_ "package '~a' no longer exists~%") name)
-        transaction)))))
+  (define (upgrade entry)
+    (match entry
+      (($ <manifest-entry> name version output (? string? path))
+       (match (find-best-packages-by-name name #f)
+         ((pkg . rest)
+          (let ((candidate-version (package-version pkg)))
+            (match (package-superseded pkg)
+              ((? package? new)
+               (supersede entry new))
+              (#f
+               (case (version-compare candidate-version version)
+                 ((>)
+                  (manifest-transaction-install-entry
+                   (package->manifest-entry* pkg output)
+                   transaction))
+                 ((<)
+                  transaction)
+                 ((=)
+                  (let* ((new (package->manifest-entry* pkg output)))
+                    ;; Here we want to determine whether the NEW actually
+                    ;; differs from ENTRY, but we need to intercept
+                    ;; 'build-things' calls because they would prevent us from
+                    ;; displaying the list of packages to install/upgrade
+                    ;; upfront.  Thus, if lowering NEW triggers a build (due
+                    ;; to grafts), assume NEW differs from ENTRY.
+                    (if (with-build-handler (const #f)
+                          (manifest-entry=? (lower-manifest-entry* new)
+                                            entry))
+                        transaction
+                        (manifest-transaction-install-entry
+                         new transaction)))))))))
+         (()
+          (warning (G_ "package '~a' no longer exists~%") name)
+          transaction)))))
+
+  (if (manifest-transaction-removal-candidate? entry transaction)
+      transaction
+      (upgrade entry)))
 
 
 ;;;
@@ -497,8 +497,7 @@ kind of search path~%")
                            #f)))
          (option '(#\n "dry-run") #f #f
                  (lambda (opt name arg result arg-handler)
-                   (values (alist-cons 'dry-run? #t
-                                       (alist-cons 'graft? #f result))
+                   (values (alist-cons 'dry-run? #t result)
                            #f)))
          (option '(#\v "verbosity") #t #f
                  (lambda (opt name arg result arg-handler)
@@ -919,9 +918,7 @@ processed, #f otherwise."
                                    #:dry-run? dry-run?)
         (build-and-use-profile store profile new
                                #:allow-collisions? allow-collisions?
-                               #:bootstrap? bootstrap?
-                               #:use-substitutes? substitutes?
-                               #:dry-run? dry-run?)))))
+                               #:bootstrap? bootstrap?)))))
 
 
 ;;;
@@ -950,10 +947,14 @@ option processing with 'parse-command-line'."
                        (%graft? (assoc-ref opts 'graft?)))
           (with-status-verbosity (assoc-ref opts 'verbosity)
             (set-build-options-from-command-line (%store) opts)
-            (parameterize ((%guile-for-build
-                            (package-derivation
-                             (%store)
-                             (if (assoc-ref opts 'bootstrap?)
-                                 %bootstrap-guile
-                                 (canonical-package guile-2.2)))))
-              (process-actions (%store) opts)))))))
+            (with-build-handler (build-notifier #:use-substitutes?
+                                                (assoc-ref opts 'substitutes?)
+                                                #:dry-run?
+                                                (assoc-ref opts 'dry-run?))
+              (parameterize ((%guile-for-build
+                              (package-derivation
+                               (%store)
+                               (if (assoc-ref opts 'bootstrap?)
+                                   %bootstrap-guile
+                                   (canonical-package guile-2.2)))))
+                (process-actions (%store) opts))))))))

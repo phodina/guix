@@ -1,5 +1,5 @@
 # GNU Guix --- Functional package management for GNU
-# Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+# Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 # Copyright © 2013 Andreas Enge <andreas@enge.fr>
 # Copyright © 2015, 2017 Alex Kost <alezost@gmail.com>
 # Copyright © 2016, 2018 Mathieu Lirzin <mthl@gnu.org>
@@ -122,6 +122,7 @@ MODULES =					\
   guix/build-system/meson.scm			\
   guix/build-system/minify.scm			\
   guix/build-system/asdf.scm			\
+  guix/build-system/copy.scm			\
   guix/build-system/glib-or-gtk.scm		\
   guix/build-system/gnu.scm			\
   guix/build-system/guile.scm			\
@@ -169,6 +170,7 @@ MODULES =					\
   guix/build/go-build-system.scm		\
   guix/build/asdf-build-system.scm		\
   guix/build/bzr.scm				\
+  guix/build/copy-build-system.scm		\
   guix/build/git.scm				\
   guix/build/hg.scm				\
   guix/build/glib-or-gtk-build-system.scm	\
@@ -320,7 +322,6 @@ AUX_FILES =						\
   gnu/packages/aux-files/chromium/master-preferences.json		\
   gnu/packages/aux-files/emacs/guix-emacs.el		\
   gnu/packages/aux-files/linux-libre/5.4-arm.conf	\
-  gnu/packages/aux-files/linux-libre/5.4-arm-veyron.conf       \
   gnu/packages/aux-files/linux-libre/5.4-arm64.conf	\
   gnu/packages/aux-files/linux-libre/5.4-i686.conf	\
   gnu/packages/aux-files/linux-libre/5.4-x86_64.conf	\
@@ -427,6 +428,7 @@ SCM_TESTS =					\
   tests/scripts-build.scm			\
   tests/search-paths.scm			\
   tests/services.scm				\
+  tests/services/linux.scm			\
   tests/sets.scm				\
   tests/size.scm				\
   tests/snix.scm				\
@@ -508,9 +510,7 @@ endif !CAN_RUN_TESTS
 
 check-system: $(GOBJECTS)
 	$(AM_V_at)$(top_builddir)/pre-inst-env			\
-	   $(GUILE) --no-auto-compile				\
-	   -e '(@@ (run-system-tests) run-system-tests)'	\
-	   $(top_srcdir)/build-aux/run-system-tests.scm
+	  guix build -m $(top_srcdir)/etc/system-tests.scm -K
 
 # Public keys used to sign substitutes.
 dist_pkgdata_DATA =				\
@@ -541,6 +541,8 @@ EXTRA_DIST +=						\
   scripts/guix.in					\
   etc/guix-install.sh					\
   etc/news.scm						\
+  etc/release-manifest.scm				\
+  etc/system-tests.scm					\
   build-aux/build-self.scm				\
   build-aux/compile-all.scm				\
   build-aux/hydra/evaluate.scm				\
@@ -550,7 +552,6 @@ EXTRA_DIST +=						\
   build-aux/cuirass/gnu-system.scm			\
   build-aux/cuirass/guix-modular.scm			\
   build-aux/cuirass/hydra-to-cuirass.scm		\
-  build-aux/check-available-binaries.scm		\
   build-aux/check-final-inputs-self-contained.scm	\
   build-aux/compile-as-derivation.scm			\
   build-aux/generate-authors.scm			\
@@ -558,7 +559,6 @@ EXTRA_DIST +=						\
   build-aux/test-driver.scm				\
   build-aux/update-guix-package.scm			\
   build-aux/update-NEWS.scm				\
-  build-aux/run-system-tests.scm			\
   d3.v3.js						\
   graph.js						\
   tests/test.drv					\
@@ -851,8 +851,9 @@ assert-no-store-file-names:
 
 # Make sure important substitutes are available.
 assert-binaries-available: $(GOBJECTS)
-	$(AM_V_at)$(top_builddir)/pre-inst-env "$(GUILE)"			\
-	  "$(top_srcdir)/build-aux/check-available-binaries.scm"
+	$(AM_V_at)$(top_builddir)/pre-inst-env				\
+	  guix weather -m "$(top_srcdir)/etc/release-manifest.scm"	\
+	                --display-missing
 
 # Make sure the final inputs don't refer to bootstrap tools.
 assert-final-inputs-self-contained: $(GOBJECTS)

@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -286,7 +286,8 @@ interface (FFI) of Guile.")
                                                     #:select? select?))
     (gexp->script "compute-guix-derivation"
                   #~(begin
-                      (use-modules (ice-9 match))
+                      (use-modules (ice-9 match)
+                                   (ice-9 threads))
 
                       (eval-when (expand load eval)
                         ;; (gnu packages …) modules are going to be looked up
@@ -407,7 +408,11 @@ files."
                       (major  ((store-lift nix-server-major-version)))
                       (minor  ((store-lift nix-server-minor-version))))
     (mbegin %store-monad
-      (show-what-to-build* (list build))
+      ;; Before 'with-build-handler' was implemented and used, we had to
+      ;; explicitly call 'show-what-to-build*'.
+      (munless (module-defined? (resolve-module '(guix store))
+                                'with-build-handler)
+        (show-what-to-build* (list build)))
       (built-derivations (list build))
 
       ;; Use the port beneath the current store as the stdin of BUILD.  This
@@ -420,6 +425,7 @@ files."
                          ;; $GUILE_LOAD_PATH & co.
                          (with-clean-environment
                           (setenv "GUILE_WARN_DEPRECATED" "no") ;be quiet and drive
+                          (setenv "COLUMNS" "120") ;show wider backtraces
                           (when home
                             ;; Inherit HOME so that 'xdg-directory' works.
                             (setenv "HOME" home))

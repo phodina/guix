@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016, 2017, 2018 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2017, 2019 Mathieu Othacehe <m.othacehe@gmail.com>
@@ -27,6 +27,7 @@
   #:use-module ((guix status) #:select (with-status-verbosity))
   #:use-module (guix store)
   #:autoload   (guix store database) (register-path)
+  #:use-module (guix describe)
   #:use-module (guix grafts)
   #:use-module (guix gexp)
   #:use-module (guix derivations)
@@ -257,7 +258,7 @@ expression in %STORE-MONAD."
       (lambda ()
         (guard (c ((shepherd-error? c)
                    (values (report-shepherd-error c) store)))
-          (values (run-with-store store (begin mbody ...))
+          (values (run-with-store store (mbegin %store-monad mbody ...))
                   store)))
       (lambda (key proc format-string format-args errno . rest)
         (warning (G_ "while talking to shepherd: ~a~%")
@@ -288,22 +289,6 @@ on service '~a':~%")
          (report-error (G_ "shepherd error~%")))
         ((not error)                              ;not an error
          #t)))
-
-(define (call-with-service-upgrade-info new-services mproc)
-  "Call MPROC, a monadic procedure in %STORE-MONAD, passing it the list of
-names of services to load (upgrade), and the list of names of services to
-unload."
-  (match (current-services)
-    ((services ...)
-     (let-values (((to-unload to-restart)
-                   (shepherd-service-upgrade services new-services)))
-       (mproc to-restart
-              (map (compose first live-service-provision)
-                   to-unload))))
-    (#f
-     (with-monad %store-monad
-       (warning (G_ "failed to obtain list of shepherd services~%"))
-       (return #f)))))
 
 (define-syntax-rule (unless-file-not-found exp)
   (catch 'system-error
@@ -403,7 +388,6 @@ STORE is an open connection to the store."
                       #:old-entries old-entries)))
            (drvs -> (list bootcfg)))
         (mbegin %store-monad
-          (show-what-to-build* drvs)
           (built-derivations drvs)
           ;; Only install bootloader configuration file.
           (install-bootloader local-eval bootloader-config bootcfg
@@ -517,12 +501,7 @@ list of services."
               (cond ((uuid? root-device) 0)
                     ((file-system-label? root-device) 1)
                     (else 2))
-              (cond ((uuid? root-device)
-                     (uuid->string root-device))
-                    ((file-system-label? root-device)
-                     (file-system-label->string root-device))
-                    (else
-                     root-device)))
+              (file-system-device->string root-device))
 
       (format #t (G_ "  kernel: ~a~%") kernel)
 
@@ -571,6 +550,8 @@ any, are available.  Raise an error if they're not."
               (and (file-system-mount? fs)
                    (not (member (file-system-type fs)
                                 %pseudo-file-system-types))
+                   ;; Don't try to validate network file systems.
+                   (not (string-prefix? "nfs" (file-system-type fs)))
                    (not (memq 'bind-mount (file-system-flags fs)))))
             file-systems))
 
@@ -722,16 +703,11 @@ checking this by themselves in their 'check' procedure."
 
 (define (maybe-suggest-running-guix-pull)
   "Suggest running 'guix pull' if this has never been done before."
-  ;; The reason for this is that the 'guix' binding that we see here comes
-  ;; from either ~/.config/latest or, if it's missing, from the
-  ;; globally-installed Guix, which is necessarily older.  See
-  ;; <http://lists.gnu.org/archive/html/guix-devel/2014-08/msg00057.html> for
-  ;; a discussion.
-  (define latest
-    (string-append (config-directory) "/current"))
-
-  (unless (file-exists? latest)
-    (warning (G_ "~a not found: 'guix pull' was never run~%") latest)
+  ;; Check whether we're running a 'guix pull'-provided 'guix' command.  When
+  ;; 'current-profile' returns #f, we may be running the globally-installed
+  ;; 'guix' and thus run the risk of deploying an older 'guix'.  See
+  ;; <https://lists.gnu.org/archive/html/guix-devel/2014-08/msg00057.html>
+  (unless (or (current-profile) (getenv "GUIX_UNINSTALLED"))
     (warning (G_ "Consider running 'guix pull' before 'reconfigure'.~%"))
     (warning (G_ "Failing to do that may downgrade your system!~%"))))
 
@@ -833,15 +809,14 @@ static checks."
        ;; For 'init' and 'reconfigure', always build BOOTCFG, even if
        ;; --no-bootloader is passed, because we then use it as a GC root.
        ;; See <http://bugs.gnu.org/21068>.
-       (drvs      (mapm %store-monad lower-object
-                        (if (memq action '(init reconfigure))
-                            (list sys bootcfg)
-                            (list sys))))
+       (drvs      (mapm/accumulate-builds lower-object
+                                          (if (memq action '(init reconfigure))
+                                              (list sys bootcfg)
+                                              (list sys))))
        (%         (if derivations-only?
                       (return (for-each (compose println derivation-file-name)
                                         drvs))
-                      (maybe-build drvs #:dry-run? dry-run?
-                                   #:use-substitutes? use-substitutes?))))
+                      (built-derivations drvs))))
 
     (if (or dry-run? derivations-only?)
         (return #f)
@@ -862,7 +837,10 @@ static checks."
                   (info (G_ "bootloader successfully installed on '~a'~%")
                         (bootloader-configuration-target bootloader))))
                (with-shepherd-error-handling
-                  (upgrade-shepherd-services local-eval os))))
+                 (upgrade-shepherd-services local-eval os)
+                 (return (format #t (G_ "\
+To complete the upgrade, run 'herd restart SERVICE' to stop,
+upgrade, and restart each service that was not automatically restarted.\n"))))))
             ((init)
              (newline)
              (format #t (G_ "initializing operating system under '~a'...~%")
@@ -1050,7 +1028,7 @@ Some ACTIONS support additional ARGS.\n"))
 
          (option '(#\n "dry-run") #f #f
                  (lambda (opt name arg result)
-                   (alist-cons 'dry-run? #t (alist-cons 'graft? #f result))))
+                   (alist-cons 'dry-run? #t result)))
          (option '(#\v "verbosity") #t #f
                  (lambda (opt name arg result)
                    (let ((level (string->number* arg)))
@@ -1142,42 +1120,46 @@ resulting from command-line parsing."
     (with-store store
       (set-build-options-from-command-line store opts)
 
-      (run-with-store store
-        (mbegin %store-monad
-          (set-guile-for-build (default-guile))
-          (case action
-            ((extension-graph)
-             (export-extension-graph os (current-output-port)))
-            ((shepherd-graph)
-             (export-shepherd-graph os (current-output-port)))
-            (else
-             (unless (memq action '(build init))
-               (warn-about-old-distro #:suggested-command
-                                      "guix system reconfigure"))
+      (with-build-handler (build-notifier #:use-substitutes?
+                                          (assoc-ref opts 'substitutes?)
+                                          #:dry-run?
+                                          (assoc-ref opts 'dry-run?))
+        (run-with-store store
+          (mbegin %store-monad
+            (set-guile-for-build (default-guile))
+            (case action
+              ((extension-graph)
+               (export-extension-graph os (current-output-port)))
+              ((shepherd-graph)
+               (export-shepherd-graph os (current-output-port)))
+              (else
+               (unless (memq action '(build init))
+                 (warn-about-old-distro #:suggested-command
+                                        "guix system reconfigure"))
 
-             (perform-action action os
-                             #:dry-run? dry?
-                             #:derivations-only? (assoc-ref opts
-                                                            'derivations-only?)
-                             #:use-substitutes? (assoc-ref opts 'substitutes?)
-                             #:skip-safety-checks?
-                             (assoc-ref opts 'skip-safety-checks?)
-                             #:file-system-type (assoc-ref opts 'file-system-type)
-                             #:image-size (assoc-ref opts 'image-size)
-                             #:full-boot? (assoc-ref opts 'full-boot?)
-                             #:container-shared-network?
-                             (assoc-ref opts 'container-shared-network?)
-                             #:mappings (filter-map (match-lambda
-                                                      (('file-system-mapping . m)
-                                                       m)
-                                                      (_ #f))
-                                                    opts)
-                             #:install-bootloader? bootloader?
-                             #:target target-file
-                             #:bootloader-target bootloader-target
-                             #:gc-root (assoc-ref opts 'gc-root)))))
-        #:target target
-        #:system system))
+               (perform-action action os
+                               #:dry-run? dry?
+                               #:derivations-only? (assoc-ref opts
+                                                              'derivations-only?)
+                               #:use-substitutes? (assoc-ref opts 'substitutes?)
+                               #:skip-safety-checks?
+                               (assoc-ref opts 'skip-safety-checks?)
+                               #:file-system-type (assoc-ref opts 'file-system-type)
+                               #:image-size (assoc-ref opts 'image-size)
+                               #:full-boot? (assoc-ref opts 'full-boot?)
+                               #:container-shared-network?
+                               (assoc-ref opts 'container-shared-network?)
+                               #:mappings (filter-map (match-lambda
+                                                        (('file-system-mapping . m)
+                                                         m)
+                                                        (_ #f))
+                                                      opts)
+                               #:install-bootloader? bootloader?
+                               #:target target-file
+                               #:bootloader-target bootloader-target
+                               #:gc-root (assoc-ref opts 'gc-root)))))
+          #:target target
+          #:system system)))
     (warn-about-disk-space)))
 
 (define (resolve-subcommand name)
@@ -1299,7 +1281,6 @@ argument list and OPTS is the option alist."
           (process-command command args opts))))))
 
 ;;; Local Variables:
-;;; eval: (put 'call-with-service-upgrade-info 'scheme-indent-function 1)
 ;;; eval: (put 'with-store* 'scheme-indent-function 1)
 ;;; End:
 

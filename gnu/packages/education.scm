@@ -3,8 +3,9 @@
 ;;; Copyright © 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2018, 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2020 Robert Smith <robertsmith@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -24,6 +25,7 @@
 (define-module (gnu packages education)
   #:use-module (ice-9 regex)
   #:use-module (gnu packages)
+  #:use-module (gnu packages audio)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
@@ -36,17 +38,22 @@
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages image)
   #:use-module (gnu packages javascript)
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks) ; extra-cmake-modules
+  #:use-module (gnu packages mp3)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-web)
+  #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages sdl)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages video)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages xml)
   #:use-module ((guix licenses) #:prefix license:)
@@ -125,7 +132,7 @@ of categories with some of the activities available in that category.
 (define-public gcompris-qt
   (package
     (name "gcompris-qt")
-    (version "0.96")
+    (version "0.98")
     (source
      (origin
        (method url-fetch)
@@ -133,11 +140,16 @@ of categories with some of the activities available in that category.
              "https://gcompris.net/download/qt/src/gcompris-qt-"
              version ".tar.xz"))
        (sha256
-        (base32 "06483il59l46ny2w771sg45dgzjwv1ph7vidzzbj0wb8wbk2rg52"))))
+        (base32 "1jmjykn0lpk0v6hs2flmch8v4da5bgxl891nav7szxw9l7aqnf4y"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'disable-failing-test
+           (lambda _
+             (substitute* "tests/core/CMakeLists.txt"
+               (("DownloadManagerTest\\.cpp") "#"))
+             #t))
          (add-before 'check 'start-xorg-server
            (lambda* (#:key inputs #:allow-other-keys)
              ;; The test suite requires a running X server.
@@ -166,6 +178,7 @@ of categories with some of the activities available in that category.
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("gettext" ,gettext-minimal)
+       ("kdoctools" ,kdoctools)
        ("perl" ,perl)
        ("qttools" ,qttools)
        ("xorg-server" ,xorg-server-for-tests)))
@@ -254,7 +267,7 @@ easy.")
 (define-public snap
   (package
     (name "snap")
-    (version "5.4.0")
+    (version "5.4.5")
     (source
      (origin
        (method git-fetch)
@@ -263,8 +276,7 @@ easy.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32
-         "05m3x8yc9a7x9hfkrz2bm3yqkc63cdb8v3yznkjqq04sfx5dfd04"))))
+        (base32 "1z6dbcsgvxxs40p23qysfsk4vzpg8jlrr5pqfnjf8q3kpz1xvzxf"))))
     (build-system trivial-build-system)
     (arguments
      `(#:modules ((guix build utils))
@@ -485,17 +497,119 @@ letters of the alphabet, spelling, eye-hand coordination, etc.")
     (home-page "http://www.schoolsplay.org")
     (license license:gpl3+)))
 
+(define-public omnitux
+  (package
+    (name "omnitux")
+    (version "1.2.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://sourceforge/omnitux/omnitux/"
+                           "v" version "/omnitux-" version ".tar.bz2"))
+       (sha256
+        (base32 "1wmmmbzmxd0blhn00d4g91xwavnab143a31ca3i8hrqgzh6qz9w6"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           ;; Remove pre-compiled .pyc files from source.
+           (for-each delete-file (find-files "bin" "\\.pyc$"))
+           #t))))
+    (build-system python-build-system)
+    (inputs
+     `(("python2-pygame" ,python2-pygame)
+       ("python2-pygtk" ,python2-pygtk)))
+    (arguments
+     `(#:tests? #f                      ;no test
+       #:python ,python-2
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'build)                ;no setup.py
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (share (string-append out "/share"))
+                    (data (string-append share "/omnitux")))
+               ;; Install documentation.
+               (let ((doc (string-append share "/doc/" ,name "-" ,version)))
+                 (for-each (lambda (f) (install-file f doc))
+                           '("LICENSE.txt" "README.txt")))
+               ;; Install data.
+               (install-file "omnitux.sh" data)
+               (for-each (lambda (d)
+                           (copy-recursively d (string-append data "/" d)))
+                         '("bin" "data"))
+               ;; Install the launcher.
+               (let* ((bin (string-append out "/bin"))
+                      (script (string-append bin "/omnitux"))
+                      (bash (string-append (assoc-ref %build-inputs "bash")
+                                           "/bin/bash"))
+                      (python (string-append (assoc-ref %build-inputs "python")
+                                             "/bin/python2")))
+                 (mkdir-p bin)
+                 (with-output-to-file script
+                   (lambda ()
+                     (format #t "#!~a~%" bash)
+                     (format #t
+                             "cd ~a; ~a menu.py~%"
+                             (string-append data "/bin")
+                             python)))
+                 (chmod script #o755))
+               ;; Install icon and desktop file.
+               (let ((pixmaps (string-append share "/pixmaps")))
+                 (install-file "data/default/icons/Omnitux_logo.svg" pixmaps))
+               (let ((apps (string-append out "/share/applications")))
+                 (mkdir-p apps)
+                 (with-output-to-file (string-append apps "/omnitux.desktop")
+                   (lambda _
+                     (format #t
+                             "[Desktop Entry]~@
+                              Name=Omnitux~@
+                              GenericName=Omnitux
+                              Comment=An educational game based on multimedia elements.~@
+                              Comment[fr]=Un jeu ludo-éducatif basé sur des éléments multimédias.~@
+                              Exec=~a/bin/omnitux~@
+                              Type=Application~@
+                              Categories=Game;Education;~@
+                              Terminal=false~@
+                              Icon=Omnitux_logo.svg~@"
+                             out))))
+               #t))))))
+    (home-page "http://omnitux.sourceforge.net/")
+    (synopsis "Educational activities based on multimedia elements")
+    (description "The project aims to provide various educational
+activities around multimedia elements (images, sounds, texts).  Types
+of activities include:
+@itemize
+@item associations,
+@item items to place on a map or a schema,
+@item counting activities,
+@item puzzles,
+@item card faces to remember,
+@item find differences between two pictures,
+@item ...
+@end itemize
+
+Activities are available in English, French, German, Polish,
+Portuguese, Spanish and Italian.")
+    ;; Project's license is GPL3+, but multimedia elements are
+    ;; released under various licenses.
+    (license (list license:gpl3+
+                   license:gpl2+
+                   license:cc-by-sa2.0
+                   license:cc-by-sa3.0
+                   license:public-domain))))
+
 (define-public fet
   (package
     (name "fet")
-    (version "5.42.1")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://www.lalescu.ro/liviu/fet/download/"
-                                  "fet-" version ".tar.bz2"))
-              (sha256
-               (base32
-                "1dzlbhp42dxdxbcrjwrjl4kj65cibxgjqc3ir1w78yprikihdxca"))))
+    (version "5.44.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://www.lalescu.ro/liviu/fet/download/"
+                           "fet-" version ".tar.bz2"))
+       (sha256
+        (base32 "13q3b0g1zz885g15gir8fbalvix8sy42v1p429h0751490wq5c3h"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -612,3 +726,212 @@ each key.  A collection of lessons are included for a wide range of different
 languages and keyboard layouts, and typing statistics are used to dynamically
 adjust the level of difficulty.")
     (license license:gpl2)))
+
+(define-public anki
+  (package
+    (name "anki")
+    ;; Later versions have dependencies on npm packages not yet in Guix.
+    (version "2.1.16")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://apps.ankiweb.net/downloads/archive/anki-"
+                           version "-source.tgz"))
+       (sha256
+        (base32 "1gfr51rnllkyzli73p4r51h5ypzfa3m7lic3m3rzpywmqwrxs07k"))
+       (patches (search-patches "anki-mpv-args.patch"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:make-flags (list (string-append "PREFIX=" %output))
+       #:tests? #f                      ;no check target
+       #:modules ((guix build gnu-build-system)
+                  (guix build utils)
+                  (ice-9 match))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)            ;no configure script
+         (add-after 'install 'wrap
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((bin (string-append (assoc-ref outputs "out") "/bin"))
+                   ;; List of paths to the site-packages directories of Python
+                   ;; library inputs.
+                   (site-packages
+                    (map (lambda (pyinput)
+                           (string-append
+                            (cdr pyinput)
+                            "/lib/python"
+                            ;; Calculate the python version to avoid breaking
+                            ;; with future 3.X releases.
+                            ,(version-major+minor
+                              (package-version python-wrapper))
+                            "/site-packages"))
+                         (filter (match-lambda
+                                   ((label . _)
+                                    (string-prefix? "python-" label)))
+                                 inputs)))
+                   (qtwebengineprocess
+                    (string-append (assoc-ref inputs "qtwebengine")
+                                   "/lib/qt5/libexec/QtWebEngineProcess")))
+               ;; The program fails to find the QtWebEngineProcess program, so
+               ;; we set QTWEBENGINEPROCESS_PATH to help it.  PYTHONPATH is
+               ;; wrapped to avoid declaring Python libraries as propagated
+               ;; inputs.
+               (for-each (lambda (program)
+                           (wrap-program program
+                             `("QTWEBENGINEPROCESS_PATH" =
+                               (,qtwebengineprocess))
+                             `("PATH" prefix (,(string-append
+                                                (assoc-ref inputs "mpv")
+                                                "/bin")))
+                             `("PYTHONPATH" = ,site-packages)))
+                         (find-files bin ".")))
+             #t)))))
+    (native-inputs
+     `(("xdg-utils" ,xdg-utils)))
+    (inputs
+     `(("lame" ,lame)
+       ("mpv" ,mpv)
+       ("python" ,python-wrapper)
+       ("python-beautifulsoup4" ,python-beautifulsoup4)
+       ("python-decorator" ,python-decorator)
+       ("python-distro" ,python-distro)
+       ("python-jsonschema" ,python-jsonschema)
+       ("python-markdown" ,python-markdown)
+       ("python-pyaudio" ,python-pyaudio)
+       ;; `python-pyqtwebengine' must precede `python-pyqt' in PYTHONPATH.
+       ("python-pyqtwebengine" ,python-pyqtwebengine)
+       ("python-pyqt" ,python-pyqt)
+       ("python-requests" ,python-requests)
+       ("python-send2trash" ,python-send2trash)
+       ("python-sip" ,python-sip)
+       ;; `qtwebengine' is included in `pyqtwebengine', included here for easy
+       ;; wrapping.
+       ("qtwebengine" ,qtwebengine)))
+    (home-page "https://apps.ankiweb.net/")
+    (synopsis "Powerful, intelligent flash cards")
+    (description "Anki is a program which makes remembering things
+easy.  Because it's a lot more efficient than traditional study
+methods, you can either greatly decrease your time spent studying, or
+greatly increase the amount you learn.
+
+Anyone who needs to remember things in their daily life can benefit
+from Anki.  Since it is content-agnostic and supports images, audio,
+videos and scientific markup (via LaTeX), the possibilities are
+endless.  For example:
+@itemize
+@item Learning a language
+@item Studying for medical and law exams
+@item Memorizing people's names and faces
+@item Brushing up on geography
+@item Mastering long poems
+@item Even practicing guitar chords!
+@end itemize")
+    (license license:agpl3+)))
+
+(define-public t4k-common
+  (package
+    (name "t4k-common")
+    (version "0.1.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/tux4kids/t4kcommon")
+             (commit (string-append "upstream/" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "13q02xpmps9qg8zrzzy2gzv4a6afgi28lxk4z242j780v0gphchp"))
+       (patches
+        (search-patches "t4k-common-libpng16.patch"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f                      ;FIXME: cannot find how to run tests
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'set-paths 'set-sdl-paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             (setenv "CPATH" (string-append (assoc-ref inputs "sdl")
+                                            "/include/SDL:"
+                                            (or (getenv "CPATH") "")))))
+         (add-after 'unpack 'fix-andika-font-path
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "src/t4k_sdl.c"
+               (("(/usr/share/.*?)/AndikaDesRevG\\.ttf")
+                (string-append (assoc-ref inputs "font-andika")
+                               "/share/fonts/truetype")))
+             #t)))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("font-andika" ,font-sil-andika)
+       ("libpng" ,libpng)
+       ("librsvg" ,librsvg)
+       ("libxml2" ,libxml2)
+       ("sdl" ,(sdl-union (list sdl sdl-image sdl-mixer sdl-net sdl-pango)))))
+    (home-page "https://github.com/tux4kids/t4kcommon")
+    (synopsis "Library of code shared between TuxMath and TuxType")
+    (description "Tux4Kids-Common is a library of code shared between
+TuxMath and TuxType.")
+    (license license:gpl3+)))
+
+(define-public tuxmath
+  (package
+    (name "tuxmath")
+    (version "2.0.3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/tux4kids/tuxmath")
+             (commit (string-append "upstream/" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1f1pz83w6d3mbik2h6xavfxmk5apxlngxbkh80x0m55lhniwkdxv"))
+       (modules '((guix build utils)))
+       ;; Unbundle fonts.
+       (snippet
+        `(begin
+           (for-each delete-file (find-files "data/fonts" "\\.ttf$"))
+           #t))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ;no test
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'set-paths 'set-sdl-paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             (setenv "CPATH"
+                     (string-append (assoc-ref inputs "sdl")
+                                    "/include/SDL:"
+                                    (or (getenv "CPATH") "")))
+             #t))
+         (add-after 'install 'install-desktop-file
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (apps (string-append out "/share/applications"))
+                    (pixmaps (string-append out "/share/pixmaps")))
+               (install-file "tuxmath.desktop" apps)
+               (for-each (lambda (f) (install-file f pixmaps))
+                         (find-files "data/images/icons/"
+                                     "tuxmath\\.(png|ico|svg)$"))
+               #t))))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("librsvg" ,librsvg)
+       ("libxml2" ,libxml2)
+       ("sdl" ,(sdl-union (list sdl sdl-image sdl-mixer sdl-net sdl-pango)))
+       ("t4k-common" ,t4k-common)))
+    (home-page "https://github.com/tux4kids/tuxmath")
+    (synopsis "Educational math tutorial game")
+    (description "@emph{Tux, of Math Command} is an educational math
+tutorial game starring Tux, the Linux penguin, in which you play the
+part of Commander Tux, as he defends his friends from an attack of
+math equations.  Comets are crashing towards the friendly penguins in
+their igloos, and you must destroy the comets by solving their
+equations.
+
+TuxMath also includes Factoroids, a game that gives practice in
+factoring numbers and simplifying fractions, as well as zapping rocks
+floating through space.")
+    (license license:gpl3+)))

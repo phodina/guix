@@ -93,6 +93,7 @@
             string->number*
             size->number
             show-derivation-outputs
+            build-notifier
             show-what-to-build
             show-what-to-build*
             show-manifest-transaction
@@ -103,6 +104,7 @@
             read/eval
             read/eval-package-expression
             check-available-space
+            indented-string
             fill-paragraph
             %text-width
             texi->plain-text
@@ -591,7 +593,8 @@ nicely."
 \"1MiB\", to a number of bytes.  Raise an error if STR could not be
 interpreted."
   (define unit-pos
-    (string-rindex str char-set:digit))
+    (string-rindex str
+                   (char-set-union (char-set #\.) char-set:digit)))
 
   (define unit
     (and unit-pos (substring str (+ 1 unit-pos))))
@@ -770,6 +773,17 @@ directories:~{ ~a~}~%")
                            (gettext (condition-message c) %gettext-domain))
              (display-hint (condition-fix-hint c))
              (exit 1))
+
+            ;; On Guile 3.0.0, exceptions such as 'unbound-variable' are
+            ;; compound and include a '&message'.  However, that message only
+            ;; contains the format string.  Thus, special-case it here to
+            ;; avoid displaying a bare format string.
+            ((cond-expand
+               (guile-3
+                ((exception-predicate &exception-with-kind-and-args) c))
+               (else #f))
+             (raise c))
+
             ((message-condition? c)
              ;; Normally '&message' error conditions have an i18n'd message.
              (leave (G_ "~a~%")
@@ -900,8 +914,10 @@ that the rest."
 derivations listed in DRV using MODE, a 'build-mode' value.  The elements of
 DRV can be either derivations or derivation inputs.
 
-Return #t if there's something to build, #f otherwise.  When USE-SUBSTITUTES?,
-check and report what is prerequisites are available for download."
+Return two values: a Boolean indicating whether there's something to build,
+and a Boolean indicating whether there's something to download.  When
+USE-SUBSTITUTES?, check and report what is prerequisites are available for
+download."
   (define inputs
     (map (match-lambda
            ((? derivation? drv) (derivation-input drv))
@@ -921,7 +937,7 @@ check and report what is prerequisites are available for download."
         colorize-store-file-name
         identity))
 
-  (let*-values (((build download)
+  (let*-values (((build/full download)
                  (derivation-build-plan store inputs
                                         #:mode mode
                                         #:substitutable-info
@@ -945,7 +961,7 @@ check and report what is prerequisites are available for download."
                                          #:hook ,hook
                                          #:build ,(cons file build))))))))
                               '(#:graft () #:hook () #:build ())
-                              build)
+                              build/full)
                    ((#:graft graft #:hook hook #:build build)
                     (values graft hook build)))))
     (define installed-size
@@ -1028,10 +1044,50 @@ check and report what is prerequisites are available for download."
 
     (check-available-space installed-size)
 
-    (pair? build)))
+    (values (pair? build/full) (pair? download))))
 
 (define show-what-to-build*
   (store-lift show-what-to-build))
+
+(define* (build-notifier #:key (dry-run? #f) (use-substitutes? #t))
+  "Return a procedure suitable for 'with-build-handler' that, when
+'build-things' is called, invokes 'show-what-to-build' to display the build
+plan.  When DRY-RUN? is true, the 'with-build-handler' form returns without
+any build happening."
+  (define not-comma
+    (char-set-complement (char-set #\,)))
+
+  (define (read-derivation-from-file* item)
+    (catch 'system-error
+      (lambda ()
+        (read-derivation-from-file item))
+      (const #f)))
+
+  (lambda (continue store things mode)
+    (define inputs
+      ;; List of derivation inputs to build.  Filter out non-existent '.drv'
+      ;; files because the daemon transparently tries to substitute them.
+      (filter-map (match-lambda
+                    (((? derivation-path? drv) . output)
+                     (let ((drv     (read-derivation-from-file* drv))
+                           (outputs (string-tokenize output not-comma)))
+                       (and drv (derivation-input drv outputs))))
+                    ((? derivation-path? drv)
+                     (and=> (read-derivation-from-file* drv)
+                            derivation-input))
+                    (_
+                     #f))
+                  things))
+
+    (let-values (((build? download?)
+                  (show-what-to-build store inputs
+                                      #:dry-run? dry-run?
+                                      #:use-substitutes? use-substitutes?
+                                      #:mode mode)))
+
+      (unless (and (or build? download?)
+                   dry-run?)
+        (continue #t)))))
 
 (define (right-arrow port)
   "Return either a string containing the 'RIGHT ARROW' character, or an ASCII
@@ -1048,36 +1104,77 @@ replacement if PORT is not Unicode-capable."
       (lambda (key . args)
         "->"))))
 
+(define* (tabulate rows #:key (initial-indent 0) (max-width 25)
+                   (inter-column " "))
+  "Return a list of strings where each string is a tabulated representation of
+an element of ROWS.  All the ROWS must be lists of the same number of cells.
+
+Add INITIAL-INDENT white space at the beginning of each row.  Ensure that
+columns are at most MAX-WIDTH characters wide.  Use INTER-COLUMN as a
+separator between subsequent columns."
+  (define column-widths
+    ;; List of column widths.
+    (let loop ((rows rows)
+               (widths '()))
+      (match rows
+        (((? null?) ...)
+         (reverse widths))
+        (((column rest ...) ...)
+         (loop rest
+               (cons (min (apply max (map string-length column))
+                          max-width)
+                     widths))))))
+
+  (define indent
+    (make-string initial-indent #\space))
+
+  (define (string-pad-right* str len)
+    (if (> (string-length str) len)
+        str
+        (string-pad-right str len)))
+
+  (map (lambda (row)
+         (string-trim-right
+          (string-append indent
+                         (string-join
+                          (map string-pad-right* row column-widths)
+                          inter-column))))
+       rows))
+
 (define* (show-manifest-transaction store manifest transaction
                                     #:key dry-run?)
   "Display what will/would be installed/removed from MANIFEST by TRANSACTION."
-  (define (package-strings name version output item)
-    (map (lambda (name version output item)
-           (format #f "   ~a~:[:~a~;~*~]\t~a\t~a"
-                   name
-                   (equal? output "out") output version
-                   (if (package? item)
-                       (package-output store item output)
-                       item)))
-         name version output item))
+  (define (package-strings names versions outputs)
+    (tabulate (zip (map (lambda (name output)
+                          (if (string=? output "out")
+                              name
+                              (string-append name ":" output)))
+                        names outputs)
+                   versions)
+              #:initial-indent 3))
 
   (define →                        ;an arrow that can be represented on stderr
     (right-arrow (current-error-port)))
 
-  (define (upgrade-string name old-version new-version output item)
-    (format #f "   ~a~:[:~a~;~*~]\t~a ~a ~a\t~a"
-            name (equal? output "out") output
-            old-version → new-version
-            (if (package? item)
-                (package-output store item output)
-                item)))
+  (define (upgrade-string names old-version new-version outputs)
+    (tabulate (zip (map (lambda (name output)
+                          (if (string=? output "out")
+                              name
+                              (string-append name ":" output)))
+                        names outputs)
+                   (map (lambda (old new)
+                          (if (string=? old new)
+                              (G_ "(dependencies or package changed)")
+                              (string-append old " " → " " new)))
+                        old-version new-version))
+              #:initial-indent 3))
 
   (let-values (((remove install upgrade downgrade)
                 (manifest-transaction-effects manifest transaction)))
     (match remove
       ((($ <manifest-entry> name version output item) ..1)
        (let ((len    (length name))
-             (remove (package-strings name version output item)))
+             (remove (package-strings name version output)))
          (if dry-run?
              (format (current-error-port)
                      (N_ "The following package would be removed:~%~{~a~%~}~%"
@@ -1094,8 +1191,8 @@ replacement if PORT is not Unicode-capable."
       (((($ <manifest-entry> name old-version)
          . ($ <manifest-entry> _ new-version output item)) ..1)
        (let ((len       (length name))
-             (downgrade (map upgrade-string
-                             name old-version new-version output item)))
+             (downgrade (upgrade-string name old-version new-version
+                                        output)))
          (if dry-run?
              (format (current-error-port)
                      (N_ "The following package would be downgraded:~%~{~a~%~}~%"
@@ -1112,8 +1209,9 @@ replacement if PORT is not Unicode-capable."
       (((($ <manifest-entry> name old-version)
          . ($ <manifest-entry> _ new-version output item)) ..1)
        (let ((len     (length name))
-             (upgrade (map upgrade-string
-                           name old-version new-version output item)))
+             (upgrade (upgrade-string name
+                                      old-version new-version
+                                      output)))
          (if dry-run?
              (format (current-error-port)
                      (N_ "The following package would be upgraded:~%~{~a~%~}~%"
@@ -1129,7 +1227,7 @@ replacement if PORT is not Unicode-capable."
     (match install
       ((($ <manifest-entry> name version output item _) ..1)
        (let ((len     (length name))
-             (install (package-strings name version output item)))
+             (install (package-strings name version output)))
          (if dry-run?
              (format (current-error-port)
                      (N_ "The following package would be installed:~%~{~a~%~}~%"
@@ -1150,6 +1248,23 @@ replacement if PORT is not Unicode-capable."
      (call-with-error-handling
       (lambda ()
         body ...)))))
+
+(define* (indented-string str indent
+                          #:key (initial-indent? #t))
+  "Return STR with each newline preceded by IDENT spaces.  When
+INITIAL-INDENT? is true, the first line is also indented."
+  (define indent-string
+    (make-list indent #\space))
+
+  (list->string
+   (string-fold-right (lambda (chr result)
+                        (if (eqv? chr #\newline)
+                            (cons chr (append indent-string result))
+                            (cons chr result)))
+                      '()
+                      (if initial-indent?
+                          (string-append (list->string indent-string) str)
+                          str))))
 
 (define* (fill-paragraph str width #:optional (column 0))
   "Fill STR such that each line contains at most WIDTH characters, assuming
@@ -1206,16 +1321,23 @@ converted to a space; sequences of more than one line break are preserved."
 ;;;
 
 (define %text-width
-  (make-parameter (terminal-columns)))
+  ;; '*line-width*' was introduced in Guile 2.2.7/3.0.1.  On older versions of
+  ;; Guile, monkey-patch 'wrap*' below.
+  (if (defined? '*line-width*)
+      (let ((parameter (fluid->parameter *line-width*)))
+        (parameter (terminal-columns))
+        parameter)
+      (make-parameter (terminal-columns))))
 
-(set! (@@ (texinfo plain-text) wrap*)
-      ;; XXX: Monkey patch this private procedure to let 'package->recutils'
-      ;; parameterize the fill of description field correctly.
-      (lambda strings
-        (let ((indent (fluid-ref (@@ (texinfo plain-text) *indent*))))
-          (fill-string (string-concatenate strings)
-                       #:line-width (%text-width) #:initial-indent indent
-                       #:subsequent-indent indent))))
+(unless (defined? '*line-width*)                  ;Guile < 2.2.7
+  (set! (@@ (texinfo plain-text) wrap*)
+    ;; XXX: Monkey patch this private procedure to let 'package->recutils'
+    ;; parameterize the fill of description field correctly.
+    (lambda strings
+      (let ((indent (fluid-ref (@@ (texinfo plain-text) *indent*))))
+        (fill-string (string-concatenate strings)
+                     #:line-width (%text-width) #:initial-indent indent
+                     #:subsequent-indent indent)))))
 
 (define (texi->plain-text str)
   "Return a plain-text representation of texinfo fragment STR."
@@ -1461,7 +1583,8 @@ them.  If PORT is a terminal, print at most a full screen of results."
                                  #:hyperlinks? links?
                                  #:extra-fields
                                  `((relevance . ,score)))))))
-         (if (and max-rows
+         (if (and (not (getenv "INSIDE_EMACS"))
+                  max-rows
                   (> (port-line port) first-line) ;print at least one result
                   (> (+ 4 (line-count text) (port-line port))
                      max-rows))

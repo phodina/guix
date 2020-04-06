@@ -276,7 +276,7 @@ access.")
 (define-public qutebrowser
   (package
     (name "qutebrowser")
-    (version "1.9.0")
+    (version "1.10.0")
     (source
      (origin
        (method url-fetch)
@@ -285,7 +285,7 @@ access.")
                            "qutebrowser-" version ".tar.gz"))
        (sha256
         (base32
-         "1y0yq1qfr6g1s7kf3w2crd0b025dv2dfknhlz3v0001ns3rgwj17"))))
+         "1prvd3cysmcjfybn0dmr3ih0bl6lm5ml9i7wd09fn8hb7047mkby"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-attrs" ,python-attrs))) ; for tests
@@ -392,7 +392,7 @@ driven and does not detract you from your daily work.")
 (define next-gtk-webkit
   (package
     (name "next-gtk-webkit")
-    (version "1.4.0")
+    (version "1.5.0")
     (source
      (origin
        (method git-fetch)
@@ -403,7 +403,7 @@ driven and does not detract you from your daily work.")
              (commit version)))
        (sha256
         (base32
-         "1gkmr746rqqg94698a051gv79fblc8n9dq0zg04llba44adhpmjl"))
+         "1gqkp185wcwaxr8py90hqk44nqjblrrdwvig19gizrbzr2gx2zhy"))
        (file-name (git-file-name "next" version))))
     (build-system glib-or-gtk-build-system)
     (arguments
@@ -424,11 +424,10 @@ driven and does not detract you from your daily work.")
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (home-page "https://next.atlas.engineer")
-    (synopsis "Infinitely extensible web-browser (user interface only)")
+    (synopsis "Extensible web-browser in Common Lisp")
     (description "Next is a keyboard-oriented, extensible web-browser
-inspired by Emacs and designed for power users.  The application has familiar
-key-bindings, is fully configurable and extensible in Lisp, and has powerful
-features for productive professionals.")
+designed for power users.  The application has familiar Emacs and VI
+key-bindings and is fully configurable and extensible in Common Lisp.")
     (license license:bsd-3)))
 
 (define sbcl-next-download-manager
@@ -450,7 +449,7 @@ features for productive professionals.")
     (native-inputs
      `(("trivial-features" ,sbcl-trivial-features)
        ("prove-asdf" ,sbcl-prove-asdf)))
-    (synopsis "Infinitely extensible web-browser (download manager)")))
+    (synopsis "Extensible web-browser in Common Lisp (download manager)")))
 
 (define sbcl-next-ring
   (package
@@ -464,7 +463,7 @@ features for productive professionals.")
     (native-inputs
      `(("trivial-features" ,sbcl-trivial-features)
        ("prove-asdf" ,sbcl-prove-asdf)))
-    (synopsis "Infinitely extensible web-browser (ring)")))
+    (synopsis "Extensible web-browser in Common Lisp (ring)")))
 
 (define sbcl-next-history-tree
   (package
@@ -478,7 +477,7 @@ features for productive professionals.")
     (native-inputs
      `(("trivial-features" ,sbcl-trivial-features)
        ("prove-asdf" ,sbcl-prove-asdf)))
-    (synopsis "Infinitely extensible web-browser (history-tree)")))
+    (synopsis "Extensible web-browser in Common Lisp (history-tree)")))
 
 (define sbcl-next-password-manager
   (package
@@ -498,7 +497,7 @@ features for productive professionals.")
     (native-inputs
      `(("trivial-features" ,sbcl-trivial-features)
        ("prove-asdf" ,sbcl-prove-asdf)))
-    (synopsis "Infinitely extensible web-browser (password manager)")))
+    (synopsis "Extensible web-browser in Common Lisp (password manager)")))
 
 (define sbcl-next-hooks
   (package
@@ -511,8 +510,7 @@ features for productive professionals.")
        #:asd-system-name "next/hooks"))
     (inputs
      `(("alexandria" ,sbcl-alexandria)
-       ("serapeum" ,sbcl-serapeum)
-       ("fare-quasiquote-extras" ,cl-fare-quasiquote-extras)))
+       ("serapeum" ,sbcl-serapeum)))
     (native-inputs
      `(("trivial-features" ,sbcl-trivial-features)
        ("prove-asdf" ,sbcl-prove-asdf)))
@@ -577,7 +575,17 @@ features for productive professionals.")
                             (format #t "~a" ,(package-version next-gtk-webkit))))
                         (invoke "make" "install-assets"
                                 (string-append "PREFIX="
-                                               (assoc-ref outputs "out"))))))))
+                                               (assoc-ref outputs "out")))))
+                    (add-after 'unpack 'fix-lambda-list
+                      ;; Starting from SBCL 2.0.2, Next 1.5.0 won't build
+                      ;; because of a weird lambda list type.
+                      (lambda _
+                        (substitute* "source/keymap.lisp"
+                          (("^\\(declaim .* define-key\\)\\)") ""))
+                        (substitute* "source/search-buffer.lisp"
+                          (("define-key :keymap keymap \"C-s\"") "define-key \"C-s\"")
+                          (("\\(update-selection-highlight-hint :follow t :scroll t\\)\\)\\)")
+                           "(update-selection-highlight-hint :follow t :scroll t)) :keymap keymap)")))))))
       (inputs
        `(("alexandria" ,sbcl-alexandria)
          ("bordeaux-threads" ,sbcl-bordeaux-threads)
@@ -592,7 +600,6 @@ features for productive professionals.")
          ("closer-mop" ,sbcl-closer-mop)
          ("dbus" ,cl-dbus)
          ("dexador" ,sbcl-dexador)
-         ("fare-quasiquote-extras" ,cl-fare-quasiquote-extras) ; For serapeum.  Guix bug?
          ("ironclad" ,sbcl-ironclad)
          ("local-time" ,sbcl-local-time)
          ("log4cl" ,sbcl-log4cl)
@@ -619,7 +626,7 @@ features for productive professionals.")
        `(("trivial-features" ,sbcl-trivial-features)
          ("trivial-types" ,sbcl-trivial-types)
          ("prove-asdf" ,sbcl-prove-asdf)))
-      (synopsis "Infinitely extensible web-browser (with Lisp development files)"))))
+      (synopsis "Extensible web-browser in Common Lisp"))))
 
 (define-public sbcl-next
   (deprecated-package "sbcl-next" next))

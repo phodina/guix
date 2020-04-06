@@ -10,6 +10,8 @@
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2018, 2019 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2019 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2020 Roel Janssen <roel@gnu.org>
+;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -44,6 +46,7 @@
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gperf)
   #:use-module (gnu packages xorg)
+  #:use-module (gnu packages fribidi)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages sqlite)
@@ -120,7 +123,7 @@ anti-aliased glyph bitmap generation with 256 gray levels.")
 finely hand-hinting the last 1%.  It is ideal for web fonts and supports many
 scripts.")
     (license (list license:gpl2+ license:freetype)) ;choose one or the other
-    (home-page "http://www.freetype.org/ttfautohint/")))
+    (home-page "https://www.freetype.org/ttfautohint/")))
 
 (define-public woff-tools
   (package
@@ -254,44 +257,35 @@ work with most software requiring Type 1 fonts.")
     (license license:bsd-3)))
 
 (define-public woff2
-  (let ((commit "4e698b8c6c5e070d53c340db9ddf160e21070ede")
-        (revision "1"))
-    (package
-      (name "woff2")
-      (version (string-append "20160306-" revision "."
-                              (string-take commit 7)))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://github.com/google/woff2.git")
-                      (commit commit)))
-                (file-name (string-append name "-" version ".tar.xz"))
-                (sha256
-                 (base32
-                  "0wka0yhf0cjmd4rv2jckxpyv6lb5ckj4nj0k1ajq5hrjy7f30lcp"))
-                (patches (list (search-patch "woff2-libbrotli.patch")))))
-      (build-system gnu-build-system)
-      (native-inputs
-       `(("pkg-config" ,pkg-config)))
-      (inputs
-       `(("brotli" ,brotli)))
-      (arguments
-       `(#:tests? #f                    ;no tests
-         #:phases (modify-phases %standard-phases
-                    (delete 'configure)
-                    (replace 'install
-                      (lambda* (#:key outputs #:allow-other-keys)
-                        (let* ((out (assoc-ref outputs "out"))
-                               (bin (string-append out "/bin")))
-                          (install-file "woff2_compress" bin)
-                          (install-file "woff2_decompress" bin)
-                          #t))))))
-      (synopsis "Compress TrueType fonts to WOFF2")
-      (description
-       "This package provides utilities for compressing/decompressing TrueType
+  (package
+    (name "woff2")
+    (version "1.0.2")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/google/woff2.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version ".git"))
+              (sha256
+               (base32
+                "13l4g536h0pr84ww4wxs2za439s0xp1va55g6l478rfbb1spp44y"))))
+    (build-system cmake-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("google-brotli" ,google-brotli)))
+    (arguments
+     ;; package has no tests
+     `(#:tests? #f
+       ;; we can’t have both, shared libraries and binaries, so turn off the
+       ;; former
+       #:configure-flags (list "-DBUILD_SHARED_LIBS=OFF")))
+    (synopsis "Compress TrueType fonts to WOFF2")
+    (description
+     "This package provides utilities for compressing/decompressing TrueType
 fonts to/from the WOFF2 format.")
-      (license license:asl2.0)
-      (home-page "https://github.com/google/woff2"))))
+    (license license:asl2.0)
+    (home-page "https://github.com/google/woff2")))
 
 (define-public fontconfig
   (package
@@ -389,7 +383,7 @@ describe character bitmaps.  It contains the bitmap data as well as some
 metric information.  But t1lib is in itself entirely independent of the
 X11-system or any other graphical user interface.")
    (license license:gpl2)
-   (home-page "http://www.t1lib.org/")))
+   (home-page "https://www.t1lib.org/")))
 
 (define-public teckit
   (package
@@ -677,7 +671,7 @@ files.  UFO is a file format that stores fonts source files.")
     (propagated-inputs
      `(("python2-fonttools" ,python2-fonttools)
        ("python2-ufolib" ,python2-ufolib)))
-    (home-page "https://pypi.python.org/pypi/defcon")
+    (home-page "https://pypi.org/project/defcon/")
     (synopsis "Flexible objects for representing @acronym{UFO, unified font object} data")
     (description
      "Defcon is a set of @acronym{UFO, unified font object} based objects
@@ -774,3 +768,98 @@ tools or editing configuration files by hand.
 While designed primarily with the GNOME Desktop Environment in mind, it should
 work well with other GTK+ desktop environments.")
    (license license:gpl3+)))
+
+(define-public fntsample
+  (package
+    (name "fntsample")
+    (version "5.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/eugmes/fntsample/archive/release/"
+                    version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0awp4dh1g40ivzvm5xqlvcpcdw1vplrx3drjmbylr62y185vbs74"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f ; There are no tests.
+       #:configure-flags
+       (list (string-append
+              "-DUNICODE_BLOCKS=" (assoc-ref %build-inputs "unicode-blocks")))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'set-library-path
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out      (assoc-ref outputs "out"))
+                    (pdf-api2 (assoc-ref inputs "perl-pdf-api2"))
+                    (intl     (assoc-ref inputs "perl-libintl-perl"))
+                    (perllib  (string-append pdf-api2
+                                             "/lib/perl5/site_perl/"
+                                             ,(package-version perl)
+                                             ":" intl
+                                             "/lib/perl5/site_perl/"
+                                             ,(package-version perl))))
+               (wrap-program (string-append out "/bin/pdfoutline")
+                 `("PERL5LIB" ":" prefix (,perllib)))
+               #t))))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("gettext" ,gettext-minimal)))
+    (inputs
+     `(("cairo" ,cairo)
+       ("fontconfig" ,fontconfig)
+       ("freetype" ,freetype)
+       ("glib" ,glib)
+       ("pango" ,pango)
+       ("perl-pdf-api2" ,perl-pdf-api2)
+       ("perl-libintl-perl" ,perl-libintl-perl)
+       ("unicode-blocks"
+        ,(origin
+           (method url-fetch)
+           (uri "https://unicode.org/Public/UNIDATA/Blocks.txt")
+           (file-name "unicode-blocks.txt")
+           (sha256
+            (base32
+             "1xs8fnhh48gs41wg004r7m4r2azh9khmyjjlnvyzy9c6zrd212x2"))))))
+    (home-page "https://github.com/eugmes/fntsample")
+    (synopsis "PDF and PostScript font samples generator")
+    (description "This package provides a tool that can be used to make font
+samples that show coverage of the font and are similar in appearance to
+Unicode Charts.  It was developed for use with DejaVu Fonts project.")
+    (license license:gpl3+)))
+
+(define-public libraqm
+  (package
+    (name "libraqm")
+    (version "0.7.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/HOST-Oman/libraqm/"
+                           "releases/download/v" version "/"
+                           "raqm-" version ".tar.gz"))
+       (sha256
+        (base32 "0hgry3fj2y3qaq2fnmdgd93ixkk3ns5jds4vglkiv2jfvpn7b1g2"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags (list "--disable-static")))
+    (native-inputs
+     `(("gtk-doc" ,gtk-doc)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)))
+    (inputs
+     `(("freetype" ,freetype)
+       ("fribidi" ,fribidi)
+       ("harfbuzz" ,harfbuzz)))
+    (home-page "https://github.com/HOST-Oman/libraqm")
+    (synopsis "Library for complex text layout")
+    (description
+     "Raqm is a small library that encapsulates the logic for complex text
+layout and provides a convenient API.
+
+It currently provides bidirectional text support (using FriBiDi),
+shaping (using HarfBuzz), and proper script itemization.  As a result, Raqm
+can support most writing systems covered by Unicode.")
+    (license license:expat)))

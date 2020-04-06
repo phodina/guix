@@ -14,7 +14,7 @@
 ;;; Copyright © 2016 Ivan Vilata i Balaguer <ivan@selidor.net>
 ;;; Copyright © 2017 Mekeor Melire <mekeor.melire@gmail.com>
 ;;; Copyright © 2017, 2019 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2017 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2017, 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Pierre-Antoine Rouby <contact@parouby.fr>
 ;;; Copyright © 2018, 2019 Meiyo Peng <meiyo@riseup.net>
@@ -30,7 +30,9 @@
 ;;; Copyright © 2019 Evan Straw <evan.straw99@gmail.com>
 ;;; Copyright © 2019 Brett Gilio <brettg@gnu.org>
 ;;; Copyright © 2019 Noodles! <nnoodle@chiru.no>
-;;; Copyright © 2019 Alexandru-Sergiu Marton <brown121407@member.fsf.org>
+;;; Copyright © 2019, 2020 Alexandru-Sergiu Marton <brown121407@member.fsf.org>
+;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -59,11 +61,14 @@
   #:use-module (guix build-system meson)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
+  #:use-module (guix build-system trivial)
   #:use-module (guix utils)
   #:use-module (gnu packages)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages calendar)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages fontutils)
@@ -94,11 +99,12 @@
   #:use-module (gnu packages pretty-print)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages readline)
   #:use-module (gnu packages serialization)
+  #:use-module (gnu packages sphinx)
   #:use-module (gnu packages suckless)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages textutils)
-  #:use-module (gnu packages version-control)
   #:use-module (gnu packages video)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xdisorg)
@@ -169,8 +175,7 @@ the leaves of a full binary tree.")
     (arguments
      '(#:phases
        (modify-phases %standard-phases
-         (delete 'configure)
-         (delete 'check)
+         (delete 'configure)            ; no configure script
          (add-after 'install 'install-xsession
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -192,6 +197,8 @@ the leaves of a full binary tree.")
          (list "CC=gcc"
                (string-append "PREFIX=''")
                (string-append "DESTDIR=" out)
+               (string-append "FISHCOMPLETIONDIR="
+                              "/share/fish/vendor_completions.d")
                (string-append "BASHCOMPLETIONDIR=" out
                               "/etc/bash_completion.d")))))
     (synopsis "Tiling window manager for X11")
@@ -265,14 +272,14 @@ commands would.")
 (define-public i3-wm
   (package
     (name "i3-wm")
-    (version "4.17.1")
+    (version "4.18")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://i3wm.org/downloads/i3-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "0iazv2i2rgmakzh95pgj6iapyzn7bdpcbcd35a79mhlml4ry33qy"))))
+                "0dv5g8ycfmijxfjyw8hzsxaf80v09lb73zh7x2vszy78h3amifqz"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -335,7 +342,7 @@ many programming languages.")
 (define-public i3-gaps
   (package (inherit i3-wm)
            (name "i3-gaps")
-           (version "4.17.1")
+           (version "4.18")
            (source (origin
                      (method url-fetch)
                      (uri (string-append
@@ -343,7 +350,7 @@ many programming languages.")
                            version "/i3-" version ".tar.bz2"))
                      (sha256
                       (base32
-                       "0gqcr6s53dk3f2y9h6cna00rnwnh4yymk96li7lbym3d84cxjzrs"))))
+                       "0id4qm9a7kc5yawff85blmph4zbizhb6ka88aqm10wrpfsknri3j"))))
            (home-page "https://github.com/Airblader/i3")
            (synopsis "Tiling window manager with gaps")
            (description "i3-gaps is a fork of i3wm, a tiling window manager
@@ -689,14 +696,14 @@ tiled on several screens.")
 (define-public xmobar
   (package
     (name "xmobar")
-    (version "0.32")
+    (version "0.33")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://hackage/package/xmobar/"
                                   "xmobar-" version ".tar.gz"))
               (sha256
                (base32
-                "0x2ki3v0pmhl4bva3qi1xx21axayc4sx1nkzhmk2ap4l0cj52jrd"))))
+                "1hr3qqykc5givcpcwrr9f2y920jmiinmxm5mcy6qgpgymgwqb618"))))
     (build-system haskell-build-system)
     (native-inputs
      `(("ghc-hspec" ,ghc-hspec)
@@ -728,7 +735,7 @@ tiled on several screens.")
              (substitute* "test/Xmobar/Plugins/Monitors/AlsaSpec.hs"
                (("/bin/bash") (which "bash")))
              #t)))))
-    (home-page "http://xmobar.org")
+    (home-page "https://xmobar.org")
     (synopsis "Minimalistic text based status bar")
     (description
      "@code{xmobar} is a lightweight, text-based, status bar written in
@@ -868,89 +875,108 @@ experience.")
 (define-public awesome
   (package
     (name "awesome")
-    (version "4.2")
+    (version "4.3")
     (source
-     (origin (method url-fetch)
-             (uri (string-append
-                   "https://github.com/awesomeWM/awesome-releases/raw/"
-                   "master/awesome-" version ".tar.xz"))
-             (sha256
-              (base32
-               "0kwpbls9h1alxcmvxh5g9qb995fds5b2ngcr44w0ibazkyls2pdc"))
-             (modules '((guix build utils)
-                        (srfi srfi-19)))
-             (snippet '(begin
-                         ;; Remove non-reproducible timestamp and use the date
-                         ;; of the source file instead.
-                         (substitute* "common/version.c"
-                           (("__DATE__ \" \" __TIME__")
-                            (date->string
-                             (time-utc->date
-                              (make-time time-utc 0
-                                         (stat:mtime (stat "awesome.c"))))
-                             "\"~c\"")))
-                         #t))
-             (patches (search-patches "awesome-reproducible-png.patch"))))
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://github.com/awesomeWM/awesome-releases/raw/master/"
+             "awesome-" version ".tar.xz"))
+       (sha256
+        (base32 "0lqpw401mkkmp9wgbvrmm45bqq2j9357l4irwdqv6l1305pls9kq"))
+       (modules '((guix build utils)
+                  (srfi srfi-19)))
+       (snippet
+        '(begin
+           ;; Remove non-reproducible timestamp and use the date of
+           ;; the source file instead.
+           (substitute* "common/version.c"
+             (("__DATE__ \" \" __TIME__")
+              (date->string
+               (time-utc->date
+                (make-time time-utc 0 (stat:mtime (stat "awesome.c"))))
+               "\"~c\"")))
+           #t))
+       (patches
+        (search-patches "awesome-reproducible-png.patch"))))
     (build-system cmake-build-system)
-    (native-inputs `(("asciidoc" ,asciidoc)
-                     ("docbook-xsl" ,docbook-xsl)
-                     ("doxygen" ,doxygen)
-                     ("gperf" ,gperf)
-                     ("imagemagick" ,imagemagick)
-                     ("libxml2" ,libxml2)         ;for XML_CATALOG_FILES
-                     ("pkg-config" ,pkg-config)
-                     ("xmlto" ,xmlto)))
-    (inputs `(("cairo" ,cairo)
-              ("dbus" ,dbus)
-              ("gdk-pixbuf" ,gdk-pixbuf)
-              ("glib" ,glib)
-              ("gobject-introspection" ,gobject-introspection)
-              ("imlib2" ,imlib2)
-              ("libev" ,libev)
-              ("libxcb" ,libxcb)
-              ("libxcursor" ,libxcursor)
-              ("libxdg-basedir" ,libxdg-basedir)
-              ("libxkbcommon" ,libxkbcommon)
-              ("lua" ,lua)
-              ("lua-lgi" ,lua-lgi)
-              ("pango" ,pango)
-              ("startup-notification" ,startup-notification)
-              ("xcb-util" ,xcb-util)
-              ("xcb-util-cursor" ,xcb-util-cursor)
-              ("xcb-util-image" ,xcb-util-image)
-              ("xcb-util-keysyms" ,xcb-util-keysyms)
-              ("xcb-util-renderutil" ,xcb-util-renderutil)
-              ("xcb-util-xrm" ,xcb-util-xrm)
-              ("xcb-util-wm" ,xcb-util-wm)))
+    (native-inputs
+     `(("asciidoc" ,asciidoc)
+       ("docbook-xsl" ,docbook-xsl)
+       ("doxygen" ,doxygen)
+       ("gperf" ,gperf)
+       ("imagemagick" ,imagemagick)
+       ("libxml2" ,libxml2)             ;for XML_CATALOG_FILES
+       ("lua-ldoc" ,lua-ldoc)
+       ("pkg-config" ,pkg-config)
+       ("xmlto" ,xmlto)))
+    (inputs
+     `(("cairo" ,cairo)
+       ("dbus" ,dbus)
+       ("gdk-pixbuf" ,gdk-pixbuf)
+       ("glib" ,glib)
+       ("gobject-introspection" ,gobject-introspection)
+       ("imlib2" ,imlib2)
+       ("libev" ,libev)
+       ("libxcb" ,libxcb)
+       ("libxcursor" ,libxcursor)
+       ("libxdg-basedir" ,libxdg-basedir)
+       ("libxkbcommon" ,libxkbcommon)
+       ("lua" ,lua)
+       ("lua-lgi" ,lua-lgi)
+       ("pango" ,pango)
+       ("startup-notification" ,startup-notification)
+       ("xcb-util" ,xcb-util)
+       ("xcb-util-cursor" ,xcb-util-cursor)
+       ("xcb-util-image" ,xcb-util-image)
+       ("xcb-util-keysyms" ,xcb-util-keysyms)
+       ("xcb-util-renderutil" ,xcb-util-renderutil)
+       ("xcb-util-xrm" ,xcb-util-xrm)
+       ("xcb-util-wm" ,xcb-util-wm)))
     (arguments
-     `(;; Let compression happen in our 'compress-documentation' phase so that
-       ;; '--no-name' is used, which removes timestamps from gzip output.
-       #:configure-flags '("-DCOMPRESS_MANPAGES=off")
-
-       ;; Building awesome in its source dir is no longer supported.
+     `(#:modules ((guix build cmake-build-system)
+                  (guix build utils)
+                  (ice-9 match))
+       ;; Let compression happen in our 'compress-documentation' phase
+       ;; so that '--no-name' is used, which removes timestamps from
+       ;; gzip output.
+       #:configure-flags
+       '("-DCOMPRESS_MANPAGES=off")
+       ;; Building awesome in its source directory is no longer
+       ;; supported.
        #:out-of-source? #t
-
        #:phases
        (modify-phases %standard-phases
-         (add-before 'build 'xmlto-skip-validation
-           (lambda _
-             ;; We can't download the necessary schema, so so skip
-             ;; validation and assume they're valid.
-             (substitute* "../build/CMakeFiles/man.dir/build.make"
-               (("/xmlto")
-                (string-append "/xmlto --skip-validation")))
-             #t))
-         (add-before 'configure 'set-lua-paths
+         (add-before 'configure 'set-paths
            (lambda* (#:key inputs #:allow-other-keys)
-             ;; The build process needs to load cairo dynamically.
-             (let* ((cairo (string-append
-                             (assoc-ref inputs "cairo") "/lib" ))
-                    (lua-lgi (assoc-ref inputs "lua-lgi") ))
-               (setenv "LD_LIBRARY_PATH" cairo )
-               (setenv "LUA_PATH" (string-append lua-lgi
-                                                 "/share/lua/5.2/?.lua"))
-               (setenv "LUA_CPATH" (string-append lua-lgi
-                                                  "/lib/lua/5.2/?.so"))
+             ;; The build process needs to load Cairo dynamically.
+             (let* ((cairo (string-append (assoc-ref inputs "cairo") "/lib"))
+                    (lua-version ,(version-major+minor (package-version lua)))
+                    (lua-dependencies
+                     (filter (match-lambda
+                               ((label . _) (string-prefix? "lua-" label)))
+                             inputs))
+                    (lua-path
+                     (string-join
+                      (map (match-lambda
+                             ((_ . dir)
+                              (string-append
+                               dir "/share/lua/" lua-version "/?.lua;"
+                               dir "/share/lua/" lua-version "/?/?.lua")))
+                           lua-dependencies)
+                      ";"))
+                    (lua-cpath
+                     (string-join
+                      (map (match-lambda
+                             ((_ . dir)
+                              (string-append
+                               dir "/lib/lua/" lua-version "/?.so;"
+                               dir "/lib/lua/" lua-version "/?/?.so")))
+                           lua-dependencies)
+                      ";")))
+               (setenv "LD_LIBRARY_PATH" cairo)
+               (setenv "LUA_PATH" (string-append "?.lua;" lua-path))
+               (setenv "LUA_CPATH" lua-cpath)
                #t)))
          (replace 'check
            (lambda _
@@ -967,22 +993,23 @@ experience.")
          (add-after 'install 'wrap
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((awesome (assoc-ref outputs "out"))
-                    (cairo (string-append
-                             (assoc-ref inputs "cairo") "/lib" ))
-                    (lua-lgi (assoc-ref inputs "lua-lgi") ))
+                    (cairo (string-append (assoc-ref inputs "cairo") "/lib"))
+                    (lua-version ,(version-major+minor (package-version lua)))
+                    (lua-lgi (assoc-ref inputs "lua-lgi")))
                (wrap-program (string-append awesome "/bin/awesome")
+                 `("LUA_PATH" suffix
+                   (,(format #f "~a/share/lua/~a/?.lua" lua-lgi lua-version)))
+                 `("LUA_CPATH" suffix
+                   (,(format #f "~a/lib/lua/~a/?.so" lua-lgi lua-version)))
                  `("GI_TYPELIB_PATH" ":" prefix (,(getenv "GI_TYPELIB_PATH")))
-                 `("LD_LIBRARY_PATH" suffix (, cairo))
-                 `("LUA_PATH" suffix (,(string-append lua-lgi
-                                                      "/share/lua/5.2/?.lua")))
-                 `("LUA_CPATH" suffix (,(string-append
-                                          lua-lgi "/lib/lua/5.2/?.so"))))))))))
+                 `("LD_LIBRARY_PATH" suffix (,cairo)))
+               #t))))))
+    (home-page "https://awesomewm.org/")
     (synopsis "Highly configurable window manager")
     (description
      "Awesome has been designed as a framework window manager.  It is fast, small,
 dynamic and extensible using the Lua programming language.")
-    (license license:gpl2+)
-    (home-page "https://awesomewm.org/")))
+    (license license:gpl2+)))
 
 (define-public menumaker
   (package
@@ -1272,6 +1299,9 @@ its size
        ("xcb-util-xrm" ,xcb-util-xrm)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
+       ("python-sphinx" ,python-sphinx) ; for the manual
+       ;; XXX: "python" input must be located after "python-2", or the package
+       ;; fails to build with "missing required python module: xcbgen".
        ("python-2" ,python-2)           ; lib/xpp depends on python 2
        ("python" ,python)))             ; xcb-proto depends on python 3
     (home-page "https://polybar.github.io/")
@@ -1367,8 +1397,7 @@ modules for building a Wayland compositor.")
               ("swaybg" ,swaybg)
               ("wayland" ,wayland)
               ("wlroots" ,wlroots)))
-    (native-inputs `(("git" ,git)
-                     ("libcap" ,libcap)
+    (native-inputs `(("libcap" ,libcap)
                      ("linux-pam" ,linux-pam)
                      ("mesa" ,mesa)
                      ("pkg-config" ,pkg-config)
@@ -1424,8 +1453,7 @@ modules for building a Wayland compositor.")
               ("libxkbcommon" ,libxkbcommon)
               ;("linux-pam" ,linux-pam) ; FIXME: Doesn't work.
               ("wayland" ,wayland)))
-    (native-inputs `(("git" ,git)
-                     ("pango" ,pango)
+    (native-inputs `(("pango" ,pango)
                      ("pkg-config" ,pkg-config)
                      ("scdoc" ,scdoc)
                      ("wayland-protocols" ,wayland-protocols)))
@@ -1451,8 +1479,7 @@ modules for building a Wayland compositor.")
     (inputs `(("cairo" ,cairo)
               ("gdk-pixbuf" ,gdk-pixbuf)
               ("wayland" ,wayland)))
-    (native-inputs `(("git" ,git)
-                     ("pkg-config" ,pkg-config)
+    (native-inputs `(("pkg-config" ,pkg-config)
                      ("scdoc" ,scdoc)
                      ("wayland-protocols" ,wayland-protocols)))
     (home-page "https://github.com/swaywm/sway")
@@ -1463,7 +1490,7 @@ modules for building a Wayland compositor.")
 (define-public waybar
   (package
     (name "waybar")
-    (version "0.8.0")
+    (version "0.9.1")
     (source
      (origin
        (method git-fetch)
@@ -1472,12 +1499,14 @@ modules for building a Wayland compositor.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0s8ck7qxka0l91ayma6amp9sc8cidi43byqgzcavi3a6id983r1z"))))
+        (base32 "0drlv8im5phz39jxp3gxkc40b6f85bb3piff2v3hmnfzh7ib915s"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags
        (list (string-append "-Dout=" (assoc-ref %outputs "out")))))
-    (inputs `(("fmt" ,fmt)
+    (inputs `(("date" ,date)
+              ("fmt" ,fmt)
+              ("gtk-layer-shell" ,gtk-layer-shell)
               ("gtkmm" ,gtkmm)
               ("jsoncpp" ,jsoncpp)
               ("libdbusmenu" ,libdbusmenu)
@@ -1491,7 +1520,7 @@ modules for building a Wayland compositor.")
                      ("pkg-config" ,pkg-config)
                      ("wayland-protocols" ,wayland-protocols)))
     (home-page "https://github.com/Alexays/Waybar")
-    (synopsis "Wayland bar for Sway and Wlroots based compositors.")
+    (synopsis "Wayland bar for Sway and Wlroots based compositors")
     (description "Waybar is a highly customisable Wayland bar for Sway and
 Wlroots based compositors.")
     (license license:expat))) ; MIT license
@@ -1632,8 +1661,76 @@ productive, customizable lisp based systems.")
            (delete 'cleanup)
            (delete 'create-symlinks)))))))
 
+(define-public stumpish
+  (let ((commit "dd5b037923ec7d3cc27c55806bcec5a1b8cf4e91")
+        (revision "1"))
+    (package
+      (name "stumpish")
+      (version (git-version "0.0.1" revision commit)) ;no upstream release
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/stumpwm/stumpwm-contrib.git")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0ahxdj9f884afpzxczx6mx7l4nwg4kw6afqaq7lwhf7lxcwylldn"))))
+      (inputs
+       `(("bash" ,bash)
+         ("rlwrap" ,rlwrap)))
+      (build-system trivial-build-system)
+      (arguments
+       '(#:modules ((guix build utils))
+         #:builder
+         (begin
+           (use-modules (guix build utils))
+           (copy-recursively (assoc-ref %build-inputs "source") ".")
+           (chdir "util/stumpish")
+           (substitute* "stumpish"
+             (("rlwrap") (string-append (assoc-ref %build-inputs "rlwrap")
+                                        "/bin/rlwrap"))
+             (("/bin/sh") (string-append (assoc-ref %build-inputs "bash")
+                                         "/bin/bash")))
+           (install-file "stumpish" (string-append %output "/bin")))))
+      (home-page "https://github.com/stumpwm/stumpwm-contrib")
+      (synopsis "StumpWM interactive shell")
+      (description "This package provides a StumpWM interactive shell.")
+      (license (list license:gpl2+ license:gpl3+ license:bsd-2)))))
+
 (define-public sbcl-stumpwm+slynk
   (deprecated-package "sbcl-stumpwm-with-slynk" stumpwm+slynk))
+
+(define-public sbcl-stumpwm-ttf-fonts
+  (let ((commit "dd5b037923ec7d3cc27c55806bcec5a1b8cf4e91")
+        (revision "1"))
+    (package
+      (name "sbcl-ttf-fonts")
+      (version (git-version "0.0.1" revision commit)) ;no upstream release
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/stumpwm/stumpwm-contrib.git")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0ahxdj9f884afpzxczx6mx7l4nwg4kw6afqaq7lwhf7lxcwylldn"))))
+      (inputs
+       `(("stumpwm" ,stumpwm "lib")
+         ("clx-truetype" ,sbcl-clx-truetype)))
+      (build-system asdf-build-system/sbcl)
+      (arguments
+       '(#:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'chdir
+             (lambda _
+               (chdir "util/ttf-fonts"))))))
+      (home-page "https://github.com/stumpwm/stumpwm-contrib")
+      (synopsis "Implementation of TTF font rendering for Lisp")
+      (description "This package provides a Lisp implementation of TTF font
+rendering.")
+      (license (list license:gpl2+ license:gpl3+ license:bsd-2)))))
 
 (define-public lemonbar
   (let ((commit "35183ab81d2128dbb7b6d8e119cc57846bcefdb4")

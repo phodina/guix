@@ -13,6 +13,8 @@
 ;;; Copyright © 2015 John Soo <jsoo1@asu.edu>
 ;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
+;;; Copyright © 2020 Alexandru-Sergiu Marton <brown121407@member.fsf.org>
+;;; Copyright © 2020 Brian Leung <bkleung89@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -48,6 +50,42 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages rsync)
   #:use-module (gnu packages version-control))
+
+(define-public apply-refact
+  (package
+    (name "apply-refact")
+    (version "0.6.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/apply-refact/apply-refact-"
+             version ".tar.gz"))
+       (sha256
+        (base32
+         "0p2mqgjcqr1zcmk8zgr0yq7g8z1agsa6l493lkj6g3ya9lyhxgig"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-refact" ,ghc-refact)
+       ("ghc-exactprint" ,ghc-exactprint)
+       ("ghc-syb" ,ghc-syb)
+       ("ghc-temporary" ,ghc-temporary)
+       ("ghc-filemanip" ,ghc-filemanip)
+       ("ghc-unix-compat" ,ghc-unix-compat)
+       ("ghc-optparse-applicative"
+        ,ghc-optparse-applicative)))
+    (native-inputs
+     `(("ghc-tasty" ,ghc-tasty)
+       ("ghc-tasty-golden" ,ghc-tasty-golden)
+       ("ghc-tasty-expected-failure"
+        ,ghc-tasty-expected-failure)
+       ("ghc-silently" ,ghc-silently)))
+    (home-page "https://hackage.haskell.org/package/apply-refact")
+    (synopsis "Perform refactorings specified by the refact library")
+    (description
+     "This package lets you perform refactorings specified by the refact
+library.  It is primarily used with HLint's @code{--refactor} flag.")
+    (license license:bsd-3)))
 
 ;; In Stackage LTS 14, this package is at 2.4.1.0.  However, that
 ;; version requires version 2.4.1.0 of the 'Cabal' package, which is
@@ -113,8 +151,7 @@ installation of Haskell libraries and programs.")
          (uri (git-reference
                (url "https://github.com/jameysharp/corrode.git")
                (commit "b6699fb2fa552a07c6091276285a44133e5c9789")))
-         (file-name
-          (string-append name "-" version "-checkout"))
+         (file-name (git-file-name name version))
          (sha256
           (base32 "02v0yyj6sk4gpg2222wzsdqjxn8w66scbnf6b20x0kbmc69qcz4r"))))
       (build-system haskell-build-system)
@@ -267,17 +304,51 @@ unique algebra of patches called @url{http://darcs.net/Theory,Patchtheory}.
 @end enumerate")
     (license license:gpl2)))
 
+(define-public ghcid
+  (package
+    (name "ghcid")
+    (version "0.8.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://hackage.haskell.org/package/ghcid/"
+                           "ghcid-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0wpm4ikrm1krz1ckzwk0srng091yh2skjal4fh95iz1hq3dw6qlw"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-extra" ,ghc-extra)
+       ("ghc-ansi-terminal" ,ghc-ansi-terminal)
+       ("ghc-cmdargs" ,ghc-cmdargs)
+       ("ghc-fsnotify" ,ghc-fsnotify)
+       ("ghc-terminal-size" ,ghc-terminal-size)))
+    (native-inputs
+     `(("ghc-tasty" ,ghc-tasty)
+       ("ghc-tasty-hunit" ,ghc-tasty-hunit)))
+    (home-page
+     "https://github.com/ndmitchell/ghcid#readme")
+    (synopsis "GHCi based bare bones IDE")
+    (description
+     "Either \"GHCi as a daemon\" or \"GHC + a bit of an IDE\".  A very simple Haskell
+development tool which shows you the errors in your project and updates them whenever
+you save.  Run @code{ghcid --topmost --command=ghci}, where @code{--topmost} makes the
+window on top of all others (Windows only) and @code{--command} is the command to start
+GHCi on your project (defaults to @code{ghci} if you have a @file{.ghci} file, or else
+to @code{cabal repl}).")
+    (license license:bsd-3)))
+
 (define-public git-annex
   (package
     (name "git-annex")
-    (version "7.20191230")
+    (version "8.20200330")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://hackage.haskell.org/package/"
                            "git-annex/git-annex-" version ".tar.gz"))
        (sha256
-        (base32 "1xsd4vhiv3zkcqjh2pxhbkjx75hcalcc9bpdlfc27wzxsxyrwz12"))))
+        (base32 "0xy0ld7kr4cfdl4g4yzvrzl5r60dcj33cxm28a4qz6nqm2yhd4sv"))))
     (build-system haskell-build-system)
     (arguments
      `(#:configure-flags
@@ -442,7 +513,7 @@ used to keep a folder in sync between computers.")
        ("ghc-aeson" ,ghc-aeson)
        ("ghc-lib-parser" ,ghc-lib-parser)
        ("hscolour" ,hscolour)))
-    (home-page "http://community.haskell.org/~ndm/hlint/")
+    (home-page "https://github.com/ndmitchell/hlint")
     (synopsis "Suggest improvements for Haskell source code")
     (description "HLint reads Haskell programs and suggests changes that
 hopefully make them easier to read.  HLint also makes it easy to disable
@@ -616,7 +687,7 @@ Wayland, and Linux console environments alike.")
        ("ghc-sdl2" ,ghc-sdl2)
        ("ghc-sdl2-image" ,ghc-sdl2-image)
        ("ghc-sdl2-mixer" ,ghc-sdl2-mixer)))
-    (home-page "http://www.bysusanlin.com/raincat/")
+    (home-page "https://www.gamecreation.org/games/raincat")
     (synopsis "Puzzle game with a cat in lead role")
     (description "Project Raincat is a game developed by Carnegie Mellon
 students through GCS during the Fall 2008 semester.  Raincat features game
@@ -720,8 +791,29 @@ advanced user's otherwise working script to fail under future circumstances.
        ("ghc-test-framework-hunit" ,ghc-test-framework-hunit)))
     (home-page "https://github.com/jaspervdj/stylish-haskell")
     (synopsis "Haskell code prettifier")
-    (description
-     "A simple Haskell code prettifier.  The goal is not to format all of the
-code in a file, just clean up import statements and a few other tedious
-items.  This tool tries to help where necessary without getting in the way.")
+    (description "Stylish-haskell is a Haskell code prettifier.  The goal is
+not to format all of the code in a file, to avoid \"getting in the way\".
+However, this tool can e.g. clean up import statements and help doing various
+tasks that get tedious very quickly.  It can
+@itemize
+@item
+Align and sort @code{import} statements
+@item
+Group and wrap @code{{-# LANGUAGE #-}} pragmas, remove (some) redundant
+pragmas
+@item
+Remove trailing whitespaces
+@item
+Align branches in @code{case} and fields in records
+@item
+Convert line endings (customisable)
+@item
+Replace tabs by four spaces (turned off by default)
+@item
+Replace some ASCII sequences by their Unicode equivalent (turned off by
+default)
+@end itemize")
     (license license:bsd-3)))
+
+(define-public ghc-stylish-haskell
+  (deprecated-package "ghc-stylish-haskell" stylish-haskell))

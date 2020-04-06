@@ -8,15 +8,16 @@
 ;;; Copyright © 2016, 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2017, 2018 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2017, 2018, 2019 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2018, 2019 Rutger Helling <rhelling@mykolab.com>
-;;; Copyright © 2017 Brendan Tildesley <mail@brendan.scot>
-;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2020 Brendan Tildesley <mail@brendan.scot>
+;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2018 Stefan Stefanović <stefanx2ovic@gmail.com>
 ;;; Copyright © 2019 Reza Alizadeh Majd <r.majd@pantherx.org>
-;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2019, 2020 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Rene Saavedra <pacoon@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -71,6 +72,7 @@
   #:use-module (gnu packages libunwind)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages man)
   #:use-module (gnu packages m4)
   #:use-module (gnu packages nss)
   #:use-module (gnu packages perl)
@@ -178,16 +180,17 @@ freedesktop.org project.")
     (license license:expat)))
 
 (define-public libinput
+  ;; Updating this will rebuild over 700 packages through libinput-minimal.
   (package
     (name "libinput")
-    (version "1.14.3")
+    (version "1.15.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://freedesktop.org/software/libinput/"
                                   "libinput-" version ".tar.xz"))
               (sha256
                (base32
-                "1dy58j8dvr7ri34bx0lppmh5638m956azgwk501w373hi42kmsqg"))))
+                "0ivpb4sghl80cs7jg3xrs53kckif6wy81cny3a8mry94nszky74p"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags '("-Ddocumentation=false")
@@ -266,7 +269,7 @@ the freedesktop.org XDG Base Directory specification.")
 (define-public elogind
   (package
     (name "elogind")
-    (version "241.4")
+    (version "243.4")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -275,7 +278,7 @@ the freedesktop.org XDG Base Directory specification.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "13nd0chackqclgvw43910k4pkw2q773dh6wq9s5f3d97ibnik48k"))))
+                "141frvgyk4fafcxsix94qc0d9ffrwksld8lqq4hq6xsgjlvv0mrs"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags
@@ -283,9 +286,11 @@ the freedesktop.org XDG Base Directory specification.")
               (sysconf (string-append out "/etc"))
               (libexec (string-append out "/libexec/elogind"))
               (dbuspolicy (string-append out "/etc/dbus-1/system.d"))
+              (shadow (assoc-ref %build-inputs "shadow"))
               (shepherd (assoc-ref %build-inputs "shepherd"))
               (halt-path (string-append shepherd "/sbin/halt"))
               (kexec-path "")           ;not available in Guix yet
+              (nologin-path (string-append shadow "/sbin/nologin"))
               (poweroff-path (string-append shepherd "/sbin/shutdown"))
               (reboot-path (string-append shepherd "/sbin/reboot")))
          (list
@@ -299,9 +304,10 @@ the freedesktop.org XDG Base Directory specification.")
           (string-append "-Dkexec-path=" kexec-path)
           (string-append "-Dpoweroff-path=" poweroff-path)
           (string-append "-Dreboot-path=" reboot-path)
+          (string-append "-Dnologin-path=" nologin-path)
           "-Dcgroup-controller=elogind"
+          "-Dman=true"
           ;; Disable some tests.
-          "-Dtests=false"
           "-Dslow-tests=false"))
        #:phases
        (modify-phases %standard-phases
@@ -310,6 +316,54 @@ the freedesktop.org XDG Base Directory specification.")
              (substitute* "meson.build"
                (("join_paths\\(bindir, 'pkttyagent'\\)")
                 "'\"/run/current-system/profile/bin/pkttyagent\"'"))
+             #t))
+         (add-after 'unpack 'adjust-dbus-socket-address
+           (lambda _
+             ;; Look for the D-Bus socket in /var/run instead of /run.  Remove
+             ;; this for versions > 243.4.
+             (substitute* "src/libelogind/sd-bus/bus-internal.h"
+               (("=/run/dbus/system_bus_socket")
+                "=/var/run/dbus/system_bus_socket"))
+             #t))
+         (add-after 'unpack 'adjust-tests
+           (lambda _
+             ;; This test tries to copy some bytes from /usr/lib/os-release,
+             ;; which does not exist in the build container.  Choose something
+             ;; more likely to be available.
+             (substitute* "src/test/test-copy.c"
+               (("/usr/lib/os-release")
+                "/etc/passwd"))
+             ;; Use a shebang that works in the build container.
+             (substitute* "src/test/test-exec-util.c"
+               (("#!/bin/sh")
+                (string-append "#!" (which "sh"))))
+             ;; Do not look for files or directories that do not exist.
+             (substitute* "src/test/test-fs-util.c"
+               (("usr") "etc")
+               (("/etc/machine-id") "/etc/passwd"))
+             ;; FIXME: Why is sd_id128_get_machine_app_specific failing.
+             ;; Disable for now by hooking into the kernel support check.
+             (substitute* "src/test/test-id128.c"
+               (("if \\(r == -EOPNOTSUPP\\)")
+                "if (1)"))
+             ;; This test expects that /sys is available.
+             (substitute* "src/test/test-mountpoint-util.c"
+               (("assert_se\\(path_is_mount_point\\(\"/sys.*")
+                ""))
+             ;; /bin/sh does not exist in the build container.
+             (substitute* "src/test/test-path-util.c"
+               (("/bin/sh") (which "sh")))
+             ;; This test uses sd_device_new_from_syspath to allocate a
+             ;; loopback device, but that fails because /sys is unavailable.
+             (substitute* "src/libelogind/sd-device/test-sd-device-thread.c"
+               ((".*sd_device_new_from_syspath.*/sys/class/net/lo.*")
+                "return 77;"))
+             ;; Most of these tests require cgroups or an actual live
+             ;; logind system so that it can flicker the monitor, etc.
+             ;; Just skip it until a more narrow selection can be made.
+             (substitute* "src/libelogind/sd-login/test-login.c"
+               (("r = sd_pid_get_slice.*")
+                "return 77;"))
              #t))
          (add-after 'unpack 'change-pid-file-path
            (lambda _
@@ -330,6 +384,7 @@ the freedesktop.org XDG Base Directory specification.")
     (inputs
      `(("linux-pam" ,linux-pam)
        ("libcap" ,libcap)
+       ("shadow" ,shadow)                    ;for 'nologin'
        ("shepherd" ,shepherd)                ;for 'halt' and 'reboot', invoked
                                              ;when pressing the power button
        ("dbus" ,dbus)
@@ -492,7 +547,7 @@ with localed.  This package is extracted from the broader systemd package.")
 (define-public packagekit
   (package
     (name "packagekit")
-    (version "1.1.12")
+    (version "1.1.13")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -501,7 +556,7 @@ with localed.  This package is extracted from the broader systemd package.")
                    "PackageKit-" version ".tar.xz"))
              (sha256
               (base32
-               "00css16dv3asaxrklvyxy9dyjzhw82wmfrqxqpca9w2xryz58i8z"))))
+               "1dr1laic65ld95abp2yxbwvijnngh0dwyb1x49x4wjm5rhq43dl8"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f
@@ -750,6 +805,43 @@ composes the final output.  A Wayland compositor is essentially a
 multiplexer to the KMS/DRM Linux kernel devices.")
     (license license:expat)))
 
+(define-public wev
+  ;; There simple tool has no version or release yet.
+  (let ((commit "cee3dfb2a8b40ee303611018c68ae182d84a7f46"))
+    (package
+      (name "wev")
+      (version (string-append "2020-02-06-" (string-take commit 8)))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://git.sr.ht/~sircmpwn/wev")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0l71v3fzgiiv6xkk365q1l08qvaymxd4kpaya6r2g8yzkr7i2hms"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f ; no tests
+         #:make-flags
+         (list "CC=gcc" (string-append "PREFIX=" (assoc-ref %outputs "out")))
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'configure))))
+      (native-inputs
+       `(("pkg-config" ,pkg-config)
+         ("scdoc" ,scdoc)))
+      (inputs
+       `(("libxkbcommon" ,libxkbcommon)
+         ("wayland" ,wayland)
+         ("wayland-protocols" ,wayland-protocols)))
+      (home-page "https://git.sr.ht/~sircmpwn/wev")
+      (synopsis "Wayland event viewer")
+      (description "Wev is a tool that opens a window, printing all events
+sent to a Wayland window, such as key presses.  It is analogous to the X11 tool
+XEv.")
+      (license license:expat))))
+
 (define-public exempi
   (package
     (name "exempi")
@@ -921,6 +1013,11 @@ message bus.")
          "--enable-elogind")
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'patch-/bin/cat
+           (lambda _
+             (substitute* "src/user.c"
+               (("/bin/cat") (which "cat")))
+             #t))
          (add-before
           'configure 'pre-configure
           (lambda* (#:key inputs #:allow-other-keys)
@@ -986,7 +1083,7 @@ which speak the Mobile Interface Broadband Model (MBIM) protocol.")
 (define-public libqmi
   (package
     (name "libqmi")
-    (version "1.22.4")
+    (version "1.24.4")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -994,7 +1091,7 @@ which speak the Mobile Interface Broadband Model (MBIM) protocol.")
                     "libqmi-" version ".tar.xz"))
               (sha256
                (base32
-                "1wgrrb9vb3myl8xgck8ik86876ycbg8crylybs3ssi21vrxqwnsc"))))
+                "12licfsszr6qxpg9b2b04qm2glk8d42fcy32zr8jzwrgr7gbl5h3"))))
     (build-system gnu-build-system)
     (inputs
      `(("libgudev" ,libgudev)))
@@ -1192,28 +1289,36 @@ wish to perform colour calibration.")
 (define-public libfprint
   (package
     (name "libfprint")
-    (version "0.6.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://people.freedesktop.org/~hadess/"
-                                  name "-" version ".tar.xz"))
-              (sha256
-               (base32
-                "1giwh2z63mn45galsjb59rhyrvgwcy01hvvp4g01iaa2snvzr0r5"))))
-    (build-system gnu-build-system)
+    (version "1.90.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://gitlab.freedesktop.org/libfprint/libfprint")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0fdaak7qjr9b4482g7fhhqpyfdqpxq5kpmyzkp7f5i7qq2ynb78a"))))
+    (build-system meson-build-system)
     (arguments
-     '(#:configure-flags (list (string-append "--with-udev-rules-dir="
-                                              (assoc-ref %outputs "out")
-                                              "/lib/udev/rules.d"))))
+     '(#:configure-flags
+       (list (string-append "-Dudev_rules_dir=" (assoc-ref %outputs "out")
+                            "/lib/udev/rules.d"))))
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("eudev" ,eudev)
+       ("glib:bin" ,glib "bin")         ; for {glib-,}mkenums
+       ("gobject-introspection" ,gobject-introspection)
+       ("gtk-doc" ,gtk-doc)             ; for 88 KiB of API documentation
+       ("pkg-config" ,pkg-config)))
     (inputs
-     `(("libusb" ,libusb)
-       ("nss" ,nss)
-       ("glib" ,glib)
-       ("eudev" ,eudev)
+     `(("glib" ,glib)
+       ("gusb" ,gusb)
+       ("nss" ,nss)                     ; for the URU4x00 driver
+
+       ;; Replacing this with cairo works but just results in a reference
+       ;; (only) to pixman in the end.
        ("pixman" ,pixman)))
-    (home-page "https://www.freedesktop.org/wiki/Software/fprint/libfprint/")
+    (home-page "https://fprint.freedesktop.org/")
     (synopsis "Library to access fingerprint readers")
     (description
      "libfprint is a library designed to make it easy for application
@@ -1224,37 +1329,90 @@ software.")
 (define-public fprintd
   (package
     (name "fprintd")
-    (version "0.7.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append
-                    "https://people.freedesktop.org/~hadess/fprintd-"
-                    version ".tar.xz"))
-              (sha256
-               (base32
-                "05915i0bv7q62fqrs5diqwr8dz3pwqa1c1ivcgggkjyw0xk4ldp5"))))
-    (build-system gnu-build-system)
+    (version "1.90.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://gitlab.freedesktop.org/libfprint/fprintd")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0mbzk263x7f58i9cxhs44mrngs7zw5wkm62j5r6xlcidhmfn03cg"))))
+    (build-system meson-build-system)
     (arguments
-     '(#:phases (modify-phases %standard-phases
-                  (add-before 'build 'set-sysconfdir
-                    (lambda* (#:key outputs #:allow-other-keys)
-                      ;; Work around a bug whereby the 'SYSCONFDIR' macro
-                      ;; expands literally to '${prefix}/etc'.
-                      (let ((out (assoc-ref outputs "out")))
-                        (substitute* "src/main.c"
-                          (("SYSCONFDIR, \"fprintd.conf\"")
-                           (string-append "\"" out "/etc\", "
-                                          "\"fprintd.conf\"")))
-                        #t))))))
+     `(#:configure-flags
+       (list "-Dsystemd_system_unit_dir=/tmp"
+             (string-append "-Ddbus_service_dir=" (assoc-ref %outputs "out")
+                            "/share/dbus-1/system-services")
+             (string-append "-Dpam_modules_dir=" (assoc-ref %outputs "out")
+                            "/lib/security"))
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'patch-output-directories
+           ;; Install files to our output, not that of the ‘owner’ package.
+           ;; These are not exposed as Meson options and must be patched.
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (substitute* "meson.build"
+                 (("(dbus_interfaces_dir = ).*" _ set)
+                  (string-append set "'" out "/share/dbus-1/interfaces'\n"))
+                 (("(polkit_policy_directory = ).*" _ set)
+                  (string-append set "'" out "/share/polkit-1/actions/'\n"))
+                 (("(dbus_data_dir = ).*" _ set)
+                  (string-append set "get_option('prefix')"
+                                 " / get_option('datadir')\n")))
+               #t)))
+         (add-before 'configure 'patch-mistake
+           (lambda _
+             (substitute* "meson.build"
+               (("(storage_path = )(get_option\\('prefix'\\))(.*)"
+                 _ set mistake value)
+                (string-append set "''" value "\n")))
+             #t))
+         (add-before 'configure 'patch-systemd-dependencies
+           (lambda _
+             (substitute* "meson.build"
+               (("'(libsystemd|systemd)'") "'libelogind'"))
+             #t))
+         (add-before 'configure 'ignore-test-dependencies
+           (lambda _
+             (substitute* "meson.build"
+               (("pam_wrapper_dep .*") "")
+               ((".*'(cairo|dbus|dbusmock|gi|pypamtest)': .*,.*") ""))
+             #t))
+         (add-before 'install 'no-polkit-magic
+           ;; Meson ‘magically’ invokes pkexec, which fails (not setuid).
+           (lambda _
+             (setenv "PKEXEC_UID" "something")
+             #t)))
+       #:tests? #f))                    ; XXX depend on unpackaged packages
     (native-inputs
-     `(("pkg-config" ,pkg-config)
-       ("intltool" ,intltool)))
+     `(("gettext" ,gettext-minimal)
+       ("glib:bin" ,glib "bin")         ; for glib-genmarshal
+       ("libxslt" ,libxslt)             ; for xsltproc
+       ("perl" ,perl)                   ; for pod2man
+       ("pkg-config" ,pkg-config)))
+       ;; For tests.
+       ;;("pam_wrapper" ,pam_wrapper)
+       ;;("python-pycairo" ,python-pycairo)
+       ;;("python-dbus" ,python-dbus)
+       ;;("python-dbusmock" ,python-dbusmock)
+       ;;("python-pygobject" ,python-pygobject)
+       ;;("python-pypamtest" ,python-pypamtest)
     (inputs
-     `(("libfprint" ,libfprint)
-       ("dbus-glib" ,dbus-glib)
+     `(("dbus-glib" ,dbus-glib)
+       ("elogind" ,elogind)
+       ("libfprint" ,libfprint)
+       ("linux-pam" ,linux-pam)
        ("polkit" ,polkit)
-       ("linux-pam" ,linux-pam)))                 ;for pam_fprintd
-    (home-page "https://www.freedesktop.org/wiki/Software/fprint/fprintd/")
+
+       ;; XXX These are in libfprint's Requires.private.  Meson refuses to grant
+       ;; the ‘libfprint-2’ dependency if they are not provided here.
+       ("gusb" ,gusb)
+       ("nss" ,nss)
+       ("pixman" ,pixman)))
+    (home-page "https://fprint.freedesktop.org/")
     (synopsis "D-Bus daemon that exposes fingerprint reader functionality")
     (description
      "fprintd is a D-Bus daemon that offers functionality of libfprint, a
@@ -1266,14 +1424,15 @@ to applications simultaneously competing for fingerprint readers.")
 (define-public desktop-file-utils
   (package
     (name "desktop-file-utils")
-    (version "0.23")
+    (version "0.24")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://www.freedesktop.org/software/" name
-                                  "/releases/" name "-" version ".tar.xz"))
+              (uri (string-append "https://www.freedesktop.org/software/"
+                                  "desktop-file-utils/releases/"
+                                  "desktop-file-utils-" version ".tar.xz"))
               (sha256
                (base32
-                "119kj2w0rrxkhg4f9cf5waa55jz1hj8933vh47vcjipcplql02bc"))))
+                "1nc3bwjdrpcrkbdmzvhckq0yngbcxspwj2n1r7jr3gmx1jk5vpm1"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1472,14 +1631,14 @@ encoding names are iconv-compatible.")
 (define-public udiskie
   (package
     (name "udiskie")
-    (version "1.7.7")
+    (version "2.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "udiskie" version))
        (sha256
         (base32
-         "121g9dkr7drv9igpdbcbkj59x15mm72rzp3198bp50zj0lr4wbvi"))
+         "0smib8vbs9q37n7ynhzyw97q16fgdkcdw7fw69lci0xvyq00v1dz"))
        ;; Remove support for the libappindicator library of the
        ;; Unity desktop environment which is not in Guix.
        (patches (search-patches "udiskie-no-appindicator.patch"))))

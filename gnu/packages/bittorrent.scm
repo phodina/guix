@@ -94,10 +94,13 @@
                             (string-append gui
                                            "/bin/transmission-gtk"))
 
-               ;; Move the '.desktop' file as well.
+               ;; Move the '.desktop' and icon files as well.
                (mkdir (string-append gui "/share"))
-               (rename-file (string-append out "/share/applications")
-                            (string-append gui "/share/applications")))
+               (for-each
+                (lambda (dir)
+                  (rename-file (string-append out "/share/" dir)
+                               (string-append gui "/share/" dir)))
+                '("applications" "icons" "pixmaps")))
              #t)))))
     (inputs
      `(("inotify-tools" ,inotify-tools)
@@ -380,7 +383,7 @@ and will take advantage of multiple processor cores where possible.")
 (define-public libtorrent-rasterbar
   (package
     (name "libtorrent-rasterbar")
-    (version "1.1.13")
+    (version "1.1.14")
     (source (origin
               (method url-fetch)
               (uri
@@ -390,7 +393,7 @@ and will take advantage of multiple processor cores where possible.")
                 "/libtorrent-rasterbar-" version ".tar.gz"))
               (sha256
                (base32
-                "1mza92ljjqvlz9582pmls3n45srqhxvw3q348xihcg4fhlchf11h"))))
+                "0sn3ingmk1lk9p56f9ifgdwhjg0qizcfgv15wyc9s71nm5fya7sc"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -434,7 +437,18 @@ desktops.")
                             (assoc-ref %build-inputs "boost")
                             "/lib")
              "--enable-debug"
-             "QMAKE_LRELEASE=lrelease")))
+             "QMAKE_LRELEASE=lrelease")
+       #:modules ((guix build gnu-build-system)
+                  (guix build qt-utils)
+                  (guix build utils))
+       #:imported-modules (,@%gnu-build-system-modules
+                           (guix build qt-utils))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'wrap-qt
+           (lambda* (#:key outputs #:allow-other-keys)
+             (wrap-qt-program (assoc-ref outputs "out") "qbittorrent")
+             #t)))))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("qttools" ,qttools)))

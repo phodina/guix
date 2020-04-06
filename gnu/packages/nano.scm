@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2012 Nikita Karetnikov <nikita@karetnikov.org>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Rene Saavedra <rennes@openmailbox.org>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
@@ -30,13 +30,13 @@
 (define-public nano
   (package
     (name "nano")
-    (version "4.7")
+    (version "4.9")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://gnu/nano/nano-" version ".tar.xz"))
       (sha256
-       (base32 "1x9nqy2kgaz6087p63i71gdjsqbdc9jjpx1ymlyclfakvsby3h2q"))))
+       (base32 "19ik88b3g0d9xwav4hkai2h1acmjy5fdnh21gdc1mjq5s4lrff8f"))))
     (build-system gnu-build-system)
     (inputs
      `(("gettext" ,gettext-minimal)

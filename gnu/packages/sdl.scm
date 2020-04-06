@@ -6,9 +6,9 @@
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017, 2018, 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2019 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2019 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2020 Timotej Lazar <timotej.lazar@araneo.si>
@@ -42,10 +42,12 @@
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system trivial)
   #:use-module (gnu packages audio)
+  #:use-module (gnu packages autotools)
   #:use-module (gnu packages fcitx)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages glib)
+  #:use-module (gnu packages gtk)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages ibus)
   #:use-module (gnu packages image)
@@ -113,16 +115,15 @@ joystick, and graphics hardware.")
 (define-public sdl2
   (package (inherit sdl)
     (name "sdl2")
-    (version "2.0.10")
+    (version "2.0.12")
     (source (origin
              (method url-fetch)
              (uri
               (string-append "https://libsdl.org/release/SDL2-"
                              version ".tar.gz"))
-             (patches (search-patches "sdl2-mesa-compat.patch"))
              (sha256
               (base32
-               "0mqxp6w5jhbq6y1j690g9r3gpzwjxh4czaglw8x05l7hl49nqrdl"))))
+               "0qy8wbqvfkb5ps8kxgaaf2zzpkjqbsw712hlp74znbn0jpv6i4il"))))
     (arguments
      (substitute-keyword-arguments (package-arguments sdl)
        ((#:configure-flags flags)
@@ -130,20 +131,26 @@ joystick, and graphics hardware.")
                    "--disable-kmsdrm-shared")
                  ,flags))
        ((#:make-flags flags ''())
-        ;; Add the Fcitx header files to GCCs "system header" search path
-        ;; in order to suppress compiler warnings induced by those:
-        ;;   .../include/fcitx-utils/utarray.h:178:9: error: ISO C90 forbids
-        ;;   mixed declarations and code [-Werror=declaration-after-statement]
-        `(append (list (string-append "C_INCLUDE_PATH="
-                                      (assoc-ref %build-inputs "fcitx")
-                                      "/include"))
-                 ,flags))))
+        `(cons*
+          ;; Add the Fcitx header files to GCCs "system header" search path
+          ;; in order to suppress compiler warnings induced by those:
+          ;;   .../include/fcitx-utils/utarray.h:178:9: error: ISO C90 forbids
+          ;;   mixed declarations and code [-Werror=declaration-after-statement]
+          (string-append "C_INCLUDE_PATH="
+                         (assoc-ref %build-inputs "fcitx") "/include")
+          ;; SDL dlopens libudev, so make sure it is in rpath. This overrides
+          ;; the LDFLAG set in sdl’s configure-flags, which isn’t necessary
+          ;; as sdl2 includes Mesa by default.
+          (string-append "LDFLAGS=-Wl,-rpath,"
+                         (assoc-ref %build-inputs "eudev") "/lib")
+          ,flags))))
     (inputs
      ;; SDL2 needs to be built with ibus support otherwise some systems
      ;; experience a bug where input events are doubled.
      ;;
      ;; For more information, see: https://dev.solus-project.com/T1721
      (append `(("dbus" ,dbus)
+               ("eudev" ,eudev) ; for discovering input devices
                ("fcitx" ,fcitx) ; helps with CJK input
                ("glib" ,glib)
                ("ibus" ,ibus)
@@ -325,6 +332,54 @@ and set the path to the configuration file with @code{TIMIDITY_CFG}.")
 SDL.")
     (home-page "https://www.libsdl.org/projects/SDL_net/")
     (license zlib)))
+
+(define-public sdl-pango
+  (package
+    (name "sdl-pango")
+    (version "0.1.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "mirror://sourceforge/sdlpango/SDL_Pango/" version "/"
+             "SDL_Pango-" version  ".tar.gz"))
+       (sha256
+        (base32 "197baw1dsg0p4pljs5k0fshbyki00r4l49m1drlpqw6ggawx6xbz"))
+       (patches
+        (search-patches
+         "sdl-pango-api_additions.patch"
+         "sdl-pango-blit_overflow.patch"
+         "sdl-pango-fillrect_crash.patch"
+         "sdl-pango-fix-explicit-SDLPango_CopyFTBitmapTo.patch"
+         "sdl-pango-matrix_declarations.patch"
+         "sdl-pango-sans-serif.patch"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags (list "--disable-static")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'autogen
+           ;; Force reconfiguration because the included libtool
+           ;; generates linking errors.
+           (lambda _ (invoke "autoreconf" "-vif"))))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("fontconfig" ,fontconfig)
+       ("freetype" ,freetype)
+       ("glib" ,glib)
+       ("harfbuzz" ,harfbuzz)
+       ("pango" ,pango)
+       ("sdl" ,sdl)))
+    (home-page "http://sdlpango.sourceforge.net")
+    (synopsis "Pango SDL binding")
+    (description "This library is a wrapper around the Pango library.
+It allows you to use TrueType fonts to render internationalized and
+tagged text in SDL applications.")
+    (license lgpl2.1)))
 
 (define-public sdl-ttf
   (package
@@ -608,6 +663,14 @@ sound and device input (keyboards, joysticks, mice, etc.).")
 The bindings are written in pure Scheme using Guile's foreign function
 interface.")
     (license lgpl3+)))
+
+(define-public guile3.0-sdl2
+  (package
+    (inherit guile-sdl2)
+    (name "guile3.0-sdl2")
+    (native-inputs
+     `(("guile" ,guile-3.0)
+       ("pkg-config" ,pkg-config)))))
 
 (define-public sdl2-cs
   (let ((commit "1a3556441e1394eb0b5d46aeb514b8d1090b93f8"))

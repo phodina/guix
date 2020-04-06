@@ -365,14 +365,14 @@ an interpreter, a compiler, a debugger, and much more.")
 (define-public sbcl
   (package
     (name "sbcl")
-    (version "2.0.0")
+    (version "2.0.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/sbcl/sbcl/" version "/sbcl-"
                            version "-source.tar.bz2"))
        (sha256
-        (base32 "1krgd69cirp4ili2pfsh1a0mfvq722jbknlvmf17qhsxh1b94dlh"))))
+        (base32 "07pyzdjnhcpqwvr3rrk4i18maqdywbq1qj93fnpx1h4b7dp08r28"))))
     (build-system gnu-build-system)
     (outputs '("out" "doc"))
     (native-inputs
@@ -494,6 +494,7 @@ an interpreter, a compiler, a debugger, and much more.")
                                          `("clisp")))
                      (string-append "--prefix="
                                     (assoc-ref outputs "out"))
+                     "--dynamic-space-size=2Gb"
                      "--with-sb-core-compression"
                      "--with-sb-xref-for-internals")))
          (replace 'install
@@ -686,6 +687,53 @@ interface.")
     (license (list license:lgpl2.1
                    license:clarified-artistic)))) ;TRIVIAL-LDAP package
 
+(define-public ccl-1.12
+  ;; This is a development snapshot.  The last stable version is from November
+  ;; 2017 and does not support package-local-nicknames, which prevents CCL
+  ;; from compiling some third-party packages.
+  ;; The main drawback of 1.12 is that ARM is not supported for now.
+  (package
+    (inherit ccl)
+    (version "1.12-dev.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/Clozure/ccl/")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name "ccl" version))
+              (sha256
+               (base32
+                "1za5j4ll4hk1vi1i7v1bmqhaqbsgc16izn46qmry7dnbig0rdqm0"))))
+    ;; CCL consists of a "lisp kernel" and "heap image".
+    ;; See comment in `ccl' package.
+    (inputs
+     `(("ccl-bootstrap"
+        ,(origin
+           (method url-fetch)
+           (uri (string-append
+                 "https://github.com/Clozure/ccl/releases/download/v" version "/"
+                 (match (%current-system)
+                   ((or "i686-linux" "x86_64-linux") "linuxx86")
+                   ;; Prevent errors when querying this package on unsupported
+                   ;; platforms, e.g. when running "guix package --search="
+                   (_ "UNSUPPORTED"))
+                 ".tar.gz"))
+           (sha256
+            (base32
+             (match (%current-system)
+               ((or "i686-linux" "x86_64-linux")
+                "1pqiybxxv4wx5zlp1i60nim3njaczwl5321bdwq6frjsl3s95xmb")
+               (_ ""))))))))
+    (arguments
+     (substitute-keyword-arguments (package-arguments ccl)
+       ((#:phases phases)
+        `(modify-phases ,phases
+           (replace 'unpack (assoc-ref %standard-phases 'unpack))
+           (add-after 'unpack 'unpack-image
+             (lambda* (#:key inputs #:allow-other-keys)
+               (invoke "tar" "xzvf" (assoc-ref inputs "ccl-bootstrap"))))))))
+    (supported-systems '("i686-linux" "x86_64-linux"))))
+
 (define-public lush2
   (package
     (name "lush2")
@@ -797,7 +845,7 @@ enough to play the original mainframe Zork all the way through.")
 (define-public txr
   (package
     (name "txr")
-    (version "230")
+    (version "234")
     (source
      (origin
        (method git-fetch)
@@ -808,7 +856,7 @@ enough to play the original mainframe Zork all the way through.")
        (patches (search-patches "txr-shell.patch"))
        (sha256
         (base32
-         "1ma6nbqsnl4f8ndh47zzc8n5vzcny66v0z3ndddgm3g0bqaxzjzm"))))
+         "0c9qsj4xwc24c9g02mr5n97m4d87d4n0pcc2c2n58l2vg5dnzba0"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("cc=gcc")

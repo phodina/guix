@@ -175,10 +175,7 @@
      `(("pkg-config" ,pkg-config)
        ("unifont" ,unifont)
        ("bison" ,bison)
-       ;; Due to a bug in flex >= 2.6.2, GRUB must be built with an older flex:
-       ;; <http://lists.gnu.org/archive/html/grub-devel/2017-02/msg00133.html>
-       ;; TODO Try building with flex > 2.6.4.
-       ("flex" ,flex-2.6.1)
+       ("flex" ,flex)
        ("texinfo" ,texinfo)
        ("help2man" ,help2man)
 
@@ -201,7 +198,7 @@
        ;; Dependencies for the test suite.  The "real" QEMU is needed here,
        ;; because several targets are used.
        ("parted" ,parted)
-       ("qemu" ,qemu-minimal-2.10)
+       ("qemu" ,qemu-minimal)
        ("xorriso" ,xorriso)))
     (home-page "https://www.gnu.org/software/grub/")
     (synopsis "GRand Unified Boot loader")
@@ -672,7 +669,20 @@ it fits within common partitioning schemes.")
   (make-u-boot-sunxi64-package "pine64-lts" "aarch64-linux-gnu"))
 
 (define-public u-boot-pinebook
-  (make-u-boot-sunxi64-package "pinebook" "aarch64-linux-gnu"))
+  (let ((base (make-u-boot-sunxi64-package "pinebook" "aarch64-linux-gnu")))
+    (package
+      (inherit base)
+      (arguments
+       (substitute-keyword-arguments (package-arguments base)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             (add-after 'unpack 'patch-pinebook-config
+               ;; Fix regression with LCD video output introduced in 2020.01
+               ;; https://patchwork.ozlabs.org/patch/1225130/
+               (lambda _
+                 (substitute* "configs/pinebook_defconfig"
+                   (("CONFIG_VIDEO_BRIDGE_ANALOGIX_ANX6345=y") "CONFIG_VIDEO_BRIDGE_ANALOGIX_ANX6345=y\nCONFIG_VIDEO_BPP32=y"))
+                 #t)))))))))
 
 (define-public u-boot-bananapi-m2-ultra
   (make-u-boot-package "Bananapi_M2_Ultra" "arm-linux-gnueabihf"))
@@ -752,6 +762,21 @@ to Novena upstream, does not load u-boot.img from the first partition.")
        `(("firmware" ,arm-trusted-firmware-puma-rk3399)
          ("firmware-m0" ,rk3399-cortex-m0)
          ,@(package-native-inputs base))))))
+
+(define-public u-boot-qemu-riscv64
+  (make-u-boot-package "qemu-riscv64" "riscv64-linux-gnu"))
+
+(define-public u-boot-qemu-riscv64-smode
+  (let ((base (make-u-boot-package "qemu-riscv64_smode" "riscv64-linux-gnu")))
+    (package
+      (inherit base)
+      (source (origin
+                (inherit (package-source u-boot))
+                (patches
+                 (search-patches "u-boot-riscv64-fix-extlinux.patch")))))))
+
+(define-public u-boot-sifive-fu540
+  (make-u-boot-package "sifive_fu540" "riscv64-linux-gnu"))
 
 (define-public u-boot-rock64-rk3328
   (let ((base (make-u-boot-package "rock64-rk3328" "aarch64-linux-gnu")))

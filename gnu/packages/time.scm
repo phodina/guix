@@ -8,7 +8,7 @@
 ;;; Copyright © 2016 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym+a@scratchpost.org>
-;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2017 ng0 <ng0@n0.is>
@@ -16,6 +16,7 @@
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2019 Kyle Meyer <kyle@kyleam.com>
 ;;; Copyright © 2019 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2020 Lars-Dominik Braun <ldb@leibniz-psychology.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -89,18 +90,20 @@ expressions.")
 (define-public python-pytzdata
   (package
     (name "python-pytzdata")
-    (version "2017.3.1")
+    (version "2019.3")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pytzdata" version))
        (sha256
         (base32
-         "1wi3jh39zsa9iiyyhynhj7w5b2p9wdyd0ppavpsrmf3wxvr7cwz8"))))
+         "0ppfc6kz4p41mxyqxq1g1zp6gvns99g6b344qj6ih0x9vxy6zh7s"))))
     (build-system python-build-system)
-    (native-inputs
-     `(("python-pytest" ,python-pytest)
-       ("python-nose" ,python-nose)))
+    ;; XXX: The PyPI distribution contains no tests, and the upstream
+    ;; repository lacks a setup.py!  How to build from git?
+    (arguments '(#:tests? #f))
+    (propagated-inputs
+     `(("python-cleo" ,python-cleo)))
     (home-page "https://github.com/sdispater/pytzdata")
     (synopsis "Timezone database for Python")
     (description
@@ -136,22 +139,21 @@ saving time.  Almost all of the Olson timezones are supported.")
 (define-public python-pendulum
   (package
     (name "python-pendulum")
-    (version "1.2.4")
+    (version "2.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pendulum" version))
        (sha256
         (base32
-         "1fj36yxi2f4lzchzd8ny1qjl67dbypnk0gn8qwad2w78579m8m8z"))))
+         "1zhzk0ai8is8zclw4v73dllf0hx0l5nmm4sbwrh6cl8h5qsang09"))))
     (build-system python-build-system)
-    (native-inputs
-     `(("python-pytest" ,python-pytest)
-       ("python-nose" ,python-nose)))
+    ;; XXX: The PyPI distribution lacks tests, and the upstream repository
+    ;; lacks a setup.py!
+    (arguments '(#:tests? #f))
     (propagated-inputs
      `(("python-dateutil" ,python-dateutil)
-       ("python-pytzdata" ,python-pytzdata)
-       ("python-tzlocal" ,python-tzlocal)))
+       ("python-pytzdata" ,python-pytzdata)))
     (home-page "https://github.com/sdispater/pendulum")
     (synopsis "Alternate API for Python datetimes")
     (description "Pendulum is a drop-in replacement for the standard
@@ -233,6 +235,34 @@ datetime module, available in Python 2.3+.")
 
 (define-public python2-parsedatetime
   (package-with-python2 python-parsedatetime))
+
+(define-public python-ciso8601
+  (package
+    (name "python-ciso8601")
+    (version "2.1.3")
+    (source
+     (origin
+       (method git-fetch)
+       ;; The PyPi distribution doesn't include the tests.
+       (uri (git-reference
+             (url "https://github.com/closeio/ciso8601.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0g1aiyc1ayh0rnibyy416m5mmck38ksgdm3jsy0z3rxgmgb24951"))))
+    (build-system python-build-system)
+    ;; Pytz should only be required for Python 2, but the test suite fails
+    ;; without it.
+    (native-inputs
+     `(("python-pytz" ,python-pytz)))
+    (home-page "https://github.com/closeio/ciso8601")
+    (synopsis
+     "Fast ISO8601 date time parser")
+    (description
+     "The package ciso8601 converts ISO 8601 or RFC 3339 date time strings into
+Python datetime objects.")
+    (license expat)))
 
 (define-public python-tzlocal
   (package

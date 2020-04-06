@@ -18,7 +18,7 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (guix scripts pull)
-  #:use-module (guix ui)
+  #:use-module ((guix ui) #:hide (display-profile-content))
   #:use-module (guix colors)
   #:use-module (guix utils)
   #:use-module ((guix status) #:select (with-status-verbosity))
@@ -37,6 +37,7 @@
                                 inferior-available-packages
                                 close-inferior)
   #:use-module (guix scripts build)
+  #:use-module (guix scripts describe)
   #:autoload   (guix build utils) (which)
   #:use-module ((guix build syscalls)
                 #:select (with-file-lock/no-wait))
@@ -56,13 +57,12 @@
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
   #:use-module (srfi srfi-37)
-  #:use-module (web uri)
   #:use-module (ice-9 match)
   #:use-module (ice-9 vlist)
   #:use-module (ice-9 format)
-  #:export (display-profile-content
-            channel-list
-            channel-commit-hyperlink
+  #:re-export (display-profile-content
+               channel-commit-hyperlink)
+  #:export (channel-list
             with-git-error-handling
             guix-pull))
 
@@ -168,7 +168,7 @@ Download and deploy the latest version of Guix.\n"))
                                (alist-delete 'system result eq?))))
          (option '(#\n "dry-run") #f #f
                  (lambda (opt name arg result)
-                   (alist-cons 'dry-run? #t (alist-cons 'graft? #f result))))
+                   (alist-cons 'dry-run? #t result)))
          (option '(#\v "verbosity") #t #f
                  (lambda (opt name arg result)
                    (let ((level (string->number* arg)))
@@ -187,42 +187,6 @@ Download and deploy the latest version of Guix.\n"))
                    (show-version-and-exit "guix pull")))
 
          %standard-build-options))
-
-(define %vcs-web-views
-  ;; Hard-coded list of host names and corresponding web view URL templates.
-  ;; TODO: Allow '.guix-channel' files to specify a URL template.
-  (let ((labhub-url (lambda (repository-url commit)
-                      (string-append
-                       (if (string-suffix? ".git" repository-url)
-                           (string-drop-right repository-url 4)
-                           repository-url)
-                       "/commit/" commit))))
-    `(("git.savannah.gnu.org"
-       ,(lambda (repository-url commit)
-          (string-append (string-replace-substring repository-url
-                                                   "/git/" "/cgit/")
-                         "/commit/?id=" commit)))
-      ("notabug.org" ,labhub-url)
-      ("framagit.org" ,labhub-url)
-      ("gitlab.com" ,labhub-url)
-      ("gitlab.inria.fr" ,labhub-url)
-      ("github.com" ,labhub-url))))
-
-(define* (channel-commit-hyperlink channel
-                                   #:optional
-                                   (commit (channel-commit channel)))
-  "Return a hyperlink for COMMIT in CHANNEL, using COMMIT as the hyperlink's
-text.  The hyperlink links to a web view of COMMIT, when available."
-  (let* ((url  (channel-url channel))
-         (uri  (string->uri url))
-         (host (and uri (uri-host uri))))
-    (if host
-        (match (assoc host %vcs-web-views)
-          (#f
-           commit)
-          ((_ template)
-           (hyperlink (template url commit) commit)))
-        commit)))
 
 (define* (display-profile-news profile #:key concise?
                                current-is-newer?)
@@ -305,7 +269,7 @@ code, to PORT."
   (let ((body (or (assoc-ref body language)
                   (assoc-ref body (%default-message-language))
                   "")))
-    (format port "    ~a~%"
+    (format port "~a~%"
             (indented-string
              (parameterize ((%text-width (- (%text-width) 4)))
                (string-trim-right
@@ -425,8 +389,7 @@ previous generation.  Return true if there are news to display."
 
   (display-channel-news profile))
 
-(define* (build-and-install instances profile
-                            #:key use-substitutes? dry-run?)
+(define* (build-and-install instances profile)
   "Build the tool from SOURCE, and install it in PROFILE.  When DRY-RUN? is
 true, display what would be built without actually building it."
   (define update-profile
@@ -439,29 +402,27 @@ true, display what would be built without actually building it."
   (mlet %store-monad ((manifest (channel-instances->manifest instances)))
     (mbegin %store-monad
       (update-profile profile manifest
-                      #:use-substitutes? use-substitutes?
-                      #:hooks %channel-profile-hooks
-                      #:dry-run? dry-run?)
-      (munless dry-run?
-        (return (newline))
-        (return
-         (let ((more? (list (display-profile-news profile #:concise? #t)
-                            (display-channel-news-headlines profile))))
-           (when (any ->bool more?)
-             (display-hint
-              (G_ "Run @command{guix pull --news} to read all the news.")))))
-        (if guix-command
-            (let ((new (map (cut string-append <> "/bin/guix")
-                            (list (user-friendly-profile profile)
-                                  profile))))
-              ;; Is the 'guix' command previously in $PATH the same as the new
-              ;; one?  If the answer is "no", then suggest 'hash guix'.
-              (unless (member guix-command new)
-                (display-hint (format #f (G_ "After setting @code{PATH}, run
+                      #:hooks %channel-profile-hooks)
+
+      (return
+       (let ((more? (list (display-profile-news profile #:concise? #t)
+                          (display-channel-news-headlines profile))))
+         (newline)
+         (when (any ->bool more?)
+           (display-hint
+            (G_ "Run @command{guix pull --news} to read all the news.")))))
+      (if guix-command
+          (let ((new (map (cut string-append <> "/bin/guix")
+                          (list (user-friendly-profile profile)
+                                profile))))
+            ;; Is the 'guix' command previously in $PATH the same as the new
+            ;; one?  If the answer is "no", then suggest 'hash guix'.
+            (unless (member guix-command new)
+              (display-hint (format #f (G_ "After setting @code{PATH}, run
 @command{hash guix} to make sure your shell refers to @file{~a}.")
-                                      (first new))))
-              (return #f))
-            (return #f))))))
+                                    (first new))))
+            (return #f))
+          (return #f)))))
 
 (define (honor-lets-encrypt-certificates! store)
   "Tell Guile-Git to use the Let's Encrypt certificates."
@@ -559,53 +520,6 @@ true, display what would be built without actually building it."
 ;;; Queries.
 ;;;
 
-(define (display-profile-content profile number)
-  "Display the packages in PROFILE, generation NUMBER, in a human-readable
-way and displaying details about the channel's source code."
-  (display-generation profile number)
-  (for-each (lambda (entry)
-              (format #t "  ~a ~a~%"
-                      (manifest-entry-name entry)
-                      (manifest-entry-version entry))
-              (match (assq 'source (manifest-entry-properties entry))
-                (('source ('repository ('version 0)
-                                       ('url url)
-                                       ('branch branch)
-                                       ('commit commit)
-                                       _ ...))
-                 (let ((channel (channel (name 'nameless)
-                                         (url url)
-                                         (branch branch)
-                                         (commit commit))))
-                   (format #t (G_ "    repository URL: ~a~%") url)
-                   (when branch
-                     (format #t (G_ "    branch: ~a~%") branch))
-                   (format #t (G_ "    commit: ~a~%")
-                           (if (supports-hyperlinks?)
-                               (channel-commit-hyperlink channel commit)
-                               commit))))
-                (_ #f)))
-
-            ;; Show most recently installed packages last.
-            (reverse
-             (manifest-entries
-              (profile-manifest (if (zero? number)
-                                    profile
-                                    (generation-file-name profile number)))))))
-
-(define (indented-string str indent)
-  "Return STR with each newline preceded by IDENT spaces."
-  (define indent-string
-    (make-list indent #\space))
-
-  (list->string
-   (string-fold-right (lambda (chr result)
-                        (if (eqv? chr #\newline)
-                            (cons chr (append indent-string result))
-                            (cons chr result)))
-                      '()
-                      str)))
-
 (define profile-package-alist
   (mlambda (profile)
     "Return a name/version alist representing the packages in PROFILE."
@@ -662,7 +576,7 @@ Return true when there is more package info to display."
   (define (pretty str column)
     (indented-string (fill-paragraph str (- (%text-width) 4)
                                      column)
-                     4))
+                     4 #:initial-indent? #f))
 
   (define concise/max-item-count
     ;; Maximum number of items to display when CONCISE? is true.
@@ -830,10 +744,12 @@ Use '~/.config/guix/channels.scm' instead."))
 (define (guix-pull . args)
   (with-error-handling
     (with-git-error-handling
-     (let* ((opts     (parse-command-line args %options
-                                          (list %default-options)))
-            (channels (channel-list opts))
-            (profile  (or (assoc-ref opts 'profile) %current-profile)))
+     (let* ((opts         (parse-command-line args %options
+                                              (list %default-options)))
+            (substitutes? (assoc-ref opts 'substitutes?))
+            (dry-run?     (assoc-ref opts 'dry-run?))
+            (channels     (channel-list opts))
+            (profile      (or (assoc-ref opts 'profile) %current-profile)))
        (cond ((assoc-ref opts 'query)
               (process-query opts profile))
              ((assoc-ref opts 'generation)
@@ -843,38 +759,37 @@ Use '~/.config/guix/channels.scm' instead."))
                 (with-status-verbosity (assoc-ref opts 'verbosity)
                   (parameterize ((%current-system (assoc-ref opts 'system))
                                  (%graft? (assoc-ref opts 'graft?)))
-                    (set-build-options-from-command-line store opts)
-                    (ensure-default-profile)
-                    (honor-x509-certificates store)
+                    (with-build-handler (build-notifier #:use-substitutes?
+                                                        substitutes?
+                                                        #:dry-run? dry-run?)
+                      (set-build-options-from-command-line store opts)
+                      (ensure-default-profile)
+                      (honor-x509-certificates store)
 
-                    (let ((instances (latest-channel-instances store channels)))
-                      (format (current-error-port)
-                              (N_ "Building from this channel:~%"
-                                  "Building from these channels:~%"
-                                  (length instances)))
-                      (for-each (lambda (instance)
-                                  (let ((channel
-                                         (channel-instance-channel instance)))
-                                    (format (current-error-port)
-                                            "  ~10a~a\t~a~%"
-                                            (channel-name channel)
-                                            (channel-url channel)
-                                            (string-take
-                                             (channel-instance-commit instance)
-                                             7))))
-                                instances)
-                      (parameterize ((%guile-for-build
-                                      (package-derivation
-                                       store
-                                       (if (assoc-ref opts 'bootstrap?)
-                                           %bootstrap-guile
-                                           (canonical-package guile-2.2)))))
-                        (with-profile-lock profile
-                          (run-with-store store
-                            (build-and-install instances profile
-                                               #:dry-run?
-                                               (assoc-ref opts 'dry-run?)
-                                               #:use-substitutes?
-                                               (assoc-ref opts 'substitutes?)))))))))))))))
+                      (let ((instances (latest-channel-instances store channels)))
+                        (format (current-error-port)
+                                (N_ "Building from this channel:~%"
+                                    "Building from these channels:~%"
+                                    (length instances)))
+                        (for-each (lambda (instance)
+                                    (let ((channel
+                                           (channel-instance-channel instance)))
+                                      (format (current-error-port)
+                                              "  ~10a~a\t~a~%"
+                                              (channel-name channel)
+                                              (channel-url channel)
+                                              (string-take
+                                               (channel-instance-commit instance)
+                                               7))))
+                                  instances)
+                        (parameterize ((%guile-for-build
+                                        (package-derivation
+                                         store
+                                         (if (assoc-ref opts 'bootstrap?)
+                                             %bootstrap-guile
+                                             (canonical-package guile-2.2)))))
+                          (with-profile-lock profile
+                            (run-with-store store
+                              (build-and-install instances profile)))))))))))))))
 
 ;;; pull.scm ends here

@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2019 Brant Gardner <brantcgardner@brantware.com>
-;;; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -43,7 +44,7 @@
 (define-public boinc-client
   (package
     (name "boinc-client")
-    (version "7.16.3")
+    (version "7.16.5")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -54,7 +55,7 @@
               (file-name (git-file-name "boinc" version))
               (sha256
                (base32
-                "1l181s7wnx0xd7m62qjixdjw4ri87q47xi0x662m2jsh9lzb8khf"))))
+                "107rpw9qd5x4pyxm9jd1lqxva5nxwb01dm5h61d6msv2vgiy0r8n"))))
     (build-system gnu-build-system)
     (arguments '(#:configure-flags '("--disable-server")))
     (inputs `(("openssl" ,openssl)
@@ -71,7 +72,7 @@
        ("automake" ,automake)
        ("libtool" ,libtool)
        ("pkg-config" ,pkg-config)))
-    (synopsis "BOINC lets you help cutting-edge science research using your computer")
+    (synopsis "Help cutting-edge science research using your computer")
     (description "BOINC is a platform for high-throughput computing on a large
 scale (thousands or millions of computers).  It can be used for volunteer
 computing (using consumer devices) or grid computing (using organizational
@@ -88,9 +89,9 @@ resources).  It supports virtualized, parallel, and GPU-based applications.")
                  #:tests? #f)) ; FIXME: Looks like bad test syntax in the
                                ; source package, 2 tests fail.  Disable for
                                ; now.
-    (inputs `(("openssl" ,openssl)
+    (inputs `(("openssl" ,openssl-1.0)
               ("curl" ,curl)
-              ("mariadb" ,mariadb)
+              ("mariadb:dev" ,mariadb "dev")
               ("zlib" ,zlib)))
     (propagated-inputs `(("python" ,python-wrapper)
                          ("perl" ,perl)))))

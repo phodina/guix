@@ -1,12 +1,12 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
-;;; Copyright © 2016, 2018 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2016, 2018, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
 ;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
-;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Arun Isaac <arunisaac@systemreboot.net>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -35,6 +35,7 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages databases)
+  #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gl)
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
@@ -73,7 +74,8 @@
        ("libtiff" ,libtiff)
        ("mesa" ,mesa)
        ("webkitgtk" ,webkitgtk)
-       ("sdl" ,sdl)))
+       ("sdl" ,sdl)
+       ("xdg-utils" ,xdg-utils)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (arguments
@@ -91,7 +93,15 @@
        (list (string-append "LDFLAGS=-Wl,-rpath="
                             (assoc-ref %outputs "out") "/lib"))
        ;; No 'check' target.
-       #:tests? #f))
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'refer-to-inputs
+           (lambda _
+             (substitute* "src/unix/utilsx11.cpp"
+               (("wxExecute\\(xdg_open \\+")
+                (string-append "wxExecute(\"" (which "xdg-open") "\"")))
+             #t)))))
     (home-page "https://www.wxwidgets.org/")
     (synopsis "Widget toolkit for creating graphical user interfaces")
     (description
@@ -126,7 +136,14 @@ and many other languages.")
        (list (string-append "LDFLAGS=-Wl,-rpath="
                             (assoc-ref %outputs "out") "/lib"))
        ;; No 'check' target.
-       #:tests? #f))))
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'ignore-narrowing-errors
+           (lambda _
+             (substitute* "configure"
+               (("-Wall") "-Wall -Wno-narrowing"))
+             #t)))))))
 
 (define-public wxwidgets-gtk2
   (package (inherit wxwidgets)
@@ -218,7 +235,7 @@ and many other languages.")
      `(("python-numpy" ,python-numpy)
        ("python-pillow" ,python-pillow)
        ("python-six" ,python-six)))
-    (home-page "http://wxPython.org/")
+    (home-page "https://wxpython.org/")
     (synopsis "Cross platform GUI toolkit for Python")
     (description "wxPython is a cross-platform GUI toolkit for the Python
 programming language.  It is implemented as a set of Python extension modules
@@ -296,7 +313,7 @@ provide a 100% native look and feel for the application.")
        ("wxwidgets" ,wxwidgets-gtk2)))
     (synopsis "Python 2 Bindings for wxWidgets")
     (description "@code{wxpython} provides Python 2 bindings for wxWidgets.")
-    (home-page "http://wxpython.org/")
+    (home-page "https://wxpython.org/")
     (license (package-license wxwidgets))))
 
 (define-public wxsvg

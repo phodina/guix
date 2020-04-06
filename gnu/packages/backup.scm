@@ -59,6 +59,7 @@
   #:use-module (gnu packages linux)
   #:use-module (gnu packages mcrypt)
   #:use-module (gnu packages nettle)
+  #:use-module (gnu packages onc-rpc)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
@@ -423,7 +424,7 @@ rdiff-backup is easy to use and settings have sensible defaults.")
 (define-public rsnapshot
   (package
     (name "rsnapshot")
-    (version "1.4.2")
+    (version "1.4.3")
     (source
      (origin
        (method url-fetch)
@@ -431,8 +432,7 @@ rdiff-backup is easy to use and settings have sensible defaults.")
              "https://github.com/rsnapshot/rsnapshot/releases/download/"
              version "/rsnapshot-" version ".tar.gz"))
        (sha256
-        (base32
-         "05jfy99a0xs6lvsjfp3wz21z0myqhmwl2grn3jr9clijbg282ah4"))))
+        (base32 "1lavqmmsf53pim0nvming7fkng6p0nk2a51k2c2jdq0l7snpl31b"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -444,11 +444,15 @@ rdiff-backup is easy to use and settings have sensible defaults.")
                             "t/backup_exec/conf/backup_exec.conf")
                (("/bin/true") (which "true"))
                (("/bin/false") (which "false")))
+
+             ;; Disable a test that tries to connect to localhost on port 22.
+             (delete-file "t/ssh_args/ssh_args.t.in")
+
              (invoke "make" "test"))))))
     (inputs
      `(("perl" ,perl)
        ("rsync" ,rsync)))
-    (home-page "http://rsnapshot.org")
+    (home-page "https://rsnapshot.org")
     (synopsis "Deduplicating snapshot backup utility based on rsync")
     (description "rsnapshot is a file system snapshot utility based on rsync.
 rsnapshot makes it easy to make periodic snapshots of local machines, and
@@ -467,10 +471,26 @@ rsnapshot uses hard links to deduplicate identical files.")
               (sha256
                (base32
                 "0fpdyxww41ba52d98blvnf543xvirq1v9xz1i3x1gm9lzlzpmc2g"))
-              (patches (search-patches "diffutils-gets-undeclared.patch"))))
+              (patches (search-patches "diffutils-gets-undeclared.patch"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Include all the libtirpc headers necessary to get the
+                  ;; definitions of 'u_int', etc.
+                  (substitute* '("src/block-server.c"
+                                 "include/chop/block-server.h"
+                                 "utils/chop-block-server.c")
+                    (("#include <rpc/(.*)\\.h>" _ header)
+                     (string-append "#include <rpc/types.h>\n"
+                                    "#include <rpc/rpc.h>\n"
+                                    "#include <rpc/" header ".h>\n")))
+                  #t))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases (modify-phases %standard-phases
+     '(;; Link against libtirpc.
+       #:configure-flags '("LDFLAGS=-ltirpc -Wl,--as-needed")
+
+       #:phases (modify-phases %standard-phases
                   (add-before 'configure 'adjust-configure-script
                     (lambda _
                       ;; Mimic upstream commit
@@ -480,6 +500,15 @@ rsnapshot uses hard links to deduplicate identical files.")
                          (string-append "GUILE=" middle
                                         "--variable bindir`/guile")))
                       #t))
+                  (add-before 'build 'set-libtirpc-include-path
+                    (lambda* (#:key inputs #:allow-other-keys)
+                      ;; Allow <rpc/rpc.h> & co. to be found.
+                      (let ((libtirpc (assoc-ref inputs "libtirpc")))
+                        (setenv "CPATH"
+                                (string-append (getenv "CPATH")
+                                               ":" libtirpc
+                                               "/include/tirpc"))
+                        #t)))
                   (add-before 'check 'skip-test
                     (lambda _
                       ;; XXX: This test fails (1) because current GnuTLS no
@@ -490,10 +519,12 @@ rsnapshot uses hard links to deduplicate identical files.")
     (native-inputs
      `(("guile" ,guile-2.0)
        ("gperf" ,gperf-3.0)                  ;see <https://bugs.gnu.org/32382>
-       ("pkg-config" ,pkg-config)))
+       ("pkg-config" ,pkg-config)
+       ("rpcsvc-proto" ,rpcsvc-proto)))           ;for 'rpcgen'
     (inputs
      `(("guile" ,guile-2.0)
        ("util-linux" ,util-linux)
+       ("libtirpc" ,libtirpc)
        ("gnutls" ,gnutls)
        ("tdb" ,tdb)
        ("bdb" ,bdb)
@@ -517,13 +548,14 @@ detection, and lossless compression.")
 (define-public borg
   (package
     (name "borg")
-    (version "1.1.10")
+    (version "1.1.11")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "borgbackup" version))
        (sha256
-        (base32 "1pp70p4n5kamvcbl4d8021ggrxhyykmg9isjg4yd3wags8b19d7g"))
+        (base32
+         "190gjzx83b6p64nqj840x382dgz9gfv0gm7wj585lnkrpa90j29n"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -947,14 +979,14 @@ precious backup space.
 (define-public burp
   (package
     (name "burp")
-    (version "2.3.6")
+    (version "2.3.20")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/burp/burp-" version
                                   "/burp-" version ".tar.bz2"))
               (sha256
                (base32
-                "101nn30apcbmy9k0wksdf8d4ccw7sfcqzkasgg17a5y332x2imr9"))))
+                "0dm2y76z7pg17kfv6ahmh4mf2r3pg7mlwd69lvmjwssnd9vs1nn5"))))
     (build-system gnu-build-system)
     (inputs
      `(("librsync" ,librsync)

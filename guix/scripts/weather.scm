@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2018 Kyle Meyer <kyle@kyleam.com>
 ;;;
@@ -28,6 +28,7 @@
   #:use-module (guix monads)
   #:use-module (guix store)
   #:use-module (guix grafts)
+  #:use-module (guix gexp)
   #:use-module ((guix build syscalls) #:select (terminal-columns))
   #:use-module (guix scripts substitute)
   #:use-module (guix http-client)
@@ -75,7 +76,16 @@ scope."
 (define* (package-outputs packages
                           #:optional (system (%current-system)))
   "Return the list of outputs of all of PACKAGES for the given SYSTEM."
-  (let ((packages (filter (cut supported-package? <> system) packages)))
+  (define (lower-object/no-grafts obj system)
+    (mlet* %store-monad ((previous (set-grafting #f))
+                         (drv      (lower-object obj system))
+                         (_        (set-grafting previous)))
+      (return drv)))
+
+  (let ((packages (filter (lambda (package)
+                            (or (not (package? package))
+                                (supported-package? package system)))
+                          packages)))
     (format (current-error-port)
             (G_ "computing ~h package derivations for ~a...~%")
             (length packages) system)
@@ -84,21 +94,17 @@ scope."
       (lambda (report)
         (foldm %store-monad
                (lambda (package result)
-                 (mlet %store-monad ((drv (package->derivation package system
-                                                               #:graft? #f)))
+                 ;; PACKAGE could in fact be a non-package object, for example
+                 ;; coming from a user-specified manifest.  Thus, use
+                 ;; 'lower-object' rather than 'package->derivation' here.
+                 (mlet %store-monad ((drv (lower-object/no-grafts package
+                                                                  system)))
                    (report)
                    (match (derivation->output-paths drv)
                      (((names . items) ...)
                       (return (append items result))))))
                '()
                packages)))))
-
-(cond-expand
-  (guile-2.2
-   ;; Guile 2.2.2 has a bug whereby 'time-monotonic' objects have seconds and
-   ;; nanoseconds swapped (fixed in Guile commit 886ac3e).  Work around it.
-   (define time-monotonic time-tai))
-  (else #t))
 
 (define (call-with-time thunk kont)
   "Call THUNK and pass KONT the elapsed time followed by THUNK's return
@@ -162,8 +168,11 @@ about the derivations queued, as is the case with Hydra."
       #f                                          ;no derivation information
       (lset-intersection string=? queued items)))
 
-(define (report-server-coverage server items)
-  "Report the subset of ITEMS available as substitutes on SERVER."
+(define* (report-server-coverage server items
+                                 #:key display-missing?)
+  "Report the subset of ITEMS available as substitutes on SERVER.
+When DISPLAY-MISSING? is true, display the list of missing substitutes.
+Return the coverage ratio, an exact number between 0 and 1."
   (define MiB (* (expt 2 20) 1.))
 
   (format #t (G_ "looking for ~h store items on ~a...~%")
@@ -247,7 +256,16 @@ are queued~%")
                                system
                                (* (throughput builds build-timestamp)
                                   3600.))))
-                    (histogram build-system cons '() latest)))))))
+                    (histogram build-system cons '() latest))))
+
+      (when (and display-missing? (not (null? missing)))
+        (newline)
+        (format #t (G_ "Substitutes are missing for the following items:~%"))
+        (format #t "~{  ~a~%~}" missing))
+
+      ;; Return the coverage ratio.
+      (let ((total (length items)))
+        (/ (- total (length missing)) total)))))
 
 
 ;;;
@@ -267,6 +285,8 @@ Report the availability of substitutes.\n"))
   -c, --coverage[=COUNT]
                          show substitute coverage for packages with at least
                          COUNT dependents"))
+  (display (G_ "
+      --display-missing  display the list of missing substitutes"))
   (display (G_ "
   -s, --system=SYSTEM    consider substitutes for SYSTEM--e.g., \"i686-linux\""))
   (newline)
@@ -305,6 +325,9 @@ Report the availability of substitutes.\n"))
                    (alist-cons 'coverage
                                (if arg (string->number* arg) 0)
                                result)))
+         (option '("display-missing") #f #f
+                 (lambda (opt name arg result)
+                   (alist-cons 'display-missing? #t result)))
          (option '(#\s "system") #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'system arg result)))))
@@ -474,20 +497,27 @@ SERVER.  Display information for packages with at least THRESHOLD dependents."
 (define (guix-weather . args)
   (define (package-list opts)
     ;; Return the package list specified by OPTS.
-    (let ((file (assoc-ref opts 'manifest))
-          (base (filter-map (match-lambda
-                              (('argument . spec)
-                               (specification->package spec))
-                              (_
-                               #f))
-                            opts)))
-      (if (and (not file) (null? base))
+    (let ((files (filter-map (match-lambda
+                               (('manifest . file) file)
+                               (_ #f))
+                             opts))
+          (base  (filter-map (match-lambda
+                               (('argument . spec)
+                                (specification->package spec))
+                               (_
+                                #f))
+                             opts)))
+      (if (and (null? files) (null? base))
           (all-packages)
-          (append base
-                  (if file (load-manifest file) '())))))
+          (append base (append-map load-manifest files)))))
 
   (with-error-handling
-    (parameterize ((current-terminal-columns (terminal-columns)))
+    (parameterize ((current-terminal-columns (terminal-columns))
+
+                   ;; Set grafting upfront in case the user's input depends on
+                   ;; it (e.g., a manifest or code snippet that calls
+                   ;; 'gexp->derivation').
+                   (%graft?                  #f))
       (let* ((opts     (parse-command-line args %options
                                            (list %default-options)
                                            #:build-options? #f))
@@ -500,21 +530,30 @@ SERVER.  Display information for packages with at least THRESHOLD dependents."
                          (systems systems)))
              (packages (package-list opts))
              (items    (with-store store
-                         (parameterize ((%graft? #f))
-                           (concatenate
-                            (run-with-store store
-                              (mapm %store-monad
-                                    (lambda (system)
-                                      (package-outputs packages system))
-                                    systems)))))))
-        (for-each (lambda (server)
-                    (report-server-coverage server items)
-                    (match (assoc-ref opts 'coverage)
-                      (#f #f)
-                      (threshold
-                       (report-package-coverage server packages systems
-                                                #:threshold threshold))))
-                  urls)))))
+                         (concatenate
+                          (run-with-store store
+                            (mapm %store-monad
+                                  (lambda (system)
+                                    (package-outputs packages system))
+                                  systems))))))
+        (exit
+         (every (lambda (server)
+                  (define coverage
+                    (report-server-coverage server items
+                                            #:display-missing?
+                                            (assoc-ref opts 'display-missing?)))
+                  (match (assoc-ref opts 'coverage)
+                    (#f #f)
+                    (threshold
+                     ;; PACKAGES may include non-package objects coming from a
+                     ;; manifest.  Filter them out.
+                     (report-package-coverage server
+                                              (filter package? packages)
+                                              systems
+                                              #:threshold threshold)))
+
+                  (= 1 coverage))
+                urls))))))
 
 ;;; Local Variables:
 ;;; eval: (put 'let/time 'scheme-indent-function 1)

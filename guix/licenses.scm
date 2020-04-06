@@ -75,16 +75,19 @@
             ms-pl
             ncsa
             nmap
+            ogl-psi1.0
             openldap2.8 openssl
             perl-license
             psfl public-domain
             qpl
+            qwt1.0
             repoze
             ruby
             sgifreeb2.0
             silofl1.1
             sleepycat
             tcl/tk
+            unicode
             unlicense
             vim
             w3c
@@ -286,7 +289,7 @@ at URI, which may be a file:// URI pointing the package's tree."
 
 (define giftware
   (license "Giftware"
-           "http://liballeg.org/license.html"
+           "https://liballeg.org/license.html"
            "The Allegro 4 license"))
 
 (define gpl1
@@ -516,6 +519,11 @@ at URI, which may be a file:// URI pointing the package's tree."
            "https://svn.nmap.org/nmap/COPYING"
            "https://fedoraproject.org/wiki/Licensing/Nmap"))
 
+(define ogl-psi1.0
+  (license "Open Government Licence for Public Sector Information"
+           "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/1/"
+           #f))
+
 (define openssl
   (license "OpenSSL"
            "http://directory.fsf.org/wiki/License:OpenSSL"
@@ -547,6 +555,11 @@ at URI, which may be a file:// URI pointing the package's tree."
   (license "QPL"
            "http://directory.fsf.org/wiki/License:QPLv1.0"
            "http://www.gnu.org/licenses/license-list.html#QPL"))
+
+(define qwt1.0
+  (license "QWT 1.0"
+           "http://qwt.sourceforge.net/qwtlicense.html"
+           "GNU Lesser General Public License with exceptions"))
 
 (define repoze
   (license "Repoze"
@@ -583,6 +596,11 @@ at URI, which may be a file:// URI pointing the package's tree."
   (license "Vim"
            "http://directory.fsf.org/wiki/License:Vim7.2"
            "http://www.gnu.org/licenses/license-list.html#Vim"))
+
+(define unicode
+  (license "Unicode"
+           "https://directory.fsf.org/wiki/License:Unicode"
+           "http://www.gnu.org/licenses/license-list.html#Unicode"))
 
 (define unlicense
   (license "Unlicense"

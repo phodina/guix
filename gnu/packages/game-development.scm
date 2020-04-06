@@ -18,6 +18,8 @@
 ;;; Copyright © 2019, 2020 Leo Prikler <leo.prikler@student.tugraz.at>
 ;;; Copyright © 2019 Jethro Cao <jethrocao@gmail.com>
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2020 Timotej Lazar <timotej.lazar@araneo.si>
+;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -77,6 +79,7 @@
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages music)
   #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages pcre)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
@@ -86,8 +89,10 @@
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages stb)
   #:use-module (gnu packages texinfo)
+  #:use-module (gnu packages textutils)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages video)
+  #:use-module (gnu packages web)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xiph)
   #:use-module (gnu packages xml)
@@ -582,6 +587,34 @@ sounds from presets such as \"explosion\" or \"powerup\".")
     (home-page "http://www.drpetter.se/project_sfxr.html")
     (license license:expat)))
 
+(define-public surgescript
+  (package
+    (name "surgescript")
+    (version "0.5.4.3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/alemart/surgescript.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "13q81439zg1bn7gskligskjgcfq0rdapp6f3llmrlk48vnyq49s0"))))
+     (build-system cmake-build-system)
+     (arguments
+      '(#:configure-flags
+        (let ((share (string-append (assoc-ref %outputs "out") "/share")))
+          (list (string-append "-DICON_PATH=" share "/pixmaps")
+                (string-append "-DMETAINFO_PATH=" share "/metainfo")))
+        #:tests? #f))
+     (home-page "https://docs.opensurge2d.org")
+     (synopsis "Scripting language for games")
+     (description "@code{SurgeScript} is a dynamically typed object-oriented
+scripting language designed for games.  Each object is a state machine that
+can be customized by attaching other objects.  The language supports automatic
+garbage collection and can be extended with plugins.")
+    (license license:asl2.0)))
+
 (define-public physfs
   (package
     (name "physfs")
@@ -723,7 +756,7 @@ package is the Nuklear bindings for LÖVE created by Kevin Harrison.")
 multimedia programming.  It handles common, low-level tasks such as creating
 windows, accepting user input, loading data, drawing images, playing sounds,
 etc.")
-    (home-page "http://liballeg.org")
+    (home-page "https://liballeg.org")
     (license license:giftware)))
 
 (define-public allegro
@@ -764,7 +797,7 @@ etc.")
 multimedia programming.  It handles common, low-level tasks such as creating
 windows, accepting user input, loading data, drawing images, playing sounds,
 etc.")
-    (home-page "http://liballeg.org")
+    (home-page "https://liballeg.org")
     (license license:bsd-3)))
 
 (define-public allegro-5.0
@@ -1503,7 +1536,7 @@ games.")
 (define-public godot
   (package
     (name "godot")
-    (version "3.0.6")
+    (version "3.2.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1512,25 +1545,42 @@ games.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0g64h0x8dlv6aa9ggfcidk2mknkfl5li7z1phcav8aqp9srj8avf"))
-              (modules '((guix build utils)))
+                "1kndls0rklha7kz9l4i2ivjxab4jpk3b2j7dcgcg2qc3s81yd0r6"))
+              (modules '((guix build utils)
+                         (ice-9 ftw)
+                         (srfi srfi-1)))
               (snippet
                '(begin
-                  ;; Drop libraries that we take from Guix.  Note that some
-                  ;; of these may be modified; see "thirdparty/README.md".
+                  ;; Keep only those bundled files we have not (yet) replaced
+                  ;; with Guix versions. Note that some of these may be
+                  ;; modified; see "thirdparty/README.md".
                   (with-directory-excursion "thirdparty"
-                    (for-each delete-file-recursively
-                              '("freetype"
-                                "libogg"
-                                "libpng"
-                                "libtheora"
-                                "libvorbis"
-                                "libvpx"
-                                "libwebp"
-                                "openssl"
-                                "opus"
-                                "zlib"))
-                    #t)))))
+                    (let* ((preserved-files
+                            '("README.md"
+                              "assimp"
+                              "certs"
+                              "cvtt"
+                              "enet"
+                              "etc2comp"
+                              "fonts"
+                              "glad"
+                              "jpeg-compressor"
+                              "libsimplewebm"
+                              "miniupnpc"
+                              "minizip"
+                              "misc"
+                              "nanosvg"
+                              "pvrtccompressor"
+                              "recastnavigation"
+                              "squish"
+                              "tinyexr"
+                              "vhacd"
+                              "xatlas")))
+                      (for-each delete-file-recursively
+                                (lset-difference string=?
+                                                 (scandir ".")
+                                                 (cons* "." ".." preserved-files)))))
+                  #t))))
     (build-system scons-build-system)
     (arguments
      `(#:scons ,scons-python2
@@ -1541,6 +1591,7 @@ games.")
                                '())
                            ;; Avoid using many of the bundled libs.
                            ;; Note: These options can be found in the SConstruct file.
+                           "builtin_bullet=no"
                            "builtin_freetype=no"
                            "builtin_glew=no"
                            "builtin_libmpdec=no"
@@ -1550,9 +1601,12 @@ games.")
                            "builtin_libvorbis=no"
                            "builtin_libvpx=no"
                            "builtin_libwebp=no"
-                           "builtin_openssl=no"
+                           "builtin_mbedtls=no"
                            "builtin_opus=no"
-                           "builtin_zlib=no")
+                           "builtin_pcre2=no"
+                           "builtin_wslay=no"
+                           "builtin_zlib=no"
+                           "builtin_zstd=no")
        #:tests? #f ; There are no tests
        #:phases
        (modify-phases %standard-phases
@@ -1575,6 +1629,10 @@ games.")
                      (rename-file "godot.x11.tools.64" "godot")
                      (rename-file "godot.x11.tools.32" "godot"))
                  (install-file "godot" bin))
+               ;; Tell Godot where to find zenity for OS.alert().
+               (wrap-program (string-append bin "/godot")
+                 `("PATH" ":" prefix
+                   (,(string-append (assoc-ref %build-inputs "zenity") "/bin"))))
                #t)))
          (add-after 'install 'install-godot-desktop
            (lambda* (#:key outputs #:allow-other-keys)
@@ -1599,6 +1657,7 @@ games.")
                #t))))))
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs `(("alsa-lib" ,alsa-lib)
+              ("bullet" ,bullet)
               ("freetype" ,freetype)
               ("glew" ,glew)
               ("glu" ,glu)
@@ -1611,10 +1670,14 @@ games.")
               ("libxi" ,libxi)
               ("libxinerama" ,libxinerama)
               ("libxrandr" ,libxrandr)
+              ("mbedtls" ,mbedtls-apache)
               ("mesa" ,mesa)
-              ("openssl" ,openssl)
               ("opusfile" ,opusfile)
-              ("pulseaudio" ,pulseaudio)))
+              ("pcre2" ,pcre2)
+              ("pulseaudio" ,pulseaudio)
+              ("wslay" ,wslay)
+              ("zenity" ,zenity)
+              ("zstd" ,zstd "lib")))
     (home-page "https://godotengine.org/")
     (synopsis "Advanced 2D and 3D game engine")
     (description
@@ -1693,6 +1756,42 @@ a 2D editor view.")
        ("guile-sdl2" ,guile-sdl2)))
     (inputs
      `(("guile" ,guile-2.2)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("texinfo" ,texinfo)))
+    (home-page "https://dthompson.us/projects/chickadee.html")
+    (synopsis "Game development toolkit for Guile Scheme with SDL2 and OpenGL")
+    (description "Chickadee is a game development toolkit for Guile Scheme
+built on top of SDL2 and OpenGL.  Chickadee aims to provide all the features
+that parenthetically inclined game developers need to make 2D (and eventually
+3D) games in Scheme, such as:
+
+@enumerate
+@item extensible, fixed-timestep game loop
+@item OpenGL-based rendering engine
+@item keyboard, mouse, controller input
+@item REPL-driven development model
+@end enumerate\n")
+    (license license:gpl3+)))
+
+(define-public guile3.0-chickadee
+  (package
+    (inherit guile-chickadee)
+    (name "guile-chickadee")
+    (version "0.4.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://files.dthompson.us/chickadee/"
+                                  "chickadee-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1fdicsgls5cp0yffcm5vjmav67gv9bxhz1s3jvdvinspxb485x7l"))))
+    (build-system gnu-build-system)
+    (propagated-inputs
+     `(("guile-opengl" ,guile3.0-opengl)
+       ("guile-sdl2" ,guile3.0-sdl2)))
+    (inputs
+     `(("guile" ,guile-3.0)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("texinfo" ,texinfo)))
@@ -1983,14 +2082,14 @@ a.k.a. XenoCollide) as described in Game Programming Gems 7.")
 (define-public ode
   (package
     (name "ode")
-    (version "0.16")
+    (version "0.16.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://bitbucket.org/odedevs/ode/downloads/"
                            "ode-" version ".tar.gz"))
        (sha256
-        (base32 "09xzrarxwxcf6rdv5jsjfjh454jnn29dpcw3wh6ic50kkipvg8sb"))
+        (base32 "1flfdqgdbcn1bx8nrrd4qnp6cvsxrhvk8cdg7vaq2dzkh6nsqa5j"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -1998,7 +2097,12 @@ a.k.a. XenoCollide) as described in Game Programming Gems 7.")
            #t))))
     (build-system cmake-build-system)
     (arguments
-     `(#:configure-flags '("-DODE_WITH_LIBCCD_SYSTEM=ON")
+     ;; Tests fail on all systems but x86_64.  This is fixed upstream and can
+     ;; be removed in 0.16.2+.
+     `(#:tests? ,(string-prefix? "x86_64-"
+                                 (or (%current-target-system)
+                                     (%current-system)))
+       #:configure-flags '("-DODE_WITH_LIBCCD_SYSTEM=ON")
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'unbundle-libccd
@@ -2010,7 +2114,7 @@ a.k.a. XenoCollide) as described in Game Programming Gems 7.")
      `(("glu" ,glu)
        ("libccd" ,libccd)
        ("mesa" ,mesa)))
-    (home-page "http://www.ode.org/")
+    (home-page "https://www.ode.org/")
     (synopsis "High performance library for simulating rigid body dynamics")
     (description "ODE is a high performance library for simulating
 rigid body dynamics.  It is fully featured, stable, mature and
@@ -2049,3 +2153,75 @@ computer games, 3D authoring tools and simulation tools.")
     (description "Chipmunk is a simple, lightweight, fast and portable 2D
 rigid body physics library written in C.")
     (license license:expat)))
+
+(define-public libtcod
+  (package
+    (name "libtcod")
+    (version "1.15.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/libtcod/libtcod.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0pzr8ajmbqvh43ldjajx962xirj3rf8ayh344p6mqlrmb8gxrfr5"))
+              (modules '((guix build utils)))
+              (snippet '(begin
+                          (delete-file-recursively "src/vendor/utf8proc")
+                          (delete-file-recursively "src/vendor/zlib")
+                          (delete-file "src/vendor/stb_truetype.h")
+                          (delete-file "src/vendor/stb_sprintf.h")
+                          (delete-file "src/vendor/lodepng.cpp")
+                          (delete-file "src/vendor/lodepng.h")
+
+                          (substitute* "buildsys/autotools/sources.am"
+                            (("\\.\\./\\.\\./src/vendor/lodepng\\.cpp \\\\\n") "")
+                            (("\\.\\./\\.\\./src/vendor/stb\\.c \\\\")
+                             "../../src/vendor/stb.c")
+                            (("\\.\\./\\.\\./src/vendor/utf8proc/utf8proc\\.c") ""))
+
+                          (substitute* "src/libtcod/sys_sdl_img_png.cpp"
+                            (("\\.\\./vendor/") ""))
+
+                          (substitute* '("src/libtcod/color/canvas.cpp"
+                                         "src/libtcod/sys_sdl_img_png.cpp"
+                                         "src/libtcod/tileset/truetype.cpp"
+                                         "src/libtcod/tileset/tilesheet.cpp")
+                            (("\\.\\./\\.\\./vendor/") ""))
+
+                          (substitute* "src/libtcod/console/printing.cpp"
+                            (("\\.\\./\\.\\./vendor/utf8proc/") ""))
+                          #t))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags '("--with-gnu-ld"
+                           "LIBS=-lutf8proc -llodepng")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'change-to-build-dir
+           (lambda _
+             (chdir "buildsys/autotools")
+             (patch-shebang "get_version.py")
+             #t)))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("python" ,python)
+       ("pkg-config" ,pkg-config)
+       ("stb-sprintf" ,stb-sprintf)
+       ("stb-truetype" ,stb-truetype)))
+    (inputs
+     `(("lodepng" ,lodepng)
+       ("sdl2" ,sdl2)
+       ("utf8proc" ,utf8proc)
+       ("zlib" ,zlib)))
+    (home-page "https://github.com/libtcod/libtcod")
+    (synopsis "Library specifically designed for writing roguelikes")
+    (description
+     "libtcod is a fast, portable and uncomplicated API for roguelike
+developers providing an advanced true color console, input, and lots of other
+utilities frequently used in roguelikes.")
+    (license license:bsd-3)))

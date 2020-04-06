@@ -1,7 +1,8 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2018 Jan Nieuwenhuizen <janneke@gnu.org>
-;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2019, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2020 Florian Pelz <pelzflorian@pelzflorian.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -43,7 +44,6 @@
   #:use-module (srfi srfi-35)
   #:use-module (srfi srfi-39)
   #:use-module (ice-9 match)
-  #:use-module (ice-9 regex)
   #:use-module (ice-9 vlist)
   #:use-module (ice-9 popen)
   #:use-module (ice-9 threads)
@@ -104,6 +104,9 @@
             add-to-store
             add-file-tree-to-store
             binary-file
+            with-build-handler
+            map/accumulate-builds
+            mapm/accumulate-builds
             build-things
             build
             query-failed-paths
@@ -132,6 +135,7 @@
 
             built-in-builders
             references
+            references/cached
             references/substitutes
             references*
             query-path-info*
@@ -161,6 +165,7 @@
             current-system
             set-current-system
             current-target-system
+            set-current-target
             text-file
             interned-file
             interned-file-tree
@@ -172,6 +177,7 @@
             store-path?
             direct-store-path?
             derivation-path?
+            store-path-base
             store-path-package-name
             store-path-hash-part
             direct-store-path
@@ -617,14 +623,25 @@ connection.  Use with care."
 (define (call-with-store proc)
   "Call PROC with an open store connection."
   (let ((store (open-connection)))
-    (dynamic-wind
-      (const #f)
-      (lambda ()
-        (parameterize ((current-store-protocol-version
-                        (store-connection-version store)))
-          (proc store)))
-      (lambda ()
-        (false-if-exception (close-connection store))))))
+    (define (thunk)
+      (parameterize ((current-store-protocol-version
+                      (store-connection-version store)))
+        (let ((result (proc store)))
+          (close-connection store)
+          result)))
+
+    (cond-expand
+      (guile-3
+       (with-exception-handler (lambda (exception)
+                                 (close-connection store)
+                                 (raise-exception exception))
+         thunk))
+      (else                                       ;Guile 2.2
+       (catch #t
+         thunk
+         (lambda (key . args)
+           (close-connection store)
+           (apply throw key args)))))))
 
 (define-syntax-rule (with-store store exp ...)
   "Bind STORE to an open connection to the store and evaluate EXPs;
@@ -1220,6 +1237,88 @@ an arbitrary directory layout in the store without creating a derivation."
             (hash-set! cache tree result)
             result)))))
 
+(define current-build-prompt
+  ;; When true, this is the prompt to abort to when 'build-things' is called.
+  (make-parameter #f))
+
+(define (call-with-build-handler handler thunk)
+  "Register HANDLER as a \"build handler\" and invoke THUNK."
+  (define tag
+    (make-prompt-tag "build handler"))
+
+  (parameterize ((current-build-prompt tag))
+    (call-with-prompt tag
+      thunk
+      (lambda (k . args)
+        ;; Since HANDLER may call K, which in turn may call 'build-things'
+        ;; again, reinstate a prompt (thus, it's not a tail call.)
+        (call-with-build-handler handler
+                                 (lambda ()
+                                   (apply handler k args)))))))
+
+(define (invoke-build-handler store things mode)
+  "Abort to 'current-build-prompt' if it is set."
+  (or (not (current-build-prompt))
+      (abort-to-prompt (current-build-prompt) store things mode)))
+
+(define-syntax-rule (with-build-handler handler exp ...)
+  "Register HANDLER as a \"build handler\" and invoke THUNK.  When
+'build-things' is called within the dynamic extent of the call to THUNK,
+HANDLER is invoked like so:
+
+  (HANDLER CONTINUE STORE THINGS MODE)
+
+where CONTINUE is the continuation, and the remaining arguments are those that
+were passed to 'build-things'.
+
+Build handlers are useful to announce a build plan with 'show-what-to-build'
+and to implement dry runs (by not invoking CONTINUE) in a way that gracefully
+deals with \"dynamic dependencies\" such as grafts---derivations that depend
+on the build output of a previous derivation."
+  (call-with-build-handler handler (lambda () exp ...)))
+
+;; Unresolved dynamic dependency.
+(define-record-type <unresolved>
+  (unresolved things continuation)
+  unresolved?
+  (things       unresolved-things)
+  (continuation unresolved-continuation))
+
+(define (build-accumulator continue store things mode)
+  "This build handler accumulates THINGS and returns an <unresolved> object."
+  (if (= mode (build-mode normal))
+      (unresolved things continue)
+      (continue #t)))
+
+(define (map/accumulate-builds store proc lst)
+  "Apply PROC over each element of LST, accumulating 'build-things' calls and
+coalescing them into a single call."
+  (define result
+    (map (lambda (obj)
+           (with-build-handler build-accumulator
+             (proc obj)))
+         lst))
+
+  (match (append-map (lambda (obj)
+                       (if (unresolved? obj)
+                           (unresolved-things obj)
+                           '()))
+                     result)
+    (()
+     result)
+    (to-build
+     ;; We've accumulated things TO-BUILD.  Actually build them and resume the
+     ;; corresponding continuations.
+     (build-things store (delete-duplicates to-build))
+     (map/accumulate-builds store
+                            (lambda (obj)
+                              (if (unresolved? obj)
+                                  ;; Pass #f because 'build-things' is now
+                                  ;; unnecessary.
+                                  ((unresolved-continuation obj) #f)
+                                  obj))
+                            result))))
+
 (define build-things
   (let ((build (operation (build-things (string-list things)
                                         (integer mode))
@@ -1234,20 +1333,24 @@ outputs, and return when the worker is done building them.  Elements of THINGS
 that are not derivations can only be substituted and not built locally.
 Alternately, an element of THING can be a derivation/output name pair, in
 which case the daemon will attempt to substitute just the requested output of
-the derivation.  Return #t on success."
-      (let ((things (map (match-lambda
-                           ((drv . output) (string-append drv "!" output))
-                           (thing thing))
-                         things)))
-        (parameterize ((current-store-protocol-version
-                        (store-connection-version store)))
-          (if (>= (store-connection-minor-version store) 15)
-              (build store things mode)
-              (if (= mode (build-mode normal))
-                  (build/old store things)
-                  (raise (condition (&store-protocol-error
-                                     (message "unsupported build mode")
-                                     (status  1)))))))))))
+the derivation.  Return #t on success.
+
+When a handler is installed with 'with-build-handler', it is called any time
+'build-things' is called."
+      (or (not (invoke-build-handler store things mode))
+          (let ((things (map (match-lambda
+                               ((drv . output) (string-append drv "!" output))
+                               (thing thing))
+                             things)))
+            (parameterize ((current-store-protocol-version
+                            (store-connection-version store)))
+              (if (>= (store-connection-minor-version store) 15)
+                  (build store things mode)
+                  (if (= mode (build-mode normal))
+                      (build/old store things)
+                      (raise (condition (&store-protocol-error
+                                         (message "unsupported build mode")
+                                         (status  1))))))))))))
 
 (define-operation (add-temp-root (store-path path))
   "Make PATH a temporary root for the duration of the current session.
@@ -1301,6 +1404,13 @@ error if there is no such root."
   ;; 'references/substitutes' many times with the same arguments.  Ideally we
   ;; would use a cache associated with the daemon connection instead (XXX).
   (make-hash-table 100))
+
+(define (references/cached store item)
+  "Like 'references', but cache results."
+  (or (hash-ref %reference-cache item)
+      (let ((references (references store item)))
+        (hash-set! %reference-cache item references)
+        references)))
 
 (define (references/substitutes store items)
   "Return the list of list of references of ITEMS; the result has the same
@@ -1742,6 +1852,18 @@ taking the store as its first argument."
                           (lambda (store . args)
                             (run-with-store store (apply proc args)))))
 
+(define (mapm/accumulate-builds mproc lst)
+  "Like 'mapm' in %STORE-MONAD, but accumulate 'build-things' calls and
+coalesce them into a single call."
+  (lambda (store)
+    (values (map/accumulate-builds store
+                                   (lambda (obj)
+                                     (run-with-store store
+                                       (mproc obj)))
+                                   lst)
+            store)))
+
+
 ;;
 ;; Store monad operators.
 ;;
@@ -1822,6 +1944,11 @@ the store."
   ;; Consult the %CURRENT-TARGET-SYSTEM fluid at bind time.
   (lambda (state)
     (values (%current-target-system) state)))
+
+(define-inlinable (set-current-target target)
+  ;; Set the %CURRENT-TARGET-SYSTEM fluid at bind time.
+  (lambda (state)
+    (values (%current-target-system target) state)))
 
 (define %guile-for-build
   ;; The derivation of the Guile to be used within the build environment,
@@ -1943,29 +2070,26 @@ valid inputs."
   "Return #t if PATH is a derivation path."
   (and (store-path? path) (string-suffix? ".drv" path)))
 
-(define store-regexp*
-  ;; The substituter makes repeated calls to 'store-path-hash-part', hence
-  ;; this optimization.
-  (mlambda (store)
-    "Return a regexp matching a file in STORE."
-    (make-regexp (string-append "^" (regexp-quote store)
-                                "/([0-9a-df-np-sv-z]{32})-([^/]+)$"))))
+(define (store-path-base path)
+  "Return the base path of a path in the store."
+  (and (string-prefix? (%store-prefix) path)
+       (let ((base (string-drop path (+ 1 (string-length (%store-prefix))))))
+         (and (> (string-length base) 33)
+              (not (string-index base #\/))
+              base))))
 
 (define (store-path-package-name path)
   "Return the package name part of PATH, a file name in the store."
-  (let ((path-rx (store-regexp* (%store-prefix))))
-    (and=> (regexp-exec path-rx path)
-           (cut match:substring <> 2))))
+  (let ((base (store-path-base path)))
+    (string-drop base (+ 32 1)))) ;32 hash part + 1 hyphen
 
 (define (store-path-hash-part path)
   "Return the hash part of PATH as a base32 string, or #f if PATH is not a
 syntactically valid store path."
-  (and (string-prefix? (%store-prefix) path)
-       (let ((base (string-drop path (+ 1 (string-length (%store-prefix))))))
-         (and (> (string-length base) 33)
-              (let ((hash (string-take base 32)))
-                (and (string-every %nix-base32-charset hash)
-                     hash))))))
+  (let* ((base (store-path-base path))
+         (hash (string-take base 32)))
+    (and (string-every %nix-base32-charset hash)
+         hash)))
 
 (define (derivation-log-file drv)
   "Return the build log file for DRV, a derivation file name, or #f if it

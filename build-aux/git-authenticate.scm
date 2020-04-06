@@ -61,6 +61,9 @@
     ("atheia"
      ;; primary: "3B12 9196 AE30 0C3C 0E90  A26F A715 5567 3271 9948"
      "9A2B 401E D001 0650 1584  BAAC 8BC4 F447 6E8A 8E00")
+    ("bandali"
+     ;; primary: "BE62 7373 8E61 6D6D 1B3A  08E8 A21A 0202 4881 6103"
+     "39B3 3C8D 9448 0D2D DCC2  A498 8B44 A0CD C7B9 56F2")
     ("bavier"
      ;; primary: "34FF 38BC D151 25A6 E340  A0B5 3453 2F9F AFCA 8B8E"
      "A0C5 E352 2EF8 EF5C 64CD  B7F0 FD73 CAC7 19D3 2566")
@@ -149,6 +152,8 @@
     ("nckx (2nd)"
      ;; primary: "F5BC 5534 C36F 0087 B39D  36EF 1C9D C4FE B9DB 7C4B"
      "F5DA 2032 4B87 3D0B 7A38  7672 0DB0 FF88 4F55 6D79")
+    ("niedzejkob"
+     "E576 BFB2 CF6E B13D F571  33B9 E315 A758 4613 1564")
     ("ngz"
      "ED0E F1C8 E126 BA83 1B48  5FE9 DA00 B4F0 48E9 2F2D")
     ("pelzflorian"
@@ -164,17 +169,23 @@
      "BCA6 89B6 3655 3801 C3C6  2150 197A 5888 235F ACAC")
     ("rhelling"
      "0154 E1B9 1CC9 D9EF 7764  8DE7 F3A7 27DB 44FC CA36")
-    ("roelj"
+    ("roelj (old)"
      "17CB 2812 EB63 3DFF 2C7F  0452 C3EC 1DCA 8430 72E1")
-    ("roptat"
+    ("roelj"
+     ;; From commit cc51c03ff867d4633505354819c6d88af88bf919 (March 2020).
+     ;; See <https://lists.gnu.org/archive/html/guix-devel/2020-03/msg00070.html>.
+     "F556 FD94 FB8F 8B87 79E3  6832 CBD0 CD51 38C1 9AFC")
+    ("roptat (old)"
      "B5FA E628 5B41 3728 B2A0  FAED 4311 1F45 2008 6A0C")
+    ("roptat"
+     ;; From commit 2cbede5935eb6a40173bbdf30a9ad22bf7574c22 (Jan. 2020).  See
+     ;; <https://lists.gnu.org/archive/html/guix-devel/2020-01/msg00499.html>.
+     "1EFB 0909 1F17 D28C CBF9  B13A 53D4 57B2 D636 EE82")
     ("samplet"
      ;; primary: "D6B0 C593 DA8C 5EDC A44C  7A58 C336 91F7 1188 B004"
      "A02C 2D82 0EF4 B25B A6B5  1D90 2AC6 A5EC 1C35 7C59")
     ("sleep_walker"
      "77DD AD2D 97F5 31BB C0F3  C7FD DFB5 EB09 AA62 5423")
-    ("snape"
-     "F494 72F4 7A59 00D5 C235  F212 89F9 6D48 08F3 59C7")
     ("snape"
      "F494 72F4 7A59 00D5 C235  F212 89F9 6D48 08F3 59C7")
     ("steap"
@@ -184,7 +195,8 @@
 
     ;; https://lists.gnu.org/archive/html/guix-devel/2017-03/msg00826.html
     ("thomasd"
-     "1DD1 681F E285 E07F 11DC  0C59 2E15 A6BC D77D 54FD")
+     ;; primary: "1DD1 681F E285 E07F 11DC  0C59 2E15 A6BC D77D 54FD"
+     "3D2C DA58 819C 08C2 A649  D43D 5C3B 064C 724A 5726")
     ("thomasd (old)"
      "A5C5 92EA 606E 7106 A6A3  BC08 98B2 1575 91E1 2B08")
 

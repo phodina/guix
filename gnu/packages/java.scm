@@ -9,8 +9,11 @@
 ;;; Copyright © 2017, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019 Gábor Boskovits <boskovits@gmail.com>
 ;;; Copyright © 2018 Chris Marusich <cmmarusich@gmail.com>
-;;; Copyright © 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2019 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
+;;; Copyright © 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2019, 2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
+;;; Copyright © 2020 Raghav Gururajan <raghavgururajan@disroot.org>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -104,6 +107,44 @@
 ;; second stage JDK with which we can build the OpenJDK with the Icedtea 1.x
 ;; build framework.  We then build the more recent JDKs Icedtea 2.x and
 ;; Icedtea 3.x.
+
+(define-public libantlr3c
+  (package
+    (name "libantlr3c")
+    (version "3.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "https://www.antlr3.org/download/C/"
+                       name "-" version ".tar.gz"))
+       (sha256
+        (base32 "0lpbnb4dq4azmsvlhp6khq1gy42kyqyjv8gww74g5lm2y6blm4fa"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags (list "--enable-debuginfo" "--disable-static")
+       #:phases (modify-phases %standard-phases
+                  (replace 'configure
+                    (lambda* (#:key build target native-inputs inputs outputs
+                              (configure-flags '()) out-of-source? system
+                              #:allow-other-keys)
+                      (let ((configure (assoc-ref %standard-phases 'configure))
+                            (enable-64bit? (member system '("aarch64-linux"
+                                                            "x86_64-linux"
+                                                            "mips64el-linux"))))
+                        (configure #:build build #:target target
+                                   #:native-inputs native-inputs
+                                   #:inputs inputs #:outputs outputs
+                                   #:configure-flags `(,(if enable-64bit?
+                                                            "--enable-64bit"
+                                                            '())
+                                                       ,@configure-flags)
+                                   #:out-of-source? out-of-source?)))))))
+    (synopsis "ANTLR C Library")
+    (description "LIBANTLR3C provides run-time C libraries for ANTLR3 (ANother
+Tool for Language Recognition v3).")
+    (home-page "https://www.antlr3.org/")
+    (license license:bsd-3)))
 
 (define jikes
   (package
@@ -330,7 +371,7 @@ JNI.")
        ("jamvm" ,jamvm-1-bootstrap)
        ("unzip" ,unzip)
        ("zip" ,zip)))
-    (home-page "http://ant.apache.org")
+    (home-page "https://ant.apache.org")
     (synopsis "Build tool for Java")
     (description
      "Ant is a platform-independent build tool for Java.  It is similar to
@@ -2353,6 +2394,12 @@ new Date();"))
                                   (string-join (string-split version #\.) "u")
                                   "-ga"))))
               (file-name (string-append name "-" version "-checkout"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Delete included gradle jar
+                  (delete-file-recursively "gradle/wrapper")
+                  #t))
               (sha256
                (base32
                 "0yg38mwpivswccv9n96k06x3iv82i4px1a9xg9l8dswzwmfj259f"))))
@@ -3295,7 +3342,7 @@ decompression and random access decompression have been fully implemented.")
     (version "1.12.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/"
+              (uri (string-append "https://repo1.maven.org/maven2/"
                                   "com/thoughtworks/qdox/qdox/" version
                                   "/qdox-" version "-sources.jar"))
               (sha256
@@ -3319,10 +3366,39 @@ decompression and random access decompression have been fully implemented.")
            (lambda _
              (delete-file-recursively "src/com/thoughtworks/qdox/junit")
              #t)))))
-    (home-page "http://qdox.codehaus.org/")
+    (home-page "https://github.com/codehaus/qdox")
     (synopsis "Parse definitions from Java source files")
     (description
      "QDox is a high speed, small footprint parser for extracting
+class/interface/method definitions from source files complete with JavaDoc
+@code{@@tags}.  It is designed to be used by active code generators or
+documentation tools.")
+    (license license:asl2.0)))
+
+(define-public java-qdox
+  (package
+    (name "java-qdox")
+    ; Newer version exists, but this version is required by java-plexus-component-metadata
+    (version "2.0-M2")
+    (source (origin
+              (method url-fetch)
+              ;; 2.0-M4, -M5 at https://github.com/paul-hammant/qdox
+              ;; Older releases at https://github.com/codehaus/qdox/
+              ;; Note: The release at maven is pre-generated. The release at
+              ;; github requires jflex.
+              (uri (string-append "https://repo1.maven.org/maven2/"
+                                  "com/thoughtworks/qdox/qdox/" version
+                                  "/qdox-" version "-sources.jar"))
+              (sha256
+               (base32
+                "10xxrcaicq6axszcr2jpygisa4ch4sinyx5q7kqqxv4lknrmxp5x"))))
+    (build-system ant-build-system)
+    (arguments
+     `(#:jar-name "qdox.jar"
+       #:tests? #f)); no tests
+    (home-page "https://github.com/codehaus/qdox")
+    (synopsis "Parse definitions from Java source files")
+    (description "QDox is a high speed, small footprint parser for extracting
 class/interface/method definitions from source files complete with JavaDoc
 @code{@@tags}.  It is designed to be used by active code generators or
 documentation tools.")
@@ -3400,12 +3476,14 @@ an Ant task that extends the built-in @code{jar} task.")
     (name "java-hamcrest-core")
     (version "1.3")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/hamcrest/JavaHamcrest/"
-                                  "archive/hamcrest-java-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/hamcrest/JavaHamcrest/")
+                     (commit (string-append "hamcrest-java-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "11g0s105fmwzijbv08lx8jlb521yravjmxnpgdx08fvg1kjivhva"))
+                "16fxxkrd31ahqvcaby30jgh3z1i0zxh51m24hxgz0z2agxj6bc63"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -3505,13 +3583,14 @@ testing frameworks, mocking libraries and UI validation rules.")
     (name "java-junit")
     (version "4.12")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/junit-team/junit/"
-                                  "archive/r" version ".tar.gz"))
-              (file-name (string-append name "-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/junit-team/junit/")
+                     (commit (string-append "r" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "090dn5v1vs0b3acyaqc0gjf6p8lmd2h24wfzsbq7sly6b214anws"))
+                "1j8avi91px1z8rjc89cfikwrvfifdmmsarwiyrcnr59ynvpz0v8h"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -3524,7 +3603,7 @@ testing frameworks, mocking libraries and UI validation rules.")
        #:jar-name "junit.jar"))
     (inputs
      `(("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://junit.org/")
+    (home-page "https://junit.org/junit4/")
     (synopsis "Test framework for Java")
     (description
      "JUnit is a simple framework to write repeatable tests for Java projects.
@@ -3537,13 +3616,14 @@ sharing common test data, and test runners for running tests.")
     (name "java-plexus-utils")
     (version "3.2.0")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/codehaus-plexus/"
-                                  "plexus-utils/archive/plexus-utils-"
-                                  version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/codehaus-plexus/plexus-utils")
+                     (commit (string-append "plexus-utils-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1ihfigar20lvk4pinii7dq05i173xphhw4iyrk6gjfy04m01j2lz"))))
+                "1mlx7xrq7lgqjqcpg7y4hi1ghavf28vvk3har82037dqx61n0f15"))))
     (build-system ant-build-system)
     ;; FIXME: The default build.xml does not include a target to install
     ;; javadoc files.
@@ -3578,7 +3658,7 @@ cli/shell/BourneShell.java"
     (native-inputs
      `(("java-hamcrest-core" ,java-hamcrest-core)
        ("java-junit" ,java-junit)))
-    (home-page "http://codehaus-plexus.github.io/plexus-utils/")
+    (home-page "https://codehaus-plexus.github.io/plexus-utils/")
     (synopsis "Common utilities for the Plexus framework")
     (description "This package provides various Java utility classes for the
 Plexus framework to ease working with strings, files, command lines, XML and
@@ -3590,13 +3670,14 @@ more.")
     (name "java-plexus-interpolation")
     (version "1.23")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/codehaus-plexus/"
-                                  "plexus-interpolation/archive/"
-                                  "plexus-interpolation-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/codehaus-plexus/plexus-interpolation")
+                     (commit (string-append "plexus-interpolation-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "03377yzlx5q440m6sxxgv6a5qb8fl30zzcgxgc0hxk5qgl2z1jjn"))))
+                "005hxxg1adv71a96lz4vp65bk3v1pi76j4c45z29xzizclib16vl"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "plexus-interpolation.jar"
@@ -3604,7 +3685,7 @@ more.")
     (native-inputs
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://codehaus-plexus.github.io/plexus-interpolation/")
+    (home-page "https://codehaus-plexus.github.io/plexus-interpolation/")
     (synopsis "Java components for interpolating ${} strings and the like")
     (description "Plexus interpolator is a modular, flexible interpolation
 framework for the expression language style commonly seen in Maven, Plexus,
@@ -3620,13 +3701,14 @@ these two libraries to vary independently of one another.")
     (name "java-plexus-classworlds")
     (version "2.5.2")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/codehaus-plexus/"
-                                  "plexus-classworlds/archive/plexus-classworlds-"
-                                  version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/codehaus-plexus/plexus-classworlds")
+                     (commit (string-append "plexus-classworlds-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1qm4p0rl8d82lzhsiwnviw11jnq44s0gflg78zq152xyyr2xmh8g"))))
+                "1iv8x55fbni2hg4l7pdpbwfq75xmvq1f25g6nxma8rcdpihsh13r"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "plexus-classworlds.jar"
@@ -3634,7 +3716,7 @@ these two libraries to vary independently of one another.")
        #:tests? #f));; FIXME: we need to generate some resources as in pom.xml
     (native-inputs
      `(("java-junit" ,java-junit)))
-    (home-page "http://codehaus-plexus.github.io/plexus-classworlds/")
+    (home-page "https://codehaus-plexus.github.io/plexus-classworlds/")
     (synopsis "Java class loader framework")
     (description "Plexus classworlds replaces the native @code{ClassLoader}
 mechanism of Java.  It is especially useful for dynamic loading of application
@@ -3646,12 +3728,14 @@ components.")
     (name "java-plexus-container-default-bootstrap")
     (version "1.7.1")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/codehaus-plexus/plexus-containers"
-                                  "/archive/plexus-containers-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/codehaus-plexus/plexus-containers")
+                     (commit (string-append "plexus-containers-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "0xw5g30qf4a83608rw9v2hv8pfsz7d69dkdhk6r0wia4q78hh1pc"))))
+                "1316hrp5vqfv0aw7miq2fp0wwy833h66h502h29vnh5sxj27x228"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "container-default.jar"
@@ -3685,12 +3769,14 @@ implementation.")
     (name "java-plexus-io")
     (version "3.0.0")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/codehaus-plexus/plexus-io"
-                                  "/archive/plexus-io-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/codehaus-plexus/plexus-io")
+                     (commit (string-append "plexus-io-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "0f2j41kihaymxkpbm55smpxjja235vad8cgz94frfy3ppcp021dw"))))
+                "1h4q9l2j9sfbscvxpnyy2hazi0r83h3am86y4r959wrl1b24xxwd"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "plexus-io.jar"
@@ -3844,12 +3930,14 @@ from source tags and class annotations.")))
     (name "java-plexus-cipher")
     (version "1.7")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/codehaus-plexus/plexus-cipher"
-                                  "/archive/plexus-cipher-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/codehaus-plexus/plexus-cipher")
+                     (commit (string-append "plexus-cipher-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1j3r8xzlxlk340snkjp6lk2ilkxlkn8qavsfiq01f43xmvv8ymk3"))))
+                "0m638nzlxbmnbcj5cwdpgs326ab584yv0k803zlx37r6iqwvf6b0"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "plexus-cipher.jar"
@@ -3880,12 +3968,14 @@ and decryption.")
     (name "java-plexus-compiler-api")
     (version "2.8.4")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/codehaus-plexus/plexus-compiler"
-                                  "/archive/plexus-compiler-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/codehaus-plexus/plexus-compiler")
+                     (commit (string-append "plexus-compiler-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "09vmxs0807wsd26nbrwwj5l8ycmzazqycj52l7w6wjvkryywi69h"))))
+                "1nq1gnn3s6z1j29gmi1hqbklsmm8b1lmnafb0191914f95mn18gk"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "plexus-compiler-api.jar"
@@ -3931,13 +4021,14 @@ Compiler component.")))
     (source (origin
               ;; This project doesn't tag releases or publish tarballs, so we take
               ;; the "prepare release plexus-sec-dispatcher-1.4" git commit.
-              (method url-fetch)
-              (uri (string-append "https://github.com/sonatype/plexus-sec-dispatcher/"
-                                  "archive/7db8f88048.tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/sonatype/plexus-sec-dispatcher/")
+                     (commit "7db8f880486e192a1c5ea9544e01e756c3d49d0f")))
               (sha256
                (base32
-                "1smfrk4n7xbrsxpxcp2j4i0j8q86j73w0w6xg7qz83dp6dagdjgp"))
-              (file-name (string-append name "-" version ".tar.gz"))))
+                "1ng4yliy4cqpjr4fxxjbpwyk1wkch5f8vblm1kvwf328s4gibszs"))
+              (file-name (git-file-name name version))))
     (arguments
      `(#:jar-name "plexus-sec-dispatcher.jar"
        #:source-dir "src/main/java"
@@ -4052,12 +4143,14 @@ Plexus components.")
     (name "java-sisu-build-api")
     (version "0.0.7")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/sonatype/sisu-build-api/"
-                                  "archive/plexus-build-api-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/sonatype/sisu-build-api")
+                     (commit (string-append "plexus-build-api-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1c3rrpma3x634xp2rm2p5iskfhzdyc7qfbhjzr70agrl1jwghgy2"))))
+                "1d5w6c58gkx30d51v7qwv1xrhc0ly76848gihmgshj19yf6yhca0"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "sisu-build-api.jar"
@@ -4107,12 +4200,14 @@ project and determining what files need to be rebuilt.")
     (name "java-modello-core")
     (version "1.9.1")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/codehaus-plexus/modello"
-                                  "/archive/modello-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/codehaus-plexus/modello")
+                     (commit (string-append "modello-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "0l2pvns8pmlrmjm3iknp7gpg3654y1m8qhy55b19sdwdchdcyxfh"))))
+                "1di6ni42aqllpdvkpyfcw70352vr2i8wf6hd5nhd9kmqjb5dj5j4"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "modello-core.jar"
@@ -4144,7 +4239,7 @@ project and determining what files need to be rebuilt.")
        ("java-plexus-classworlds" ,java-plexus-classworlds)
        ("java-geronimo-xbean-reflect" ,java-geronimo-xbean-reflect)
        ("java-guava" ,java-guava)))
-    (home-page "http://codehaus-plexus.github.io/modello/")
+    (home-page "https://codehaus-plexus.github.io/modello/")
     (synopsis "Framework for code generation from a simple model")
     (description "Modello is a framework for code generation from a simple model.
 
@@ -4279,7 +4374,7 @@ on the XPP3 API (XML Pull Parser).")))
     (version "6.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://download.forge.ow2.org/asm/"
+              (uri (string-append "https://download.forge.ow2.org/asm/"
                                   "asm-" version ".tar.gz"))
               (sha256
                (base32
@@ -4316,7 +4411,7 @@ on the XPP3 API (XML Pull Parser).")))
            (install-jars "dist")))))
     (native-inputs
      `(("java-junit" ,java-junit)))
-    (home-page "http://asm.ow2.org/")
+    (home-page "https://asm.ow2.io/")
     (synopsis "Very small and fast Java bytecode manipulation framework")
     (description "ASM is an all purpose Java bytecode manipulation and
 analysis framework.  It can be used to modify existing classes or dynamically
@@ -4381,13 +4476,14 @@ to generate and transform Java byte code.")
     (name "java-objenesis")
     (version "2.5.1")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/easymock/objenesis/"
-                                  "archive/" version ".tar.gz"))
-              (file-name (string-append "objenesis-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/easymock/objenesis")
+                     (commit version)))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1va5qz1i2wawwavhnxfzxnfgrcaflz9p1pg03irrjh4nd3rz8wh6"))))
+                "054yi200wj00x6dp1sxfrwgndwywadsbn8d8ij1j0v45j9g2vdya"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "objenesis.jar"
@@ -4410,12 +4506,14 @@ constructor on object instantiation.")
     (name "java-easymock")
     (version "3.4")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/easymock/easymock/"
-                                  "archive/easymock-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/easymock/easymock/")
+                     (commit (string-append "easymock-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1yzg0kv256ndr57gpav46cyv4a1ns5sj722l50zpxk3j6sk9hnmi"))))
+                "02vybm8hc0i0n9sp2f2iiqn54zwqhq835f76wc6b2m7819z5a8dq"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "easymock.jar"
@@ -4460,7 +4558,7 @@ constructor on object instantiation.")
     (native-inputs
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://easymock.org")
+    (home-page "https://easymock.org/")
     (synopsis "Java library providing mock objects for unit tests")
     (description "EasyMock is a Java library that provides an easy way to use
 mock objects in unit testing.")
@@ -4471,13 +4569,14 @@ mock objects in unit testing.")
     (name "java-jmock")
     (version "1.2.0")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/jmock-developers/"
-                                  "jmock-library/archive/" version ".tar.gz"))
-              (file-name (string-append "jmock-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/jmock-developers/jmock-library")
+                     (commit version)))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "0xmrlhq0fszldkbv281k9463mv496143vvmqwpxp62yzjvdkx9w0"))))
+                "0lkga995xd9b9mmzxmcd301hlw83p1h78nibh7djlx7wydscr85z"))))
     (build-system ant-build-system)
     (arguments
      `(#:build-target "jars"
@@ -4485,7 +4584,7 @@ mock objects in unit testing.")
        #:phases
        (modify-phases %standard-phases
          (replace 'install (install-jars "build")))))
-    (home-page "http://www.jmock.org")
+    (home-page "http://jmock.org/")
     (synopsis "Mock object library for test-driven development")
     (description "JMock is a library that supports test-driven development of
 Java code with mock objects.  Mock objects help you design and test the
@@ -4508,13 +4607,14 @@ The jMock library
     (name "java-jmock")
     (version "2.8.2")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/jmock-developers/"
-                                  "jmock-library/archive/" version ".tar.gz"))
-              (file-name (string-append name "-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/jmock-developers/jmock-library")
+                     (commit version)))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "18650a9g8xffcsdb6w91pbswa7f40fp2sh6s3nclkclz5dbzq8f0"))))
+                "12b7l22g3nrjvf2dzcw3z03fpd2chrgp0d8xkvn8w55rwb57pax6"))))
     (inputs
      `(("java-hamcrest-all" ,java-hamcrest-all)
        ("java-asm" ,java-asm)
@@ -4674,7 +4774,7 @@ overly clever.")
     (native-inputs
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://commons.apache.org/math/")
+    (home-page "https://commons.apache.org/math/")
     (synopsis "Apache Commons mathematics library")
     (description "Commons Math is a library of lightweight, self-contained
 mathematics and statistics components addressing the most common problems not
@@ -4718,7 +4818,7 @@ available in the Java programming language or Commons Lang.")
     (native-inputs
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://openjdk.java.net/projects/code-tools/jmh/")
+    (home-page "https://openjdk.java.net/projects/code-tools/jmh/")
     (synopsis "Benchmark harness for the JVM")
     (description "JMH is a Java harness for building, running, and analysing
 nano/micro/milli/macro benchmarks written in Java and other languages
@@ -4757,7 +4857,7 @@ targeting the JVM.")
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)
        ("java-easymock" ,java-easymock)))
-    (home-page "http://commons.apache.org/collections/")
+    (home-page "https://commons.apache.org/collections/")
     (synopsis "Collections framework")
     (description "The Java Collections Framework is the recognised standard
 for collection handling in Java.  Commons-Collections seek to build upon the
@@ -4856,7 +4956,7 @@ are many features, including:
     (native-inputs
      `(("junit" ,java-junit)
        ("collections-test" ,java-commons-collections-test-classes)))
-    (home-page "http://commons.apache.org/beanutils/")
+    (home-page "https://commons.apache.org/beanutils/")
     (synopsis "Dynamically set or get properties in Java")
     (description "BeanUtils provides a simplified interface to reflection and
 introspection to set or get dynamically determined properties through their
@@ -4891,7 +4991,7 @@ setter and getter method.")
     (native-inputs
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://commons.apache.org/io/")
+    (home-page "https://commons.apache.org/io/")
     (synopsis "Common useful IO related classes")
     (description "Commons-IO contains utility classes, stream implementations,
 file filters and endian classes.")
@@ -4929,7 +5029,7 @@ file filters and endian classes.")
          (replace 'install (install-jars "target")))))
     (native-inputs
      `(("java-junit" ,java-junit)))
-    (home-page "http://commons.apache.org/proper/commons-exec/")
+    (home-page "https://commons.apache.org/proper/commons-exec/")
     (synopsis "Common program execution related classes")
     (description "Commons-Exec simplifies executing external processes.")
     (license license:asl2.0)))
@@ -5007,7 +5107,7 @@ time/FastDateFormatTest.java"
          (add-after 'install 'install-doc (install-javadoc "target/apidocs")))))
     (native-inputs
      `(("java-junit" ,java-junit)))
-    (home-page "http://commons.apache.org/lang/")
+    (home-page "https://commons.apache.org/lang/")
     (synopsis "Extension of the java.lang package")
     (description "The Commons Lang components contains a set of Java classes
 that provide helper methods for standard Java classes, especially those found
@@ -5071,7 +5171,7 @@ included:
        ("java-commons-io" ,java-commons-io)
        ("java-hamcrest-all" ,java-hamcrest-all)
        ("java-easymock" ,java-easymock)))
-    (home-page "http://commons.apache.org/lang/")
+    (home-page "https://commons.apache.org/lang/")
     (synopsis "Extension of the java.lang package")
     (description "The Commons Lang components contains a set of Java classes
 that provide helper methods for standard Java classes, especially those found
@@ -5179,7 +5279,7 @@ these scripting language engines.")
        ("java-commons-beanutils" ,java-commons-beanutils)))
     (native-inputs
      `(("java-junit" ,java-junit)))
-    (home-page "http://commons.apache.org/jxpath/")
+    (home-page "https://commons.apache.org/jxpath/")
     (synopsis "Simple interpreter of an expression language called XPath.")
     (description "The org.apache.commons.jxpath package defines a simple
 interpreter of an expression language called XPath.  JXPath applies XPath
@@ -5438,7 +5538,7 @@ more!")
                     "LogKitLogger.java"))
              (delete-file-recursively "src/test")
              #t)))))
-    (home-page "http://commons.apache.org/logging/")
+    (home-page "https://commons.apache.org/logging/")
     (synopsis "Common API for logging implementations")
     (description "The Logging package is a thin bridge between different
 logging implementations.  A library that uses the commons-logging API can be
@@ -5655,7 +5755,7 @@ standards and recommendations.")
     (native-inputs
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://commons.apache.org/net/")
+    (home-page "https://commons.apache.org/net/")
     (synopsis "Client library for many basic Internet protocols")
     (description "The Apache Commons Net library implements the client side of
 many basic Internet protocols.  The purpose of the library is to provide
@@ -6497,7 +6597,7 @@ JavaMail API.")
      `(("java-osgi-core" ,java-osgi-core)
        ("java-hamcrest-core" ,java-hamcrest-core)
        ("java-junit" ,java-junit)))
-    (home-page "http://logging.apache.org/log4j/2.x/")
+    (home-page "https://logging.apache.org/log4j/2.x/")
     (synopsis "API module of the Log4j logging framework for Java")
     (description
      "This package provides the API module of the Log4j logging framework for
@@ -6584,7 +6684,7 @@ logging framework for Java.")))
     (native-inputs
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://commons.apache.org/cli/")
+    (home-page "https://commons.apache.org/cli/")
     (synopsis "Command line arguments and options parsing library")
     (description "The Apache Commons CLI library provides an API for parsing
 command line options passed to programs.  It is also able to print help
@@ -6634,7 +6734,7 @@ This is a part of the Apache Commons Project.")
     (native-inputs
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://commons.apache.org/codec/")
+    (home-page "https://commons.apache.org/codec/")
     (synopsis "Common encoders and decoders such as Base64, Hex, Phonetic and URLs")
     (description "The codec package contains simple encoder and decoders for
 various formats such as Base64 and Hexadecimal.  In addition to these widely
@@ -6665,7 +6765,7 @@ This is a part of the Apache Commons Project.")
          (add-after 'install 'install-doc (install-javadoc "dist/docs/api")))))
     (native-inputs
      `(("java-junit" ,java-junit)))
-    (home-page "http://commons.apache.org/daemon/")
+    (home-page "https://commons.apache.org/daemon/")
     (synopsis "Library to launch Java applications as daemons")
     (description "The Daemon package from Apache Commons can be used to
 implement Java applications which can be launched as daemons.  For example the
@@ -6683,12 +6783,14 @@ This is a part of the Apache Commons Project.")
     (name "java-javaewah")
     (version "1.1.6")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/lemire/javaewah/"
-                                  "archive/JavaEWAH-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/lemire/javaewah/")
+                     (commit (string-append "JavaEWAH-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1n7j1r1h24wlhwv9zdcj6yqjrhma2ixwyzm15l5vrv6yqjs6753b"))))
+                "1m8qcb1py76v7avbjjrkvyy6fhr5dk2ywy73gbsxqry04gkm2nhw"))))
     (build-system ant-build-system)
     (arguments `(#:jar-name "javaewah.jar"))
     (inputs
@@ -6701,7 +6803,7 @@ This is a part of the Apache Commons Project.")
 compression scheme.  It can be used to implement bitmap indexes.
 
 The goal of word-aligned compression is not to achieve the best compression,
-but rather to improve query processing time. Hence, JavaEWAH tries to save CPU
+but rather to improve query processing time.  Hence, JavaEWAH tries to save CPU
 cycles, maybe at the expense of storage.  However, the EWAH scheme is always
 more efficient storage-wise than an uncompressed bitmap (as implemented in the
 @code{BitSet} class by Sun).")
@@ -6903,7 +7005,7 @@ tree walking, and translation.")
     (native-inputs
      `(("antlr" ,antlr2)
        ("java-junit" ,java-junit)))
-    (home-page "http://www.stringtemplate.org")
+    (home-page "https://www.stringtemplate.org")
     (synopsis "Template engine to generate formatted text output")
     (description "StringTemplate is a java template engine (with ports for C#,
 Objective-C, JavaScript, Scala) for generating source code, web pages, emails,
@@ -6990,13 +7092,14 @@ StringTemplate also powers ANTLR.")
     (name "antlr3")
     (version "3.5.2")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/antlr/antlr3/archive/"
-                                  version ".tar.gz"))
-              (file-name (string-append name "-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/antlr/antlr3")
+                     (commit version)))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "0218v683081lg54z9hvjxinhxd4dqp870jx6n39gslm0bkyi4vd6"))))
+                "0cafavrjmzqhklghrk8c2jqxkdwxgzskm20pbrfd3r41cn00dpnf"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name (string-append ,name "-" ,version ".jar")
@@ -7098,7 +7201,7 @@ tree walking, and translation.")
     (inputs
      `(("junit" ,java-junit)))))
 
-(define antlr3-3.3
+(define-public antlr3-3.3
   (package
     (inherit antlr3)
     (name "antlr3")
@@ -7355,7 +7458,7 @@ used to generate this API.")
     (version "6.0.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/"
+              (uri (string-append "https://repo1.maven.org/maven2/"
                                   "org/osgi/osgi.cmpn/" version "/osgi.cmpn-"
                                   version "-sources.jar"))
               (sha256
@@ -7386,7 +7489,7 @@ in compiling bundles.")
     (version "1.3.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.service.component.annotations/"
                                   version "/org.osgi.service.component.annotations-"
                                   version "-sources.jar"))
@@ -7413,7 +7516,7 @@ the support annotations for osgi-service-component.")
     (version "1.0.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.dto/" version "/org.osgi.dto-"
                                   version "-sources.jar"))
               (sha256
@@ -7442,7 +7545,7 @@ objects of the listed types or aggregates.")
     (version "1.0.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.resource/"
                                   version "/org.osgi.resource-"
                                   version "-sources.jar"))
@@ -7470,7 +7573,7 @@ the definition of common types in osgi packages.")
     (version "1.0.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.namespace.contract/"
                                   version "/org.osgi.namespace.contract-"
                                   version "-sources.jar"))
@@ -7498,7 +7601,7 @@ the names for the attributes and directives for a namespace with contracts.")
     (version "1.0.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.namespace.extender/"
                                   version "/org.osgi.namespace.extender-"
                                   version "-sources.jar"))
@@ -7526,7 +7629,7 @@ the names for the attributes and directives for an extender namespace.")
     (version "1.0.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.namespace.service/"
                                   version "/org.osgi.namespace.service-"
                                   version "-sources.jar"))
@@ -7554,7 +7657,7 @@ the names for the attributes and directives for a service namespace.")
     (version "1.0.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.util.function/"
                                   version "/org.osgi.util.function-"
                                   version "-sources.jar"))
@@ -7581,7 +7684,7 @@ an interface for a function that accepts a single argument and produces a result
     (version "1.0.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.util.promise/"
                                   version "/org.osgi.util.promise-"
                                   version "-sources.jar"))
@@ -7610,7 +7713,7 @@ value.  It handles the interactions for asynchronous processing.")
     (version "1.3.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.service.metatype.annotations/"
                                   version "/org.osgi.service.metatype.annotations-"
                                   version "-sources.jar"))
@@ -7637,7 +7740,7 @@ the support annotations for metatype.")
     (version "1.1.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.service.repository/"
                                   version "/org.osgi.service.repository-"
                                   version "-sources.jar"))
@@ -7666,7 +7769,7 @@ a repository service that contains resources.")
     (version "1.8.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.framework/" version "/org.osgi.framework-"
                                   version "-sources.jar"))
               (sha256
@@ -7693,7 +7796,7 @@ and service platform for the Java programming language.")
     (version "1.3.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.service.log/"
                                   version "/org.osgi.service.log-"
                                   version "-sources.jar"))
@@ -7720,7 +7823,7 @@ the log service.")
     (version "1.0.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.service.jdbc/"
                                   version "/org.osgi.service.jdbc-"
                                   version "-sources.jar"))
@@ -7752,7 +7855,7 @@ factories for getting JDBC connections:
     (version "1.0.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.service.resolver/"
                                   version "/org.osgi.service.resolver-"
                                   version "-sources.jar"))
@@ -7781,7 +7884,7 @@ by the caller.")
     (version "1.5.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.util.tracker/"
                                   version "/org.osgi.util.tracker-"
                                   version "-sources.jar"))
@@ -7809,7 +7912,7 @@ bundle tracking utility classes.")
     (version "1.5.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.service.cm/"
                                   version "/org.osgi.service.cm-"
                                   version "-sources.jar"))
@@ -7837,7 +7940,7 @@ utility classes for the configuration of services.")
     (version "1.2.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/org/osgi/"
+              (uri (string-append "https://repo1.maven.org/maven2/org/osgi/"
                                   "org.osgi.service.packageadmin/"
                                   version "/org.osgi.service.packageadmin-"
                                   version "-sources.jar"))
@@ -8005,7 +8108,7 @@ package contains utilities for obtaining services via the Java SE 6
      `(#:jar-name "java-aqute-bnd-annotation.jar"
        #:source-dir "biz.aQute.bnd.annotation/src"
        #:tests? #f)); empty test dir
-    (home-page "http://bnd.bndtools.org/")
+    (home-page "https://bnd.bndtools.org/")
     (synopsis "Tools for OSGi")
     (description "Bnd is a swiss army knife for OSGi, it creates manifest
 headers based on analyzing the class code, it verifies the project settings,
@@ -8497,7 +8600,7 @@ of deserialization.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0rf5ha6w0waz50jz2479jsrbgmd0dnx0gs337m126j5z7zlmg7mg"))))
+                "0474cqcv46zgv9bhms2vgawakq1vyj0hp3h3f1bfys46msia90bh"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "java-snakeyaml.jar"
@@ -9161,7 +9264,7 @@ those in Perl and JavaScript.")
        ("cglib" ,java-cglib)
        ("asm" ,java-asm)
        ("aopalliance" ,java-aopalliance)))
-    (home-page "http://testng.org")
+    (home-page "https://testng.org")
     (synopsis "Testing framework")
     (description "TestNG is a testing framework inspired from JUnit and NUnit
 but introducing some new functionalities that make it more powerful and easier
@@ -10260,7 +10363,7 @@ Dependency Injection (CDI).")
     (native-inputs
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://www.joda.org/joda-convert/")
+    (home-page "https://www.joda.org/joda-convert/")
     (synopsis "Conversion between Objects and Strings")
     (description "Joda-Convert provides a small set of classes to aid
 conversion between Objects and Strings.  It is not intended to tackle the
@@ -10328,7 +10431,7 @@ wider problem of Object to Object transformation.")
      `(("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)
        ("tzdata" ,tzdata)))
-    (home-page "http://www.joda.org/joda-time/")
+    (home-page "https://www.joda.org/joda-time/")
     (synopsis "Replacement for the Java date and time classes")
     (description "Joda-Time is a replacement for the Java date and time
 classes prior to Java SE 8.")
@@ -10631,7 +10734,7 @@ against expected outcomes.")
      `(("unzip" ,unzip)
        ("java-junit" ,java-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
-    (home-page "http://approximatrix.com/products/openchart2/")
+    (home-page "https://approximatrix.com/products/openchart2/")
     (synopsis "Simple plotting for Java")
     (description "Openchart2 provides a simple, yet powerful, interface for
 Java programmers to create two-dimensional charts and plots.  The library
@@ -10727,7 +10830,7 @@ authentication, HTTP state management, and HTTP connection management.")
        ("java-commons-logging-minimal" ,java-commons-logging-minimal)
        ("java-commons-net" ,java-commons-net)
        ("java-jsch" ,java-jsch)))
-    (home-page "http://commons.apache.org/proper/commons-vfs/")
+    (home-page "https://commons.apache.org/proper/commons-vfs/")
     (synopsis "Java file system library")
     (description "Commons VFS provides a single API for accessing various
 different file systems.  It presents a uniform view of the files from various
@@ -11378,35 +11481,6 @@ Moreover, @code{logback-classic} natively implements the slf4j API so that you
 can readily switch back and forth between logback and other logging frameworks
 such as log4j or @code{java.util.logging} (JUL).")))
 
-(define-public java-qdox
-  (package
-    (name "java-qdox")
-    ; Newer version exists, but this version is required by java-plexus-component-metadata
-    (version "2.0-M2")
-    (source (origin
-              (method url-fetch)
-              ;; 2.0-M4, -M5 at https://github.com/paul-hammant/qdox
-              ;; Older releases at https://github.com/codehaus/qdox/
-              ;; Note: The release at maven is pre-generated. The release at
-              ;; github requires jflex.
-              (uri (string-append "http://central.maven.org/maven2/"
-                                  "com/thoughtworks/qdox/qdox/" version
-                                  "/qdox-" version "-sources.jar"))
-              (sha256
-               (base32
-                "10xxrcaicq6axszcr2jpygisa4ch4sinyx5q7kqqxv4lknrmxp5x"))))
-    (build-system ant-build-system)
-    (arguments
-     `(#:jar-name "qdox.jar"
-       #:tests? #f)); no tests
-    (home-page "http://qdox.codehaus.org/")
-    (synopsis "Parse definitions from Java source files")
-    (description "QDox is a high speed, small footprint parser for extracting
-class/interface/method definitions from source files complete with JavaDoc
-@code{@@tags}.  It is designed to be used by active code generators or
-documentation tools.")
-    (license license:asl2.0)))
-
 (define-public java-jgit
   (package
     (name "java-jgit")
@@ -11549,16 +11623,16 @@ the application using Java to Lisp integration APIs.")
 (define-public java-jsonp-api
   (package
     (name "java-jsonp-api")
-    (version "1.1.5")
+    (version "1.1.6")
     (source (origin
               (method git-fetch)
               (uri (git-reference
                      (url "https://github.com/eclipse-ee4j/jsonp")
-                     (commit (string-append version "-RELEASE"))))
+                     (commit (string-append "1.1-" version "-RELEASE"))))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0nxq16lrx7i87hgyj5rzcwilvr67h0i299gygfn8f5vs4n7n59vy"))))
+                "0zrj03hkr3jdmqlb4ipjr37cqpp2q2814qpmxi7srlwpdqs0ibgc"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "jsonp-api.jar"
@@ -11584,7 +11658,15 @@ and allows to build a Java object model for JSON text using API classes
      `(#:jar-name "jsonp-impl.jar"
        #:tests? #f
        #:source-dir "impl/src/main/java"
-       #:test-dir "impl/src/test"))
+       #:test-dir "impl/src/test"
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'copy-resources
+           (lambda _
+             (copy-recursively
+               "impl/src/main/resources/"
+               "build/classes")
+             #t)))))
     (propagated-inputs
      `(("java-jsonp-api" ,java-jsonp-api)))
     (description "JSON Processing (JSON-P) is a Java API to process (e.g.

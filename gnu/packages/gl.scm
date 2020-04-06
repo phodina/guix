@@ -4,13 +4,14 @@
 ;;; Copyright © 2014, 2016 David Thompson <davet@gnu.org>
 ;;; Copyright © 2014, 2015, 2016, 2017 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 ng0 <ng0@n0.is>
-;;; Copyright © 2016, 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2016, 2017, 2018, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 David Thompson <davet@gnu.org>
 ;;; Copyright © 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2017, 2018, 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Pierre Neidhardt <mail@ambrevar.xyz>
+;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -96,7 +97,7 @@ as ASCII text.")
 (define-public freeglut
   (package
     (name "freeglut")
-    (version "3.0.0")
+    (version "3.2.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -104,16 +105,15 @@ as ASCII text.")
                     version "/freeglut-" version ".tar.gz"))
               (sha256
                (base32
-                "18knkyczzwbmyg8hr4zh8a1i5ga01np2jzd1rwmsh7mh2n2vwhra"))))
+                "0s6sk49q8ijgbsrrryb7dzqx2fa744jhx1wck5cz5jia2010w06l"))))
     (build-system cmake-build-system)
-    (arguments '(#:tests? #f)) ; no test target
-    (inputs `(("mesa" ,mesa)
-              ("libx11" ,libx11)
+    (arguments
+     '(#:tests? #f                      ;no test target
+       #:configure-flags '("-DFREEGLUT_BUILD_STATIC_LIBS=OFF")))
+    (inputs `(("libx11" ,libx11)
               ("libxi" ,libxi)
               ("libxrandr" ,libxrandr)
-              ("libxxf86vm" ,libxxf86vm)
-              ("xorgproto" ,xorgproto)
-              ("xinput" ,xinput)))
+              ("libxxf86vm" ,libxxf86vm)))
     (propagated-inputs
      ;; Headers from Mesa and GLU are needed.
      `(("glu" ,glu)
@@ -147,7 +147,9 @@ the X-Consortium license.")
               (sha256
                (base32
                 "16lrxxxd9ps9l69y3zsw6iy0drwjsp6m26d1937xj71alqk6dr6x"))))
-    (build-system gnu-build-system)))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:configure-flags '("--disable-static")))))
 
 (define-public ftgl
   (package
@@ -230,7 +232,7 @@ also known as DXTn or DXTC) for Mesa.")
 (define-public mesa
   (package
     (name "mesa")
-    (version "19.2.7")
+    (version "19.3.4")
     (source
       (origin
         (method url-fetch)
@@ -242,7 +244,7 @@ also known as DXTn or DXTC) for Mesa.")
                                   version "/mesa-" version ".tar.xz")))
         (sha256
          (base32
-          "17jp8ghipgz62vqqz5llskxypkcmgf8gnlgnj0pyvnbgi6vryyg3"))
+          "1r4giqq7q7zqbn23lbw7v5vswagxx8qj6ij2w8bsb697mvk6g90x"))
         (patches
          (search-patches "mesa-skip-disk-cache-test.patch"))))
     (build-system meson-build-system)
@@ -266,7 +268,8 @@ also known as DXTn or DXTC) for Mesa.")
         ("libxvmc" ,libxvmc)
         ,@(match (%current-system)
             ((or "x86_64-linux" "i686-linux")
-             `(("llvm" ,llvm)))
+             ;; Note: update the 'clang' input of mesa-opencl when bumping this.
+             `(("llvm" ,llvm-9)))
             (_
              `()))
         ("makedepend" ,makedepend)
@@ -433,7 +436,7 @@ from software emulation to complete hardware acceleration for modern GPUs.")
      `(("libclc" ,libclc)
        ,@(package-inputs mesa)))
     (native-inputs
-     `(("clang" ,clang)
+     `(("clang" ,clang-9)
        ,@(package-native-inputs mesa)))))
 
 (define-public mesa-opencl-icd
@@ -601,6 +604,26 @@ extension functionality is exposed in a single header file.")
 OpenGL graphics API.")
     (license license:lgpl3+)))
 
+(define-public guile3.0-opengl
+  (package
+    (inherit guile-opengl)
+    (name "guile3.0-opengl")
+    (arguments
+     (substitute-keyword-arguments (package-arguments guile-opengl)
+       ((#:phases phases)
+        `(modify-phases ,phases
+           (add-after 'unpack 'build-with-guile-3.0
+             (lambda _
+               (substitute* "configure"
+                 (("_guile_versions_to_search=\"")
+                  "_guile_versions_to_search=\"3.0 "))
+               #t))))))
+    (inputs
+     `(("guile" ,guile-3.0)
+       ("mesa" ,mesa)
+       ("glu" ,glu)
+       ("freeglut" ,freeglut)))))
+
 (define-public libepoxy
   (package
     (name "libepoxy")
@@ -710,7 +733,7 @@ OpenGL.")
        ("libxinerama" ,libxinerama)
        ("libxcursor" ,libxcursor)
        ("libxxf86vm" ,libxxf86vm)))
-    (home-page "http://www.glfw.org")
+    (home-page "https://www.glfw.org")
     (synopsis "OpenGL application development library")
     (description
      "GLFW is a library for OpenGL, OpenGL ES and Vulkan development for

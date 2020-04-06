@@ -1,9 +1,10 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2018 Joshua Sierles, Nextjournal <joshua@nextjournal.com>
-;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Andreas Enge <andreas@enge.fr>
+;;; Copyright © 2020 Alexander Krotov <krotov@iitp.ru>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -38,6 +39,7 @@
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cran)
+  #:use-module (gnu packages gd)
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages maths)
   #:use-module (gnu packages multiprecision)
@@ -54,15 +56,14 @@
 (define-public igraph
   (package
     (name "igraph")
-    (version "0.7.1")
+    (version "0.8.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://igraph.org/nightly/get/c/igraph-"
-                           version ".tar.gz"))
+       (uri (string-append "https://github.com/igraph/igraph/releases/"
+                           "download/" version "/igraph-" version ".tar.gz"))
        (sha256
-        (base32
-         "1pxh8sdlirgvbvsw8v65h6prn7hlm45bfsl1yfcgd6rn4w706y6r"))))
+        (base32 "0wbvrac3ip3lqmbkckhnxa2swlbc86l1h8mazdlb618kx3winvi6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -88,34 +89,49 @@ more.")
 (define-public python-igraph
   (package (inherit igraph)
     (name "python-igraph")
-    (version "0.7.1.post6")
+    (version "0.8.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "python-igraph" version))
        (sha256
         (base32
-         "0xp61zz710qlzhmzbfr65d5flvsi8zf2xy78s6rsszh719wl5sm5"))))
+         "13mbrlmnbgbzw6y8ws7wj0a3ly3in8j4l1ngi6yxvgvxxi4bprj7"))))
     (build-system python-build-system)
-    (arguments '())
+    (arguments
+     '(#:configure-flags
+       (list "--use-pkg-config")
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'build
+           (lambda _
+             (invoke "python" "./setup.py" "build" "--use-pkg-config")))
+         (delete 'check)
+         (add-after 'install 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (invoke "pytest" "-v"))))))
     (inputs
      `(("igraph" ,igraph)))
+    (propagated-inputs
+     `(("python-texttable" ,python-texttable)))
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
-    (home-page "http://pypi.python.org/pypi/python-igraph")
+     `(("pkg-config" ,pkg-config)
+       ("python-pytest" ,python-pytest)))
+    (home-page "https://pypi.org/project/python-igraph/")
     (synopsis "Python bindings for the igraph network analysis library")))
 
 (define-public r-igraph
   (package
     (name "r-igraph")
-    (version "1.2.4.2")
+    (version "1.2.5")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "igraph" version))
        (sha256
         (base32
-         "0scrbqb26pam8akblb4g9rkz888s0xffw3gcly78s4ijj67barxd"))))
+         "126z1ygbmi3g7hk97snf22rnx680dyi30idssm5zacba5rdngp8c"))))
     (build-system r-build-system)
     (native-inputs
      `(("gfortran" ,gfortran)))
@@ -500,4 +516,31 @@ isolating planarity obstructions.")
     (synopsis "Rank-width and rank-decomposition of graphs")
     (description "rw computes rank-width and rank-decompositions
 of graphs.")
+    (license license:gpl2+)))
+
+(define-public mscgen
+  (package
+    (name "mscgen")
+    (version "0.20")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://www.mcternan.me.uk/mscgen/software/mscgen-src-"
+                           version ".tar.gz"))
+       (sha256
+        (base32
+         "08yw3maxhn5fl1lff81gmcrpa4j9aas4mmby1g9w5qcr0np82d1w"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("gd" ,gd)))
+    (home-page "http://www.mcternan.me.uk/mscgen/")
+    (synopsis "Message Sequence Chart Generator")
+    (description "Mscgen is a small program that parses Message Sequence Chart
+descriptions and produces PNG, SVG, EPS or server side image maps (ismaps) as
+the output.  Message Sequence Charts (MSCs) are a way of representing entities
+and interactions over some time period and are often used in combination with
+SDL.  MSCs are popular in Telecoms to specify how protocols operate although
+MSCs need not be complicated to create or use.  Mscgen aims to provide a simple
+text language that is clear to create, edit and understand, which can also be
+transformed into common image formats for display or printing.")
     (license license:gpl2+)))

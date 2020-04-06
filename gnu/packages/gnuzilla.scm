@@ -7,10 +7,11 @@
 ;;; Copyright © 2016 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 ng0 <ng0@n0.is>
-;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Ivan Petkov <ivanppetkov@gmail.com>
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -115,6 +116,7 @@
      `(;; XXX: parallel build fails, lacking:
        ;;   mkdir -p "system_wrapper_js/"
        #:parallel-build? #f
+       #:make-flags '("CXXFLAGS=-fpermissive")
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'delete-timedout-test
@@ -552,8 +554,8 @@ from forcing GEXP-PROMISE."
                       #:system system
                       #:guile-for-build guile)))
 
-(define %icecat-version "68.4.1-guix0-preview1")
-(define %icecat-build-id "20200108000000") ;must be of the form YYYYMMDDhhmmss
+(define %icecat-version "68.6.1-guix0-preview1")
+(define %icecat-build-id "20200403000000") ;must be of the form YYYYMMDDhhmmss
 
 ;; 'icecat-source' is a "computed" origin that generates an IceCat tarball
 ;; from the corresponding upstream Firefox ESR tarball, using the 'makeicecat'
@@ -575,11 +577,11 @@ from forcing GEXP-PROMISE."
                   "firefox-" upstream-firefox-version ".source.tar.xz"))
             (sha256
              (base32
-              "0q7kv70w1d33m12hkzyay6nkgvz9qczrl6hqx0n1c6grs097f2m0"))))
+              "1y69rrm73nb77p2yydny7hs7zwsbfdhyz8xg5y6xihvsakwsxn59"))))
 
-         (upstream-icecat-base-version "68.4.1") ; maybe older than base-version
+         (upstream-icecat-base-version "68.6.1") ; maybe older than base-version
          ;;(gnuzilla-commit (string-append "v" upstream-icecat-base-version))
-         (gnuzilla-commit "2d1b1bc45fdae5a99c4e8ea25593ebb9c8d7bfdf")
+         (gnuzilla-commit "f27cf24f9b5f85c1effcbac46d75e8fb83728df9")
          (gnuzilla-source
           (origin
             (method git-fetch)
@@ -591,7 +593,7 @@ from forcing GEXP-PROMISE."
                                       (string-take gnuzilla-commit 8)))
             (sha256
              (base32
-              "0hc9sx3yb71xvr9s1p0z5fx8jfqpssb8wz0h2nzhy2nyp9bb2jzl"))))
+              "1xrqk3iik9if6qcdfvschyya1vhiank6gnpkwix8m2shsdimaaq2"))))
 
          (makeicecat-patch
           (local-file (search-patch "icecat-makeicecat.patch"))))
@@ -882,6 +884,7 @@ from forcing GEXP-PROMISE."
 
        #:modules ((ice-9 ftw)
                   (ice-9 rdelim)
+                  (ice-9 regex)
                   (ice-9 match)
                   (srfi srfi-34)
                   (srfi srfi-35)
@@ -1067,6 +1070,20 @@ from forcing GEXP-PROMISE."
                                 (force-output)
                                 (retry (- remaining-attempts 1))))
                        (apply build args)))))))
+         (add-after 'build 'neutralise-store-references
+           (lambda _
+             ;; Mangle the store references to compilers & other build tools in
+             ;; about:buildconfig, reducing IceCat's closure by 1 GiB on x86-64.
+             (substitute*
+                 "dist/bin/chrome/toolkit/content/global/buildconfig.html"
+               (((format #f "(~a/)([0-9a-df-np-sv-z]{32})"
+                         (regexp-quote (%store-directory)))
+                 _ store hash)
+                (string-append store
+                               (string-take hash 8)
+                               "<!-- Guix: not a runtime dependency -->"
+                               (string-drop hash 8))))
+             #t))
          (add-before 'configure 'install-desktop-entry
            (lambda* (#:key outputs #:allow-other-keys)
              ;; Install the '.desktop' file.
@@ -1124,11 +1141,6 @@ standards of the IceCat project.")
      `((ftp-directory . "/gnu/gnuzilla")
        (cpe-name . "firefox_esr")
        (cpe-version . ,(first (string-split version #\-)))))))
-
-(define-public conkeror
-  ;; The Conkeror web browser relied on XULRunner, which IceCat > 50 no longer
-  ;; provides.  See <http://conkeror.org> for the original web page.
-  (deprecated-package "conkeror" icecat))
 
 (define-public firefox-decrypt
   (package

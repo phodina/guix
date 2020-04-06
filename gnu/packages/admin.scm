@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013 Cyril Roelandt <tipecaml@gmail.com>
 ;;; Copyright © 2014, 2015, 2016, 2018, 2019 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2015, 2016, 2017, 2018 Eric Bavier <bavier@member.fsf.org>
@@ -18,19 +18,21 @@
 ;;; Copyright © 2017 Ben Sturmfels <ben@sturm.com.au>
 ;;; Copyright © 2017 Ethan R. Jones <doubleplusgood23@gmail.com>
 ;;; Copyright © 2017 Christopher Allan Webber <cwebber@dustycloud.org>
-;;; Copyright © 2017, 2018 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017, 2018, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018, 2019 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2018 Pierre-Antoine Rouby <pierre-antoine.rouby@inria.fr>
 ;;; Copyright © 2018 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2019 Brett Gilio <brettg@gnu.org>
-;;; Copyright © 2019 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
-;;; Copyright © 2019 Jakob L. Kreuze <zerodaysfordays@sdf.lonestar.org>
+;;; Copyright © 2019,2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
+;;; Copyright © 2019 Jakob L. Kreuze <zerodaysfordays@sdf.org>
 ;;; Copyright © 2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -48,11 +50,6 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages admin)
-  #:use-module ((guix licenses) #:prefix license:)
-  #:use-module (guix packages)
-  #:use-module (guix utils)
-  #:use-module (guix download)
-  #:use-module (guix git-download)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system emacs)
   #:use-module (guix build-system gnu)
@@ -60,41 +57,58 @@
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
+  #:use-module (guix download)
+  #:use-module (guix git-download)
+  #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (guix packages)
+  #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
+  #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
+  #:use-module (gnu packages bison)
+  #:use-module (gnu packages boost)
   #:use-module (gnu packages c)
   #:use-module (gnu packages check)
+  #:use-module (gnu packages compression)
+  #:use-module (gnu packages cross-base)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages cryptsetup)
   #:use-module (gnu packages cyrus-sasl)
   #:use-module (gnu packages dns)
+  #:use-module (gnu packages elf)
   #:use-module (gnu packages file)
-  #:use-module (gnu packages ncurses)
-  #:use-module (gnu packages readline)
-  #:use-module (gnu packages libbsd)
-  #:use-module (gnu packages linux)
-  #:use-module (gnu packages lua)
-  #:use-module (gnu packages guile)
+  #:use-module (gnu packages flex)
   #:use-module (gnu packages gettext)
+  #:use-module (gnu packages gl)
+  #:use-module (gnu packages glib)
+  #:use-module (gnu packages gnome)
+  #:use-module (gnu packages gnupg)
+  #:use-module (gnu packages golang)
+  #:use-module (gnu packages groff)
+  #:use-module (gnu packages gtk)
+  #:use-module (gnu packages guile)
+  #:use-module (gnu packages image)
   #:use-module (gnu packages imagemagick)
   #:use-module (gnu packages inkscape)
+  #:use-module (gnu packages kerberos)
+  #:use-module (gnu packages libbsd)
+  #:use-module (gnu packages libftdi)
+  #:use-module (gnu packages libunwind)
+  #:use-module (gnu packages libusb)
+  #:use-module (gnu packages linux)
+  #:use-module (gnu packages lua)
+  #:use-module (gnu packages man)
+  #:use-module (gnu packages mcrypt)
+  #:use-module (gnu packages mpi)
+  #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages openldap)
+  #:use-module (gnu packages patchutils)
+  #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages perl-check)
-  #:use-module (gnu packages tcl)
-  #:use-module (gnu packages compression)
-  #:use-module (gnu packages cross-base)
-  #:use-module (gnu packages tls)
-  #:use-module (gnu packages gnupg)
-  #:use-module (gnu packages bison)
-  #:use-module (gnu packages flex)
-  #:use-module (gnu packages gl)
-  #:use-module (gnu packages glib)
-  #:use-module (gnu packages openldap)
-  #:use-module (gnu packages mcrypt)
-  #:use-module (gnu packages patchutils)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages popt)
   #:use-module (gnu packages python)
@@ -102,28 +116,17 @@
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
+  #:use-module (gnu packages readline)
   #:use-module (gnu packages sphinx)
+  #:use-module (gnu packages tcl)
   #:use-module (gnu packages terminals)
   #:use-module (gnu packages texinfo)
-  #:use-module (gnu packages groff)
-  #:use-module (gnu packages pciutils)
-  #:use-module (gnu packages libunwind)
-  #:use-module (gnu packages libusb)
-  #:use-module (gnu packages libftdi)
-  #:use-module (gnu packages image)
-  #:use-module (gnu packages xorg)
-  #:use-module (gnu packages xdisorg)
-  #:use-module (gnu packages man)
-  #:use-module (gnu packages autotools)
-  #:use-module (gnu packages gnome)
-  #:use-module (gnu packages kerberos)
-  #:use-module (gnu packages gtk)
-  #:use-module (gnu packages xml)
-  #:use-module (gnu packages boost)
-  #:use-module (gnu packages elf)
-  #:use-module (gnu packages mpi)
+  #:use-module (gnu packages tls)
   #:use-module (gnu packages version-control)
-  #:use-module (gnu packages web))
+  #:use-module (gnu packages web)
+  #:use-module (gnu packages xdisorg)
+  #:use-module (gnu packages xml)
+  #:use-module (gnu packages xorg))
 
 (define-public aide
   (package
@@ -196,14 +199,14 @@ and provides a \"top-like\" mode (monitoring).")
 (define-public shepherd
   (package
     (name "shepherd")
-    (version "0.6.1")
+    (version "0.7.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/shepherd/shepherd-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1xn6mb5bh8bpfgdrh09ja31jk0ln7bmxbbf0vjcqxkkixs2wl6sk"))))
+                "07j3vd0y8zab2nwbrwj0ahrfif1ldm5sjssn7m3dw4s307fsrfzx"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--localstatedir=/var")))
@@ -211,10 +214,10 @@ and provides a \"top-like\" mode (monitoring).")
      `(("pkg-config" ,pkg-config)
 
        ;; This is the Guile we use as a cross-compiler...
-       ("guile" ,guile-2.2/bug-fix)))
+       ("guile" ,guile-2.2.7)))
     (inputs
      ;; ... and this is the one that appears in shebangs when cross-compiling.
-     `(("guile" ,guile-2.2/bug-fix)          ;for <https://bugs.gnu.org/37757>
+     `(("guile" ,guile-2.2.7)                ;for <https://bugs.gnu.org/37757>
 
        ;; The 'shepherd' command uses Readline when used interactively.  It's
        ;; an unusual use case though, so we don't propagate it.
@@ -227,6 +230,16 @@ typical init systems.  It provides dependency-handling through a convenient
 interface and is based on GNU Guile.")
     (license license:gpl3+)
     (home-page "https://www.gnu.org/software/shepherd/")))
+
+(define-public guile3.0-shepherd
+  (package
+    (inherit shepherd)
+    (name "guile3.0-shepherd")
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("guile" ,guile-next)))
+    (inputs
+     `(("guile" ,guile-next)))))
 
 (define-public cloud-utils
   (package
@@ -405,7 +418,7 @@ application (for console or X terminals) and requires ncurses.")
                           (("\"/bin/sh\"")
                            (string-append "\"" bash "/bin/sh\"")))
                         #t))))))
-    (home-page "https://www.gnu.org/software/pies/")
+    (home-page "https://www.gnu.org.ua/software/pies/")
     (synopsis "Program invocation and execution supervisor")
     (description
      "GNU pies is a program that supervises the invocation and execution of
@@ -451,7 +464,7 @@ hostname.")
 (define-public shadow
   (package
     (name "shadow")
-    (version "4.8")
+    (version "4.8.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -459,7 +472,7 @@ hostname.")
                     "download/" version "/shadow-" version ".tar.xz"))
               (sha256
                (base32
-                "0r5c1p8mfwhw11gb6mjsx1k7d4c32dxai7yss8n5pwy1p61ndd34"))))
+                "0qmfq50sdhz6xilgxvinblll8j2iqfl7hwk45bq744y4plq4dbd3"))))
     (build-system gnu-build-system)
     (arguments
      `(;; Assume System V `setpgrp (void)', which is the default on GNU
@@ -699,7 +712,7 @@ IPv6, proxies, and Unix sockets.")
         (base32
          "0mv3wndj4z2bsshh2k8d5sy3j8wxzgf8mzmmkvj1k8gpcz37dm6g"))))
     (build-system gnu-build-system)
-    (home-page "http://www.routemeister.net/projects/sipcalc/")
+    (home-page "https://www.routemeister.net/projects/sipcalc/")
     (synopsis "Command-line IP subnet calculator")
     (description
      "Sipcalc is an advanced command-line IP subnet calculator.  It can take
@@ -767,14 +780,14 @@ connection alive.")
                                       bind-release-version)))
     (package
       (name "isc-dhcp")
-      (version "4.4.1")
+      (version "4.4.2")
       (source (origin
                 (method url-fetch)
                 (uri (string-append "https://ftp.isc.org/isc/dhcp/"
                                     version "/dhcp-" version ".tar.gz"))
                 (sha256
                  (base32
-                  "025nfqx4zwdgv4b3rkw26ihcj312vir08jk6yi57ndmb4a4m08ia"))))
+                  "08a5003zdxgl41b29zjkxa92h2i40zyjgxg0npvnhpkfl5jcsz0s"))))
       (build-system gnu-build-system)
       (arguments
        `(#:parallel-build? #f
@@ -783,17 +796,6 @@ connection alive.")
          (modify-phases %standard-phases
            (add-after 'unpack 'replace-bundled-bind
              (lambda* (#:key inputs native-inputs #:allow-other-keys)
-               ;; XXX TODO: Remove the following invocation of 'patch' when
-               ;; isc-dhcp is updated.  It should be needed only for 4.4.1.
-               (let ((patch (string-append (assoc-ref (or native-inputs inputs)
-                                                      "patch")
-                                           "/bin/patch"))
-                     (the-patch (assoc-ref (or native-inputs inputs)
-                                           "fixes-for-newer-bind.patch")))
-                 (format #t "applying '~a'...~%" the-patch)
-                 (invoke patch "--force" "--no-backup-if-mismatch"
-                         "-p1" "--input" the-patch))
-
                (delete-file "bind/bind.tar.gz")
                (copy-file (assoc-ref inputs "bind-source-tarball")
                           "bind/bind.tar.gz")
@@ -810,12 +812,17 @@ connection alive.")
                  (("^RELEASEVER=.*")
                   (format #f "RELEASEVER=~a\n" ,bind-release-version)))
                #t))
-           (add-before 'configure 'fix-bind-cross-compilation
-             (lambda _
-               (substitute* "configure"
-                 (("--host=\\$host")
-                  "--host=$host_alias"))
-               #t))
+           ,@(if (%current-target-system)
+                 '((add-before 'configure 'fix-bind-cross-compilation
+                     (lambda _
+                       (substitute* "configure"
+                         (("--host=\\$host")
+                          "--host=$host_alias"))
+                       ;; BIND needs a native compiler because the DHCP
+                       ;; build system uses the built 'gen' executable.
+                       (setenv "BUILD_CC" "gcc")
+                       #t)))
+                 '())
            (add-after 'configure 'post-configure
              (lambda* (#:key outputs #:allow-other-keys)
                ;; Point to the right client script, which will be
@@ -881,20 +888,14 @@ connection alive.")
 
       (native-inputs
        `(("perl" ,perl)
-         ("file" ,file)
-
-         ;; XXX TODO: Remove the following patch, and also the 'patch'
-         ;; program, when isc-dhcp is updated.
-         ("fixes-for-newer-bind.patch"
-          ,(search-patch "isc-dhcp-4.4.1-fixes-for-newer-bind.patch"))
-         ("patch" ,patch)))
+         ("file" ,file)))
 
       (inputs `(("inetutils" ,inetutils)
                 ("net-tools" ,net-tools)
                 ("iproute" ,iproute)
 
-                ;; XXX isc-dhcp bundles a copy of bind that has security
-                ;; flaws, so we use a newer version.
+                ;; isc-dhcp bundles a copy of BIND, which has proved vulnerable
+                ;; in the past.  Use a BIND-VERSION of our choosing instead.
                 ("bind-source-tarball"
                  ,(origin
                     (method url-fetch)
@@ -1201,7 +1202,7 @@ system administrator.")
 (define-public sudo
   (package
     (name "sudo")
-    (version "1.8.30")
+    (version "1.8.31p1")
     (source (origin
               (method url-fetch)
               (uri
@@ -1211,7 +1212,7 @@ system administrator.")
                                     version ".tar.gz")))
               (sha256
                (base32
-                "1rvrqlqrrjsd06dczgj9cwjdkpkqil5zzlwh87h06ms6qzfx6nm3"))
+                "1n0mdmgcs92af34xxsnsh1arrngymhdmwd9srjgjbk65q7xzsg67"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -1268,9 +1269,10 @@ system administrator.")
        ;; XXX: The 'testsudoers' test series expects user 'root' to exist, but
        ;; the chroot's /etc/passwd doesn't have it.  Turn off the tests.
        #:tests? #f))
+    (native-inputs
+     `(("groff" ,groff)))
     (inputs
-     `(("groff" ,groff)
-       ("linux-pam" ,linux-pam)
+     `(("linux-pam" ,linux-pam)
        ("zlib" ,zlib)
        ("coreutils" ,coreutils)))
     (home-page "https://www.sudo.ws/")
@@ -1584,7 +1586,7 @@ module slots, and the list of I/O ports (e.g. serial, parallel, USB).")
 (define-public acpica
   (package
     (name "acpica")
-    (version "20191213")
+    (version "20200326")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1592,7 +1594,7 @@ module slots, and the list of I/O ports (e.g. serial, parallel, USB).")
                     version ".tar.gz"))
               (sha256
                (base32
-                "1106d5b7q8jlgc2z0gz83jdah1yml4fz5z0jjcs7a52pv00c9am8"))))
+                "0y08l6djjn87jmsp5kj0myjdb48000g20xlfs0a22jzzi383h3by"))))
     (build-system gnu-build-system)
     (native-inputs `(("flex" ,flex)
                      ("bison" ,bison)))
@@ -1618,14 +1620,13 @@ development, not the kernel implementation of ACPI.")
 (define-public s-tui
   (package
     (name "s-tui")
-    (version "0.8.3")
+    (version "1.0.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "s-tui" version))
        (sha256
-        (base32
-         "00lsh2v4i8rwfyjyxx5lijd6rnk9smcfffhzg5sv94ijpcnh216m"))))
+        (base32 "0r5yhlsi5xiy7ii1w4kqkaxz9069v5bbfwi3x3xnxhk51yjfgr8n"))))
     (build-system python-build-system)
     (inputs
      `(("python-psutil" ,python-psutil)
@@ -1788,7 +1789,7 @@ environment variable is set and output is to tty.")
                   (string-append "SHELL=" bash "/bin/sh")))
 
                #t))))))
-    (home-page "https://www.gnu.org/software/direvent/")
+    (home-page "https://www.gnu.org.ua/software/direvent/")
     (synopsis "Daemon to monitor directories for events such as file removal")
     (description
      "A daemon that monitors directories for events, such as creating,
@@ -1919,13 +1920,13 @@ of supported upstream metrics systems simultaneously.")
 (define-public ansible
   (package
     (name "ansible")
-    (version "2.8.5")
+    (version "2.9.6")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "ansible" version))
        (sha256
-        (base32 "11k94ifp42psivzx147xwbmq1ak7qnjdgkb6c1xz53nfapkh754f"))))
+        (base32 "1jfbp1i3nl4yvqwd5ssy43dz3pq2x03mn875vb8r56gqh43kmksr"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-bcrypt" ,python-bcrypt)
@@ -2244,7 +2245,7 @@ displays a table of current bandwidth usage by pairs of hosts.")
 (define-public munge
   (package
     (name "munge")
-    (version "0.5.13")
+    (version "0.5.14")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/dun/munge/releases/"
@@ -2252,20 +2253,45 @@ displays a table of current bandwidth usage by pairs of hosts.")
                                   version ".tar.xz"))
               (sha256
                (base32
-                "1nj486bbg1adfg298zck96vgx57kchcypc1zdz1n7w540vyksxcr"))
+                "0h06sghb4rqvv1ywyd6mzsmbcgh712v6ygrff0gzm440y4ca41k6"))
               (modules '((guix build utils)))
               (snippet
                '(begin
                   ;; Don't insist on write access to /var.
                   (substitute* "src/etc/Makefile.in"
                     (("\\$\\(INSTALL\\)(.*)localstatedir" _ middle)
-                     (string-append "-$(INSTALL)" middle "localstatedir")))
+                     (string-append "-$(INSTALL)" middle "localstatedir"))
+                    (("\\$\\(MKDIR_P\\) .*(local|run)statedir.*")
+                     ""))
                   #t))))
     (inputs
      `(("openssl" ,openssl)
        ("libgcrypt" ,libgcrypt)))
     (build-system gnu-build-system)
-    (arguments '(#:configure-flags '("--localstatedir=/var")))
+    (arguments
+     '(#:configure-flags
+       (list "--localstatedir=/var"
+             (string-append "--with-pkgconfigdir="
+                            (assoc-ref %outputs "out") "/lib/pkgconfig"))
+       #:phases
+       (modify-phases %standard-phases
+         ;; XXX Many test series fail.  Some might be fixable, others do no-no
+         ;; things like invoking ‘sudo’.
+         (add-after 'unpack 'skip-failing-tests
+           (lambda _
+             (for-each (lambda (test)
+                         (substitute* "t/Makefile.in"
+                           (((string-append test "\\.t ")) "")))
+                       (list "0100-munged-lock"
+                             "0010-basic"
+                             "0011-munged-cmdline"
+                             "0012-munge-cmdline"
+                             "0013-unmunge-cmdline"
+                             "0101-munged-security-socket"
+                             "0102-munged-security-keyfile"
+                             "0103-munged-security-logfile"
+                             "0110-munged-origin-addr"))
+             #t)))))
     (home-page "https://dun.github.io/munge/")
     (synopsis "Cluster computing authentication service")
     (description
@@ -2451,7 +2477,7 @@ throughput (in the same interval).")
 (define-public thefuck
   (package
     (name "thefuck")
-    (version "3.29")
+    (version "3.30")
     (source
      (origin
        (method git-fetch)
@@ -2460,7 +2486,7 @@ throughput (in the same interval).")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1qhxwjjgrzpqrqjv7l2847ywpln76lyd6j8bl9gz2r6kl0fx2fqs"))
+        (base32 "0fnf78956pwhb9cgv1jmgypnkma5xzflkivfrkfiadbgin848yfg"))
        (patches (search-patches "thefuck-test-environ.patch"))))
     (build-system python-build-system)
     (arguments
@@ -2482,7 +2508,8 @@ throughput (in the same interval).")
        ("python-pyte" ,python-pyte)
        ("python-six" ,python-six)))
     (native-inputs
-     `(("python-mock" ,python-mock)
+     `(("go" ,go)
+       ("python-mock" ,python-mock)
        ("python-pytest" ,python-pytest)
        ("python-pytest-mock" ,python-pytest-mock)))
     (home-page "https://github.com/nvbn/thefuck")
@@ -2514,7 +2541,7 @@ a new command using the matched rule, and runs it.")
              (setenv "prefix" (assoc-ref outputs "out"))
              #t)))
        #:make-flags (list "--environment-overrides")))
-    (home-page "https://www.gentoo.com/di/")
+    (home-page "https://gentoo.com/di/")
     (synopsis "Advanced df like disk information utility")
     (description
      "@code{di} is a disk information utility, displaying everything that your
@@ -2599,6 +2626,7 @@ shortcut syntax and completion options.")
               (uri (string-append
                     "https://archives.eyrie.org/software/kerberos/"
                     "pam-krb5-" version ".tar.xz"))
+              (patches (search-patches "pam-krb5-CVE-2020-10595.patch"))
               (sha256
                (base32
                 "1qjp8i1s9bz7g6kiqrkzzkxn5pfspa4sy53b6z40fqmdf9przdfb"))))
@@ -2842,7 +2870,7 @@ buffers.")
        ("automake" ,automake)
        ("libtool" ,libtool)
        ("pkg-config" ,pkg-config)))
-    (home-page "https://cgit.freedesktop.org/xorg/app/intel-gpu-tools/")
+    (home-page "https://gitlab.freedesktop.org/drm/igt-gpu-tools")
     (synopsis "Tools for development and testing of the Intel DRM driver")
     (description "IGT GPU Tools is a collection of tools for development and
 testing of the Intel DRM driver.  There are many macro-level test suites that
@@ -2855,20 +2883,17 @@ Intel DRM Driver.")
     (supported-systems '("i686-linux" "x86_64-linux"))
     (license license:expat)))
 
-(define-public intel-gpu-tools
-  (deprecated-package "intel-gpu-tools" igt-gpu-tools))
-
 (define-public fabric
   (package
     (name "fabric")
-    (version "1.14.0")
+    (version "1.14.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "Fabric" version))
        (sha256
         (base32
-         "13r0b0hllgf8j9rh6x1knmbgvingbdmx046aazv6vck2ll120mw1"))))
+         "1a3ndlpdw6bhn8fcw1jgznl117a8pnr84az9rb5fwnrypf1ph2b6"))))
     (build-system python-build-system)
     (arguments
      `(#:python ,python-2               ; Python 2 only
@@ -2892,7 +2917,7 @@ Intel DRM Driver.")
        ("python2-bcrypt" ,python2-bcrypt)))
     (propagated-inputs
      `(("python2-paramiko" ,python2-paramiko)))
-    (home-page "http://fabfile.org")
+    (home-page "https://www.fabfile.org/")
     (synopsis "Simple Pythonic remote execution and deployment tool")
     (description
      "Fabric is designed to upload files and run shell commands on a number of
@@ -2905,35 +2930,34 @@ tool for remote execution and deployment.")
     (license license:bsd-2)))
 
 (define-public neofetch
-  (let ((commit "501d6b7594296d9eac8943140f8581daf555873d"))
-    (package
-      (name "neofetch")
-      (version (git-version "6.1.0" "1" commit))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://github.com/dylanaraps/neofetch")
-                      (commit commit)))
-                (file-name (git-file-name name version))
-                (sha256
-                 (base32
-                  "1h5md9jimyc6z4d7w66j27hn8qghzyxgpkh5h9dclzxpp5cs8whb"))))
-      (build-system gnu-build-system)
-      (arguments
-       `(#:tests? #f                      ; there are no tests
-         #:make-flags
-         (list (string-append "PREFIX=" %output))
-         #:phases
-         (modify-phases %standard-phases
-           (delete 'configure))))         ; no configure script
-      (home-page "https://github.com/dylanaraps/neofetch")
-      (synopsis "System information script")
-      (description "Neofetch is a command-line system information tool written in
+  (package
+    (name "neofetch")
+    (version "7.0.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/dylanaraps/neofetch")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0xc0fdc7n5bhqirh83agqiy8r14l14zwca07czvj8vgnsnfybslr"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ; there are no tests
+       #:make-flags
+       (list (string-append "PREFIX=" %output))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))))         ; no configure script
+    (home-page "https://github.com/dylanaraps/neofetch")
+    (synopsis "System information script")
+    (description "Neofetch is a command-line system information tool written in
 Bash.  Neofetch displays information about your system next to an image, your OS
 logo, or any ASCII file of your choice.  The main purpose of Neofetch is to be
 used in screenshots to show other users what operating system or distribution
 you are running, what theme or icon set you are using, etc.")
-      (license license:expat))))
+    (license license:expat)))
 
 (define-public screenfetch
   (package
@@ -3148,7 +3172,16 @@ late.")
                     version "/launchmon-v" version ".tar.gz"))
               (sha256
                (base32
-                "0fm3nd9mydm9v2bf7bh01dbgrfnpwkapxa3dsvy3x1z0rz61qc0x"))))
+                "0fm3nd9mydm9v2bf7bh01dbgrfnpwkapxa3dsvy3x1z0rz61qc0x"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Fix build failure with GCC 7 due to a conversion error.
+                  ;; Remove for versions > 1.0.2.
+                  (substitute* "launchmon/src/linux/lmon_api/lmon_coloc_spawner.cxx"
+                    ((" lmonpl = '\\\\0'")
+                     " *lmonpl = '\\0'"))
+                  #t))))
     (build-system gnu-build-system)
     (inputs
      `(("mpi" ,openmpi)
@@ -3203,7 +3236,7 @@ Python loading in HPC environments.")
   (let ((real-name "inxi"))
     (package
       (name "inxi-minimal")
-      (version "3.0.37-1")
+      (version "3.0.38-1")
       (source
        (origin
          (method git-fetch)
@@ -3212,7 +3245,7 @@ Python loading in HPC environments.")
                (commit version)))
          (file-name (git-file-name real-name version))
          (sha256
-          (base32 "15wvj9w601ci3bavd1hk5qlm8dfm7a7cjglczk29yir5yw2jww3f"))))
+          (base32 "1qw3sxgd3ly916bzzl3873s3flngwd3vh57slw0shsj7ivz8bfnm"))))
       (build-system trivial-build-system)
       (inputs
        `(("bash" ,bash-minimal)
@@ -3341,14 +3374,14 @@ support forum.  It runs with the @code{/exec} command in most IRC clients.")
 (define-public python-pyudev
   (package
     (name "python-pyudev")
-    (version "0.21.0")
+    (version "0.22.0")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "pyudev" version))
         (sha256
           (base32
-            "0arz0dqp75sszsmgm6vhg92n1lsx91ihddx3m944f4ah0487ljq9"))))
+            "0xmj6l08iih2js9skjqpv4w7y0dhxyg91zmrs6v5aa65gbmipfv9"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f ; Tests require /sys
@@ -3374,7 +3407,7 @@ support forum.  It runs with the @code{/exec} command in most IRC clients.")
        ("python-mock" ,python-mock)
        ("python-pytest" ,python-pytest)
        ("python-sphinx" ,python-sphinx)))
-    (home-page "http://pyudev.readthedocs.org/")
+    (home-page "https://pyudev.readthedocs.io/")
     (synopsis "Python udev binding")
     (description "This package provides @code{udev} bindings for Python.")
     (license license:lgpl2.1)))

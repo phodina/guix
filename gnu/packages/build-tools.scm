@@ -1,13 +1,14 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Corentin Bocquillon <corentin@nybble.fr>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
 ;;; Copyright © 2018 Tomáš Čech <sleep_walker@gnu.org>
 ;;; Copyright © 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2019 Brett Gilio <brettg@gnu.org>
 ;;; Copyright © 2019 Jonathan Brielmaier <jonathan.brielmaier@web.de>
+;;; Copyright © 2020 Leo Prikler <leo.prikler@student.tugraz.at>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -80,7 +81,7 @@ makes a few sacrifices to acquire fast full and incremental build times.")
 (define-public bear
   (package
     (name "bear")
-    (version "2.4.2")
+    (version "2.4.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -89,7 +90,7 @@ makes a few sacrifices to acquire fast full and incremental build times.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1w1kyjzvvy5lj16kn3yyf7iil2cqlfkszi8kvagql7f5h5l6w9b1"))))
+                "19fk4flfykbzhb89ppmzqf0zlrkbjm6ajl9fsayndj9km5ys0041"))))
     (build-system cmake-build-system)
     (inputs
      `(("python" ,python-wrapper)))
@@ -244,6 +245,31 @@ scripted definition of a software project and outputs @file{Makefile}s or
 other lower-level build files.")
     (home-page "https://premake.github.io")
     (license license:bsd-3)))
+
+(define-public premake5
+  (package
+    (inherit premake4)
+    (version "5.0.0-alpha14")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/premake/premake-core/"
+                                  "releases/download/v" version
+                                  "/premake-" version "-src.zip"))
+              (sha256
+               (base32
+                "0236s7bjvxf7x1l5faywmfzjywflpx42ngyhkn0mqqjnh54a97vw"))))
+    (arguments
+     (substitute-keyword-arguments (package-arguments premake4)
+       ((#:phases phases)
+        `(modify-phases ,phases
+           (replace 'install
+             (lambda* (#:key outputs #:allow-other-keys)
+               (install-file "../../bin/release/premake5"
+                             (string-append (assoc-ref outputs "out") "/bin"))
+               #t))))))
+    (description "@code{premake5} is a command line utility that reads a
+scripted definition of a software project and outputs @file{Makefile}s or
+other lower-level build files.")))
 
 (define-public osc
   (package

@@ -11,6 +11,7 @@
 ;;; Copyright © 2019 Pkill -9 <pkill9@runbox.com>
 ;;; Copyright © 2019 L  p R n  d n <guix@lprndn.info>
 ;;; Copyright © 2019 Ingo Ruhnke <grumbel@gmail.com>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -72,7 +73,7 @@
     (version "2.10.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/xfce/"
+              (uri (string-append "https://archive.xfce.org/src/xfce/"
                                   name "/" (version-major+minor version) "/"
                                   name "-" version ".tar.bz2"))
               (sha256
@@ -267,7 +268,7 @@ merging features essential for loading menus modified with menu editors.")
 (define-public tumbler
   (package
     (name "tumbler")
-    (version "0.2.7")
+    (version "0.2.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/xfce/"
@@ -275,7 +276,7 @@ merging features essential for loading menus modified with menu editors.")
                                   "tumbler-" version ".tar.bz2"))
               (sha256
                (base32
-                "1r0l0ghcrj71ax7yil1m4p7yjrfqm3icx0s8r7ivwv3i2rgw617p"))))
+                "15iyx4xk6v3vk8272c848y8rj4sq43khlqxndnai0w5mvsivk689"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
@@ -385,15 +386,15 @@ applications menu, workspace switcher and more.")
 (define-public xfce4-clipman-plugin
   (package
     (name "xfce4-clipman-plugin")
-    (version "1.4.3")
+    (version "1.4.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
-                                  name "/" (version-major+minor version) "/"
-                                  name "-" version ".tar.bz2"))
+                                  "xfce4-clipman-plugin/" (version-major+minor version) "/"
+                                  "xfce4-clipman-plugin-" version ".tar.bz2"))
               (sha256
                (base32
-                "1liacff4wl5mpyf9dzdrfbwxzmhl95y5nsfc0jf5rgalzdgbik99"))))
+                "1819kjn7gs30zhhj2ppfw4zjpcgj9amw1vvppjsavsff1xflrq88"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -499,7 +500,7 @@ applications, and includes a search bar to search for applications.")
     (version "0.8.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   name "/" (version-major+minor version) "/"
                                   name "-" version ".tar.bz2"))
               (sha256
@@ -609,7 +610,7 @@ allows you to shutdown the computer from Xfce.")
     (version "4.14.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/xfce/"
+              (uri (string-append "https://archive.xfce.org/src/xfce/"
                                   name "/" (version-major+minor version) "/"
                                   name "-" version ".tar.bz2"))
               (sha256
@@ -645,15 +646,15 @@ like appearance, display, keyboard and mouse settings.")
 (define-public thunar
   (package
     (name "thunar")
-    (version "1.8.11")
+    (version "1.8.12")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/xfce/"
+              (uri (string-append "https://archive.xfce.org/src/xfce/"
                                   "thunar/" (version-major+minor version) "/"
                                   "thunar-" version ".tar.bz2"))
               (sha256
                (base32
-                "0f5jw61z1dbvyyf1nks5dagnbs6sxxw7spybgwvpb3hfljrlvphq"))))
+                "1y1548jrx93c9v8ks60mkd9sx5xl69fmwh1pbr9gsnqz1gp5na99"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
@@ -880,15 +881,15 @@ system resources, while still being visually appealing and user friendly.")
 (define-public xfce4-power-manager
   (package
     (name "xfce4-power-manager")
-    (version "1.6.5")
+    (version "1.7.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/xfce/"
-                                  name "/" (version-major+minor version) "/"
-                                  name "-" version ".tar.bz2"))
+                                  "xfce4-power-manager/" (version-major+minor version) "/"
+                                  "xfce4-power-manager-" version ".tar.bz2"))
               (sha256
                (base32
-                "0x3s2bdwfhp65dz5yn3k43j99ywqlsvrpz3pqmgwm0dik5wbdb8h"))))
+                "0jqjwy341dxyijjm9k77a12iih6b5r3f4cmpr2lppa7mf37qqdj5"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
@@ -917,7 +918,7 @@ inhibit interface which allows applications to prevent automatic sleep.")
     (version "0.10.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/apps/ristretto/"
+              (uri (string-append "https://archive.xfce.org/src/apps/ristretto/"
                                   (version-major+minor version) "/"
                                   "ristretto-" version ".tar.bz2"))
               (sha256
@@ -926,10 +927,10 @@ inhibit interface which allows applications to prevent automatic sleep.")
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
+       ("desktop-file-utils" ,desktop-file-utils)
        ("pkg-config" ,pkg-config)))
     (inputs
-     `(("desktop-file-utils" ,desktop-file-utils)
-       ("gtk+" ,gtk+)
+     `(("gtk+" ,gtk+)
        ("libexif" ,libexif)
        ("libxfce4ui" ,libxfce4ui)
        ("librsvg" ,librsvg)
@@ -979,7 +980,7 @@ memory usage graphically, and it can display processes as a tree.")
     (version "4.12.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/apps/"
+              (uri (string-append "https://archive.xfce.org/src/apps/"
                                   name "/" (version-major+minor version) "/"
                                   name "-" version ".tar.bz2"))
               (sha256
@@ -1047,15 +1048,15 @@ sending standard messages over D-Bus using the
 (define-public xfburn
   (package
     (name "xfburn")
-    (version "0.6.1")
+    (version "0.6.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/apps/xfburn/"
+              (uri (string-append "https://archive.xfce.org/src/apps/xfburn/"
                                   (version-major+minor version) "/"
                                   "xfburn-" version ".tar.bz2"))
               (sha256
                (base32
-                "0ydka5lf9n614gb5xc9bn9297nilgmkfqlb7q1y2yrc97882nxxk"))))
+                "09q3s2rkpf0ljzq6bv4hl9byvaggjq7lchfw5zaircwv5q9nwhc3"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -1086,7 +1087,7 @@ of data to either CD/DVD/BD.")
     (version "0.4.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/apps/mousepad/"
+              (uri (string-append "https://archive.xfce.org/src/apps/mousepad/"
                                   (version-major+minor version) "/mousepad-"
                                   version ".tar.bz2"))
               (sha256
@@ -1128,7 +1129,7 @@ of data to either CD/DVD/BD.")
    (version "1.9.7")
    (source (origin
             (method url-fetch)
-            (uri (string-append "http://archive.xfce.org/src/apps/"
+            (uri (string-append "https://archive.xfce.org/src/apps/"
                                 "xfce4-screenshooter/"
                                 (version-major+minor version)
                                 "/xfce4-screenshooter-"
@@ -1158,17 +1159,17 @@ A plugin for the Xfce panel is also available.")
 (define-public xfce4-screensaver
   (package
     (name "xfce4-screensaver")
-    (version "0.1.8")
+    (version "0.1.9")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/apps/"
+              (uri (string-append "https://archive.xfce.org/src/apps/"
                                   "xfce4-screensaver/"
                                   (version-major+minor version)
                                   "/xfce4-screensaver-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1mv0r150yb29kji2rr2462g9p574bqjax1lb6bzcqgpxlmg08mj0"))))
+                "11p48yyjgy6crwfbyvm16yg0rkzn90ssd2wygzmwvwrx3wkzyhsp"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1237,7 +1238,7 @@ A plugin for the Xfce panel is also available.")
    (version "1.1.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-cpugraph-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-cpugraph-plugin-" version ".tar.bz2"))
@@ -1270,7 +1271,7 @@ core or CPU.")
    (version "4.5.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-eyes-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-eyes-plugin-" version ".tar.bz2"))
@@ -1297,7 +1298,7 @@ watch your every step.")
    (version "1.3.8")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-equake-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-equake-plugin-" version ".tar.bz2"))
@@ -1326,7 +1327,7 @@ each time a new earthquake occurs.")
    (version "0.8.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-datetime-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-datetime-plugin-" version ".tar.bz2"))
@@ -1353,7 +1354,7 @@ and a calendar appears when you left-click on it.")
    (version "0.7.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-calculator-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-calculator-plugin-" version ".tar.bz2"))
@@ -1381,7 +1382,7 @@ precedence rules, and the following functions and common constants.")
    (version "1.2.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-cpufreq-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-cpufreq-plugin-" version ".tar.bz2"))
@@ -1408,7 +1409,7 @@ governor and frequencies supported and used by your system.")
    (version "2.6.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-diskperf-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-diskperf-plugin-" version ".tar.bz2"))
@@ -1435,7 +1436,7 @@ performance (bytes transferred per second).")
    (version "1.6.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-embed-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-embed-plugin-" version ".tar.bz2"))
@@ -1470,7 +1471,7 @@ this very convenient.")
    (version "1.1.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-fsguard-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-fsguard-plugin-" version ".tar.bz2"))
@@ -1500,7 +1501,7 @@ be clicked to open the chosen mount point.")
    (version "4.0.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-genmon-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-genmon-plugin-" version ".tar.bz2"))
@@ -1531,7 +1532,7 @@ button and a personalized tooltip.")
    (version "0.0.6")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-kbdleds-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-kbdleds-plugin-" version ".tar.bz2"))
@@ -1559,7 +1560,7 @@ Caps, Scroll and Num Lock in Xfce panel.")
    (version "1.2.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-mailwatch-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-mailwatch-plugin-" version ".tar.bz2"))
@@ -1597,7 +1598,7 @@ multi-mailbox mail watcher.  Currently, the protocols supported are:
    (version "0.5.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-mpc-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-mpc-plugin-" version ".tar.bz2"))
@@ -1640,7 +1641,7 @@ right-click menu
    (version "1.1.3")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-mount-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-mount-plugin-" version ".tar.bz2"))
@@ -1669,7 +1670,7 @@ mounted or when unmounting fails.")
    (version "1.3.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-netload-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-netload-plugin-" version ".tar.bz2"))
@@ -1696,7 +1697,7 @@ interfaces of your choice in the panel.")
    (version "1.8.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-places-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-places-plugin-" version ".tar.bz2"))
@@ -1706,10 +1707,10 @@ interfaces of your choice in the panel.")
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
+       ("desktop-file-utils" ,desktop-file-utils)
        ("pkg-config" ,pkg-config)))
     (inputs
-     `(("desktop-file-utils" ,desktop-file-utils)
-       ("gtk+-2" ,gtk+-2)
+     `(("gtk+-2" ,gtk+-2)
        ("exo" ,exo)
        ("libxfce4ui" ,libxfce4ui)
        ("xfce4-panel" ,xfce4-panel)))
@@ -1738,7 +1739,7 @@ opens up a menu with the following:
    (version "0.5.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-smartbookmark-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-smartbookmark-plugin-" version ".tar.bz2"))
@@ -1763,16 +1764,16 @@ favorite search engine or bug tracker right from the Xfce panel.")
 (define-public xfce4-statusnotifier-plugin
   (package
    (name "xfce4-statusnotifier-plugin")
-   (version "0.2.1")
+   (version "0.2.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-statusnotifier-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-statusnotifier-plugin-" version ".tar.bz2"))
               (sha256
                (base32
-                "154b0q9pmlbjh30vvx4c48msdfxp4pq8x4mbn71mk7pibk018hsj"))))
+                "1yic99jx7013pywpd0k31pxab8s8lv3wcq364iha99qhsm25k42c"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -1798,7 +1799,7 @@ freedesktop.org specification.")
    (version "0.3.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-stopwatch-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-stopwatch-plugin-" version ".tar.bz2"))
@@ -1827,7 +1828,7 @@ freedesktop.org specification.")
    (version "1.2.3")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-systemload-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-systemload-plugin-" version ".tar.bz2"))
@@ -1855,7 +1856,7 @@ swap space and the system uptime in the Xfce4 panel.")
    (version "1.1.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-time-out-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-time-out-plugin-" version ".tar.bz2"))
@@ -1885,7 +1886,7 @@ time.")
    (version "1.7.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-timer-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-timer-plugin-" version ".tar.bz2"))
@@ -1913,7 +1914,7 @@ period.")
    (version "2.0.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-verve-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-verve-plugin-" version ".tar.bz2"))
@@ -1947,7 +1948,7 @@ for the Xfce panel.  It supports several features, such as:
    (version "0.6.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-wavelan-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-wavelan-plugin-" version ".tar.bz2"))
@@ -1971,16 +1972,16 @@ lan interface (signal state, signal quality, network name (SSID)).")
 (define-public xfce4-weather-plugin
   (package
    (name "xfce4-weather-plugin")
-   (version "0.10.0")
+   (version "0.10.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://archive.xfce.org/src/panel-plugins/"
+              (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
                                   "xfce4-weather-plugin/"
                                   (version-major+minor version)
                                   "/xfce4-weather-plugin-" version ".tar.bz2"))
               (sha256
                (base32
-                "0wlm80panxyn86l9qm3mbliqj7gkf2zyzak3w041zz9hg31a08s4"))))
+                "12bs2rfmmy021087i10vxibdbbvd5vld0vk3h5hymhpz7rgszcmg"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)

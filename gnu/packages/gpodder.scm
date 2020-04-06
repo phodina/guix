@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2019 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2019, 2020 Pierre Langlois <pierre.langlois@gmx.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37,7 +37,7 @@
 (define-public gpodder
   (package
     (name "gpodder")
-    (version "3.10.11")
+    (version "3.10.13")
     (source
      (origin
        (method git-fetch)
@@ -46,7 +46,7 @@
              (commit version)))
        (sha256
         (base32
-         "15f5z3cnch9lpzbz73l4wjykv9n74y8djz5db53la2ql4ihaxfz9"))
+         "1h542syaxsx1hslfzlk3fx1nbp190zjw35kigw7a1kx1jwvfwapg"))
        (file-name (git-file-name name version))))
     (build-system python-build-system)
     (native-inputs
@@ -127,7 +127,7 @@ locally for later listening.")
        ;; TODO: Enable tests when https://github.com/gpodder/gpodder/issues/446
        ;; is fixed.
        #:tests? #f))
-    (home-page "http://wiki.gpodder.org/wiki/Libmygpo-qt")
+    (home-page "https://gpodder.github.io")
     (synopsis "Qt/C++ library wrapping the gpodder web service")
     (description "@code{libmygpo-qt} is a Qt/C++ library wrapping the
 @url{https://gpodder.net} APIs.  It allows applications to discover, manage

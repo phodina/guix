@@ -30,6 +30,11 @@
 ;;; Copyright © 2019 Josh Holland <josh@inv.alid.pw>
 ;;; Copyright © 2019 Tanguy Le Carrour <tanguy@bioneland.org>
 ;;; Copyright © 2020 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2020 David Wilson <david@daviwil.com>
+;;; Copyright © 2020 Ivan Vilata i Balaguer <ivan@selidor.net>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 Damien Cassou <damien@cassou.me>
+;;; Copyright © 2020 John Soo <jsoo1@asu.edu>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -57,6 +62,7 @@
   #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system python)
+  #:use-module (guix build-system scons)
   #:use-module (gnu packages)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages admin)
@@ -69,6 +75,7 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages gawk)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
@@ -150,58 +157,53 @@ program.")
     (license license:gpl3+)))
 
 (define-public autorandr
-  ;; Use latest commit since 1.7 lacks many new features such as the
-  ;; autorandr_launcher.
-  (let ((commit "b484c0ea9c9a4838278bbd661a7cc384333c1df8"))
-    (package
-      (name "autorandr")
-      (version (git-version "1.7" "1" commit))
-      (home-page "https://github.com/phillipberndt/autorandr")
-      (source
-       (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url home-page)
-               (commit commit)))
-         (file-name (git-file-name name version))
-         (sha256
-          (base32
-           "0da17kzsisjv3s993j5idkk1n2d2cvjdn7pngs2b0ic1r2h5z02h"))))
-      (build-system python-build-system)
-      (native-inputs
-       `(("man-db" ,man-db)))
-      (inputs
-       `(("xrandr" ,xrandr)
-         ("libxcb" ,libxcb)))
-      (arguments
-       `(#:phases
-         (modify-phases %standard-phases
-           (add-before 'build 'configure
-             (lambda* (#:key inputs #:allow-other-keys)
+  (package
+    (name "autorandr")
+    (version "1.9")
+    (home-page "https://github.com/phillipberndt/autorandr")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url home-page)
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1bb0l7fcm5lcx9y02zdxv7pfdqf4v4gsc5br3v1x9gzjvqj64l7n"))))
+    (build-system python-build-system)
+    (inputs
+     `(("xrandr" ,xrandr)
+       ("libxcb" ,libxcb)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'configure
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((xrandr (string-append (assoc-ref inputs "xrandr")
+                                          "/bin/xrandr")))
+               (substitute* "contrib/etc/xdg/autostart/autorandr.desktop"
+                 (("/usr") (assoc-ref outputs "out")))
                (substitute* "autorandr.py"
-                 (("popen\\(\"xrandr") (string-append "popen(\""
-                                                      (assoc-ref inputs "xrandr")
-                                                      "/bin/xrandr"))
-                 (("\\[\"xrandr") (string-append "[\""
-                                                 (assoc-ref inputs "xrandr")
-                                                 "/bin/xrandr")))
-               #t))
-           (add-after 'install 'install-contrib
-             (lambda* (#:key outputs #:allow-other-keys)
-               (invoke "make"
-                       (string-append "DESTDIR=" (assoc-ref outputs "out"))
-                       "PREFIX="
-                       "BASH_COMPLETIONS_DIR=etc/bash_completiond.d"
-                       "install_manpage"
-                       "install_bash_completion"
-                       "install_launcher"))))))
-      (synopsis "Auto-detect connected displays and load appropriate setup")
-      (description "Autorandr wraps around xrandr to help with X11
+                 (("popen\\(\"xrandr") (string-append "popen(\"" xrandr))
+                 (("\\[\"xrandr") (string-append "[\"" xrandr))))
+             #t))
+         (add-after 'install 'install-contrib
+           (lambda* (#:key outputs #:allow-other-keys)
+             (invoke "make"
+                     (string-append "DESTDIR=" (assoc-ref outputs "out"))
+                     "PREFIX="
+                     "BASH_COMPLETIONS_DIR=etc/bash_completiond.d"
+                     "install_manpage"
+                     "install_bash_completion"
+                     "install_launcher"
+                     "install_autostart_config"))))))
+    (synopsis "Auto-detect connected displays and load appropriate setup")
+    (description "Autorandr wraps around xrandr to help with X11
 multi-screen configuration management.  It allows the user to create profiles
 for various multi-screen setups.  Autorandr automatically detects the profiles
 that can be activated based on the connected hardware.  Hook scripts can be
 used to further tweak the behaviour of the different profiles.")
-      (license license:gpl3+))))
+    (license license:gpl3+)))
 
 (define-public bemenu
   (package
@@ -302,14 +304,14 @@ avoiding password prompts when X11 forwarding has already been setup.")
 (define-public libxkbcommon
   (package
     (name "libxkbcommon")
-    (version "0.9.1")
+    (version "0.10.0")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://xkbcommon.org/download/libxkbcommon-"
                                  version ".tar.xz"))
              (sha256
               (base32
-               "1q4v378sr9ad8fy9znl7k8xpf0wch655r9m6z0bcc7sw1azsminl"))))
+               "1wmnl0hngn6vrqrya4r8hvimlkr4jag39yjprls4gyrqvh667hsp"))))
     (build-system meson-build-system)
     (inputs
      `(("libx11" ,libx11)
@@ -343,21 +345,32 @@ X11 (yet).")
 (define-public libfakekey
   (package
     (name "libfakekey")
-    (version "0.1")
+    (version "0.3")
     (source
       (origin
-        (method url-fetch)
-        (uri (string-append "https://downloads.yoctoproject.org/releases"
-                            "/matchbox/libfakekey/" version "/libfakekey-"
-                            version ".tar.bz2"))
+        (method git-fetch)
+        (uri (git-reference
+              (url "https://git.yoctoproject.org/git/libfakekey")
+              (commit version)))
+        (file-name (git-file-name name version))
         (sha256
-         (base32
-          "1501l0bflcrhqbf12n7a7cqilvr0w4xawxw0vw75p2940nkl4464"))))
+         (base32 "1jw1d4wc1ysiijirc7apnz3sryrxbl9akgb92mh06dvfkz2nblj0"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:make-flags (list "AM_LDFLAGS=-lX11")))
+     `(#:make-flags (list "AM_LDFLAGS=-lX11")
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'bootstrap
+           ;; ./autogen.sh calls ./configure before shebangs have been patched.
+           (lambda _
+             (invoke "autoreconf" "-vfi"))))))
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("pkg-config" ,pkg-config)
+
+       ;; For bootstrapping from git.
+       ("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)))
     (inputs
      `(("libxtst" ,libxtst)
        ("libx11" ,libx11)))
@@ -400,7 +413,7 @@ X11 (yet).")
               ("libxinerama" ,libxinerama)
               ("libxtst" ,libxtst)
               ("libxkbcommon" ,libxkbcommon)))
-    (home-page "http://www.semicomplete.com/projects/xdotool")
+    (home-page "https://www.semicomplete.com/projects/xdotool/")
     (synopsis "Fake keyboard/mouse input, window management, and more")
     (description "Xdotool lets you simulate keyboard input and mouse activity,
 move and resize windows, etc.  It does this using X11's XTEST extension and
@@ -514,7 +527,7 @@ and Matrox.")
 (define-public mtdev
   (package
     (name "mtdev")
-    (version "1.1.5")
+    (version "1.1.6")
     (source
       (origin
         (method url-fetch)
@@ -523,8 +536,9 @@ and Matrox.")
                version ".tar.bz2"))
         (sha256
          (base32
-          "0zxs7shzgbalkvlaiibi25bd902rbmkv9n1lww6q8j3ri9qdaxv6"))))
+          "1q700h9dqcm3zl6c3gj0qxxjcx6ibw2c51wjijydhwdcm26v5mqm"))))
     (build-system gnu-build-system)
+    (arguments '(#:configure-flags '("--disable-static")))
     (home-page "http://bitmath.org/code/mtdev/")
     (synopsis "Multitouch protocol translation library")
     (description "Mtdev is a stand-alone library which transforms all
@@ -806,7 +820,7 @@ shows it again when the mouse cursor moves or a mouse button is pressed.")
 (define-public xlockmore
   (package
     (name "xlockmore")
-    (version "5.59")
+    (version "5.62")
     (source (origin
              (method url-fetch)
              (uri (list (string-append "http://sillycycle.com/xlock/"
@@ -817,7 +831,7 @@ shows it again when the mouse cursor moves or a mouse button is pressed.")
                                        "xlockmore-" version ".tar.xz")))
              (sha256
               (base32
-               "0lajc5a4lki33b9mzfsi74q4hbivbmhwysp7mib4ivnyxianhaid"))))
+               "0b05wgj4mpssy4hd7km5c48i454dfg45p11mfmsr7xjd2gnz5gqi"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags (list (string-append "--enable-appdefaultdir="
@@ -829,7 +843,7 @@ shows it again when the mouse cursor moves or a mouse button is pressed.")
        ("libXext" ,libxext)
        ("libXt" ,libxt)
        ("linux-pam" ,linux-pam)))
-    (home-page "http://sillycycle.com/xlockmore.html")
+    (home-page "https://sillycycle.com/xlockmore.html")
     (synopsis "Screen locker for the X Window System")
     (description
      "XLockMore is a classic screen locker and screen saver for the
@@ -1049,7 +1063,7 @@ Escape key when Left Control is pressed and released on its own.")
 (define-public libwacom
   (package
     (name "libwacom")
-    (version "1.2")
+    (version "1.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1057,7 +1071,7 @@ Escape key when Left Control is pressed and released on its own.")
                     "libwacom-" version "/libwacom-" version ".tar.bz2"))
               (sha256
                (base32
-                "1hv3z2qkvycqcyv99zfpbbgrlbyppdq8kk2y9x51578mwbgcy162"))))
+                "0g48cdg2qpvrr2nk8ccibjg3iv7iqskdv66izxacqx70w47y1771"))))
     (build-system glib-or-gtk-build-system)
     (arguments
      `(#:configure-flags '("--disable-static")))
@@ -1198,7 +1212,7 @@ protocol.")
 (define-public xscreensaver
   (package
     (name "xscreensaver")
-    (version "5.43")
+    (version "5.44")
     (source
      (origin
        (method url-fetch)
@@ -1206,7 +1220,7 @@ protocol.")
         (string-append "https://www.jwz.org/xscreensaver/xscreensaver-"
                        version ".tar.gz"))
        (sha256
-        (base32 "1571pj1a9998sq14y9366s2rw9wd2kq3l3dvvsk610vyd0fki3qm"))))
+        (base32 "15bv05vpfjwsrqbazrjmm382jd7vvw0mp6y9vasn6wvxzjf0in3k"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no check target
@@ -1222,7 +1236,7 @@ protocol.")
                            "--without-readdisplay")
        #:make-flags (list (string-append "AD_DIR="
                                          (assoc-ref %outputs "out")
-                                         "/usr/lib/X11/app-defaults"))))
+                                         "/lib/X11/app-defaults"))))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("intltool" ,intltool)))
@@ -1895,7 +1909,7 @@ temperature of the screen.")
     (home-page "https://github.com/google/xsecurelock")
     (synopsis "X11 screen lock utility with the primary goal of security")
     (description "@code{xsecurelock} is an X11 screen locker which uses
-a modular design to avoid the usual pitfalls�of screen locking utility design.
+a modular design to avoid the usual pitfalls of screen locking utility design.
 
 As a consequence of the modular design, the usual screen locker service
 shouldn't be used with @code{xsecurelock}.  Instead, you need to add a helper
@@ -1960,7 +1974,7 @@ The cutbuffer and clipboard selection are always synchronized.")
 (define-public jgmenu
   (package
     (name "jgmenu")
-    (version "3.5")
+    (version "4.1.0")
     (source
      (origin
        (method git-fetch)
@@ -1970,37 +1984,305 @@ The cutbuffer and clipboard selection are always synchronized.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0q0m3sskgmjv28gzvjkphgg3yhwzc9w9fj9i342pibb50impjazy"))))
+         "1wsh37rapb1bszlq36hvwxqvfds39hbvbl152m8as4zlh93wfvvk"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("perl" ,perl)
+     `(("cppcheck" ,cppcheck)
+       ("perl" ,perl)
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("cairo" ,cairo)
+       ("glib" ,glib)
        ("librsvg" ,librsvg)
        ("libx11" ,libx11)
        ("libxml2" ,libxml2)
        ("libxrandr" ,libxrandr)
-       ("pango" ,pango)
-       ("python" ,python)))
+       ("pango" ,pango)))
     (arguments
-     '(#:phases (modify-phases %standard-phases
-                  (add-after 'unpack 'fix-paths
-                    (lambda* (#:key inputs #:allow-other-keys)
-                      (let ((python (assoc-ref inputs "python")))
-                        (substitute* "src/jgmenu-pmenu.py"
-                          (("#!/usr/bin/env python3")
-                           (string-append "#!" python "/bin/python3")))
-                        #t)))
-                  (replace 'configure
-                    (lambda* (#:key outputs #:allow-other-keys)
-                      (let ((out (assoc-ref outputs "out")))
-                        (setenv "prefix" out)
-                        (setenv "CC" "gcc")
-                        #t))))))
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-tests
+           (lambda _
+             (substitute* "scripts/cppcheck-wrapper.sh"
+               (("--library=/usr/share/cppcheck/cfg/gnu\\.cfg")
+                ""))
+             #t))
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (setenv "CC" "gcc")
+             (invoke "./configure"
+                     (string-append "--prefix=" (assoc-ref outputs "out")))
+             #t)))))
     (synopsis "Simple X11 menu")
     (description
      "This is a simple menu for X11 designed for scripting and tweaking.  It
 can optionally use some appearance settings from XSettings, tint2 and GTK.")
     (home-page "https://jgmenu.github.io/")
     (license license:gpl2)))
+
+(define-public xwallpaper
+  (package
+    (name "xwallpaper")
+    (version "0.6.4")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/stoeckmann/xwallpaper")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "175fzifvia58vah2x7509drvfn3xfv5d9szgh9x1w1a1w8rcs2hx"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libjpeg-turbo" ,libjpeg-turbo)
+       ("libpng" ,libpng)
+       ("libxpm" ,libxpm)
+       ("pixman" ,pixman)
+       ("xcb-util" ,xcb-util)
+       ("xcb-util-image" ,xcb-util-image)))
+    (home-page "https://github.com/stoeckmann/xwallpaper")
+    (synopsis "Wallpaper setting utility for X")
+    (description
+     "The xwallpaper utility allows you to set image files as your X
+wallpaper. JPEG, PNG, and XPM file formats are supported.
+
+The wallpaper is also advertised to programs which support semi-transparent
+backgrounds.")
+    (license license:isc)))
+
+(define-public xwrits
+  (package
+    (name "xwrits")
+    (version "2.26")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://www.lcdf.org/~eddietwo/xwrits/"
+                           "xwrits-" version ".tar.gz"))
+       (sha256
+        (base32 "1n7y0fqpcvmzznvbsn14hzy5ddaa3lilm8aw6ckscqndnh4lijma"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-docs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (string-append out "/share/doc/xwrits")))
+               (install-file "GESTURES" doc)
+               (install-file "README" doc)
+               #t))))))
+    (inputs
+     `(("libx11" ,libx11)
+       ("libxinerama" ,libxinerama)))
+    (home-page "https://www.lcdf.org/~eddietwo/xwrits/")
+    (synopsis "Reminds you to take wrist breaks")
+    (description "Xwrits reminds you to take wrist breaks for prevention or
+management of repetitive stress injuries.  When you should take a break, it
+pops up an X window, the warning window.  You click on the warning window,
+then take a break.  The window changes appearance while you take the break.
+It changes again when your break is over.  Then you just resume typing.
+Xwrits hides itself until you should take another break.")
+    (license license:gpl2)))
+
+(define-public xsettingsd
+  (package
+    (name "xsettingsd")
+    (version "1.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/derat/xsettingsd.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "05m4jlw0mgwp24cvyklncpziq1prr2lg0cq9c055sh4n9d93d07v"))))
+    (build-system scons-build-system)
+    (inputs
+     `(("libx11" ,libx11)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("googletest" ,googletest)
+       ("googletest-source" ,(package-source googletest))))
+    (arguments
+     `(#:scons ,scons-python2
+       #:scons-flags
+       (list "CC=gcc")
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'patch-sconstruct
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "SConstruct"
+               ;; scons doesn't pick up environment variables automatically
+               ;; so it needs help to find path variables
+               (("env = Environment\\(")
+                "env = Environment(
+                         ENV = {
+                           'PATH': os.environ['PATH'],
+                           'CPATH': os.environ['CPATH'],
+                           'LIBRARY_PATH': os.environ['LIBRARY_PATH'],
+                           'PKG_CONFIG_PATH': os.environ['PKG_CONFIG_PATH']
+                         },")
+               ;; Update path to gtest source files used in tests
+               (("/usr/src/gtest") (string-append
+                                    (assoc-ref inputs "googletest-source")
+                                    "/googletest"))
+               ;; Exclude one warning that causes a build error
+               (("-Werror") "-Werror -Wno-error=sign-compare"))
+             #t))
+         ;; The SConstruct script doesn't configure installation so
+         ;; binaries must be copied to the output path directly
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin")))
+               (mkdir-p bin)
+               (install-file "xsettingsd" bin)
+               (install-file "dump_xsettings" bin)
+               #t))))))
+    (home-page "https://github.com/derat/xsettingsd")
+    (synopsis "Xorg settings daemon")
+    (description "@command{xsettingsd} is a lightweight daemon that provides settings to
+Xorg applications via the XSETTINGS specification.  It is used for defining
+font and theme settings when a complete desktop environment (GNOME, KDE) is
+not running.  With a simple @file{.xsettingsd} configuration file one can avoid
+configuring visual settings in different UI toolkits separately.")
+    (license license:bsd-3)))
+
+(define-public clipnotify
+  (package
+    (name "clipnotify")
+    (version "1.0.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/cdown/clipnotify.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1v3ydm5ljy8z1savmdxrjyx7a5bm5013rzw80frp3qbbjaci0wbg"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (replace 'install
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out  (assoc-ref outputs "out"))
+                    (bin  (string-append out "/bin"))
+                    (doc  (string-append %output "/share/doc/" ,name "-" ,version)))
+               (install-file "clipnotify" bin)
+               (install-file "README.md" doc)
+               #t))))
+       #:make-flags (list "CC=gcc")
+       ;; the package provides no test suite:
+       #:tests? #f))
+    (inputs
+     `(("libx11" ,libx11)
+       ("libXfixes" ,libxfixes)))
+    (home-page "https://github.com/cdown/clipnotify")
+    (synopsis "Notify on new X clipboard events")
+    (description "@command{clipnotify} is a simple program that, using the
+XFIXES extension to X11, waits until a new selection is available and then
+exits.
+
+It was primarily designed for clipmenu, to avoid polling for new selections.
+
+@command{clipnotify} doesn't try to print anything about the contents of the
+selection, it just exits when it changes.  This is intentional -- X11's
+selection API is verging on the insane, and there are plenty of others who
+have already lost their sanity to bring us xclip/xsel/etc.  Use one of those
+tools to complement clipnotify.")
+    (license license:public-domain)))
+
+(define-public clipmenu
+  (let ((commit "bcbe7b144598db4a103f14e8408c4b7327d6d5e1")
+        (revision "1"))
+    (package
+      (name "clipmenu")
+      (version (string-append "6.0.1-"
+                              revision "." (string-take commit 7)))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/cdown/clipmenu.git")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "12vvircdhl4psqi51cnfd6bqy85v2vwfcmdq1mimjgng727nwzys"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           (delete 'configure)
+           (delete 'build)
+           (replace 'install
+             (lambda* (#:key inputs outputs #:allow-other-keys)
+               (let* ((out  (assoc-ref outputs "out"))
+                      (bin  (string-append out "/bin"))
+                      (doc  (string-append %output "/share/doc/"
+                                           ,name "-" ,version)))
+                 (install-file "clipdel" bin)
+                 (install-file "clipmenu" bin)
+                 (install-file "clipmenud" bin)
+                 (install-file "README.md" doc)
+                 #t)))
+           (add-after 'install 'wrap-script
+             (lambda* (#:key inputs outputs #:allow-other-keys)
+               (let* ((out               (assoc-ref outputs "out"))
+                      (clipnotify        (assoc-ref inputs "clipnotify"))
+                      (coreutils-minimal (assoc-ref inputs "coreutils-minimal"))
+                      (gawk              (assoc-ref inputs "gawk"))
+                      (util-linux        (assoc-ref inputs "util-linux"))
+                      (xdotool           (assoc-ref inputs "xdotool"))
+                      (xsel              (assoc-ref inputs "xsel")))
+                 (for-each
+                  (lambda (prog)
+                    (wrap-script (string-append out "/bin/" prog)
+                      `("PATH" ":" prefix
+                        ,(map (lambda (dir)
+                                (string-append dir "/bin"))
+                              (list clipnotify coreutils-minimal
+                                    gawk util-linux xdotool xsel)))))
+                  '("clipmenu" "clipmenud" "clipdel")))
+               #t))
+           (replace 'check
+             (lambda* (#:key inputs outputs #:allow-other-keys)
+               ;; substitute a shebang appearing inside a string (the test
+               ;; file writes this string to a temporary file):
+               (substitute* "tests/test-clipmenu"
+                 (("#!/usr/bin/env bash")
+                  (string-append "#!" (which "bash"))))
+               (invoke "tests/test-clipmenu")
+               #t)))))
+      (inputs
+       `(("clipnotify" ,clipnotify)
+         ("coreutils-minimal" ,coreutils-minimal)
+         ("gawk" ,gawk)
+         ("guile" ,guile-3.0) ; for wrap-script
+         ("util-linux" ,util-linux)
+         ("xdotool" ,xdotool)
+         ("xsel" ,xsel)))
+      (home-page "https://github.com/cdown/clipmenu")
+      (synopsis "Simple clipboard manager using dmenu or rofi and xsel")
+      (description "Start @command{clipmenud}, then run @command{clipmenu} to
+select something to put on the clipboard.
+
+When @command{clipmenud} detects changes to the clipboard contents, it writes
+them out to the cache directory.  @command{clipmenu} reads the cache directory
+to find all available clips and launches @command{dmenu} (or @command{rofi},
+depending on the value of @code{CM_LAUNCHER}) to let the user select a clip.
+After selection, the clip is put onto the PRIMARY and CLIPBOARD X selections.")
+      (license license:public-domain))))

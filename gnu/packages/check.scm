@@ -26,10 +26,11 @@
 ;;; Copyright © 2017 ng0 <ng0@n0.is>
 ;;; Copyright © 2015, 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2017, 2018 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2017, 2018, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
 ;;; Copyright © 2019 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2019 Chris Marusich <cmmarusich@gmail.com>
+;;; Copyright © 2020 Lars-Dominik Braun <ldb@leibniz-psychology.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -78,7 +79,7 @@
 (define-public check
   (package
     (name "check")
-    (version "0.13.0")
+    (version "0.14.0")
     (source
      (origin
       (method url-fetch)
@@ -86,7 +87,7 @@
                           version "/check-" version ".tar.gz"))
       (sha256
        (base32
-        "02crar51gniijrrl9p8f9maibnwc33n76kw5cqr7xk3s8hqnncy4"))))
+        "02zkfiyklckmivrfvdsrlzvzphkdsgjrz3igncw05dv5pshhq3xx"))))
     (build-system gnu-build-system)
     (home-page "https://libcheck.github.io/check/")
     (synopsis "Unit test framework for C")
@@ -392,7 +393,7 @@ and it supports a very flexible form of test discovery.")
 (define-public doctest
   (package
     (name "doctest")
-    (version "2.3.6")
+    (version "2.3.7")
     (home-page "https://github.com/onqtam/doctest")
     (source (origin
               (method git-fetch)
@@ -400,7 +401,7 @@ and it supports a very flexible form of test discovery.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "070gkwffi73i2p0azga9yxj8km32bp8bw4jvkvz1vzlpavyii5kn"))))
+                "134lx7pjnglrl4wdmyr9dz3rjb6d4ir6rvapg00gp52n44dbhnrq"))))
     (build-system cmake-build-system)
     (synopsis "C++ test framework")
     (description
@@ -706,14 +707,14 @@ have been used.")
 (define-public python-nose2
   (package
     (name "python-nose2")
-    (version "0.6.5")
+    (version "0.9.2")
       (source
         (origin
           (method url-fetch)
           (uri (pypi-uri "nose2" version))
           (sha256
            (base32
-            "1x4zjq1zlyrh8b9ba0cmafd3w94pxhid408kibyjd3s6h1lap6s7"))))
+            "0pmbb6nk31yhgh4zkcblzxsznml7f7pf5q1ihgrwvbxv4mwzfql7"))))
     (build-system python-build-system)
     (arguments `(#:tests? #f)) ; 'module' object has no attribute 'collector'
     (propagated-inputs
@@ -756,7 +757,7 @@ interfaces and processes.")
     (propagated-inputs
      `(("python-six" ,python-six)
        ("python-traceback2" ,python-traceback2)))
-    (home-page "http://pypi.python.org/pypi/unittest2")
+    (home-page "https://pypi.org/project/unittest2/")
     (synopsis "Python unit testing library")
     (description
      "Unittest2 is a replacement for the unittest module in the Python
@@ -1023,6 +1024,31 @@ result back.")
     (description
      "This package provides a py.test plugin that aborts hanging tests after a
 timeout has been exceeded.")
+    (license license:expat)))
+
+(define-public python-pytest-forked
+  (package
+    (name "python-pytest-forked")
+    (version "1.1.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pytest-forked" version))
+       (sha256
+        (base32
+         "000i4q7my2fq4l49n8idx2c812dql97qv6qpm2vhrrn9v6g6j18q"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-pytest" ,python-pytest)))
+    (native-inputs
+     `(("python-setuptools-scm" ,python-setuptools-scm)))
+    (home-page
+     "https://github.com/pytest-dev/pytest-forked")
+    (synopsis
+     "Run tests in isolated forked subprocesses")
+    (description
+     "Pytest plugin which will run each test in a subprocess and will report if
+a test crashed the process.")
     (license license:expat)))
 
 (define-public python-scripttest
@@ -1441,8 +1467,6 @@ C/C++, R, and more, and uploads it to the @code{codecov.io} service.")
        #:modules ((guix build python-build-system)
                   (guix build utils)
                   (srfi srfi-1))
-       #:imported-modules (,@%python-build-system-modules
-                           (srfi srfi-1))
        #:phases
        (modify-phases %standard-phases
          (delete 'install)
@@ -1542,7 +1566,7 @@ the last py.test invocation.")
     (synopsis "Py.test plugin to test server connections locally")
     (description "Pytest-localserver is a plugin for the pytest testing
 framework which enables you to test server connections locally.")
-    (home-page "https://pypi.python.org/pypi/pytest-localserver")
+    (home-page "https://pypi.org/project/pytest-localserver/")
     (license license:expat)))
 
 (define-public python-pytest-xprocess
@@ -1996,7 +2020,7 @@ especially -cover-package.")
         (base32
          "0y8d0zwiqar51kxj8lzmkvwc3b8kazb04gk5zcb4nzg5k68zmhq5"))))
     (build-system python-build-system)
-    (home-page "http://pypi.python.org/pypi/discover/")
+    (home-page "https://pypi.org/project/discover/")
     (synopsis
      "Python test discovery for unittest")
     (description
@@ -2117,6 +2141,32 @@ JSON APIs with Behave.")
 
 (define-public python2-rednose
   (package-with-python2 python-rednose))
+
+(define-public python-nose-random
+  (package
+    (name "python-nose-random")
+    (version "1.0.0")
+    (source
+     (origin
+      (method git-fetch)
+      (uri (git-reference
+            (url "https://github.com/fzumstein/nose-random")
+            (commit version)))
+      (file-name (git-file-name name version))
+      (sha256
+       (base32
+        "1dvip61r2frjv35mv6mmfjc07402z73pjbndfp3mhxyjn2zhksw2"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-nose" ,python-nose)))
+    (home-page "https://github.com/fzumstein/nose-random")
+    (synopsis "Nose plugin to facilitate randomized unit testing with
+Python")
+    (description "Python nose-random is designed to facilitate
+Monte-Carlo style unit testing.  The idea is to improve testing by
+running your code against a large number of randomly generated input
+scenarios.")
+    (license license:expat)))
 
 (define-public python-nose-randomly
   (package
@@ -2440,7 +2490,7 @@ grew out of the @dfn{Vc} project.")
 (define-public python-pyfakefs
   (package
     (name "python-pyfakefs")
-    (version "3.5.8")
+    (version "3.7.1")
     (source (origin
               (method url-fetch)
               ;; We use the PyPI URL because there is no proper release
@@ -2449,7 +2499,7 @@ grew out of the @dfn{Vc} project.")
               (uri (pypi-uri "pyfakefs" version))
               (sha256
                (base32
-                "0qb9jp0bqhc0dv0rn805fv99029fvx135f3bvka6scfkcl6jgllc"))
+                "1cp2yw96fa2qkgi39xa3nlr3inf8wb5rgh9kdq53256ca2r8pdhy"))
               (patches (search-patches
                         "python-pyfakefs-remove-bad-test.patch"))
               (file-name (string-append name "-" version ".tar.gz"))))
@@ -2485,3 +2535,25 @@ system.  The code under test requires no modification to work with pyfakefs.")
 
 (define-public python2-pyfakefs
   (package-with-python2 python-pyfakefs))
+
+(define-public python-aiounittest
+  (package
+    (name "python-aiounittest")
+    (version "1.3.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "aiounittest" version))
+       (sha256
+        (base32
+         "1q4bhmi80smaa1lknvdna0sx3915naczlfna1fp435nf6cjyrjl1"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-coverage" ,python-coverage)
+       ("python-nose" ,python-nose)))
+    (home-page
+     "https://github.com/kwarunek/aiounittest")
+    (synopsis "Test asyncio code more easily")
+    (description "Aiounittest is a library that helps write tests using
+asynchronous code in Python (asyncio).")
+    (license license:expat)))

@@ -6,7 +6,7 @@
 ;;; Copyright © 2016 Raimon Grau <raimonster@gmail.com>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
-;;; Copyright © 2016, 2017, 2018, 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2016 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
 ;;; Copyright © 2016, 2017, 2018 Arun Isaac <arunisaac@systemreboot.net>
@@ -23,7 +23,7 @@
 ;;; Copyright © 2018 Tonton <tonton@riseup.net>
 ;;; Copyright © 2018 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2018 Theodoros Foradis <theodoros@foradis.org>
-;;; Copyright © 2018 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2018, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018, 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2019 Maxim Cournoyer <maxim.cournoyer@gmail.com>
@@ -32,10 +32,12 @@
 ;;; Copyright © 2019 Timotej Lazar <timotej.lazar@araneo.si>
 ;;; Copyright © 2019 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2019 Tonton <tonton@riseup.net>
-;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
+;;; Copyright © 2019, 2020 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2019 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
 ;;; Copyright © 2019 Daniel Schaefer <git@danielschaefer.me>
 ;;; Copyright © 2019 Diego N. Barbato <dnbarbato@posteo.de>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -64,6 +66,7 @@
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
+  #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages adns)
@@ -79,6 +82,7 @@
   #:use-module (gnu packages cpp)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
+  #:use-module (gnu packages cyrus-sasl)
   #:use-module (gnu packages dejagnu)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages flex)
@@ -95,6 +99,7 @@
   #:use-module (gnu packages kerberos)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages nettle)
+  #:use-module (gnu packages openldap)
   #:use-module (gnu packages password-utils)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
@@ -164,7 +169,7 @@ or, more generally, MAC addresses of the same category of hardware.")
             (substitute* "src/Makefile"
               (("^TESTS = .*") "TESTS = \n"))
             #t)))))
-    (home-page "http://www.remlab.net/miredo/")
+    (home-page "https://www.remlab.net/miredo/")
     (synopsis "Teredo IPv6 tunneling software")
     (description
      "Miredo is an implementation (client, relay, server) of the Teredo
@@ -175,7 +180,7 @@ residing in IPv4-only networks, even when they are behind a NAT device.")
 (define-public socat
   (package
     (name "socat")
-    (version "1.7.3.3")
+    (version "1.7.3.4")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -183,9 +188,9 @@ residing in IPv4-only networks, even when they are behind a NAT device.")
                     version ".tar.bz2"))
               (sha256
                (base32
-                "0jnhjijyq74g3wa4ph0am83z6vq7qna7ac0xqjma8s4197z3zmhd"))))
+                "1z7xgnwiqpcv1j6aghhj9nqbx7cg3gpc4n9j7vi9hm7nhv5788wp"))))
     (build-system gnu-build-system)
-    (arguments '(#:tests? #f))                    ;no 'check' phase
+    (arguments '(#:tests? #f))          ; no test suite
     (inputs `(("openssl" ,openssl)))
     (home-page "http://www.dest-unreach.org/socat/")
     (synopsis
@@ -339,33 +344,35 @@ between different versions of ØMQ.")
     (license license:mpl2.0)))
 
 (define-public cppzmq
-  (let ((revision "0")
-        (commit "d9f0f016c07046742738c65e1eb84722ae32d7d4"))
-    (package
-      (name "cppzmq")
-      (version (string-append "4.2.2-" revision "."
-                              (string-take commit 7)))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://github.com/zeromq/cppzmq")
-                      (commit commit)))
-                (sha256
-                 (base32
-                  "1gmqlm00y6xpa5m6d4ajq3ww63n2w7h4sy997wj81vcqmqx45b1f"))
-                (file-name (string-append name "-" version "-checkout"))))
-      (build-system cmake-build-system)
-      (arguments '(#:tests? #f)) ; No tests.
-      (native-inputs
-       `(("pkg-config" ,pkg-config)))
-      (inputs
-       `(("zeromq" ,zeromq)))
-      (home-page "http://zeromq.org")
-      (synopsis "C++ bindings for the ØMQ messaging library")
-      (description
-       "This package provides header-only C++ bindings for ØMQ.  The header
+  (package
+    (name "cppzmq")
+    (version "4.6.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/zeromq/cppzmq")
+                    (commit (string-append "v" version))))
+              (sha256
+               (base32
+                "19acx2bzi4n6fdnfgkja1nds7m1bwg8lw5vfcijrx9fv75pa7m8h"))
+              (file-name (git-file-name name version))))
+    (build-system cmake-build-system)
+    (arguments
+     '(;; FIXME: The test suite requires downloading Catch and custom
+       ;; CMake targets, and refuses to use the system version.
+       ;; See <https://github.com/zeromq/cppzmq/issues/334>.
+       #:tests? #f
+       #:configure-flags '("-DCPPZMQ_BUILD_TESTS=OFF")))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("zeromq" ,zeromq)))
+    (home-page "http://zeromq.org")
+    (synopsis "C++ bindings for the ØMQ messaging library")
+    (description
+     "This package provides header-only C++ bindings for ØMQ.  The header
 files contain direct mappings of the abstractions provided by the ØMQ C API.")
-      (license license:expat))))
+    (license license:expat)))
 
 (define-public librdkafka
   (package
@@ -547,7 +554,7 @@ test_parse_format_ipv(4(|_listen_all|_mapped_ipv6)|6)\\);")
               ("zlib" ,zlib)))
     (native-inputs `(("check" ,check)
                      ("pkg-config" ,pkg-config)))
-    (home-page "http://code.kryo.se/iodine/")
+    (home-page "https://code.kryo.se/iodine/")
     (synopsis "Tunnel IPv4 data through a DNS server")
     (description "Iodine tunnels IPv4 data through a DNS server.  This
 can be useful in different situations where internet access is firewalled, but
@@ -559,14 +566,14 @@ and up to 1 Mbit/s downstream.")
 (define-public whois
   (package
     (name "whois")
-    (version "5.5.4")
+    (version "5.5.6")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://debian/pool/main/w/whois/"
                            "whois_" version ".tar.xz"))
        (sha256
-        (base32 "0k97aiz7ngkjz3vhzvk27kqhnmqmkskdfx310c94qnh8fd7hiqfi"))))
+        (base32 "0kpi981zjczvdcxfcq455c529vlaxa73x8kbm530z5b01h0fk8fb"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no test suite
@@ -601,14 +608,14 @@ of the same name.")
 (define-public wireshark
   (package
     (name "wireshark")
-    (version "3.2.0")
+    (version "3.2.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.wireshark.org/download/src/wireshark-"
                            version ".tar.xz"))
        (sha256
-        (base32 "0v5nn7i2nbqr59jsw8cs2052hr7xd96x1sa3480g8ks5kahk7zac"))))
+        (base32 "0ygdxpz0i4jxp55fg9x4xcan093wycjb66yas073gviz9kpj6naz"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases
@@ -857,6 +864,47 @@ prints timing information for each step of the HTTP request (DNS lookup,
 TCP connection, TLS handshake and so on) in the terminal.")
     (license license:expat)))
 
+(define-public squid
+  (package
+    (name "squid")
+    (version "4.10")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://www.squid-cache.org/Versions/v4/squid-"
+                           version ".tar.xz"))
+       (sha256
+        (base32 "07sz0adv8nkhy797675bpra7lvdkwjq9isw1ddgylhlazl511w4q"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'fix-true-path
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "test-suite/testheaders.sh"
+               (("/bin/true")
+                (string-append (assoc-ref inputs "coreutils")
+                               "/bin/true")))
+             #t)))))
+    (inputs
+     `(("perl" ,perl)
+       ("openldap" ,openldap)
+       ("linux-pam" ,linux-pam)
+       ("libcap" ,libcap)
+       ("cyrus-sasl" ,cyrus-sasl)
+       ("expat" ,expat)
+       ("libxml2" ,libxml2)
+       ("openssl" ,openssl)))
+    (native-inputs
+     `(("cppunit" ,cppunit)
+       ("pkg-config" ,pkg-config)))
+    (synopsis "Web caching proxy")
+    (description "Squid is a caching proxy for the Web supporting HTTP, HTTPS,
+FTP, and more.  It reduces bandwidth and improves response times by caching and
+reusing frequently-requested web pages.")
+    (home-page "http://www.squid-cache.org/")
+    (license license:gpl2+)))
+
 (define-public bwm-ng
   (package
     (name "bwm-ng")
@@ -894,15 +942,14 @@ live network and disk I/O bandwidth monitor.")
 (define-public aircrack-ng
   (package
     (name "aircrack-ng")
-    (version "1.5.2")
+    (version "1.6")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://download.aircrack-ng.org/aircrack-ng-"
                            version ".tar.gz"))
        (sha256
-        (base32
-         "0hc2x17bxk2n00z8jj5jfwq3z41681fd19n018724il0cpkjyncy"))))
+        (base32 "0ix2k64qg7x3w0bzdsbk1m50kcpq1ws59g3zkwiafvpwdr4gs2sg"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -985,15 +1032,15 @@ non-existing entropy of some access points.")
 (define-public reaver
   (package
     (name "reaver")
-    (version "1.6.5")
+    (version "1.6.6")
     (source (origin
               (method url-fetch)
               (uri (string-append
                     "https://github.com/t6x/reaver-wps-fork-t6x/releases/"
-                    "download/v" version "/" name "-" version ".tar.xz"))
+                    "download/v" version "/reaver-" version ".tar.xz"))
               (sha256
                (base32
-                "0sva3g0kwgv143n9l3lg4qp5iiqz7nk76nr0hwivsnglbhk9sbil"))))
+                "00k7mc81ifv0wma7k4v18mj498badbw5yls6c28qin3d1gda0ag3"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -1016,7 +1063,7 @@ non-existing entropy of some access points.")
                          (find-files "." "README.*"))
                (install-file "reaver.1" man1)
                #t))))
-       #:tests? #f)) ; there are no tests
+       #:tests? #f))                    ; there are no tests
     (inputs
      `(("libpcap" ,libpcap)))
     (propagated-inputs
@@ -1513,7 +1560,7 @@ that block port 22.")
 supports tuning of various parameters related to timing, buffers and
 protocols (TCP, UDP, SCTP with IPv4 and IPv6).  For each test it reports
 the bandwidth, loss, and other parameters.")
-    (home-page "http://software.es.net/iperf/")
+    (home-page "https://software.es.net/iperf/")
     (license (list license:bsd-3             ; Main distribution.
                    license:ncsa              ; src/{units,iperf_locale,tcp_window_size}.c
                    license:expat             ; src/{cjson,net}.[ch]
@@ -1719,7 +1766,7 @@ speedtest.net.")
      "This is a tftp client derived from OpenBSD tftp with some extra options
 added and bugs fixed.  The source includes readline support but it is not
 enabled due to license conflicts between the BSD advertising clause and the GPL.")
-    (home-page "http://git.kernel.org/cgit/network/tftp/tftp-hpa.git/about/")
+    (home-page "https://git.kernel.org/cgit/network/tftp/tftp-hpa.git/about/")
     ;; Some source files are distributed under a 3-clause BSD license, and
     ;; others under a 4-clause BSD license. Refer to the files in the source
     ;; distribution for clarification.
@@ -2665,13 +2712,13 @@ protocol daemons for BGP, IS-IS, LDP, OSPF, PIM, and RIP. ")
     (build-system gnu-build-system)
     (inputs
      `(("dbus" ,dbus)
-       ("libtool" ,libtool)
        ("ell" ,ell)
        ("readline" ,readline)))
     (native-inputs
      `(("asciidoc" ,asciidoc)
        ("autoconf" ,autoconf)
        ("automake" ,automake)
+       ("libtool" ,libtool)
        ("pkgconfig" ,pkg-config)
        ("python" ,python)
        ("openssl" ,openssl)))
@@ -2710,14 +2757,14 @@ maximum extent possible.")
 (define-public batctl
   (package
    (name "batctl")
-   (version "2019.5")
+   (version "2020.0")
    (source
     (origin
      (method url-fetch)
      (uri (string-append "https://downloads.open-mesh.org/batman/releases/batman-adv-"
                          version "/batctl-" version ".tar.gz"))
      (sha256
-      (base32 "1b9w4636dq8m38nzr8j0v0j3b0vdsw84c58c2isc33h66dx8brgz"))))
+      (base32 "01414ywhlb2b9ng9d5kd5rr1s7wzvi234j8hj6ra2spn92qykvv0"))))
    (inputs
     `(("libnl" ,libnl)))
    (native-inputs
@@ -2743,7 +2790,7 @@ module @code{batman-adv}, for Layer 2.")
 (define-public pagekite
   (package
     (name "pagekite")
-    (version "1.5.0.191126")
+    (version "1.5.0.200327")
     (source
      (origin
        (method git-fetch)
@@ -2752,7 +2799,7 @@ module @code{batman-adv}, for Layer 2.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0mncfjfrr13sm84g5z49qxg5cy791h5qxphjsl77x91zs3m36c8l"))))
+        (base32 "1vw7kjwxqd3qvm7kpxgjzl6797y0i1f16yfkfad84qpx2ij0gvdm"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -2824,6 +2871,61 @@ easy-to-understand binary values.")
     (home-page "http://jodies.de/ipcalc")
     (license license:gpl2+)))
 
+(define-public tunctl
+  (package
+    (name "tunctl")
+    (version "1.5")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://sourceforge/tunctl/tunctl/" version "/"
+                           "tunctl-" version ".tar.gz"))
+       (sha256
+        (base32 "1zsgn7w6l2zh2q0j6qaw8wsx981qcr536qlz1lgb3b5zqr66qama"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (delete 'bootstrap)            ;there is no configure.ac file
+         (delete 'configure)            ;there is no configure script
+         (delete 'check)                ;there are no tests
+         (replace 'build
+           (lambda _
+             (setenv "CC" "gcc")
+             (invoke "make" "tunctl")))
+         ;; TODO: Requires docbook2x to generate man page from SGML.
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin")))
+               (install-file "tunctl" bin))
+             #t)))))
+    (home-page "http://tunctl.sourceforge.net")
+    (synopsis  "Utility to set up and maintain TUN/TAP network interfaces")
+    (description "Tunctl is used to set up and maintain persistent TUN/TAP
+network interfaces, enabling user applications to simulate network traffic.
+Such interfaces are useful for VPN software, virtualization, emulation,
+simulation, and a number of other applications.")
+    (license license:gpl2)))
+
+(define-public wol
+  (package
+    (name "wol")
+    (version "0.7.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://sourceforge/wake-on-lan/wol/"
+                           version "/wol-" version ".tar.gz"))
+       (sha256
+        (base32 "08i6l5lr14mh4n3qbmx6kyx7vjqvzdnh3j9yfvgjppqik2dnq270"))))
+    (build-system gnu-build-system)
+    (home-page "https://sourceforge.net/projects/wake-on-lan/")
+    (synopsis "Implements Wake On LAN functionality in a small program")
+    (description "Tool to send a magic packet to wake another host on the
+network.  This must be enabled on the target host, usually in the BIOS.")
+    (license license:gpl2)))
+
 (define-public vde2
   (package
     (name "vde2")
@@ -2853,3 +2955,46 @@ cables.")
                    (license:non-copyleft ; slirpvde
                     "file://COPYING.slirpvde"
                     "See COPYING.slirpvde in the distribution.")))))
+
+(define-public haproxy
+  (package
+    (name "haproxy")
+    (version "2.1.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://www.haproxy.org/download/"
+                                  (version-major+minor version)
+                                  "/src/haproxy-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0n8bw3d6gikr8c56ycrvksp1sl0b4yfzp19867cxkl3l0daqwrxv"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:make-flags
+       (let* ((out (assoc-ref %outputs "out")))
+         (list (string-append "PREFIX=" out)
+               (string-append "DOCDIR=" out "/share/" ,name)
+               "TARGET=linux-glibc"
+               "USE_LUA=1"
+               "USE_OPENSSL=1"
+               "USE_ZLIB=1"
+               "USE_PCRE_2=1"))
+       #:tests? #f  ; there are only regression tests, using varnishtest
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))))
+    (inputs
+     `(("lua" ,lua)
+       ("openssl" ,openssl)
+       ("pcre2" ,pcre2)
+       ("zlib" ,zlib)))
+    (home-page "https://www.haproxy.org/")
+    (synopsis "Reliable, high performance TCP/HTTP load balancer")
+    (description "HAProxy is a free, very fast and reliable solution offering
+high availability, load balancing, and proxying for TCP and HTTP-based
+applications.  It is particularly suited for web sites crawling under very
+high loads while needing persistence or Layer7 processing.  Supporting tens of
+thousands of connections is clearly realistic with today's hardware.")
+    (license (list license:gpl2+
+                   license:lgpl2.1
+                   license:lgpl2.1+))))

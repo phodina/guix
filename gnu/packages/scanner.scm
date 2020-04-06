@@ -39,16 +39,16 @@
 (define-public sane-backends-minimal
   (package
     (name "sane-backends-minimal")
-    (version "1.0.28")
+    (version "1.0.29")
     (source (origin
              (method url-fetch)
              (uri (string-append
                    "https://gitlab.com/sane-project/backends/uploads/"
-                   "9e718daff347826f4cfe21126c8d5091/"
+                   "54f858b20a364fc35d820df935a86478/"
                    "sane-backends-" version ".tar.gz"))
              (sha256
               (base32
-               "00yy8q9hqdf0zjxxl4d8njr9zf0hhi3a9ib23ikc2anqf8zhy9ii"))
+               "1vd83vhl0hddwsdh2jb0k3yzycfghi2xa9lc3ga9r12rbx77n0ma"))
              (modules '((guix build utils)))
              (snippet
               ;; Generated HTML files and udev rules normally embed a
@@ -131,6 +131,13 @@ package contains the library, but no drivers.")
        ((#:phases phases)
         `(modify-phases ,phases
            (delete 'disable-backends)
+           (add-after 'disable-failing-tests 'disable-failing-backend-tests
+             (lambda _
+               ;; Disable test that fails on i686:
+               ;;   <https://bugs.gnu.org/39449>
+               (substitute* "testsuite/backend/genesys/Makefile.in"
+                 ((" genesys_unit_tests\\$\\(EXEEXT\\)") ""))
+               #t))
            (add-after 'unpack 'add-backends
              (lambda _
                (substitute* "backend/dll.conf.in"

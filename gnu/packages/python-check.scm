@@ -1,9 +1,10 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
+;;; Copyright © 2020 Julien Lepiller <julien@lepiller.eu>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -29,6 +30,7 @@
   #:use-module (guix utils)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
+  #:use-module (guix git-download)
   #:use-module (guix download)
   #:use-module (guix build-system python))
 
@@ -106,6 +108,37 @@ If the server you are testing against ever changes its API, all you need to do
 is delete your existing cassette files, and run your tests again.  VCR.py will
 detect the absence of a cassette file and once again record all HTTP
 interactions, which will update them to correspond to the new API.")
+    (license license:expat)))
+
+(define-public python-pytest-vcr
+  (package
+    (name "python-pytest-vcr")
+    (version "1.0.2")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/ktosiek/pytest-vcr")
+               (commit version)))
+        (file-name (git-file-name name version))
+        (sha256
+         (base32
+          "1i6fin91mklvbi8jzfiswvwf1m91f43smpj36a17xrzk4gisfs6i"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (invoke "pytest" "tests/"))))))
+    (propagated-inputs
+     `(("python-pytest" ,python-pytest)
+       ("python-vcrpy" ,python-vcrpy)))
+    (home-page "https://github.com/ktosiek/pytest-vcr")
+    (synopsis "Plugin for managing VCR.py cassettes")
+    (description
+     "Plugin for managing VCR.py cassettes.")
     (license license:expat)))
 
 (define-public python-pytest-checkdocs
@@ -289,3 +322,48 @@ testing framework.")
     (description "This package provides a virtualenv fixture for the py.test
 framework.")
     (license license:expat)))
+
+(define-public python-codacy-coverage
+  (package
+    (name "python-codacy-coverage")
+    (version "1.3.11")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "codacy-coverage" version))
+        (sha256
+         (base32
+          "1g0c0w56xdkmqb8slacyw5qhzrkp814ng3ddh2lkiij58y9m2imr"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f)); no tests
+    (propagated-inputs
+     `(("python-check-manifest" ,python-check-manifest)))
+    (home-page "https://github.com/codacy/python-codacy-coverage")
+    (synopsis "Codacy coverage reporter for Python")
+    (description "This package analyses Python test suites and reports how much
+of the code is covered by them.  This tool is part of the Codacy suite for
+analysing code quality.")
+    (license license:expat)))
+
+(define-public python-httmock
+  (package
+    (name "python-httmock")
+    (version "1.3.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "httmock" version))
+        (sha256
+         (base32
+          "1zj1fcm0n6f0wr9mr0hmlqz9430fnr5cdwd5jkcvq9j44bnsrfz0"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f)); no tests
+    (propagated-inputs
+     `(("python-requests" ,python-requests)))
+    (home-page "https://github.com/patrys/httmock")
+    (synopsis "Mocking library for requests.")
+    (description "This package provides a library for replying fake data to
+Python software under test, when they make an HTTP query.")
+    (license license:asl2.0)))

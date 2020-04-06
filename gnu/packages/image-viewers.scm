@@ -7,12 +7,13 @@
 ;;; Copyright © 2017 ng0 <ng0@n0.is>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2017 nee <nee-git@hidamari.blue>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2019 Guy Fleury Iteriteka <hoonandon@gmail.com>
 ;;; Copyright © 2019 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2020 Peng Mei Yu <pengmeiyu@riseup.net>
+;;; Copyright © 2020 R Veera Kumar <vkor@vkten.in>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -216,7 +217,7 @@ It is the default image viewer on LXDE desktop environment.")
 (define-public sxiv
   (package
     (name "sxiv")
-    (version "25")
+    (version "26")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -225,15 +226,15 @@ It is the default image viewer on LXDE desktop environment.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "13s1lfar142hq1j7xld0ri616p4bqs57b17yr4d0b9a9w7liz4hp"))))
+                "0xaawlfdy7b277m38mgg4423kd7p1ffn0dq4hciqs6ivbb3q9c4f"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no check target
        #:make-flags
        (list (string-append "PREFIX=" %output)
              "CC=gcc"
-             ;; Xft.h #includes <ft2build.h> (without ‘freetype2/’).  The sxiv
-             ;; Makefile works around this by hard-coding /usr/include instead.
+             ;; Xft.h #includes <ft2build.h> without ‘freetype2/’.  The Makefile
+             ;; works around this by hard-coding /usr/include & $PREFIX.
              (string-append "CPPFLAGS=-I"
                             (assoc-ref %build-inputs "freetype")
                             "/include/freetype2")
@@ -509,14 +510,14 @@ preloading.")
 (define-public chafa
   (package
     (name "chafa")
-    (version "1.2.1")
+    (version "1.2.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://hpjansson.org/chafa/releases/chafa-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "1hj4vdyczby8h52ff23qxl8ng18p5jy549idngpiddwszf5s4drz"))))
+                "0aa7119514rhsak5i0kgvwllb9z74lnfzfn7dzfhs27fc8cvx1dg"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -596,3 +597,60 @@ with tiling window managers.  Features include:
 @end itemize\n")
     (home-page "https://github.com/eXeC64/imv")
     (license license:expat)))
+
+(define-public qiv
+  (package
+    (name "qiv")
+    (version "2.3.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://spiegl.de/qiv/download/qiv-"
+                           version ".tgz"))
+       (sha256
+        (base32 "1rlf5h67vhj7n1y7jqkm9k115nfnzpwngj3kzqsi2lg676srclv7"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ;; That is required for testing.
+       ("xorg-server" ,xorg-server-for-tests)))
+    (inputs
+     `(("imlib2" ,imlib2)
+       ("glib" ,glib)
+       ("gtk+" ,gtk+-2)
+       ("lcms" ,lcms)
+       ("libjpeg" ,libjpeg)
+       ("libtiff" ,libtiff)
+       ("libexif" ,libexif)
+       ("libx11" ,libx11)
+       ("libxext" ,libxext)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (delete 'configure)            ; no configure script
+         (add-before 'install 'patch-file-start-xserver
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; patch the file so that qiv runs and exits by itself
+             (substitute* "Makefile"
+               (("./qiv -f ./intro.jpg") "./qiv -f -C -s ./intro.jpg")
+               ;; Fail the build when test fails.
+               (("echo \"-- Test Failed --\"")
+                "(echo \"-- Test Failed --\" ; false)"))
+             ;; There must be a running X server and make install doesn't start one.
+             ;; Therefore we must do it.
+             (system "Xvfb :1 &")
+             (setenv "DISPLAY" ":1")
+             #t)))
+       #:tests? #f                      ; there is no check target
+       #:make-flags
+       (list
+        (string-append "PREFIX=" (assoc-ref %outputs "out")))))
+    (home-page "http://spiegl.de/qiv/")
+    (synopsis "Graphical image viewer for X")
+    (description
+     "Quick Image Viewer is a small and fast GDK/Imlib2 image viewer.
+Features include zoom, maxpect, scale down, fullscreen, slideshow, delete,
+brightness/contrast/gamma correction, pan with keyboard and mouse, flip,
+rotate left/right, jump/forward/backward images, filename filter and use it
+to set X desktop background.")
+    (license license:gpl2)))

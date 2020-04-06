@@ -18,6 +18,8 @@
 ;;; Copyright © 2019 Tanguy Le Carrour <tanguy@bioneland.org>
 ;;; Copyright © 2019, 2020 Brett Gilio <brettg@gnu.org>
 ;;; Copyright © 2019, 2020 Timotej Lazar <timotej.lazar@araneo.si>
+;;; Copyright © 2020 Nicolò Balzarotti <nicolo@nixo.xyz>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -48,6 +50,7 @@
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages cpp)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages cyrus-sasl)
@@ -68,8 +71,10 @@
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages libidn)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages logging)
   #:use-module (gnu packages lua)
   #:use-module (gnu packages man)
+  #:use-module (gnu packages markup)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages networking)
   #:use-module (gnu packages pcre)
@@ -303,7 +308,7 @@ access to servers running the Discord protocol.")
                (("if 'DESTDIR' not in os.environ:")
                  "if False:"))
              #t)))))
-    (synopsis "Graphical IRC Client")
+    (synopsis "Graphical IRC client")
     (description
      "HexChat lets you connect to multiple IRC networks at once.  The main
 window shows the list of currently connected networks and their channels, the
@@ -1234,7 +1239,7 @@ for sending encrypted messages to one person or many subscribers.")
     (build-system gnu-build-system)
     (inputs
      `(("ncurses" ,ncurses)))
-    (home-page "http://ytalk.ourproject.org")
+    (home-page "https://ytalk.ourproject.org")
     (synopsis "Multi-user chat program")
     (description "Ytalk is a replacement for the BSD talk program.  Its main
 advantage is the ability to communicate with any arbitrary number of users at
@@ -1276,7 +1281,7 @@ into existing applications.")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://perlpsyc.psyc.eu/"
+       (uri (string-append "https://perl.psyc.eu/"
                            "perlpsyc-" version ".zip"))
        (file-name (string-append name "-" version ".zip"))
        (sha256
@@ -1335,10 +1340,10 @@ into existing applications.")
     (description
      "@code{Net::PSYC} with support for TCP, UDP, Event.pm, @code{IO::Select} and
 Gtk2 event loops.  This package includes 12 applications and additional scripts:
-psycion (a @uref{http://about.psyc.eu,PSYC} chat client), remotor (a control console
+psycion (a @uref{https://about.psyc.eu,PSYC} chat client), remotor (a control console
 for @uref{https://torproject.org,tor} router) and many more.")
     (synopsis "Perl implementation of PSYC protocol")
-    (home-page "http://perlpsyc.psyc.eu/")
+    (home-page "https://perl.psyc.eu")
     (license (list license:gpl2
                    license:perl-license
                    ;; contrib/irssi-psyc.pl:
@@ -1374,7 +1379,7 @@ for @uref{https://torproject.org,tor} router) and many more.")
          ;; therefore we do not include them.
          ;; TODO: Get a cargo build system in Guix.
          (delete 'configure)))) ; no configure script
-    (home-page "http://about.psyc.eu/libpsyc")
+    (home-page "https://about.psyc.eu/libpsyc")
     (description
      "@code{libpsyc} is a PSYC library in C which implements
 core aspects of PSYC, useful for all kinds of clients and servers
@@ -1634,14 +1639,14 @@ are both supported).")
 (define-public profanity
   (package
     (name "profanity")
-    (version "0.7.1")
+    (version "0.8.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://profanity-im.github.io/profanity-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0nxh81j8ky0fzv47pip1jb7rs5rrin3jx0f3h632bvpjiya45r1z"))))
+                "15yrx2ir2bilxpjfaxpjb93yjpvpvcvh5r7wbsjx6kmmy7qg2zvb"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags
@@ -1787,6 +1792,130 @@ implementation.  Quaternion and libqmatrixclient together form the
 QMatrixClient project.")
     (license license:lgpl2.1+)))
 
+(define-public mtxclient
+  (package
+    (name "mtxclient")
+    (version "0.2.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Nheko-Reborn/mtxclient.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0pycznrvj57ff6gbwfn1xj943d2dr4vadl79hii1z16gn0nzxpmj"))))
+    (arguments
+     `(#:configure-flags
+       (list
+        ;; Disable example binaries (not installed)
+        "-DBUILD_LIB_EXAMPLES=OFF")
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'disable-network-tests
+           (lambda _
+             (substitute* "CMakeLists.txt"
+               (("add_test\\((BasicConnectivity|ClientAPI|MediaAPI|Encryption)")
+                "# add_test"))
+             #t))
+         (add-before 'configure 'set-home
+           (lambda _
+             ;; Tries to create package registry file
+             ;; So, set HOME.
+             (setenv "HOME" "/tmp")
+             #t)))))
+    (build-system cmake-build-system)
+    (inputs
+     `(("boost" ,boost)
+       ("json-modern-cxx" ,json-modern-cxx)
+       ("libolm" ,libolm)
+       ("libsodium" ,libsodium)
+       ("openssl" ,openssl)
+       ("spdlog" ,spdlog)
+       ("zlib" ,zlib)))
+    (native-inputs
+     `(("googletest" ,googletest)
+       ("pkg-config" ,pkg-config)))
+    (home-page "https://github.com/Nheko-Reborn/mtxclient")
+    (synopsis "Client API library for the Matrix protocol")
+    (description "@code{mtxclient} is a C++ library that implements client API
+for the Matrix protocol.  It is built on to of @code{Boost.Asio}.")
+    (license license:expat)))
+
+(define-public nheko
+  (package
+    (name "nheko")
+    (version "0.6.4")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Nheko-Reborn/nheko.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "19dkc98l1q4070v6mli4ybqn0ip0za607w39hjf0x8rqdxq45iwm"))))
+    (arguments
+     `(#:tests? #f                      ;no test target
+       #:configure-flags
+       (list
+        "-DCMAKE_BUILD_TYPE=Release"
+        "-DCMAKE_CXX_FLAGS=-fpermissive")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'remove-Werror
+           (lambda _
+             (substitute* "CMakeLists.txt"
+               (("-Werror") ""))
+             #t))
+         (add-after 'unpack 'fix-determinism
+           (lambda _
+             ;; Make Qt deterministic.
+             (setenv "QT_RCC_SOURCE_DATE_OVERRIDE" "1")
+             #t)))))
+    (build-system qt-build-system)
+    (inputs
+     `(("boost" ,boost)
+       ("cmark" ,cmark)
+       ("json-modern-cxx" ,json-modern-cxx)
+       ("libolm" ,libolm)
+       ("lmdb" ,lmdb)
+       ("lmdbxx" ,lmdbxx)
+       ("mtxclient" ,mtxclient)
+       ("openssl" ,openssl)
+       ("qtbase" ,qtbase)
+       ("qtsvg" ,qtsvg)
+       ("qtmultimedia" ,qtmultimedia)
+       ("spdlog" ,spdlog)
+       ("tweeny" ,tweeny)
+       ("zlib" ,zlib)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("qtlinguist" ,qttools)))
+    (home-page "https://github.com/Nheko-Reborn/nheko")
+    (synopsis "Desktop client for Matrix using Qt and C++14")
+    (description "@code{Nheko} want to provide a native desktop app for the
+Matrix protocol that feels more like a mainstream chat app and less like an IRC
+client.
+
+There is support for:
+@itemize
+@item E2E encryption (text messages only: attachments are currently sent unencrypted).
+@item User registration.
+@item Creating, joining & leaving rooms.
+@item Sending & receiving invites.
+@item Sending & receiving files and emoji.
+@item Typing notifications.
+@item Username auto-completion.
+@item Message & mention notifications.
+@item Redacting messages.
+@item Read receipts.
+@item Basic communities support.
+@item Room switcher (@key{ctrl-K}).
+@item Light, Dark & System themes.
+@end itemize")
+    (license license:gpl3+)))
+
 (define-public quaternion
   (package
     (name "quaternion")
@@ -1816,7 +1945,7 @@ QMatrixClient project.")
     (synopsis "Graphical client for the Matrix instant messaging protocol")
     (description "Quaternion is a Qt5 desktop client for the Matrix instant
 messaging protocol.  It uses libqmatrixclient and is its reference client
-implementation.  Quaternion and libqmatriclient together form the
+implementation.  Quaternion and libqmatrixclient together form the
 QMatrixClient project.")
     (license (list license:gpl3+        ; all source code
                    license:lgpl3+))))   ; icons/breeze
@@ -1902,13 +2031,13 @@ messaging that aren’t available to clients that connect over XMPP.")
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
+       ("gettext" ,gettext-minimal)
        ("which" ,which)))
     (inputs
      `(("pidgin" ,pidgin)
        ("libgcrypt" ,libgcrypt)
        ("libwebp" ,libwebp)
        ("glib" ,glib)
-       ("gettext" ,gnu-gettext)
        ("gtk+" ,gtk+-2)
        ("zlib" ,zlib)))
     (arguments
@@ -1949,9 +2078,9 @@ Telegram messenger.")
     (license license:gpl2+)))
 
 (define-public tdlib
-  (let ((commit "80c35676a2eb1e9b71db355ee217bba79fbdce31")
-        (revision "1")
-        (version "1.5.4"))
+  (let ((commit "278c7acdec83c5ac17d8e1ed0bb2cacbcea62460")
+        (revision "0")
+        (version "1.6.0"))
     (package
       (name "tdlib")
       (version (git-version version revision commit))
@@ -1962,7 +2091,7 @@ Telegram messenger.")
                       (commit commit)))
                 (sha256
                  (base32
-                  "09c0pygqirapgxxzcc3sr0x67qhz8cx2klznrbdyi0118r9s8a7a"))
+                  "0zlzpl6fgszg18kwycyyyrnkm255dvc6fkq0b0y32m5wvwwl36cv"))
                 (file-name (git-file-name name version))))
       (build-system cmake-build-system)
       (arguments

@@ -13,7 +13,7 @@
 ;;; Copyright © 2016, 2017 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2017, 2018, 2019 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2018, 2019 Rutger Helling <rhelling@mykolab.com>
-;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2017, 2020 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2018 Oleg Pykhalov <go.wigust@gmail.com>
@@ -21,6 +21,7 @@
 ;;; Copyright © 2019 nee <nee@cock.li>
 ;;; Copyright © 2019 Yoshinori Arai <kumagusu08@gmail.com>
 ;;; Copyright © 2020 Leo Prikler <leo.prikler@student.tugraz.at>
+;;; Copyright © 2020 Florian Pelz <pelzflorian@pelzflorian.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -2375,7 +2376,7 @@ XC-APPGROUP, XTEST.")
 (define-public libevdev
   (package
     (name "libevdev")
-    (version "1.5.9")
+    (version "1.8.0")
     (source
      (origin
        (method url-fetch)
@@ -2383,10 +2384,11 @@ XC-APPGROUP, XTEST.")
                            name "-" version ".tar.xz"))
        (sha256
         (base32
-         "0xca343ff12wh6nsq76r0nbsfrm8dypjrzm4fqz9vv9v8i8kfrp1"))))
+         "04a2klvii0in9ln8r85mk2cm73jq8ry2m3yzmf2z8xyjxzjcmlr0"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:phases (modify-phases %standard-phases
+     `(#:configure-flags '("--disable-static")
+       #:phases (modify-phases %standard-phases
                   (add-before 'configure 'pedantry
                     (lambda _
                       ;; XXX: libevdev includes kernel headers, which causes this
@@ -3446,6 +3448,105 @@ X server.")
 X server.")
     (license license:x11)))
 
+(define-public v86d
+  (package
+    (name "v86d")
+    (version "0.1.10")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/mjanusz/v86d.git")
+             (commit (string-append name "-" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1c4iiggb5r9i2hxhk8c6q1m2vpfva39l1w33fsfkrz6fav6x34pp"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           ;; remove bundled x86emu
+           (for-each delete-file
+                     (filter (lambda (name) ;keep customized Makefile
+                               (not (string-suffix? "Makefile" name)))
+                             (find-files "libs/x86emu")))
+           ;; remove non-working vbetest utility program (it is unnecessary)
+           (delete-file "libs/lrmi-0.10/vbe.h")
+           (delete-file "libs/lrmi-0.10/vbetest.c")
+           #t))))
+
+    ;; We keep the bundled copy of the Linux Real Mode Interface lrmi-0.10,
+    ;; because it includes fixes missing from upstream lrmi.  We do not use
+    ;; libx86, because we already use x86emu with the more current lrmi.
+
+    (inputs `(("xorg-server-sources" ,(package-source xorg-server)) ;for x86emu
+              ("xorgproto" ,xorgproto))) ;upstream x86emu uses X11/Xfuncproto.h
+    (outputs '("out" ;main v86d helper
+               "testvbe")) ;test program for listing video modes
+    (supported-systems '("i686-linux" "x86_64-linux"))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ;there are no tests
+       #:modules ((guix build utils)
+                  (guix build gnu-build-system)
+                  (ice-9 popen))
+       #:phases
+       (modify-phases %standard-phases
+         ;; Replace the bundled x86emu with its upstream copy from Xorg-server:
+         (add-after 'unpack 'unpack-x86emu-sources
+           (lambda* (#:key inputs #:allow-other-keys)
+             (begin
+               (format #t "decompressing x86emu source code~%")
+               (with-directory-excursion "libs"
+                 (let ((srcs (assoc-ref inputs "xorg-server-sources"))
+                       (tar-binary (string-append (assoc-ref inputs "tar")
+                                                  "/bin/tar")))
+                   (invoke tar-binary "xvf" srcs "--strip-components=3"
+                           "--wildcards" "*/hw/xfree86/x86emu/")
+                   ;; extract license:
+                   (with-directory-excursion "x86emu"
+                     (invoke tar-binary "xvf" srcs "--strip-components=1"
+                             "--wildcards" "*/COPYING"))
+                   #t)))))
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (setenv "CC" (which "gcc"))
+               (setenv "DESTDIR" out)
+               (invoke "./configure" "--with-x86emu"))))
+         (add-after 'build 'build-testvbe
+           (lambda _
+             (invoke "make" "testvbe")))
+         (add-after 'install 'install-testvbe
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((testvbe (assoc-ref outputs "testvbe"))
+                   (olddest (getenv "DESTDIR")))
+               (setenv "DESTDIR" testvbe)
+               (invoke "make" "install_testvbe")
+               (setenv "DESTDIR" olddest)
+               #t)))
+         (add-after 'install 'install-docs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc-dir (string-append out "/share/doc/v86d")))
+               (mkdir-p doc-dir)
+               (copy-file "README"
+                          (string-append doc-dir "/README"))
+               (copy-file "libs/lrmi-0.10/README"
+                          (string-append doc-dir "/README.lrmi"))
+               (copy-file "libs/x86emu/COPYING"
+                          (string-append doc-dir "/COPYING.xorg-server.x86emu"))
+               #t))))))
+    (home-page "https://github.com/mjanusz/v86d")
+    (synopsis "Userspace helper for uvesafb")
+    (description
+     "v86d provides a backend for kernel drivers that need to execute x86 BIOS
+code.  The code is executed in a controlled environment and the results are
+passed back to the kernel via the netlink interface.  v86d is required by the
+uvesafb Linux kernel module that provides an fbdev framebuffer when Kernel
+Mode Setting is unavailable.  It can be a last resort when no other Xorg X
+server driver works.")
+    (license (list license:gpl2
+                   license:x11)))) ;for bundled lrmi and x86emu
 
 (define-public xf86-video-vmware
   (package
@@ -3692,7 +3793,7 @@ alternative implementations like XRandR or TwinView.")
 (define-public xinput
   (package
     (name "xinput")
-    (version "1.6.2")
+    (version "1.6.3")
     (source
       (origin
         (method url-fetch)
@@ -3702,7 +3803,7 @@ alternative implementations like XRandR or TwinView.")
                ".tar.bz2"))
         (sha256
           (base32
-            "1i75mviz9dyqyf7qigzmxq8vn31i86aybm662fzjz5c086dx551n"))))
+            "1vb6xdd1xmk5f7pwc5zcbxfray5sf1vbnscqwf2yl8lv7gfq38im"))))
     (build-system gnu-build-system)
     (inputs
       `(("libxrender" ,libxrender)
@@ -3837,7 +3938,7 @@ extension to the X11 protocol.  It includes:
 (define-public xkeyboard-config
   (package
     (name "xkeyboard-config")
-    (version "2.27")
+    (version "2.29")
     (source
       (origin
         (method url-fetch)
@@ -3847,15 +3948,16 @@ extension to the X11 protocol.  It includes:
               ".tar.bz2"))
         (sha256
           (base32
-            "07wh443lhwv1j0q6xnxnji7f7ahh7xphxj90fv02cdd6zv4aw3b9"))))
+            "00hqc8nykvy8c09b8vab64dcd0ij3n5klxjn6rl00q7hickpah8x"))))
     (build-system gnu-build-system)
     (inputs
-      `(("gettext" ,gettext-minimal)
-        ("libx11" ,libx11)
+      `(("libx11" ,libx11)
         ("xkbcomp-intermediate" ,xkbcomp-intermediate)))
     (native-inputs
-      `(("intltool" ,intltool)
-        ("pkg-config" ,pkg-config)))
+      `(("gettext" ,gettext-minimal)
+        ("perl" ,perl)
+        ("pkg-config" ,pkg-config)
+        ("python" ,python)))
     (home-page "https://www.x.org/wiki/")
     (synopsis "Xorg XKB configuration files")
     (description
@@ -6137,8 +6239,7 @@ X11 servers, Windows, or macOS.")
                            (guix build emacs-utils))
        #:configure-flags
        (list "--with-anthy-utf8"
-             (string-append "--with-lispdir=" %output
-                            "/share/emacs/site-lisp/guix.d")
+             (string-append "--with-lispdir=" %output "/share/emacs")
              ;; Set proper runpath
              (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib"))
        #:phases
@@ -6146,13 +6247,22 @@ X11 servers, Windows, or macOS.")
          ;; Set path of uim-el-agent and uim-el-helper-agent executables
          (add-after 'configure 'configure-uim-el
            (lambda* (#:key outputs #:allow-other-keys)
-             (substitute* "emacs/uim-var.el"
-               (("\"(uim-el-agent|uim-el-helper-agent)\"" _ executable)
-                (string-append "\"" (assoc-ref outputs "out")
-                               "/bin/" executable "\"")))
+             (let ((out (assoc-ref outputs "out")))
+               (emacs-substitute-variables "emacs/uim-var.el"
+                 ("uim-el-agent" (string-append out "/bin/uim-el-agent"))
+                 ("uim-el-helper-agent" (string-append out "/bin/uim-el-helper-agent"))))
+             #t))
+         ;; Fix installation path by renaming share/emacs/uim-el to
+         ;; share/emacs/site-lisp
+         (add-after 'install 'fix-install-path
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((share-emacs (string-append (assoc-ref outputs "out")
+                                               "/share/emacs")))
+               (rename-file (string-append share-emacs "/uim-el")
+                            (string-append share-emacs "/site-lisp")))
              #t))
          ;; Generate emacs autoloads for uim.el
-         (add-after 'install 'make-autoloads
+         (add-after 'fix-install-path 'make-autoloads
            (lambda* (#:key outputs #:allow-other-keys)
              (emacs-generate-autoloads
               ,name (string-append (assoc-ref outputs "out")
@@ -6303,7 +6413,7 @@ opacity of X11 windows.  This patched version of X.Org's @command{transset}
 adds functionality, including: selecting window by clicking (as transset),
 selecting windows by pointing select actual focused X11 window, selecting by
 window name or id, forcing toggle, increase or decrease opacity.")
-    (home-page "http://forchheimer.se/transset-df/")
+    (home-page "https://forchheimer.se/transset-df/")
     (license license:x11)))
 
 (define-public bdfresize

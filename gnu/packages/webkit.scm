@@ -64,14 +64,14 @@
 (define-public libwpe
   (package
     (name "libwpe")
-    (version "1.4.0")
+    (version "1.6.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://wpewebkit.org/releases/libwpe-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "1221vs72zs87anrzhbm6pf8jnii7s6ms7mkzj6nlds9zqd7lklz2"))))
+                "141w35b488jjhanl3nrm0awrbcy6hb579fk8n9vbpx07m2wcd1rm"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f))                    ;no tests
@@ -93,14 +93,14 @@ backend which implements them.")
 (define-public wpebackend-fdo
   (package
     (name "wpebackend-fdo")
-    (version "1.4.0")
+    (version "1.6.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://wpewebkit.org/releases/"
                                   "wpebackend-fdo-" version ".tar.xz"))
               (sha256
                (base32
-                "1bwbs47v4nlzhsqrw9fpyny5m3n9ry0kfzsvk90zjif4bd5cl6d9"))))
+                "0rzm16m3mw9dh2jis9avk2rhz7bijanrzlywyiaicyzrv2wxfnvz"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f))                    ;no tests
@@ -121,14 +121,14 @@ engine that uses Wayland for graphics output.")
 (define-public webkitgtk
   (package
     (name "webkitgtk")
-    (version "2.26.2")
+    (version "2.28.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.webkitgtk.org/releases/"
                                   "webkitgtk-" version ".tar.xz"))
               (sha256
                (base32
-                "04k5h0sid9azsqz9pyq436v1rx4lnfrhvmcgmicqb0c0g9iz103b"))))
+                "12qfs9w93c5kiyi14ynm4rf4ad3c213dvzmdrc9c3ab2iwbks7rn"))))
     (build-system cmake-build-system)
     (outputs '("out" "doc"))
     (arguments

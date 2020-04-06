@@ -3,6 +3,8 @@
 ;;; Copyright © 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2020 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -24,17 +26,26 @@
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system scons)
   #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (guix utils)
   #:use-module (gnu packages)
+  #:use-module (gnu packages algebra)
   #:use-module (gnu packages base)
-  #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages docbook)
-  #:use-module (gnu packages image)
-  #:use-module (gnu packages xml)
+  #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages image)
+  #:use-module (gnu packages libusb)
+  #:use-module (gnu packages linux)
+  #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages python)
+  #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
-  #:use-module (gnu packages sqlite))
+  #:use-module (gnu packages sqlite)
+  #:use-module (gnu packages xml))
 
 (define-public gpsbabel
   (package
@@ -76,10 +87,10 @@
     (inputs
      `(("expat" ,expat)
        ("zlib" ,zlib)
-       ("qtbase" ,qtbase)
-       ("qttools" ,qttools)))
+       ("qtbase" ,qtbase)))
     (native-inputs
      `(("which" ,which)
+       ("qttools" ,qttools)
        ("libxml2" ,libxml2)))              ;'xmllint' needed for the KML tests
     (home-page "https://www.gpsbabel.org/")
     (synopsis "Convert and exchange data with GPS and map programs")
@@ -171,7 +182,7 @@ coordinates as well as partial support for adjustments in global coordinate syst
 (define-public gpxsee
   (package
     (name "gpxsee")
-    (version "7.16")
+    (version "7.25")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -180,7 +191,7 @@ coordinates as well as partial support for adjustments in global coordinate syst
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1mkfhb2c9qafjpva600nyn6yik49l4q1k6id1xvrci37wsn6ijav"))))
+                "0lml3hz2zxljl9j5wnh7bn9bj8k9v3wf6bk3g77x9nnarsmw0fcx"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
@@ -201,6 +212,83 @@ coordinates as well as partial support for adjustments in global coordinate syst
     (home-page "https://www.gpxsee.org")
     (synopsis "GPS log file viewer and analyzer")
     (description
-     "GPXSee is a Qt-based GPS log file viewer and analyzer that supports
-all common GPS log file formats.")
+     "GPXSee is a Qt-based GPS log file viewer and analyzer that supports all
+common GPS log file formats.  It can display multiple tracks on various on-
+and off-line maps.  You can easily add more maps and graph other captured data
+such as elevation, speed, heart rate, power, temperature, and gear shifts.")
     (license license:gpl3)))
+
+(define-public gpsd
+  (package
+    (name "gpsd")
+    (version "3.20")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://download-mirror.savannah.gnu.org"
+                           "/releases/gpsd/gpsd-" version ".tar.gz"))
+       (sha256
+        (base32 "0l2yz0yw9sil82lh2l4swkkldgmhzhv588n5lcavib4f0q2phahp"))))
+    (build-system scons-build-system)
+    (native-inputs
+     `(("bc" ,bc)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("bluez" ,bluez)
+       ("dbus" ,dbus)
+       ("gtk+" ,gtk+)
+       ("libcap" ,libcap)
+       ("libusb" ,libusb)
+       ("ncurses" ,ncurses)
+       ("python" ,python)
+       ("python-pycairo" ,python-pycairo)
+       ("python-pygobject" ,python-pygobject)
+       ("python-pyserial" ,python-pyserial)
+       ("python-wrapper" ,python-wrapper)
+       ("qtbase" ,qtbase)))
+    (arguments
+     `(#:scons-flags
+       (list (string-append "prefix=" %output)
+             (let ((version ,(version-major+minor (package-version python))))
+               (string-append "python_libdir=" %output
+                              "/lib/python" version
+                              "/site-packages"))
+             "qt_versioned=5")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-build
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* "SConstruct"
+               (("envs = \\{\\}")
+                "envs = os.environ"))
+             #t))
+         (add-after 'install 'wrap-python-scripts
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (pycairo (assoc-ref inputs "python-pycairo"))
+                    (pygobject (assoc-ref inputs "python-pygobject"))
+                    (pyserial (assoc-ref inputs "python-pyserial"))
+                    (sitedir (lambda (package)
+                               (string-append package
+                                              "/lib/python"
+                                              ,(version-major+minor
+                                                (package-version python))
+                                              "/site-packages")))
+                    (pythonpath (string-join (map sitedir
+                                                  (list out pycairo pygobject
+                                                        pyserial))
+                                             ":")))
+               (for-each (lambda (script)
+                           (wrap-program (string-append out "/bin/" script)
+                             `("PYTHONPATH" ":" prefix (,pythonpath))))
+                         '("gegps" "gpscat" "gpsfake" "gpsprof"
+                           "ubxtool" "xgps" "xgpsspeed" "zerk")))
+             #t)))))
+    (synopsis "GPS service daemon")
+    (description
+     "@code{gpsd} is a service daemon that monitors one or more GPSes or AIS
+receivers attached to a host computer through serial or USB ports, making all
+data on the location/course/velocity of the sensors available to be queried on
+TCP port 2947 of the host computer.")
+    (home-page "https://gpsd.gitlab.io/gpsd/")
+    (license license:bsd-2)))

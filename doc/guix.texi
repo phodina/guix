@@ -28,11 +28,11 @@ Copyright @copyright{} 2014, 2015, 2016 Alex Kost@*
 Copyright @copyright{} 2015, 2016 Mathieu Lirzin@*
 Copyright @copyright{} 2014 Pierre-Antoine Rault@*
 Copyright @copyright{} 2015 Taylan Ulrich Bayırlı/Kammer@*
-Copyright @copyright{} 2015, 2016, 2017, 2019 Leo Famulari@*
+Copyright @copyright{} 2015, 2016, 2017, 2019, 2020 Leo Famulari@*
 Copyright @copyright{} 2015, 2016, 2017, 2018, 2019, 2020 Ricardo Wurmus@*
 Copyright @copyright{} 2016 Ben Woodcroft@*
 Copyright @copyright{} 2016, 2017, 2018 Chris Marusich@*
-Copyright @copyright{} 2016, 2017, 2018, 2019 Efraim Flashner@*
+Copyright @copyright{} 2016, 2017, 2018, 2019, 2020 Efraim Flashner@*
 Copyright @copyright{} 2016 John Darrington@*
 Copyright @copyright{} 2016, 2017 ng0@*
 Copyright @copyright{} 2016, 2017, 2018, 2019 Jan Nieuwenhuizen@*
@@ -46,9 +46,9 @@ Copyright @copyright{} 2017, 2018 Carlo Zancanaro@*
 Copyright @copyright{} 2017 Thomas Danckaert@*
 Copyright @copyright{} 2017 humanitiesNerd@*
 Copyright @copyright{} 2017 Christopher Allan Webber@*
-Copyright @copyright{} 2017, 2018, 2019 Marius Bakke@*
-Copyright @copyright{} 2017, 2019 Hartmut Goebel@*
-Copyright @copyright{} 2017, 2019 Maxim Cournoyer@*
+Copyright @copyright{} 2017, 2018, 2019, 2020 Marius Bakke@*
+Copyright @copyright{} 2017, 2019, 2020 Hartmut Goebel@*
+Copyright @copyright{} 2017, 2019, 2020 Maxim Cournoyer@*
 Copyright @copyright{} 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice@*
 Copyright @copyright{} 2017 George Clemmer@*
 Copyright @copyright{} 2017 Andy Wingo@*
@@ -72,6 +72,11 @@ Copyright @copyright{} 2019 Guillaume Le Vaillant@*
 Copyright @copyright{} 2020 Leo Prikler@*
 Copyright @copyright{} 2019, 2020 Simon Tournier@*
 Copyright @copyright{} 2020 Wiktor Żelazny@*
+Copyright @copyright{} 2020 Damien Cassou@*
+Copyright @copyright{} 2020 Jakub Kądziołka@*
+Copyright @copyright{} 2020 Jack Hill@*
+Copyright @copyright{} 2020 Naga Malleswari@*
+Copyright @copyright{} 2020 Brice Waegeneire@*
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -310,6 +315,7 @@ Services
 * Version Control Services::    Providing remote access to Git repositories.
 * Game Services::               Game servers.
 * PAM Mount Service::           Service to mount volumes when logging in.
+* Linux Services::              Services tied to the Linux kernel.
 * Miscellaneous Services::      Other services.
 
 Defining Services
@@ -769,11 +775,11 @@ The following dependencies are optional:
 
 @itemize
 @item
-@c Note: We need at least 0.10.2 for 'channel-send-eof'.
+@c Note: We need at least 0.12.0 for 'userauth-gssapi!'.
 Support for build offloading (@pxref{Daemon Offload Setup}) and
 @command{guix copy} (@pxref{Invoking guix copy}) depends on
 @uref{https://github.com/artyom-poptsov/guile-ssh, Guile-SSH},
-version 0.10.2 or later.
+version 0.12.0 or later.
 
 @item
 When @url{https://www.nongnu.org/lzip/lzlib.html, lzlib} is available, lzlib
@@ -1593,7 +1599,7 @@ $ export GUIX_LOCPATH=$HOME/.guix-profile/lib/locale
 
 Note that the @code{glibc-locales} package contains data for all the
 locales supported by the GNU@tie{}libc and weighs in at around
-110@tie{}MiB.  Alternatively, the @code{glibc-utf8-locales} is smaller but
+917@tie{}MiB.  Alternatively, the @code{glibc-utf8-locales} is smaller but
 limited to a few UTF-8 locales.
 
 The @code{GUIX_LOCPATH} variable plays a role similar to @code{LOCPATH}
@@ -1679,6 +1685,17 @@ to display fonts, you have to install fonts with Guix as well.
 Essential font packages include @code{gs-fonts}, @code{font-dejavu}, and
 @code{font-gnu-freefont-ttf}.
 
+@cindex @code{fc-cache}
+@cindex font cache
+Once you have installed or removed fonts, or when you notice an
+application that does not find fonts, you may need to install Fontconfig
+and to force an update of its font cache by running:
+
+@example
+guix install fontconfig
+fc-cache -rv
+@end example
+
 To display text written in Chinese languages, Japanese, or Korean in
 graphical applications, consider installing
 @code{font-adobe-source-han-sans} or @code{font-wqy-zenhei}.  The former
@@ -1712,13 +1729,6 @@ xset +fp $(dirname $(readlink -f ~/.guix-profile/share/fonts/truetype/fonts.dir)
 After that, you can run @code{xlsfonts} (from @code{xlsfonts} package)
 to make sure your TrueType fonts are listed there.
 
-@cindex @code{fc-cache}
-@cindex font cache
-After installing fonts you may have to refresh the font cache to use
-them in applications.  The same applies when applications installed via
-Guix do not seem to find fonts.  To force rebuilding of the font cache
-run @code{fc-cache -rv}.  The @code{fc-cache} command is provided by
-the @code{fontconfig} package.
 
 @subsection X.509 Certificates
 
@@ -1734,22 +1744,18 @@ information.
 @subsection Emacs Packages
 
 @cindex @code{emacs}
-When you install Emacs packages with Guix, the elisp files may be placed
-either in @file{$HOME/.guix-profile/share/emacs/site-lisp/} or in
-sub-directories of
-@file{$HOME/.guix-profile/share/emacs/site-lisp/guix.d/}.  The latter
-directory exists because potentially there may exist thousands of Emacs
-packages and storing all their files in a single directory may not be
-reliable (because of name conflicts).  So we think using a separate
-directory for each package is a good idea.  It is very similar to how
-the Emacs package system organizes the file structure (@pxref{Package
-Files,,, emacs, The GNU Emacs Manual}).
+When you install Emacs packages with Guix, the Elisp files are placed
+under the @file{share/emacs/site-lisp/} directory of the profile in
+which they are installed.  The Elisp libraries are made available to
+Emacs through the @code{EMACSLOADPATH} environment variable, which is
+set when installing Emacs itself.
 
-By default, Emacs (installed with Guix) ``knows'' where these packages
-are placed, so you do not need to perform any configuration.  If, for
-some reason, you want to avoid auto-loading Emacs packages installed
-with Guix, you can do so by running Emacs with @code{--no-site-file}
-option (@pxref{Init File,,, emacs, The GNU Emacs Manual}).
+Additionally, autoload definitions are automatically evaluated at the
+initialization of Emacs, by the Guix-specific
+@code{guix-emacs-autoload-packages} procedure.  If, for some reason, you
+want to avoid auto-loading the Emacs packages installed with Guix, you
+can do so by running Emacs with the @code{--no-site-file} option
+(@pxref{Init File,,, emacs, The GNU Emacs Manual}).
 
 @subsection The GCC toolchain
 
@@ -2438,6 +2444,11 @@ your system includes the latest security updates (@pxref{Security Updates}).
 Note that @command{sudo guix} runs your user's @command{guix} command and
 @emph{not} root's, because @command{sudo} leaves @code{PATH} unchanged.  To
 explicitly run root's @command{guix}, type @command{sudo -i guix @dots{}}.
+
+The difference matters here, because @command{guix pull} updates
+the @command{guix} command and package definitions only for the user it is ran
+as.  This means that if you choose to use @command{guix system reconfigure} in
+root's login shell, you'll need to @command{guix pull} separately.
 @end quotation
 
 Join us on @code{#guix} on the Freenode IRC network or on
@@ -3113,7 +3124,7 @@ the store.
 @itemx -A [@var{regexp}]
 List packages currently available in the distribution for this system
 (@pxref{GNU Distribution}).  When @var{regexp} is specified, list only
-installed packages whose name matches @var{regexp}.
+available packages whose name matches @var{regexp}.
 
 For each package, print the following items separated by tabs: its name,
 its version string, the parts of the package (@pxref{Packages with
@@ -3291,8 +3302,10 @@ $ guix build emacs --dry-run
 @end example
 
 @noindent
-This indicates that substitutes from @code{@value{SUBSTITUTE-SERVER}} are usable and
-will be downloaded, when possible, for future builds.
+The text changed from ``The following derivations would be built'' to
+``112.3 MB would be downloaded''.  This indicates that substitutes from
+@code{@value{SUBSTITUTE-SERVER}} are usable and will be downloaded, when
+possible, for future builds.
 
 @cindex substitutes, how to disable
 The substitute mechanism can be disabled globally by running
@@ -4157,7 +4170,7 @@ say, on another machine, by providing a channel specification in
       (channel
        (name 'my-personal-packages)
        (url "https://example.org/personal-packages.git")
-       (branch "dd3df5e2c8818760a8fc0bd699e55d3b69fef2bb")))
+       (commit "dd3df5e2c8818760a8fc0bd699e55d3b69fef2bb")))
 @end lisp
 
 The @command{guix describe --format=channels} command can even generate this
@@ -4200,7 +4213,7 @@ guix time-machine @var{options}@dots{} -- @var{command} @var {arg}@dots{}
 @end example
 
 where @var{command} and @var{arg}@dots{} are passed unmodified to the
-@command{guix} command if the specified revision.  The @var{options} that define
+@command{guix} command of the specified revision.  The @var{options} that define
 this revision are the same as for @command{guix pull} (@pxref{Invoking guix pull}):
 
 @table @code
@@ -4226,7 +4239,7 @@ guix time-machine -- build hello
 @end example
 
 will thus build the package @code{hello} as defined in the master branch,
-which is in general a newer revison of Guix than you have installed.
+which is in general a newer revision of Guix than you have installed.
 Time travel works in both directions!
 
 Note that @command{guix time-machine} can trigger builds of channels and
@@ -4739,7 +4752,7 @@ the following command creates a Guix development environment that
 additionally includes Git and strace:
 
 @example
-guix environment guix --ad-hoc git strace
+guix environment --pure guix --ad-hoc git strace
 @end example
 
 Sometimes it is desirable to isolate the environment as much as
@@ -4954,8 +4967,10 @@ shared and will change to the user's home directory within the container
 instead.  See also @code{--user}.
 
 @item --expose=@var{source}[=@var{target}]
-For containers, expose the file system @var{source} from the host system
-as the read-only file system @var{target} within the container.  If
+@itemx --share=@var{source}[=@var{target}]
+For containers, @code{--expose} (resp. @code{--share}) exposes the file
+system @var{source} from the host system as the read-only
+(resp. writable) file system @var{target} within the container.  If
 @var{target} is not specified, @var{source} is used as the target mount
 point in the container.
 
@@ -4967,19 +4982,6 @@ directory:
 guix environment --container --expose=$HOME=/exchange --ad-hoc guile -- guile
 @end example
 
-@item --share=@var{source}[=@var{target}]
-For containers, share the file system @var{source} from the host system
-as the writable file system @var{target} within the container.  If
-@var{target} is not specified, @var{source} is used as the target mount
-point in the container.
-
-The example below spawns a Guile REPL in a container in which the user's
-home directory is accessible for both reading and writing via the
-@file{/exchange} directory:
-
-@example
-guix environment --container --share=$HOME=/exchange --ad-hoc guile -- guile
-@end example
 @end table
 
 @command{guix environment}
@@ -5056,12 +5058,21 @@ Alternatively, you can produce a pack in the Docker image format using
 the following command:
 
 @example
-guix pack -f docker guile emacs geiser
+guix pack -f docker -S /bin=bin guile guile-readline
 @end example
 
 @noindent
 The result is a tarball that can be passed to the @command{docker load}
-command.  See the
+command, followed by @code{docker run}:
+
+@example
+docker load < @var{file}
+docker run -ti guile-guile-readline /bin/guile
+@end example
+
+@noindent
+where @var{file} is the image returned by @var{guix pack}, and
+@code{guile-guile-readline} is its ``image tag''.  See the
 @uref{https://docs.docker.com/engine/reference/commandline/load/, Docker
 documentation} for more information.
 
@@ -6146,6 +6157,70 @@ parameters available to cargo.  It will also remove an included
 if they are defined by the crate.
 @end defvr
 
+
+@defvr {Scheme Variable} copy-build-system
+@cindex (copy build system)
+This variable is exported by @code{(guix build-system copy)}.  It
+supports builds of simple packages that don't require much compiling,
+mostly just moving files around.
+
+It adds much of the @code{gnu-build-system} packages to the set of
+inputs.  Because of this, the @code{copy-build-system} does not require
+all the boilerplate code often needed for the
+@code{trivial-build-system}.
+
+To further simplify the file installation process, an
+@code{#:install-plan} argument is exposed to let the packager specify
+which files go where.  The install plan is a list of @code{(@var{source}
+@var{target} [@var{filters}])}.  @var{filters} are optional.
+
+@itemize
+@item When @var{source} matches a file or directory without trailing slash, install it to @var{target}.
+@itemize
+@item If @var{target} has a trailing slash, install @var{source} basename beneath @var{target}.
+@item Otherwise install @var{source} as @var{target}.
+@end itemize
+
+@item When @var{source} is a directory with a trailing slash, or when @var{filters} are used,
+the trailing slash of @var{target} is implied with the same meaning
+as above.
+@itemize
+@item Without @var{filters}, install the full @var{source} @emph{content} to @var{target}.
+@item With @var{filters} among @code{#:include}, @code{#:include-regexp}, @code{#:exclude},
+@code{#:exclude-regexp}, only select files are installed depending on
+the filters.  Each filters is specified by a list of strings.
+@itemize
+@item With @code{#:include}, install all the files which the path suffix matches
+at least one of the elements in the given list.
+@item With @code{#:include-regexp}, install all the files which the
+subpaths match at least one of the regular expressions in the given
+list.
+@item The @code{#:exclude} and @code{#:exclude-regexp} filters
+are the complement of their inclusion counterpart.  Without @code{#:include} flags,
+install all files but those matching the exclusion filters.
+If both inclusions and exclusions are specified, the exclusions are done
+on top of the inclusions.
+@end itemize
+@end itemize
+In all cases, the paths relative to @var{source} are preserved within
+@var{target}.
+@end itemize
+
+Examples:
+
+@itemize
+@item @code{("foo/bar" "share/my-app/")}: Install @file{bar} to @file{share/my-app/bar}.
+@item @code{("foo/bar" "share/my-app/baz")}: Install @file{bar} to @file{share/my-app/baz}.
+@item @code{("foo/" "share/my-app")}: Install the content of @file{foo} inside @file{share/my-app},
+e.g., install @file{foo/sub/file} to @file{share/my-app/sub/file}.
+@item @code{("foo/" "share/my-app" #:include ("sub/file"))}: Install only @file{foo/sub/file} to
+@file{share/my-app/sub/file}.
+@item @code{("foo/sub" "share/my-app" #:include ("file"))}: Install @file{foo/sub/file} to
+@file{share/my-app/file}.
+@end itemize
+@end defvr
+
+
 @cindex Clojure (programming language)
 @cindex simple Clojure build system
 @defvr {Scheme Variable} clojure-build-system
@@ -6447,10 +6522,24 @@ Which Perl package is used can be specified with @code{#:perl}.
 This variable is exported by @code{(guix build-system qt)}.  It
 is intended for use with applications using Qt or KDE.
 
-This build system adds the phase @code{qt-wrap} to the ones defined by
-@code{cmake-build-system}, after the @code{install} phase.
+This build system adds the following two phases to the ones defined by
+@code{cmake-build-system}:
 
-This phase searches for Qt5 plugin paths, QML paths and some XDG in the inputs
+@table @code
+@item check-setup
+The phase @code{check-setup} prepares the environment for running
+the checks as commonly used by Qt test programs.
+For now this only sets some environment variables:
+@code{QT_QPA_PLATFORM=offscreen},
+@code{DBUS_FATAL_WARNINGS=0} and
+@code{CTEST_OUTPUT_ON_FAILURE=1}.
+
+This phase is added before the @code{check} phase.
+It's a separate phase to ease adjusting if necessary.
+
+@item qt-wrap
+The phase @code{qt-wrap}
+searches for Qt5 plugin paths, QML paths and some XDG in the inputs
 and output.  In case some path is found, all programs in the output's
 @file{bin/}, @file{sbin/}, @file{libexec/} and @file{lib/libexec/} directories
 are wrapped in scripts defining the necessary environment variables.
@@ -6460,6 +6549,9 @@ by listing their names in the @code{#:qt-wrap-excluded-outputs} parameter.
 This is useful when an output is known not to contain any Qt binaries, and
 where wrapping would gratuitously add a dependency of that output on Qt, KDE,
 or such.
+
+This phase is added after the @code{install} phase.
+@end table
 @end defvr
 
 @defvr {Scheme Variable} r-build-system
@@ -6591,9 +6683,8 @@ of Emacs itself (@pxref{Packages,,, emacs, The GNU Emacs Manual}).
 It first creates the @code{@code{package}-autoloads.el} file, then it
 byte compiles all Emacs Lisp files.  Differently from the Emacs
 packaging system, the Info documentation files are moved to the standard
-documentation directory and the @file{dir} file is deleted.  Each
-package is installed in its own directory under
-@file{share/emacs/site-lisp/guix.d}.
+documentation directory and the @file{dir} file is deleted.  The Elisp
+package files are installed directly under @file{share/emacs/site-lisp}.
 @end defvr
 
 @defvr {Scheme Variable} font-build-system
@@ -6688,7 +6779,7 @@ linux-module-build-system, use the key #:linux to specify it).
 
 @defvr {Scheme Variable} node-build-system
 This variable is exported by @code{(guix build-system node)}.  It
-implements the build procedure used by @uref{http://nodejs.org,
+implements the build procedure used by @uref{https://nodejs.org,
 Node.js}, which implements an approximation of the @code{npm install}
 command, followed by an @code{npm test} command.
 
@@ -6785,9 +6876,11 @@ instruct it to listen for TCP connections (@pxref{Invoking guix-daemon,
 
 @item ssh
 @cindex SSH access to build daemons
-These URIs allow you to connect to a remote daemon over
-SSH@footnote{This feature requires Guile-SSH (@pxref{Requirements}).}.
-A typical URL might look like this:
+These URIs allow you to connect to a remote daemon over SSH.  This
+feature requires Guile-SSH (@pxref{Requirements}) and a working
+@code{guile} binary in @code{PATH} on the destination machine.  It
+supports public key and GSSAPI authentication.  A typical URL might look
+like this:
 
 @example
 ssh://charlie@@guix.example.org:22
@@ -7930,6 +8023,25 @@ the second case, the resulting script contains a @code{(string-append
 @dots{})} expression to construct the file name @emph{at run time}.
 @end deffn
 
+@deffn {Scheme Syntax} with-parameters ((@var{parameter} @var{value}) @dots{}) @var{exp}
+This macro is similar to the @code{parameterize} form for
+dynamically-bound @dfn{parameters} (@pxref{Parameters,,, guile, GNU
+Guile Reference Manual}).  The key difference is that it takes effect
+when the file-like object returned by @var{exp} is lowered to a
+derivation or store item.
+
+A typical use of @code{with-parameters} is to force the system in effect
+for a given object:
+
+@lisp
+(with-parameters ((%current-system "i686-linux"))
+  coreutils)
+@end lisp
+
+The example above returns an object that corresponds to the i686 build
+of Coreutils, regardless of the current value of @code{%current-system}.
+@end deffn
+
 
 Of course, in addition to gexps embedded in ``host'' code, there are
 also modules containing build tools.  To make it clear that they are
@@ -8425,6 +8537,11 @@ As an example, @var{file} might contain a package definition like this
 @lisp
 @include package-hello.scm
 @end lisp
+
+@item --manifest=@var{manifest}
+@itemx -m @var{manifest}
+Build all packages listed in the given @var{manifest}
+(@pxref{profile-manifest, @option{--manifest}}).
 
 @item --expression=@var{expr}
 @itemx -e @var{expr}
@@ -10693,8 +10810,11 @@ guix weather @var{options}@dots{} [@var{packages}@dots{}]
 When @var{packages} is omitted, @command{guix weather} checks the availability
 of substitutes for @emph{all} the packages, or for those specified with
 @option{--manifest}; otherwise it only considers the specified packages.  It
-is also possible to query specific system types with @option{--system}.  The
-available options are listed below.
+is also possible to query specific system types with @option{--system}.
+@command{guix weather} exits with a non-zero code when the fraction of
+available substitutes is below 100%.
+
+The available options are listed below.
 
 @table @code
 @item --substitute-urls=@var{urls}
@@ -10713,6 +10833,9 @@ Instead of querying substitutes for all the packages, only ask for those
 specified in @var{file}.  @var{file} must contain a @dfn{manifest}, as
 with the @code{-m} option of @command{guix package} (@pxref{Invoking
 guix package}).
+
+This option can be repeated several times, in which case the manifests
+are concatenated.
 
 @item --coverage[=@var{count}]
 @itemx -c [@var{count}]
@@ -10744,6 +10867,9 @@ likewise for @code{qgpgme} and the 46 packages that depend on it.
 If you are a Guix developer, or if you are taking care of this build farm,
 you'll probably want to have a closer look at these packages: they may simply
 fail to build.
+
+@item --display-missing
+Display the list of store items for which substitutes are missing.
 @end table
 
 @node Invoking guix processes
@@ -11100,6 +11226,10 @@ configuration (@pxref{Using the Configuration System}).
 The package object of the operating system kernel to use@footnote{Currently
 only the Linux-libre kernel is supported.  In the future, it will be
 possible to use the GNU@tie{}Hurd.}.
+
+@item @code{kernel-loadable-modules} (default: '())
+A list of objects (usually packages) to collect loadable kernel modules
+from--e.g. @code{(list ddcci-driver-linux)}.
 
 @item @code{kernel-arguments} (default: @code{'("quiet")})
 List of strings or gexps representing additional arguments to pass on
@@ -11790,6 +11920,9 @@ about.  Here are a few example:
 ;; The Catalan layout.
 (keyboard-layout "es" "cat")
 
+;; Arabic layout with "Alt-Shift" to switch to US layout.
+(keyboard-layout "ar,us" #:options '("grp:alt_shift_toggle"))
+
 ;; The Latin American Spanish layout.  In addition, the
 ;; "Caps Lock" key is used as an additional "Ctrl" key,
 ;; and the "Menu" key is used as a "Compose" key to enter
@@ -12084,6 +12217,7 @@ declaration.
 * Game Services::               Game servers.
 * PAM Mount Service::           Service to mount volumes when logging in.
 * Guix Services::               Services relating specifically to Guix.
+* Linux Services::              Services tied to the Linux kernel.
 * Miscellaneous Services::      Other services.
 @end menu
 
@@ -12160,6 +12294,23 @@ symlink:
 @deffn {Scheme Procedure} host-name-service @var{name}
 Return a service that sets the host name to @var{name}.
 @end deffn
+
+@defvr {Scheme Variable} console-font-service-type
+Install the given fonts on the specified ttys (fonts are per
+virtual console on the kernel Linux).  The value of this service is a list of
+tty/font pairs.  The font can be the name of a font provided by the @code{kbd}
+package or any valid argument to @command{setfont}, as in this example:
+
+@lisp
+`(("tty1" . "LatGrkCyr-8x16")
+  ("tty2" . ,(file-append
+                font-tamzen
+                "/share/kbd/consolefonts/TamzenForPowerline10x20.psf"))
+  ("tty3" . ,(file-append
+                font-terminus
+                "/share/consolefonts/ter-132n"))) ; for HDPI
+@end lisp
+@end defvr
 
 @deffn {Scheme Procedure} login-service @var{config}
 Return a service to run login according to @var{config}, a
@@ -12726,7 +12877,7 @@ well as in the @var{groups} field of the @var{operating-system} record.
 
 (operating-system
   ;; @dots{}
-  (users (cons (user-acount
+  (users (cons (user-account
                 ;; @dots{}
                 (supplementary-groups
                  '("adbusers"   ;for adb
@@ -13035,17 +13186,27 @@ their contents in separate files, possibly compressed.  The @code{(gnu
 services admin)} module provides an interface to GNU@tie{}Rot[t]log, a
 log rotation tool (@pxref{Top,,, rottlog, GNU Rot[t]log Manual}).
 
-The example below defines an operating system that provides log rotation
-with the default settings, for commonly encountered log files.
+This service is part of @code{%base-services}, and thus enabled by
+default, with the default settings, for commonly encountered log files.
+The example below shows how to extend it with an additional
+@dfn{rotation}, should you need to do that (usually, services that
+produce log files already take care of that):
 
 @lisp
 (use-modules (guix) (gnu))
-(use-service-modules admin mcron)
-(use-package-modules base idutils)
+(use-service-modules admin)
+
+(define my-log-files
+  ;; Log files that I want to rotate.
+  '("/var/log/something.log" "/var/log/another.log"))
 
 (operating-system
   ;; @dots{}
-  (services (cons (service rottlog-service-type)
+  (services (cons (simple-service 'rotate-my-stuff
+                                  rottlog-service-type
+                                  (list (log-rotation
+                                         (frequency 'daily)
+                                         (files my-log-files))))
                   %base-services)))
 @end lisp
 
@@ -13253,7 +13414,7 @@ The ModemManager package to use.
 
 @defvr {Scheme Variable} usb-modeswitch-service-type
 This is the service type for the
-@uref{http://www.draisberghof.de/usb_modeswitch/, USB_ModeSwitch} service. The
+@uref{https://www.draisberghof.de/usb_modeswitch/, USB_ModeSwitch} service. The
 value for this service type is a @code{usb-modeswitch-configuration} record.
 
 When plugged in, some USB modems (and other USB devices) initially present
@@ -13498,7 +13659,7 @@ The nftables ruleset to use.  This may be any ``file-like'' object
 @cindex ntpd, service for the Network Time Protocol daemon
 @cindex real time clock
 @defvr {Scheme Variable} ntp-service-type
-This is the type of the service running the @uref{http://www.ntp.org,
+This is the type of the service running the @uref{https://www.ntp.org,
 Network Time Protocol (NTP)} daemon, @command{ntpd}.  The daemon will keep the
 system clock synchronized with that of the specified NTP servers.
 
@@ -14001,7 +14162,7 @@ Each string gets on its own line.  See the @code{AcceptEnv} option in
 
 This example allows ssh-clients to export the @code{COLORTERM} variable.
 It is set by terminal emulators, which support colors.  You can use it in
-your shell's ressource file to enable colors for the prompt and commands
+your shell's resource file to enable colors for the prompt and commands
 if this variable is set.
 
 @lisp
@@ -14136,7 +14297,7 @@ Its value must be a @code{zero-configuration} record---see below.
 
 This service extends the name service cache daemon (nscd) so that it can
 resolve @code{.local} host names using
-@uref{http://0pointer.de/lennart/projects/nss-mdns/, nss-mdns}.  @xref{Name
+@uref{https://0pointer.de/lennart/projects/nss-mdns/, nss-mdns}.  @xref{Name
 Service Switch}, for information on host name resolution.
 
 Additionally, add the @var{avahi} package to the system profile so that
@@ -14427,7 +14588,7 @@ Command to run when halting.
 Command to run when rebooting.
 
 @item @code{theme} (default "maldives")
-Theme to use. Default themes provided by SDDM are "elarun" or "maldives".
+Theme to use. Default themes provided by SDDM are "elarun", "maldives" or "maya".
 
 @item @code{themes-directory} (default "/run/current-system/profile/share/sddm/themes")
 Directory to look for themes.
@@ -14502,7 +14663,7 @@ Relogin after logout.
 @cindex X11 login
 @defvr {Scheme Variable} sddm-service-type
 This is the type of the service to run the
-@uref{https://github.com/sddm/sddm,SSDM display manager}.  Its value
+@uref{https://github.com/sddm/sddm,SDDM display manager}.  Its value
 must be a @code{sddm-configuration} record (see below).
 
 Here's an example use:
@@ -15524,7 +15685,7 @@ adding a service of type @code{mate-desktop-service-type} adds the MATE
 metapackage to the system profile.  ``Adding Enlightenment'' means that
 @code{dbus} is extended appropriately, and several of Enlightenment's binaries
 are set as setuid, allowing Enlightenment's screen locker and other
-functionality to work as expetected.
+functionality to work as expected.
 
 The desktop environments in Guix use the Xorg display server by
 default.  If you'd like to use the newer display server protocol
@@ -15955,7 +16116,7 @@ Data type representing the configuration for @code{alsa-service}.
 
 @item @code{pulseaudio?} (default: @var{#t})
 Whether ALSA applications should transparently be made to use the
-@uref{http://www.pulseaudio.org/, PulseAudio} sound server.
+@uref{https://www.pulseaudio.org/, PulseAudio} sound server.
 
 Using PulseAudio allows you to run several sound-producing applications
 at the same time and to individual control them @i{via}
@@ -16003,7 +16164,7 @@ See @uref{https://www.alsa-project.org/main/index.php/Asoundrc} for the
 details.
 
 @deffn {Scheme Variable} pulseaudio-service-type
-This is the type for the  @uref{http://www.pulseaudio.org/, PulseAudio}
+This is the type for the  @uref{https://www.pulseaudio.org/, PulseAudio}
 sound server.  It exists to allow system overrides of the default settings
 via @code{pulseaudio-configuration}, see below.
 
@@ -18026,7 +18187,7 @@ record as in this example:
 @lisp
 (service prosody-service-type
          (prosody-configuration
-          (modules-enabled (cons "groups" "mam" %default-modules-enabled))
+          (modules-enabled (cons* "groups" "mam" %default-modules-enabled))
           (int-components
            (list
             (int-component-configuration
@@ -19951,7 +20112,7 @@ The @code{ServerName} in the configuration file, used to specify the
 request scheme, hostname and port that the server uses to identify
 itself.
 
-This doesn't need to be set in the server config, and can be specifyed
+This doesn't need to be set in the server config, and can be specified
 in virtual hosts. The default is @code{#f} to not specify a
 @code{ServerName}.
 
@@ -20146,6 +20307,17 @@ names of loadable modules, as in this example:
 /etc/nginx/modules/ngx_http_accept_language_module.so")))
 @end lisp
 
+@item @code{global-directives} (default: @code{'((events . ()))})
+Association list of global directives for the top level of the nginx
+configuration.  Values may themselves be association lists.
+
+@lisp
+(global-directives
+ `((worker_processes . 16)
+   (pcre_jit . on)
+   (events . ((worker_connections . 1024)))))
+@end lisp
+
 @item @code{extra-content} (default: @code{""})
 Extra content for the @code{http} block.  Should be string or a string
 valued G-expression.
@@ -20301,7 +20473,7 @@ configuration.  Otherwise this must be a file-like object with valid
 VCL syntax.
 
 @c Varnish does not support HTTPS, so keep this URL to avoid confusion.
-For example, to mirror @url{http://www.gnu.org,www.gnu.org} with VCL you
+For example, to mirror @url{https://www.gnu.org,www.gnu.org} with VCL you
 can do something along these lines:
 
 @lisp
@@ -20527,6 +20699,30 @@ but it also fetches and indexes mail retrieved from Debbugs.
 @defvr {Scheme Variable} mumi-service-type
 This is the service type for Mumi.
 @end defvr
+
+@deftp {Data Type} mumi-configuration
+Data type representing the Mumi service configuration.  This type has the
+following fields:
+
+@table @asis
+@item @code{mumi} (default: @code{mumi})
+The Mumi package to use.
+
+@item @code{mailer?} (default: @code{#true})
+Whether to enable or disable the mailer component.
+
+@item @code{mumi-configuration-sender}
+The email address used as the sender for comments.
+
+@item @code{mumi-configuration-smtp}
+A URI to configure the SMTP settings for Mailutils.  This could be
+something like @code{sendmail:///path/to/bin/msmtp} or any other URI
+supported by Mailutils.  @xref{SMTP Mailboxes, SMTP Mailboxes,,
+mailutils, GNU@tie{}Mailutils}.
+
+@end table
+@end deftp
+
 
 @subsubheading FastCGI
 @cindex fastcgi
@@ -20911,6 +21107,10 @@ and several @code{domains}.
 Mandatory email used for registration, recovery contact, and important
 account notifications.
 
+@item @code{server} (default: @code{#f})
+Optional URL of ACME server.  Setting this overrides certbot's default,
+which is the Let's Encrypt server.
+
 @item @code{rsa-key-size} (default: @code{2048})
 Size of the RSA key.
 
@@ -21107,7 +21307,7 @@ false, listed actions are allowed.
 @end deftp
 
 @deftp {Data Type} zone-entry
-Data type represnting a record entry in a zone file.
+Data type representing a record entry in a zone file.
 This type has the following parameters:
 
 @table @asis
@@ -21230,7 +21430,7 @@ The backend to store the keys in.  Can be @code{'pem} or @code{'pkcs11}.
 @item @code{config} (default: @code{"/var/lib/knot/keys/keys"})
 The configuration string of the backend.  An example for the PKCS#11 is:
 @code{"pkcs11:token=knot;pin-value=1234 /gnu/store/.../lib/pkcs11/libsofthsm2.so"}.
-For the pem backend, the string reprensents a path in the file system.
+For the pem backend, the string represents a path in the file system.
 
 @end table
 @end deftp
@@ -21763,6 +21963,13 @@ Defaults to @samp{#t}.
 
 @end deftypevr
 
+@deftypevr {@code{openvpn-client-configuration} parameter} boolean fast-io?
+(Experimental) Optimize TUN/TAP/UDP I/O writes by avoiding a call to
+poll/epoll/select prior to the write operation.
+
+Defaults to @samp{#f}.
+@end deftypevr
+
 @deftypevr {@code{openvpn-client-configuration} parameter} number verbosity
 Verbosity level.
 
@@ -21776,6 +21983,14 @@ channel to protect against DoS attacks.
 
 Defaults to @samp{#f}.
 
+@end deftypevr
+
+@deftypevr {@code{openvpn-client-configuration} parameter} maybe-string auth-user-pass
+Authenticate with server using username/password.  The option is a file
+containing username/password on 2 lines.  Do not use a file-like object as it
+would be added to the store and readable by any user.
+
+Defaults to @samp{'disabled}.
 @end deftypevr
 
 @deftypevr {@code{openvpn-client-configuration} parameter} key-usage verify-key-usage?
@@ -21897,6 +22112,13 @@ SIGUSR1 or --ping-restart restarts.
 
 Defaults to @samp{#t}.
 
+@end deftypevr
+
+@deftypevr {@code{openvpn-server-configuration} parameter} boolean fast-io?
+(Experimental) Optimize TUN/TAP/UDP I/O writes by avoiding a call to
+poll/epoll/select prior to the write operation.
+
+Defaults to @samp{#f}.
 @end deftypevr
 
 @deftypevr {@code{openvpn-server-configuration} parameter} number verbosity
@@ -22053,9 +22275,9 @@ It has the following parameters:
 @item @code{nfs-utils} (default: @code{nfs-utils})
 The nfs-utils package to use.
 
-@item @code{nfs-version} (default: @code{#f})
-If a string value is provided, the @command{rpc.nfsd} daemon will be
-limited to supporting the given version of the NFS protocol.
+@item @code{nfs-versions} (default: @code{'("4.2" "4.1" "4.0")})
+If a list of string values is provided, the @command{rpc.nfsd} daemon
+will be limited to supporting the given versions of the NFS protocol.
 
 @item @code{exports} (default: @code{'()})
 This is a list of directories the NFS server should export.  Each entry
@@ -22325,6 +22547,9 @@ Only evaluate specifications and build derivations once.
 @item @code{fallback?} (default: @code{#f})
 When substituting a pre-built binary fails, fall back to building
 packages locally.
+
+@item @code{extra-options} (default: @code{'()})
+Extra options to pass when running the Cuirass processes.
 
 @item @code{cuirass} (default: @code{cuirass})
 The Cuirass package to use.
@@ -24463,7 +24688,7 @@ Defaults to @samp{"a fast webinterface for the git dscm"}.
 
 @deftypevr {@code{cgit-configuration} parameter} string root-readme
 The content of the file specified with this option will be included
-verbatim below thef "about" link on the repository index page.
+verbatim below the "about" link on the repository index page.
 
 Defaults to @samp{""}.
 
@@ -25126,9 +25351,116 @@ If set, this is the @code{getmail-retriever-configuration} object with
 which to configure getmail to fetch mail from the guix-commits mailing
 list.
 
+@item @code{extra-options} (default: @var{'()})
+Extra command line options for @code{guix-data-service}.
+
+@item @code{extra-process-jobs-options} (default: @var{'()})
+Extra command line options for @code{guix-data-service-process-jobs}.
+
 @end table
 @end deftp
 
+@node Linux Services
+@subsubheading Linux Services
+
+@cindex oom
+@cindex out of memory killer
+@cindex earlyoom
+@cindex early out of memory daemon
+@subsection Early OOM Service
+
+@uref{https://github.com/rfjakob/earlyoom,Early OOM}, also known as
+Earlyoom, is a minimalist out of memory (OOM) daemon that runs in user
+space and provides a more responsive and configurable alternative to the
+in-kernel OOM killer.  It is useful to prevent the system from becoming
+unresponsive when it runs out of memory.
+
+@deffn {Scheme Variable} earlyoom-service-type
+The service type for running @command{earlyoom}, the Early OOM daemon.
+Its value must be a @code{earlyoom-configuration} object, described
+below.  The service can be instantiated in its default configuration
+with:
+
+@lisp
+(service earlyoom-service-type)
+@end lisp
+@end deffn
+
+@deftp {Data Type} earlyoom-configuration
+This is the configuration record for the @code{earlyoom-service-type}.
+
+@table @asis
+@item @code{earlyoom} (default: @var{earlyoom})
+The Earlyoom package to use.
+
+@item @code{minimum-available-memory} (default: @code{10})
+The threshold for the minimum @emph{available} memory, in percentages.
+
+@item @code{minimum-free-swap} (default: @code{10})
+The threshold for the minimum free swap memory, in percentages.
+
+@item @code{prefer-regexp} (default: @code{#f})
+A regular expression (as a string) to match the names of the processes
+that should be preferably killed.
+
+@item @code{avoid-regexp} (default: @code{#f})
+A regular expression (as a string) to match the names of the processes
+that should @emph{not} be killed.
+
+@item @code{memory-report-interval} (default: @code{0})
+The interval in seconds at which a memory report is printed.  It is
+disabled by default.
+
+@item @code{ignore-positive-oom-score-adj?} (default: @code{#f})
+A boolean indicating whether the positive adjustments set in
+@file{/proc/*/oom_score_adj}.
+
+@item @code{show-debug-messages?} (default: @code{#f})
+A boolean indicating whether debug messages should be printed.  The logs
+are saved at @file{/var/log/earlyoom.log}.
+
+@item @code{send-notification-command} (default: @code{#f})
+This can be used to provide a custom command used for sending
+notifications.
+@end table
+@end deftp
+
+@cindex modprobe
+@cindex kernel module loader
+@subsubsection Kernel Module Loader Service
+
+The kernel module loader service allows one to load loadable kernel
+modules at boot.  This is especially useful for modules that don't
+autoload and need to be manually loaded, as it's the case with
+@code{ddcci}.
+
+@deffn {Scheme Variable} kernel-module-loader-service-type
+The service type for loading loadable kernel modules at boot with
+@command{modprobe}.  Its value must be a list of strings representing
+module names.  For example loading the drivers provided by
+@code{ddcci-driver-linux}, in debugging mode by passing some module
+parameters, can be done as follow:
+
+@lisp
+(use-modules (gnu) (gnu services))
+(use-package-modules linux)
+(use-service-modules linux)
+
+(define ddcci-config
+  (plain-file "ddcci.conf"
+              "options ddcci dyndbg delay=120"))
+
+(operating-system
+  ...
+  (services (cons* (service kernel-module-loader-service-type
+                            '("ddcci" "ddcci_backlight"))
+                   (simple-service 'ddcci-config etc-service-type
+                                   (list `("modprobe.d/ddcci.conf"
+                                           ,ddcci-config)))
+                   %base-services))
+  (kernel-loadable-modules (list ddcci-driver-linux)))
+@end lisp
+@end deffn
 
 @node Miscellaneous Services
 @subsection Miscellaneous Services
@@ -25281,7 +25613,7 @@ of DICT server (@pxref{Dicod,,, dico, GNU Dico Manual}).
 
 The optional @var{config} argument specifies the configuration for
 @command{dicod}, which should be a @code{<dicod-configuration>} object, by
-default it serves the GNU Collaborative International Dictonary of English.
+default it serves the GNU Collaborative International Dictionary of English.
 
 You can add @command{open localhost} to your @file{~/.dico} file to make
 @code{localhost} the default server for @command{dico} client
@@ -25630,7 +25962,7 @@ next method in the list.  The NSS configuration is given in the
 @cindex nss-mdns
 @cindex .local, host name lookup
 As an example, the declaration below configures the NSS to use the
-@uref{http://0pointer.de/lennart/projects/nss-mdns/, @code{nss-mdns}
+@uref{https://0pointer.de/lennart/projects/nss-mdns/, @code{nss-mdns}
 back-end}, which supports host name lookups over multicast DNS (mDNS)
 for host names ending in @code{.local}:
 
@@ -26101,9 +26433,22 @@ must @emph{not} be an OS device name such as @file{/dev/sda1}.
 @end table
 @end deftp
 
+@cindex HDPI
+@cindex HiDPI
+@cindex resolution
 @c FIXME: Write documentation once it's stable.
-For now only GRUB has theme support. GRUB themes are created using
-the @code{grub-theme} form, which is not documented yet.
+For now only GRUB has theme support.  GRUB themes are created using
+the @code{grub-theme} form, which is not fully documented yet.
+
+@deftp {Data Type} grub-theme
+Data type representing the configuration of the GRUB theme.
+
+@table @asis
+@item @code{gfxmode} (default: @code{'("auto")})
+The GRUB @code{gfxmode} to set (a list of screen resolution strings, see
+@pxref{gfxmode,,, grub, GNU GRUB manual}).
+@end table
+@end deftp
 
 @defvr {Scheme Variable} %default-theme
 This is the default GRUB theme used by the operating system if no
@@ -26114,6 +26459,17 @@ It comes with a fancy background image displaying the GNU and Guix
 logos.
 @end defvr
 
+For example, to override the default resolution, you may use something
+like
+
+@lisp
+(bootloader
+ (grub-configuration
+ ;; @dots{}
+ (theme (grub-theme
+         (inherit %default-theme)
+         (gfxmode '("1024x786x32" "auto"))))))
+@end lisp
 
 @node Invoking guix system
 @section Invoking @code{guix system}
@@ -26239,7 +26595,7 @@ Switch to an existing system generation.  This action atomically
 switches the system profile to the specified system generation.  It
 also rearranges the system's existing bootloader menu entries.  It
 makes the menu entry for the specified system generation the default,
-and it moves the entries for the other generatiors to a submenu, if
+and it moves the entries for the other generations to a submenu, if
 supported by the bootloader being used.  The next time the system
 boots, it will use the specified system generation.
 
@@ -26735,8 +27091,28 @@ login over SSH may be forbidden in some cases.  To work around this,
 @command{guix deploy} can log in as an unprivileged user and employ
 @code{sudo} to escalate privileges.  This will only work if @code{sudo} is
 currently installed on the remote and can be invoked non-interactively as
-@code{user}.  That is: the line in @code{sudoers} granting @code{user} the
-ability to use @code{sudo} must contain the @code{NOPASSWD} tag.
+@code{user}.  That is, the line in @code{sudoers} granting @code{user} the
+ability to use @code{sudo} must contain the @code{NOPASSWD} tag.  This can
+be accomplished with the following operating system configuration snippet:
+
+@lisp
+(use-modules ...
+             (gnu system))               ;for %sudoers-specification
+
+(define %user "username")
+
+(operating-system
+  ...
+  (sudoers-file
+     (plain-file "sudoers"
+                 (string-append (plain-file-content %sudoers-specification)
+                                (format #f "~a ALL = NOPASSWD: ALL~%"
+                                        %user)))))
+
+@end lisp
+
+For more information regarding the format of the @file{sudoers} file,
+consult @command{man sudoers}.
 
 @deftp {Data Type} machine
 This is the data type representing a single machine in a heterogeneous Guix
@@ -28078,7 +28454,7 @@ transparency that we get in the rest of the package dependency graph,
 where Guix always gives us a source-to-binary mapping.  Thus, our goal
 is to reduce the set of bootstrap binaries to the bare minimum.
 
-The @uref{http://bootstrappable.org, Bootstrappable.org web site} lists
+The @uref{https://bootstrappable.org, Bootstrappable.org web site} lists
 on-going projects to do that.  One of these is about replacing the
 bootstrap GCC with a sequence of assemblers, interpreters, and compilers
 of increasing complexity, which could be built from source starting from

@@ -365,6 +365,25 @@ added to the pack."
           (define database #+database)
           (define entry-point #$entry-point)
 
+          (define (mksquashfs args)
+            (apply invoke "mksquashfs"
+                   `(,@args
+
+                     ;; Do not create a "recovery file" when appending to the
+                     ;; file system since it's useless in this case.
+                     "-no-recovery"
+
+                     ;; Do not attempt to store extended attributes.
+                     ;; See <https://bugs.gnu.org/40043>.
+                     "-no-xattrs"
+
+                     ;; Set file times and the file system creation time to
+                     ;; one second after the Epoch.
+                     "-all-time" "1" "-mkfs-time" "1"
+
+                     ;; Reset all UIDs and GIDs.
+                     "-force-uid" "0" "-force-gid" "0")))
+
           (setenv "PATH" (string-append #$archiver "/bin"))
 
           ;; We need an empty file in order to have a valid file argument when
@@ -376,92 +395,90 @@ added to the pack."
           ;; Add all store items.  Unfortunately mksquashfs throws away all
           ;; ancestor directories and only keeps the basename.  We fix this
           ;; in the following invocations of mksquashfs.
-          (apply invoke "mksquashfs"
-                 `(,@(map store-info-item
-                          (call-with-input-file "profile"
-                            read-reference-graph))
-                   #$environment
-                   ,#$output
+          (mksquashfs `(,@(map store-info-item
+                               (call-with-input-file "profile"
+                                 read-reference-graph))
+                        #$environment
+                        ,#$output
 
-                   ;; Do not perform duplicate checking because we
-                   ;; don't have any dupes.
-                   "-no-duplicates"
-                   "-comp"
-                   ,#+(compressor-name compressor)))
+                        ;; Do not perform duplicate checking because we
+                        ;; don't have any dupes.
+                        "-no-duplicates"
+                        "-comp"
+                        ,#+(compressor-name compressor)))
 
           ;; Here we reparent the store items.  For each sub-directory of
           ;; the store prefix we need one invocation of "mksquashfs".
           (for-each (lambda (dir)
-                      (apply invoke "mksquashfs"
-                             `(".empty"
-                               ,#$output
-                               "-root-becomes" ,dir)))
+                      (mksquashfs `(".empty"
+                                    ,#$output
+                                    "-root-becomes" ,dir)))
                     (reverse (string-tokenize (%store-directory)
                                               (char-set-complement (char-set #\/)))))
 
           ;; Add symlinks and mount points.
-          (apply invoke "mksquashfs"
-                 `(".empty"
-                   ,#$output
-                   ;; Create SYMLINKS via pseudo file definitions.
-                   ,@(append-map
-                      (match-lambda
-                        ((source '-> target)
-                         ;; Create relative symlinks to work around a bug in
-                         ;; Singularity 2.x:
-                         ;;   https://bugs.gnu.org/34913
-                         ;;   https://github.com/sylabs/singularity/issues/1487
-                         (let ((target (string-append #$profile "/" target)))
-                           (list "-p"
-                                 (string-join
-                                  ;; name s mode uid gid symlink
-                                  (list source
-                                        "s" "777" "0" "0"
-                                        (relative-file-name (dirname source)
-                                                            target)))))))
-                      '#$symlinks*)
+          (mksquashfs
+           `(".empty"
+             ,#$output
+             ;; Create SYMLINKS via pseudo file definitions.
+             ,@(append-map
+                (match-lambda
+                  ((source '-> target)
+                   ;; Create relative symlinks to work around a bug in
+                   ;; Singularity 2.x:
+                   ;;   https://bugs.gnu.org/34913
+                   ;;   https://github.com/sylabs/singularity/issues/1487
+                   (let ((target (string-append #$profile "/" target)))
+                     (list "-p"
+                           (string-join
+                            ;; name s mode uid gid symlink
+                            (list source
+                                  "s" "777" "0" "0"
+                                  (relative-file-name (dirname source)
+                                                      target)))))))
+                '#$symlinks*)
 
-                   "-p" "/.singularity.d d 555 0 0"
+             "-p" "/.singularity.d d 555 0 0"
 
-                   ;; Create the environment file.
-                   "-p" "/.singularity.d/env d 555 0 0"
-                   "-p" ,(string-append
-                          "/.singularity.d/env/90-environment.sh s 777 0 0 "
-                          (relative-file-name "/.singularity.d/env"
-                                              #$environment))
+             ;; Create the environment file.
+             "-p" "/.singularity.d/env d 555 0 0"
+             "-p" ,(string-append
+                    "/.singularity.d/env/90-environment.sh s 777 0 0 "
+                    (relative-file-name "/.singularity.d/env"
+                                        #$environment))
 
-                   ;; Create /.singularity.d/actions, and optionally the 'run'
-                   ;; script, used by 'singularity run'.
-                   "-p" "/.singularity.d/actions d 555 0 0"
+             ;; Create /.singularity.d/actions, and optionally the 'run'
+             ;; script, used by 'singularity run'.
+             "-p" "/.singularity.d/actions d 555 0 0"
 
-                   ,@(if entry-point
-                         `(;; This one if for Singularity 2.x.
-                           "-p"
-                           ,(string-append
-                             "/.singularity.d/actions/run s 777 0 0 "
-                             (relative-file-name "/.singularity.d/actions"
-                                                 (string-append #$profile "/"
-                                                                entry-point)))
+             ,@(if entry-point
+                   `(;; This one if for Singularity 2.x.
+                     "-p"
+                     ,(string-append
+                       "/.singularity.d/actions/run s 777 0 0 "
+                       (relative-file-name "/.singularity.d/actions"
+                                           (string-append #$profile "/"
+                                                          entry-point)))
 
-                           ;; This one is for Singularity 3.x.
-                           "-p"
-                           ,(string-append
-                             "/.singularity.d/runscript s 777 0 0 "
-                             (relative-file-name "/.singularity.d"
-                                                 (string-append #$profile "/"
-                                                                entry-point))))
-                         '())
+                     ;; This one is for Singularity 3.x.
+                     "-p"
+                     ,(string-append
+                       "/.singularity.d/runscript s 777 0 0 "
+                       (relative-file-name "/.singularity.d"
+                                           (string-append #$profile "/"
+                                                          entry-point))))
+                   '())
 
-                   ;; Create empty mount points.
-                   "-p" "/proc d 555 0 0"
-                   "-p" "/sys d 555 0 0"
-                   "-p" "/dev d 555 0 0"
-                   "-p" "/home d 555 0 0"))
+             ;; Create empty mount points.
+             "-p" "/proc d 555 0 0"
+             "-p" "/sys d 555 0 0"
+             "-p" "/dev d 555 0 0"
+             "-p" "/home d 555 0 0"))
 
           (when database
             ;; Initialize /var/guix.
             (install-database-and-gc-roots "var-etc" database #$profile)
-            (invoke "mksquashfs" "var-etc" #$output)))))
+            (mksquashfs `("var-etc" ,#$output))))))
 
   (gexp->derivation (string-append name
                                    (compressor-extension compressor)
@@ -806,7 +823,7 @@ last resort for relocation."
 
          (option '(#\n "dry-run") #f #f
                  (lambda (opt name arg result)
-                   (alist-cons 'dry-run? #t (alist-cons 'graft? #f result))))
+                   (alist-cons 'dry-run? #t result)))
          (option '(#\d "derivation") #f #f
                  (lambda (opt name arg result)
                    (alist-cons 'derivation-only? #t result)))
@@ -1009,108 +1026,107 @@ Create a bundle of PACKAGE.\n"))
         ;; Set the build options before we do anything else.
         (set-build-options-from-command-line store opts)
 
-        (parameterize ((%graft? (assoc-ref opts 'graft?))
-                       (%guile-for-build (package-derivation
-                                          store
-                                          (if (assoc-ref opts 'bootstrap?)
-                                              %bootstrap-guile
-                                              (canonical-package guile-2.2))
-                                          (assoc-ref opts 'system)
-                                          #:graft? (assoc-ref opts 'graft?))))
-          (let* ((dry-run?    (assoc-ref opts 'dry-run?))
-                 (derivation? (assoc-ref opts 'derivation-only?))
-                 (relocatable? (assoc-ref opts 'relocatable?))
-                 (proot?      (eq? relocatable? 'proot))
-                 (manifest    (let ((manifest (manifest-from-args store opts)))
-                                ;; Note: We cannot honor '--bootstrap' here because
-                                ;; 'glibc-bootstrap' lacks 'libc.a'.
-                                (if relocatable?
-                                    (map-manifest-entries
-                                     (cut wrapped-manifest-entry <> #:proot? proot?)
-                                     manifest)
-                                    manifest)))
-                 (pack-format (assoc-ref opts 'format))
-                 (name        (string-append (symbol->string pack-format)
-                                             "-pack"))
-                 (target      (assoc-ref opts 'target))
-                 (bootstrap?  (assoc-ref opts 'bootstrap?))
-                 (compressor  (if bootstrap?
-                                  bootstrap-xz
-                                  (assoc-ref opts 'compressor)))
-                 (archiver    (if (equal? pack-format 'squashfs)
-                                  squashfs-tools
-                                  (if bootstrap?
-                                      %bootstrap-coreutils&co
-                                      tar)))
-                 (symlinks    (assoc-ref opts 'symlinks))
-                 (build-image (match (assq-ref %formats pack-format)
-                                ((? procedure? proc) proc)
-                                (#f
-                                 (leave (G_ "~a: unknown pack format~%")
-                                        pack-format))))
-                 (localstatedir? (assoc-ref opts 'localstatedir?))
-                 (entry-point    (assoc-ref opts 'entry-point))
-                 (profile-name   (assoc-ref opts 'profile-name))
-                 (gc-root        (assoc-ref opts 'gc-root)))
-            (define (lookup-package package)
-              (manifest-lookup manifest (manifest-pattern (name package))))
+        (with-build-handler (build-notifier #:dry-run?
+                                            (assoc-ref opts 'dry-run?)
+                                            #:use-substitutes?
+                                            (assoc-ref opts 'substitutes?))
+          (parameterize ((%graft? (assoc-ref opts 'graft?))
+                         (%guile-for-build (package-derivation
+                                            store
+                                            (if (assoc-ref opts 'bootstrap?)
+                                                %bootstrap-guile
+                                                (canonical-package guile-2.2))
+                                            (assoc-ref opts 'system)
+                                            #:graft? (assoc-ref opts 'graft?))))
+            (let* ((derivation? (assoc-ref opts 'derivation-only?))
+                   (relocatable? (assoc-ref opts 'relocatable?))
+                   (proot?      (eq? relocatable? 'proot))
+                   (manifest    (let ((manifest (manifest-from-args store opts)))
+                                  ;; Note: We cannot honor '--bootstrap' here because
+                                  ;; 'glibc-bootstrap' lacks 'libc.a'.
+                                  (if relocatable?
+                                      (map-manifest-entries
+                                       (cut wrapped-manifest-entry <> #:proot? proot?)
+                                       manifest)
+                                      manifest)))
+                   (pack-format (assoc-ref opts 'format))
+                   (name        (string-append (symbol->string pack-format)
+                                               "-pack"))
+                   (target      (assoc-ref opts 'target))
+                   (bootstrap?  (assoc-ref opts 'bootstrap?))
+                   (compressor  (if bootstrap?
+                                    bootstrap-xz
+                                    (assoc-ref opts 'compressor)))
+                   (archiver    (if (equal? pack-format 'squashfs)
+                                    squashfs-tools
+                                    (if bootstrap?
+                                        %bootstrap-coreutils&co
+                                        tar)))
+                   (symlinks    (assoc-ref opts 'symlinks))
+                   (build-image (match (assq-ref %formats pack-format)
+                                  ((? procedure? proc) proc)
+                                  (#f
+                                   (leave (G_ "~a: unknown pack format~%")
+                                          pack-format))))
+                   (localstatedir? (assoc-ref opts 'localstatedir?))
+                   (entry-point    (assoc-ref opts 'entry-point))
+                   (profile-name   (assoc-ref opts 'profile-name))
+                   (gc-root        (assoc-ref opts 'gc-root)))
+              (define (lookup-package package)
+                (manifest-lookup manifest (manifest-pattern (name package))))
 
-            (when (null? (manifest-entries manifest))
-              (warning (G_ "no packages specified; building an empty pack~%")))
+              (when (null? (manifest-entries manifest))
+                (warning (G_ "no packages specified; building an empty pack~%")))
 
-            (when (and (eq? pack-format 'squashfs)
-                       (not (any lookup-package '("bash" "bash-minimal"))))
-              (warning (G_ "Singularity requires you to provide a shell~%"))
-              (display-hint (G_ "Add @code{bash} or @code{bash-minimal} \
+              (when (and (eq? pack-format 'squashfs)
+                         (not (any lookup-package '("bash" "bash-minimal"))))
+                (warning (G_ "Singularity requires you to provide a shell~%"))
+                (display-hint (G_ "Add @code{bash} or @code{bash-minimal} \
 to your package list.")))
 
-            (run-with-store store
-              (mlet* %store-monad ((profile (profile-derivation
-                                             manifest
+              (run-with-store store
+                (mlet* %store-monad ((profile (profile-derivation
+                                               manifest
 
-                                             ;; Always produce relative
-                                             ;; symlinks for Singularity (see
-                                             ;; <https://bugs.gnu.org/34913>).
-                                             #:relative-symlinks?
-                                             (or relocatable?
-                                                 (eq? 'squashfs pack-format))
+                                               ;; Always produce relative
+                                               ;; symlinks for Singularity (see
+                                               ;; <https://bugs.gnu.org/34913>).
+                                               #:relative-symlinks?
+                                               (or relocatable?
+                                                   (eq? 'squashfs pack-format))
 
-                                             #:hooks (if bootstrap?
-                                                         '()
-                                                         %default-profile-hooks)
-                                             #:locales? (not bootstrap?)
-                                             #:target target))
-                                   (drv (build-image name profile
-                                                     #:target
-                                                     target
-                                                     #:compressor
-                                                     compressor
-                                                     #:symlinks
-                                                     symlinks
-                                                     #:localstatedir?
-                                                     localstatedir?
-                                                     #:entry-point
-                                                     entry-point
-                                                     #:profile-name
-                                                     profile-name
-                                                     #:archiver
-                                                     archiver)))
-                (mbegin %store-monad
-                  (munless derivation?
-                    (show-what-to-build* (list drv)
-                                         #:use-substitutes?
-                                         (assoc-ref opts 'substitutes?)
-                                         #:dry-run? dry-run?))
-                  (mwhen derivation?
-                    (return (format #t "~a~%"
-                                    (derivation-file-name drv))))
-                  (munless (or derivation? dry-run?)
-                    (built-derivations (list drv))
-                    (mwhen gc-root
-                      (register-root* (match (derivation->output-paths drv)
-                                        (((names . items) ...)
-                                         items))
-                                      gc-root))
-                    (return (format #t "~a~%"
-                                    (derivation->output-path drv))))))
-              #:system (assoc-ref opts 'system))))))))
+                                               #:hooks (if bootstrap?
+                                                           '()
+                                                           %default-profile-hooks)
+                                               #:locales? (not bootstrap?)
+                                               #:target target))
+                                     (drv (build-image name profile
+                                                       #:target
+                                                       target
+                                                       #:compressor
+                                                       compressor
+                                                       #:symlinks
+                                                       symlinks
+                                                       #:localstatedir?
+                                                       localstatedir?
+                                                       #:entry-point
+                                                       entry-point
+                                                       #:profile-name
+                                                       profile-name
+                                                       #:archiver
+                                                       archiver)))
+                  (mbegin %store-monad
+                    (mwhen derivation?
+                      (return (format #t "~a~%"
+                                      (derivation-file-name drv))))
+                    (munless derivation?
+                      (built-derivations (list drv))
+                      (mwhen gc-root
+                        (register-root* (match (derivation->output-paths drv)
+                                          (((names . items) ...)
+                                           items))
+                                        gc-root))
+                      (return (format #t "~a~%"
+                                      (derivation->output-path drv))))))
+                #:target target
+                #:system (assoc-ref opts 'system)))))))))

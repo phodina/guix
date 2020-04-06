@@ -88,7 +88,7 @@
                  (("-lpng") (string-append "-L" png "/lib -lpng"))
                  (("-lz") (string-append "-L" zlib "/lib -lz"))))
              #t)))))
-    (home-page "http://www.fltk.org")
+    (home-page "https://www.fltk.org")
     (synopsis "3D C++ GUI library")
     (description "FLTK is a C++ GUI toolkit providing modern GUI functionality
 without the bloat.  It supports 3D graphics via OpenGL and its built-in GLUT
@@ -109,7 +109,7 @@ UI builder called FLUID that can be used to create applications in minutes.")
               (sha256
                (base32
                 "0j38mhnfqy6swcrnc5zxcwlqi8b1pgklyghxk6qs1lf4japv2zc0"))
-              (file-name (string-append name "-" version "-checkout"))))
+              (file-name (git-file-name name version))))
     (build-system waf-build-system)
     (arguments
      `(#:tests? #f ;no "check" target

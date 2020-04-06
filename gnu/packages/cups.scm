@@ -5,7 +5,7 @@
 ;;; Copyright © 2016 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -58,7 +58,7 @@
 (define-public cups-filters
   (package
     (name "cups-filters")
-    (version "1.25.13")
+    (version "1.27.1")
     (source(origin
               (method url-fetch)
               (uri
@@ -66,7 +66,7 @@
                               "cups-filters-" version ".tar.xz"))
               (sha256
                (base32
-                "1z3b7p6pp6yzvzl2nip9q0gn4fr5k9qwpnnhqqkiaaf3b1nfswjj"))
+                "0dpn4rkmrdprkhlnpih5dzrn4fxzj20k42d516kx4qx0g5l74lrm"))
               (modules '((guix build utils)))
               (snippet
                ;; install backends, banners and filters to cups-filters output
@@ -187,7 +187,7 @@ filters for the PDF-centric printing workflow introduced by OpenPrinting.")
 (define-public cups-minimal
   (package
     (name "cups-minimal")
-    (version "2.3.0")
+    (version "2.3.1")
     (source
      (origin
        (method url-fetch)
@@ -195,7 +195,7 @@ filters for the PDF-centric printing workflow introduced by OpenPrinting.")
                            version "/cups-" version "-source.tar.gz"))
        (sha256
         (base32
-         "19d1jpdpxy0fclq37pchi7ldnw9dssxx3zskcgqai3h0rwlh5bxc"))))
+         "1kkpmj17205j8w9hdff2bfpk6lwdmr3gx0j4r35nhgvya24rvjhv"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -420,14 +420,14 @@ should only be used as part of the Guix cups-pk-helper service.")
 (define-public hplip
   (package
     (name "hplip")
-    (version "3.19.12")
+    (version "3.20.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/hplip/hplip/" version
                                   "/hplip-" version ".tar.gz"))
               (sha256
                (base32
-                "0mdj0sqgfxjqa550adiw1gn4z9n6wcvn55slivgf0ndn5x89iwxp"))
+                "0sh6cg7yjc11x1cm4477iaslj9n8ksghs85hqwgfbk7m5b2pw2a1"))
               (modules '((guix build utils)))
               (patches (search-patches "hplip-remove-imageprocessor.patch"))
               (snippet
@@ -673,14 +673,14 @@ printer/driver specific, but spooler-independent PPD file.")
 (define-public foo2zjs
   (package
     (name "foo2zjs")
-    (version "20190909")
+    (version "20200207")
     (source (origin
               (method url-fetch)
               ;; XXX: This is an unversioned URL!
               (uri "http://foo2zjs.rkkda.com/foo2zjs.tar.gz")
               (sha256
                (base32
-                "1nn84c045mbv6yzpjfggc6152bvgrmcxiyvgz9v2w3sws7ihshrm"))))
+                "0pf1sm29gnrhhpyvq95jskvr874h5r4kls9w10gc24z23fjmr5zx"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases

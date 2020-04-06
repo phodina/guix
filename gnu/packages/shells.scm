@@ -3,7 +3,7 @@
 ;;; Copyright © 2014, 2015 David Thompson <davet@gnu.org>
 ;;; Copyright © 2014 Kevin Lemonnier <lemonnierk@ulrar.net>
 ;;; Copyright © 2015 Jeff Mickey <j@codemac.net>
-;;; Copyright © 2016, 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017, 2018 ng0 <ng0@n0.is>
@@ -11,7 +11,8 @@
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2019 Meiyo Peng <meiyo.peng@gmail.com>
 ;;; Copyright © 2019 Timothy Sample <samplet@ngyro.com>
-;;; Copyright © 2019 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2019, 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -100,7 +101,7 @@ direct descendant of NetBSD's Almquist Shell (@command{ash}).")
        (method url-fetch)
        (uri (string-append "https://github.com/fish-shell/fish-shell/"
                            "releases/download/" version "/"
-                           name "-" version ".tar.gz"))
+                           "fish-" version ".tar.gz"))
        (sha256
         (base32 "03j3jl9jzlnhq4p86zj8wqsh5sx45j1d1fvfa80ks1cfdg68qwhl"))))
     (build-system gnu-build-system)
@@ -382,7 +383,7 @@ written by Paul Haahr and Byron Rakitzis.")
                 (with-directory-excursion bin
                   (symlink "tcsh" "csh"))
                 #t))))))
-    (home-page "http://www.tcsh.org/")
+    (home-page "https://www.tcsh.org/")
     (synopsis "Unix shell based on csh")
     (description
      "Tcsh is an enhanced, but completely compatible version of the Berkeley
@@ -395,7 +396,7 @@ history mechanism, job control and a C-like syntax.")
 (define-public zsh
   (package
     (name "zsh")
-    (version "5.6.2")
+    (version "5.8")
     (source (origin
               (method url-fetch)
               (uri (list (string-append
@@ -406,9 +407,10 @@ history mechanism, job control and a C-like syntax.")
                            ".tar.xz")))
               (sha256
                (base32
-                "17iffliqcj4hv91g0bd2sxsyfcz51mfyh97sp2iyrs2p0mndc2x5"))))
+                "09yyaadq738zlrnlh1hd3ycj1mv3q5hh4xl1ank70mjnqm6bbi6w"))))
     (build-system gnu-build-system)
-    (arguments `(#:configure-flags '("--with-tcsetpgrp" "--enable-pcre")
+    (arguments `(#:configure-flags '("--with-tcsetpgrp" "--enable-pcre"
+                                     "--enable-maildir-support")
                  #:phases
                  (modify-phases %standard-phases
                    (add-before 'configure 'fix-sh
@@ -749,14 +751,14 @@ Shell (pdksh).")
 (define-public oil-shell
   (package
     (name "oil-shell")
-    (version "0.6.0")
+    (version "0.7.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.oilshell.org/download/oil-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "1dw4mgnlmaxlfygasfihgvbj32d3m9w6k5j7azb9d9lp35f3l7hl"))))
+                "12c9s462879adb6mwd3fqafk0dnqsm16s18rhym6cmzfzy8v8zm3"))))
     (build-system gnu-build-system)
     (arguments
      '(#:tests? #f ; the tests are not distributed in the tarballs
@@ -817,4 +819,31 @@ is commonly written.")
 Scheme.  It provides both the shell interface, as well as a Guile
 library for parsing shell scripts.  Gash is designed to bootstrap Bash
 as part of the Guix bootstrap process.")
+    (license gpl3+)))
+
+(define-public gash-utils
+  (package
+    (name "gash-utils")
+    (version "0.1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://savannah/gash/gash-utils-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "0ib2p52qmbac5n0s5bys4fiwim461ps546976l1n7pwbs0avh7fk"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("guile" ,guile-2.2)
+       ("gash" ,gash)))
+    (home-page "https://savannah.nongnu.org/projects/gash/")
+    (synopsis "Core POSIX utilities written in Guile Scheme")
+    (description "Gash-Utils provides Scheme implementations of many
+common POSIX utilities (there are about 40 of them, ranging in
+complexity from @command{false} to @command{awk}).  The utilities are
+designed to be capable of bootstrapping their standard GNU counterparts.
+Underpinning these utilities are many Scheme interfaces for manipulating
+files and text.")
     (license gpl3+)))

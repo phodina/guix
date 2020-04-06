@@ -9,7 +9,7 @@
 ;;; Copyright © 2016, 2017, 2018 ng0 <ng0@n0.is>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2017, 2018, 2019 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018 Clément Lassieur <clement@lassieur.org>
@@ -122,15 +122,15 @@ in intelligent transportation networks.")
 (define-public p11-kit
   (package
     (name "p11-kit")
-    (version "0.23.18.1")
+    (version "0.23.20")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "https://github.com/p11-glue/p11-kit/releases/"
-                          "download/" version "/p11-kit-" version ".tar.gz"))
+                          "download/" version "/p11-kit-" version ".tar.xz"))
       (sha256
        (base32
-        "0vrwab1082f7l5sbzpb28nrs3q4d2q7wzbi8c977rpah026bvhrl"))))
+        "0131maw666ha4d6iyj13fkz18c4pnb3lw2xwv5kvkmnzqcj61n0l"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -276,7 +276,14 @@ required structures.")
                                   "/gnutls-" version ".tar.xz"))
               (sha256
                (base32
-                "14r2h73yfj66cm14k9mnb3kgzq5a7qjg5b31m53bf19vcxkwmwxi"))))))
+                "14r2h73yfj66cm14k9mnb3kgzq5a7qjg5b31m53bf19vcxkwmwxi"))))
+    (native-inputs
+     `(,@(package-native-inputs gnutls)
+
+       ;; Datefudge is used to fuzz time for tests, and its presence
+       ;; enables a test that uses 'setsid' from util-linux.
+       ("datefudge" ,datefudge)
+       ("util-linux" ,util-linux)))))
 
 (define-public guile3.0-gnutls
   (package
@@ -300,7 +307,7 @@ required structures.")
   (package
    (name "openssl")
    (version "1.1.1c")
-   (replacement openssl-1.1.1d)
+   (replacement openssl-1.1.1e)
    (source (origin
              (method url-fetch)
              (uri (list (string-append "https://www.openssl.org/source/openssl-"
@@ -402,10 +409,10 @@ required structures.")
    (license license:openssl)
    (home-page "https://www.openssl.org/")))
 
-(define openssl-1.1.1d
-  (package/inherit
-   openssl
-   (version "1.1.1d")
+(define openssl-1.1.1e
+  (package
+   (inherit openssl)
+   (version "1.1.1e")
    (source (origin
              (method url-fetch)
              (uri (list (string-append "https://www.openssl.org/source/openssl-"
@@ -418,13 +425,13 @@ required structures.")
              (patches (search-patches "openssl-1.1-c-rehash-in.patch"))
              (sha256
               (base32
-               "1whinyw402z3b9xlb3qaxv4b9sk4w1bgh9k0y8df1z4x3yy92fhy"))))))
+               "1gnwlri1dphr5wdzmg9vlhkh6aq2yqgpfkpmffzwjlfb26n62kv9"))))))
 
 (define-public openssl-1.0
   (package
     (inherit openssl)
     (name "openssl")
-    (version "1.0.2t")
+    (version "1.0.2u")
     (source (origin
               (method url-fetch)
               (uri (list (string-append "https://www.openssl.org/source/openssl-"
@@ -436,7 +443,7 @@ required structures.")
                                         "/openssl-" version ".tar.gz")))
               (sha256
                (base32
-                "1g67ra0ph7gpz6fgvv1i96d792jmd6ymci5kk53vbikszr74djql"))
+                "05lxcs4hzyfqd5jn0d9p0fvqna62v2s4pc9qgmq0dpcknkzwdl7c"))
               (patches (search-patches "openssl-runpath.patch"
                                        "openssl-c-rehash-in.patch"))))
     (outputs '("out"
@@ -511,14 +518,14 @@ required structures.")
 (define-public libressl
   (package
     (name "libressl")
-    (version "2.7.4")
+    (version "3.0.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://openbsd/LibreSSL/"
                                   "libressl-" version ".tar.gz"))
               (sha256
                (base32
-                "19kxa5i97q7p6rrps9qm0nd8zqhdjvzx02j72400c73cl2nryfhy"))))
+                "13ir2lpxz8y1m151k7lrx306498nzfhwlvgkgv97v5cvywmifyyz"))))
     (build-system gnu-build-system)
     (arguments
      ;; Do as if 'getentropy' was missing since older Linux kernels lack it
@@ -553,13 +560,13 @@ netcat implementation that supports TLS.")
   (package
     (name "python-acme")
     ;; Remember to update the hash of certbot when updating python-acme.
-    (version "1.0.0")
+    (version "1.3.0")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "acme" version))
               (sha256
                (base32
-                "1hl62dnh8zsipa5azzpy5kwgjgb5vflinhna1fsn7rcchhpz223a"))))
+                "03fjmg0fgfy7xfn3i8rzn9i0i4amajmijkash84qb8mlphgrxpn0"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -610,7 +617,7 @@ netcat implementation that supports TLS.")
               (uri (pypi-uri "certbot" version))
               (sha256
                (base32
-                "0aih7sir5byy8ah9lrgzwcaga7hjw98qj8bb1pxzzzqrvcqjvf46"))))
+                "1n5i0k6kwmd6wvivshfl3k4djwcpwx390c39xmr2hhrgpk5r285w"))))
     (build-system python-build-system)
     (arguments
      `(,@(substitute-keyword-arguments (package-arguments python-acme)
@@ -858,7 +865,7 @@ then ported to the GNU / Linux environment.")
 (define-public mbedtls-apache
   (package
     (name "mbedtls-apache")
-    (version "2.16.3")
+    (version "2.16.5")
     (source
      (origin
        (method url-fetch)
@@ -868,11 +875,12 @@ then ported to the GNU / Linux environment.")
                            version "-apache.tgz"))
        (sha256
         (base32
-         "0qd65lnr63vmx2gxla6lcmm5gawlnaj4wy4h4vmdc3h9h9nyw6zc"))))
+         "0kdhwy241xsk4isbadqx6z80m8sf76da5sbmqv8qy11yr37cdd35"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags
-       (list "-DUSE_SHARED_MBEDTLS_LIBRARY=ON")))
+       (list "-DUSE_SHARED_MBEDTLS_LIBRARY=ON"
+             "-DUSE_STATIC_MBEDTLS_LIBRARY=OFF")))
     (native-inputs
      `(("perl" ,perl)
        ("python" ,python)))
@@ -910,35 +918,46 @@ coding footprint.")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "https://github.com/lukas2511/dehydrated/releases/download/"
+                    "https://github.com/dehydrated-io/dehydrated/releases/download/"
                     "v" version "/dehydrated-" version ".tar.gz"))
               (sha256
                (base32
                 "0dgskgbdd95p13jx6s13p77y15wngb5cm6p4305cf2s54w0bvahh"))))
     (build-system trivial-build-system)
     (arguments
-     `(#:modules ((guix build utils))
+     `(#:modules ((guix build utils)
+                  (srfi srfi-26))
        #:builder
        (begin
-         (use-modules (guix build utils))
+         (use-modules (guix build utils)
+                      (srfi srfi-26))
          (let* ((source (assoc-ref %build-inputs "source"))
                 (tar (assoc-ref %build-inputs "tar"))
                 (gz  (assoc-ref %build-inputs "gzip"))
                 (out (assoc-ref %outputs "out"))
                 (bin (string-append out "/bin"))
-                (doc (string-append out "/share/doc/"))
+                (doc (string-append out "/share/doc/" ,name "-" ,version))
+                (man (string-append out "/share/man"))
                 (bash (in-vicinity (assoc-ref %build-inputs "bash") "bin")))
 
            (setenv "PATH" (string-append gz "/bin"))
            (invoke (string-append tar "/bin/tar") "xvf" source)
            (chdir (string-append ,name "-" ,version))
 
+           (copy-recursively "docs" doc)
+           (install-file "LICENSE" doc)
+
+           (mkdir-p man)
+           (rename-file (string-append doc "/man")
+                        (string-append man "/man1"))
+           (for-each (cut invoke "gzip" "-9" <>)
+                     (find-files man ".*"))
+
            (install-file "dehydrated" bin)
-           (install-file "LICENSE" (string-append doc ,name "-" ,version))
            (with-directory-excursion bin
              (patch-shebang "dehydrated" (list bash))
 
-             ;; Do not try to write in the store.
+             ;; Do not try to write to the store.
              (substitute* "dehydrated"
                (("SCRIPTDIR=\"\\$.*\"") "SCRIPTDIR=~/.dehydrated"))
 
@@ -977,8 +996,8 @@ relatively simple Bash script.")
     (license license:expat)))
 
 (define-public go-github-com-certifi-gocertifi
-  (let ((commit "d2eda712971317d7dd278bc2a52acda7e945f97e")
-        (revision "0"))
+  (let ((commit "a5e0173ced670013bfb649c7e806bc9529c986ec")
+        (revision "1"))
     (package
       (name "go-github-com-certifi-gocertifi")
       (version (git-version "2018.01.18" revision commit))
@@ -990,7 +1009,7 @@ relatively simple Bash script.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "0f3v26xps7gadw4qfmh1kxbpgp0cgqdd61a257xnnvnd7ll6k8dh"))))
+                  "1n9drccl3q1rr8wg3nf60slkf1lgsmz5ahifrglbdrc6har3rryj"))))
       (build-system go-build-system)
       (arguments
        '(#:import-path "github.com/certifi/gocertifi"))

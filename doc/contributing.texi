@@ -12,7 +12,7 @@ particularly welcome help on packaging (@pxref{Packaging Guidelines}).
 We want to provide a warm, friendly, and harassment-free environment, so
 that anyone can contribute to the best of their abilities.  To this end
 our project uses a ``Contributor Covenant'', which was adapted from
-@url{http://contributor-covenant.org/}.  You can find a local version in
+@url{https://contributor-covenant.org/}.  You can find a local version in
 the @file{CODE-OF-CONDUCT} file in the source tree.
 
 Contributors are not required to use their legal name in patches and
@@ -98,12 +98,12 @@ following are the required packages in addition to those mentioned in the
 installation instructions (@pxref{Requirements}).
 
 @itemize
-@item @url{http://gnu.org/software/autoconf/, GNU Autoconf};
-@item @url{http://gnu.org/software/automake/, GNU Automake};
-@item @url{http://gnu.org/software/gettext/, GNU Gettext};
-@item @url{http://gnu.org/software/texinfo/, GNU Texinfo};
-@item @url{http://www.graphviz.org/, Graphviz};
-@item @url{http://www.gnu.org/software/help2man/, GNU Help2man (optional)}.
+@item @url{https://gnu.org/software/autoconf/, GNU Autoconf};
+@item @url{https://gnu.org/software/automake/, GNU Automake};
+@item @url{https://gnu.org/software/gettext/, GNU Gettext};
+@item @url{https://gnu.org/software/texinfo/, GNU Texinfo};
+@item @url{https://www.graphviz.org/, Graphviz};
+@item @url{https://www.gnu.org/software/help2man/, GNU Help2man (optional)}.
 @end itemize
 
 On Guix, extra dependencies can be added by instead running @command{guix
@@ -217,8 +217,8 @@ you want to upgrade your local source tree.
 The Perfect Setup to hack on Guix is basically the perfect setup used
 for Guile hacking (@pxref{Using Guile in Emacs,,, guile, Guile Reference
 Manual}).  First, you need more than an editor, you need
-@url{http://www.gnu.org/software/emacs, Emacs}, empowered by the
-wonderful @url{http://nongnu.org/geiser/, Geiser}.  To set that up, run:
+@url{https://www.gnu.org/software/emacs, Emacs}, empowered by the
+wonderful @url{https://nongnu.org/geiser/, Geiser}.  To set that up, run:
 
 @example
 guix package -i emacs guile emacs-geiser
@@ -250,7 +250,7 @@ s-expression, etc.
 @cindex reducing boilerplate
 We also provide templates for common git commit messages and package
 definitions in the @file{etc/snippets} directory.  These templates can
-be used with @url{http://joaotavora.github.io/yasnippet/, YASnippet} to
+be used with @url{https://joaotavora.github.io/yasnippet/, YASnippet} to
 expand short trigger strings to interactive text snippets.  You may want
 to add the snippets directory to the @var{yas-snippet-dirs} variable in
 Emacs.
@@ -274,6 +274,33 @@ trigger string @code{origin...}, which can be expanded further.  The
 @code{origin} snippet in turn may insert other trigger strings ending on
 @code{...}, which also can be expanded further.
 
+@cindex insert or update copyright
+@cindex @code{M-x guix-copyright}
+@cindex @code{M-x copyright-update}
+Additionaly we provide insertion and automatic update of a copyright in
+@file{etc/copyright.el}.  You may want to set your full name, mail, and
+load a file.
+
+@lisp
+(setq user-full-name "Alice Doe")
+(setq user-mail-address "alice@@mail.org")
+;; @r{Assuming the Guix checkout is in ~/src/guix.}
+(load-file "~/src/guix/etc/copyright.el")
+@end lisp
+
+To insert a copyright at the current line invoke @code{M-x guix-copyright}.
+
+To update a copyright you need to specify a @code{copyright-names-regexp}.
+
+@lisp
+(setq copyright-names-regexp
+      (format "%s <%s>" user-full-name user-mail-address))
+@end lisp
+
+You can check if your copyright is up to date by evaluating @code{M-x
+copyright-update}.  If you want to do it automatically after each buffer
+save then add @code{(add-hook 'after-save-hook 'copyright-update)} in
+Emacs.
 
 @node Packaging Guidelines
 @section Packaging Guidelines
@@ -347,6 +374,7 @@ needed is to review and apply the patch.
 * Python Modules::              A touch of British comedy.
 * Perl Modules::                Little pearls.
 * Java Packages::               Coffee break.
+* Rust Crates::                 Beware of oxidation.
 * Fonts::                       Fond of fonts.
 @end menu
 
@@ -357,14 +385,14 @@ needed is to review and apply the patch.
 @cindex free software
 The GNU operating system has been developed so that users can have
 freedom in their computing.  GNU is @dfn{free software}, meaning that
-users have the @url{http://www.gnu.org/philosophy/free-sw.html,four
+users have the @url{https://www.gnu.org/philosophy/free-sw.html,four
 essential freedoms}: to run the program, to study and change the program
 in source code form, to redistribute exact copies, and to distribute
 modified versions.  Packages found in the GNU distribution provide only
 software that conveys these four freedoms.
 
 In addition, the GNU distribution follow the
-@url{http://www.gnu.org/distros/free-system-distribution-guidelines.html,free
+@url{https://www.gnu.org/distros/free-system-distribution-guidelines.html,free
 software distribution guidelines}.  Among other things, these guidelines
 reject non-free firmware, recommendations of non-free software, and
 discuss ways to deal with trademarks and patents.
@@ -543,7 +571,7 @@ such as @command{guix package --show} take care of rendering it
 appropriately.
 
 Synopses and descriptions are translated by volunteers
-@uref{http://translationproject.org/domain/guix-packages.html, at the
+@uref{https://translationproject.org/domain/guix-packages.html, at the
 Translation Project} so that as many users as possible can read them in
 their native language.  User interfaces search them and display them in
 the language specified by the current locale.
@@ -584,11 +612,12 @@ To avoid confusion and naming clashes with other programming languages, it
 seems desirable that the name of a package for a Python module contains
 the word @code{python}.
 
-Some modules are compatible with only one version of Python, others with both.
-If the package Foo compiles only with Python 3, we name it
-@code{python-foo}; if it compiles only with Python 2, we name it
-@code{python2-foo}. If it is compatible with both versions, we create two
-packages with the corresponding names.
+Some modules are compatible with only one version of Python, others with
+both.  If the package Foo is compiled with Python 3, we name it
+@code{python-foo}.  If it is compiled with Python 2, we name it
+@code{python2-foo}.  Packages should be added when they are necessary;
+we don't add Python 2 variants of the package unless we are going to use
+them.
 
 If a project already contains the word @code{python}, we drop this;
 for instance, the module python-dateutil is packaged under the names
@@ -685,6 +714,40 @@ dashes and prepend the prefix @code{java-}.  So the class
 @code{java-apache-commons-cli}.
 
 
+@node Rust Crates
+@subsection Rust Crates
+
+@cindex rust
+Rust programs standing for themselves are named as any other package, using the
+lowercase upstream name.
+
+To prevent namespace collisions we prefix all other Rust packages with the
+@code{rust-} prefix.  The name should be changed to lowercase as appropriate and
+dashes should remain in place.
+
+In the rust ecosystem it is common for multiple incompatible versions of a
+package to be used at any given time, so all packages should have a versioned
+suffix.  If a package has passed version 1.0.0 then just the major version
+number is sufficient (e.g.@: @code{rust-clap-2}), otherwise the version suffix
+should contain both the major and minor version (e.g.@: @code{rust-rand-0.6}).
+
+Because of the difficulty in reusing rust packages as pre-compiled inputs for
+other packages the Cargo build system (@pxref{Build Systems,
+@code{cargo-build-system}}) presents the @code{#:cargo-inputs} and
+@code{cargo-development-inputs} keywords as build system arguments.  It would be
+helpful to think of these as similar to @code{propagated-inputs} and
+@code{native-inputs}.  Rust @code{dependencies} and @code{build-dependencies}
+should go in @code{#:cargo-inputs}, and @code{dev-dependencies} should go in
+@code{#:cargo-development-inputs}.  If a Rust package links to other libraries
+then the standard placement in @code{inputs} and the like should be used.
+
+Care should be taken to ensure the correct version of dependencies are used; to
+this end we try to refrain from skipping the tests or using @code{#:skip-build?}
+when possible.  Of course this is not always possible, as the package may be
+developed for a different Operating System, depend on features from the Nightly
+Rust compiler, or the test suite may have atrophied since it was released.
+
+
 @node Fonts
 @subsection Fonts
 
@@ -776,7 +839,7 @@ especially when matching lists.
 @cindex coding style
 When writing Scheme code, we follow common wisdom among Scheme
 programmers.  In general, we follow the
-@url{http://mumble.net/~campbell/scheme/style.txt, Riastradh's Lisp
+@url{https://mumble.net/~campbell/scheme/style.txt, Riastradh's Lisp
 Style Rules}.  This document happens to describe the conventions mostly
 used in Guile’s code too.  It is very thoughtful and well written, so
 please do read it.

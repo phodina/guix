@@ -6,6 +6,7 @@
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -24,6 +25,7 @@
 
 (define-module (gnu packages kde-frameworks)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system qt)
   #:use-module (guix download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
@@ -702,7 +704,7 @@ infrastructure.")
               (sha256
                (base32
                 "0k22kargqxf0j09wzk1x90b526npj8a0210ilk0n1k6spc8xa6mr"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     ;; TODO: Build packages for the Python bindings.  Ideally this will be
     ;; done for all versions of python guix supports.  Requires python,
     ;; python-sip, clang-python, libclang.  Requires python-2 in all cases for
@@ -713,14 +715,6 @@ infrastructure.")
     (inputs
      `(("qtbase" ,qtbase)
        ("qtx11extras" ,qtx11extras)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Utilities for graphical user interfaces")
     (description "The KDE GUI addons provide utilities for graphical user
@@ -885,20 +879,12 @@ of applications that follow the Kirigami Human Interface Guidelines.")
               (sha256
                (base32
                 "10bhg0db9gdg2hlc02ngg1i2q7a99862d5973hxqzf620d28p5rd"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)))
     (inputs
      `(("qtbase" ,qtbase)
        ("qtdeclarative" ,qtdeclarative)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Set of item models extending the Qt model-view framework")
     (description "KItemModels provides the following models:
@@ -944,21 +930,12 @@ model to observers
               (sha256
                (base32
                 "15h0w16wgj94kxz4vgjb34i3pyx5w1f2npj86j4d2sa0mxxpmqyz"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("qttools" ,qttools)))
     (inputs
      `(("qtbase" ,qtbase)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             (setenv "DBUS_FATAL_WARNINGS" "0")
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Set of item views extending the Qt model-view framework")
     (description "KItemViews includes a set of views, which can be used with
@@ -979,20 +956,12 @@ to flat and hierarchical lists.")
               (sha256
                (base32
                 "11kpq34j37c1gsvj5nxhkc31bw8gw2n7nkqsfx87jw9f4v2vhmr9"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
-     `(("extra-cmake-modules" ,extra-cmake-modules)))
-    (inputs
-     `(("qtbase" ,qtbase)
+     `(("extra-cmake-modules" ,extra-cmake-modules)
        ("qttools" ,qttools)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _ ; kplotting
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
+    (inputs
+     `(("qtbase" ,qtbase)))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Data plotting library")
     (description "KPlotWidget is a QWidget-derived class that provides a virtual
@@ -1104,7 +1073,7 @@ represented by a QPoint or a QSize.")
               (sha256
                (base32
                 "1nzgv3v3kyq5jm2b9xri6qjawspr9ycxhskfvj8kkgr46dr35qyc"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("qttools" ,qttools)
@@ -1114,12 +1083,6 @@ represented by a QPoint or a QSize.")
     (arguments
      `(#:phases
        (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             (setenv "DBUS_FATAL_WARNINGS" "0")
-             #t))
          (add-before 'check 'start-xorg-server
            (lambda* (#:key inputs #:allow-other-keys)
              ;; The test suite requires a running X server.
@@ -1414,15 +1377,7 @@ system.")
               (sha256
                (base32
                 "0gqxmyxmwn2rs9f8x2z8pfmbx0mvkyh7nalnsmfqkph8f0fja9ig"))))
-    (build-system cmake-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("pkg-config" ,pkg-config)
@@ -1573,7 +1528,7 @@ utilities.")
               (sha256
                (base32
                 "10ggypg09acc19gkvxsigfsaq8s5vqv64ada307blpzy8j74bisb"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("qttools" ,qttools)))
@@ -1581,14 +1536,6 @@ utilities.")
      `(("kconfig" ,kconfig)
        ("kwidgetsaddons" ,kwidgetsaddons)
        ("qtbase" ,qtbase)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Powerful autocompletion framework and widgets")
     (description "This framework helps implement autocompletion in Qt-based
@@ -1653,7 +1600,7 @@ localized country name to ISO 3166-1 alpha 2 code mapping and vice verca.
               (sha256
                (base32
                 "1xl3bzxfchfafcplil3g07gq1a3fnwx1i40bxp4jfsgb8d8slfwc"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)))
     (inputs
@@ -1661,14 +1608,6 @@ localized country name to ISO 3166-1 alpha 2 code mapping and vice verca.
        ("kwindowsystem" ,kwindowsystem)
        ("qtbase" ,qtbase)
        ("qtx11extras" ,qtx11extras)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Graceful handling of application crashes")
     (description "KCrash provides support for intercepting and handling
@@ -2291,7 +2230,7 @@ KCModules can be created with the KConfigWidgets framework.")
               (sha256
                (base32
                 "098xdfvnyz9bdkc6iyq5r2s4vkfdhbrri4015yzbs73j4f2wcxz5"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (propagated-inputs
      `(("kauth" ,kauth)
        ("kcodecs" ,kcodecs)
@@ -2316,11 +2255,6 @@ KCModules can be created with the KConfigWidgets framework.")
                ;; make QDirIterator follow symlinks
                (("^\\s*(QDirIterator it\\(.*, QDirIterator::Subdirectories)(\\);)" _ a b)
                 (string-append a " | QDirIterator::FollowSymlinks" b)))
-             #t))
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
              #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Widgets for configuration dialogs")
@@ -2439,7 +2373,7 @@ started on demand.")
               (sha256
                (base32
                 "1w7glszd82iyw6kxzmp0568rm3qfadi7vw7gfxg4c15w5ikkvxn9"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("qttools" ,qttools)))
@@ -2461,14 +2395,6 @@ started on demand.")
        ("kxmlgui" ,kxmlgui)
        ("qtwebkit" ,qtwebkit)
        ("sonnet" ,sonnet)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Integrating KDE frameworks widgets with Qt Designer")
     (description "This framework provides plugins for Qt Designer that allow it
@@ -2523,7 +2449,8 @@ with su and ssh respectively.")
                 "1s3bmn1ck7xvc7a6gv7ywv9161hdahiiw20aq88s4qkm2s5wyy6v"))))
     (build-system cmake-build-system)
     (native-inputs
-     `(("extra-cmake-modules" ,extra-cmake-modules)))
+     `(("extra-cmake-modules" ,extra-cmake-modules)
+       ("qttools" ,qttools)))
     (inputs
      `(("kconfig" ,kconfig)
        ("kcoreaddons" ,kcoreaddons)
@@ -2533,7 +2460,6 @@ with su and ssh respectively.")
        ("kservice" ,kservice)
        ("kwallet" ,kwallet)
        ("qtbase" ,qtbase)
-       ("qttools" ,qttools)
        ("qtwebkit" ,qtwebkit)))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "KDE Integration for QtWebKit")
@@ -2594,7 +2520,7 @@ emoticons coming from different providers.")
               (sha256
                (base32
                 "1xpfvwnrj81mk3di02n37b469gxzmnk89icmcz6wwyk54m86fw76"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("pkg-config" ,pkg-config)
@@ -2610,14 +2536,6 @@ emoticons coming from different providers.")
        ("qtbase" ,qtbase)
        ("qtx11extras" ,qtx11extras)
        ("xcb-util-keysyms" ,xcb-util-keysyms)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Global desktop keyboard shortcuts")
     (description "KGlobalAccel allows you to have global accelerators that are
@@ -2641,6 +2559,7 @@ window does not need focus for them to be activated.")
     (build-system cmake-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
+       ("qttools" ,qttools)
        ("shared-mime-info" ,shared-mime-info)))
     (inputs
      `(("karchive" ,karchive)
@@ -2653,8 +2572,7 @@ window does not need focus for them to be activated.")
        ("kitemviews" ,kitemviews)
        ("kwidgetsaddons" ,kwidgetsaddons)
        ("qtbase" ,qtbase)
-       ("qtsvg" ,qtsvg)
-       ("qttools" ,qttools)))
+       ("qtsvg" ,qtsvg)))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -2769,6 +2687,7 @@ consumption.")
        ("solid" ,solid)))
     (native-inputs
      `(("dbus" ,dbus)
+       ("qttools" ,qttools)
        ("extra-cmake-modules" ,extra-cmake-modules)))
     (inputs
      `(;; TODO:  LibACL , <ftp://oss.sgi.com/projects/xfs/cmd_tars>
@@ -2791,7 +2710,6 @@ consumption.")
        ("libxslt" ,libxslt)
        ("qtbase" ,qtbase)
        ("qtscript" ,qtscript)
-       ("qttools" ,qttools)
        ("qtx11extras" ,qtx11extras)
        ("sonnet" ,sonnet)))
     (arguments
@@ -2947,7 +2865,7 @@ notifications which can be embedded in your application.")
               (sha256
                (base32
                 "0md0349r4mdm2r04p5s3pgm17v4w40r3kz58lzp6qfcw25b969nw"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (propagated-inputs
      `(("kio" ,kio)
        ("ktextwidgets" ,ktextwidgets)
@@ -2972,14 +2890,6 @@ notifications which can be embedded in your application.")
        ("qtbase" ,qtbase)
        ("solid" ,solid)
        ("sonnet" ,sonnet)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Plugin framework for user interface components")
     (description "This library implements the framework for KDE parts, which are
@@ -2999,7 +2909,7 @@ widgets with a user-interface defined in terms of actions.")
               (sha256
                (base32
                 "1q2hh2i8hd638p907g0srdxmxm9h2ay91dmhslqzcgwnlhln4gfl"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)))
     (inputs
@@ -3012,14 +2922,7 @@ widgets with a user-interface defined in terms of actions.")
        ("qtbase" ,qtbase)
        ("qtdeclarative" ,qtdeclarative)))
     (arguments
-     `(#:tests? #f ; FIXME: 1/3 tests fail.
-       #:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
+     `(#:tests? #f)) ; FIXME: 1/3 tests fail.
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Provides access to all contacts and aggregates them by person")
     (description "KPeople offers unified access to our contacts from different
@@ -3252,7 +3155,7 @@ library.")
               (sha256
                (base32
                 "1qb1mad5bg19xwykzpwk2b3s505ka4jkg0fsi56ri57wq8gv4qha"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (propagated-inputs
      `(("ki18n" ,ki18n)
        ("sonnet" ,sonnet)))
@@ -3272,14 +3175,6 @@ library.")
        ("kwindowsystem" ,kwindowsystem)
        ("qtbase" ,qtbase)
        ("qtspeech" ,qtspeech)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Text editing widgets")
     (description "KTextWidgets provides widgets for displaying and editing text.
@@ -3347,7 +3242,8 @@ the passwords on KDE work spaces.")
      `(("kconfig" ,kconfig)
        ("kconfigwidgets" ,kconfigwidgets)))
     (native-inputs
-     `(("extra-cmake-modules" ,extra-cmake-modules)))
+     `(("extra-cmake-modules" ,extra-cmake-modules)
+       ("qttools" ,qttools)))
     (inputs
      `(("attica" ,attica)
        ("kauth" ,kauth)
@@ -3361,7 +3257,6 @@ the passwords on KDE work spaces.")
        ("kwidgetsaddons" ,kwidgetsaddons)
        ("kwindowsystem" ,kwindowsystem)
        ("qtbase" ,qtbase)
-       ("qttools" ,qttools)
        ("sonnet" ,sonnet)))
     (arguments
      `(#:tests? #f ; FIXME: 1/5 tests fail.
@@ -3747,7 +3642,7 @@ http://community.kde.org/Frameworks/Porting_Notes should help with this.")
              name "-" version ".tar.xz"))
        (sha256
         (base32 "15f77r6dxkkvi2vxvxlwa7qz3whmz229g79bgadiwffmzxja0ywd"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("perl" ,perl)))
@@ -3775,14 +3670,6 @@ http://community.kde.org/Frameworks/Porting_Notes should help with this.")
        ("qtbase" ,qtbase)
        ("qtx11extras" ,qtx11extras)
        ("sonnet" ,sonnet)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; Make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "KDE Frameworks 5 HTML widget and component")
     (description "KHTML is a web rendering engine, based on the KParts
@@ -3868,7 +3755,7 @@ QObjects, so you can script your applications.")
              name "-" version ".tar.xz"))
        (sha256
         (base32 "19v53h3lkys3ryrjacrdng9ak91g03b9s986xhnw1r84zy242kdm"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("kdoctools" ,kdoctools)
@@ -3883,14 +3770,6 @@ QObjects, so you can script your applications.")
        ("kwidgetsaddons" ,kwidgetsaddons)
        ("kxmlgui" ,kxmlgui)
        ("qtbase" ,qtbase)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'check-setup
-           (lambda _
-             ;; Make Qt render "offscreen", required for tests
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "KDE Frameworks 5 plugin interface for media player features")
     (description "KMediaPlayer builds on the KParts framework to provide a

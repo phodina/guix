@@ -6,7 +6,7 @@
 ;;; Copyright © 2016 Jessica Tallon <tsyesika@tsyesika.se>
 ;;; Copyright © 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2016 Lukas Gradl <lgradl@openmailbox.org>
-;;; Copyright © 2016, 2019 Alex Griffin <a@ajgrf.com>
+;;; Copyright © 2016, 2019, 2020 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017, 2018 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
@@ -24,6 +24,8 @@
 ;;; Copyright © 2018, 2019 Tim Gesthuizen <tim.gesthuizen@yahoo.de>
 ;;; Copyright © 2019 Jens Mølgaard <jens@zete.tk>
 ;;; Copyright © 2019 Tanguy Le Carrour <tanguy@bioneland.org>
+;;; Copyright © 2020 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -44,6 +46,7 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system trivial)
   #:use-module (guix download)
   #:use-module (guix git-download)
@@ -56,12 +59,14 @@
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages crypto)
+  #:use-module (gnu packages cryptsetup)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages file)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnupg)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages kerberos)
@@ -114,7 +119,7 @@ human.")
 (define-public keepassxc
   (package
     (name "keepassxc")
-    (version "2.5.2")
+    (version "2.5.3")
     (source
      (origin
        (method url-fetch)
@@ -122,7 +127,7 @@ human.")
                            "/releases/download/" version "/keepassxc-"
                            version "-src.tar.xz"))
        (sha256
-        (base32 "0lvwc3nxyz7d7vymb6cmgwxylb9g6gsjnq247vbh4lk1ifjir58j"))))
+        (base32 "1sx647mp1xikig50p9bb6vxv18ymdfj3wkxj6qfdr1zfcv7gn005"))))
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags '("-DWITH_XC_ALL=YES"
@@ -316,7 +321,7 @@ dependencies, it is suited for installing on desktop and server systems alike.
 The text based user interface allows you to run YAPET easily in a Secure Shell
 session.  Two companion utilities enable users to convert CSV files to YAPET
 and vice versa.")
-    (home-page "http://www.guengel.ch/myapps/yapet/")
+    (home-page "https://yapet.guengel.ch/")
     (license license:gpl3+)))
 
 (define-public cracklib
@@ -495,17 +500,11 @@ any X11 window.")
                                 "sed" "tree" "which" "xclip"))))
                (wrap-program (string-append out "/bin/pass")
                  `("PATH" ":" prefix (,(string-join path ":"))))
-               #t)))
-         (add-after 'wrap-path 'install-shell-completions
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let* ((out      (assoc-ref outputs "out"))
-                    (bashcomp (string-append out "/etc/bash_completion.d")))
-               ;; TODO: install fish and zsh completions.
-               (mkdir-p bashcomp)
-               (copy-file "src/completion/pass.bash-completion"
-                          (string-append bashcomp "/pass"))
                #t))))
-       #:make-flags (list "CC=gcc" (string-append "PREFIX=" %output))
+       #:make-flags (list "CC=gcc" (string-append "PREFIX=" %output)
+                          "WITH_ALLCOMP=yes"
+                          (string-append "BASHCOMPDIR="
+                                         %output "/etc/bash_completion.d"))
        ;; Parallel tests may cause a race condition leading to a
        ;; timeout in some circumstances.
        #:parallel-tests? #f
@@ -699,6 +698,82 @@ using password-store through rofi interface:
 @item bookmarks mode (open stored URLs in browser, default: Alt+x).
 @end enumerate")
     (license license:gpl3)))
+
+(define-public browserpass-native
+  (package
+    (name "browserpass-native")
+    (version "3.0.6")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/browserpass/browserpass-native.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0q3bsla07zjl6i69nj1axbkg2ia89pvh0jg6nlqgbm2kpzzbn0pz"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/browserpass/browserpass-native"
+       #:install-source? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'patch-makefile
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               ;; This doesn't go in #:make-flags because the Makefile itself
+               ;; gets installed.
+               (substitute*
+                   "src/github.com/browserpass/browserpass-native/Makefile"
+                 (("PREFIX \\?= /usr")
+                  (string-append "PREFIX ?= " out)))
+               #t)))
+         (add-before 'build 'configure
+           (lambda _
+               (with-directory-excursion
+                   "src/github.com/browserpass/browserpass-native"
+                 (invoke "make" "configure"))
+             #t))
+         (replace 'build
+           (lambda _
+               (with-directory-excursion
+                   "src/github.com/browserpass/browserpass-native"
+                 (invoke "make"))
+             #t))
+         (replace 'install
+           (lambda _
+             (with-directory-excursion
+                 "src/github.com/browserpass/browserpass-native"
+               (invoke "make" "install"))
+             #t))
+         (add-after 'install 'wrap-executable
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out"))
+                   (gnupg (assoc-ref inputs "gnupg")))
+               (wrap-program (string-append out "/bin/browserpass")
+                 `("PATH" ":" prefix
+                   (,(string-append gnupg "/bin"))))
+               #t))))))
+    (native-inputs
+     `(("which" ,which)))
+    (inputs
+     `(("gnupg" ,gnupg)
+       ("go-github-com-mattn-go-zglob" ,go-github-com-mattn-go-zglob)
+       ("go-github-com-rifflock-lfshook" ,go-github-com-rifflock-lfshook)
+       ("go-github-com-sirupsen-logrus" ,go-github-com-sirupsen-logrus)
+       ("go-golang-org-x-sys" ,go-golang-org-x-sys)))
+    (home-page "https://github.com/browserpass/browserpass-native")
+    (synopsis "Browserpass native messaging host")
+    (description "Browserpass is a browser extension for pass, a
+UNIX-based password store manager.  It allows you to auto-fill or copy to
+clipboard credentials for the current domain, protecting you from phishing
+attacks.
+
+This package only contains the Browserpass native messaging host.  You must
+also install the browser extension for GNU IceCat or ungoogled-chromium
+separately.")
+    (license license:isc)))
 
 (define-public argon2
   (package
@@ -1066,3 +1141,30 @@ binaries.  All of these utils are designed to execute only one specific
 function.  Since they all work with @code{STDIN} and @code{STDOUT} you can
 group them into chains.")
     (license license:expat)))
+
+(define-public bruteforce-luks
+  (package
+    (name "bruteforce-luks")
+    (version "1.4.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/glv2/bruteforce-luks/releases/download/"
+                           version
+                           "/bruteforce-luks-"
+                           version
+                           ".tar.lz"))
+       (sha256
+        (base32 "0yawrlbbklhmvwr99wm7li3r0d5kxvpkwf33a12rji7z0ya5p340"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("lzip" ,lzip)))
+    (inputs
+     `(("cryptsetup" ,cryptsetup)))
+    (synopsis "LUKS encrypted volume cracker")
+    (description
+     "This is a cracker for LUKS encrypted volumes.  It can be used either in
+exhaustive mode to try every password given a charset or in dictionary mode to
+try every password contained in a file.")
+    (home-page "https://github.com/glv2/bruteforce-luks")
+    (license license:gpl3+)))

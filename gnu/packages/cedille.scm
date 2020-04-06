@@ -30,7 +30,7 @@
 (define-public cedille
   (package
     (name "cedille")
-    (version "1.1.1")
+    (version "1.1.2")
     (source
      (origin
        (method git-fetch)
@@ -40,7 +40,7 @@
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "07kv9wncyipfjf5w4ax8h2p35g70zb1qw6zc4afd7c225xia55wp"))))
+         "1h5s6ayh3s76z184jai3jidcs4cjk8s4nvkkv2am8dg4gfsybq22"))))
     (inputs
      `(("agda" ,agda)
        ("agda-ial" ,agda-ial)
@@ -51,22 +51,24 @@
     (arguments
      `(#:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'patch-cedille-path-el
+         (add-after 'unpack 'patch-cedille-paths
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (substitute* "cedille-mode.el"
                  (("/usr/share/emacs/site-lisp/cedille-mode")
                   (string-append
-                   out "/share/emacs/site-lisp/guix.d/cedille-"
-                   ,version)))
+                   out "/share/emacs/site-lisp/cedille")))
+               (substitute* "cedille-mode/cedille-mode-info.el"
+                 (("\\(concat cedille-path-el \"cedille-info-main.info\"\\)")
+                  (string-append
+                   "\"" out "/share/info/cedille-info-main.info.gz\"")))
                #t)))
-         (add-after 'unpack 'copy-cedille-mode
+         (add-after 'patch-cedille-paths 'copy-cedille-mode
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
                     (lisp
                      (string-append
-                      out "/share/emacs/site-lisp/guix.d/cedille-"
-                      ,version "/")))
+                      out "/share/emacs/site-lisp/cedille/")))
                (mkdir-p (string-append lisp "cedille-mode"))
                (copy-recursively
                 "cedille-mode"
@@ -109,6 +111,8 @@
                (install-file "cedille" (string-append out "/bin"))
                (install-file "core/cedille-core"
                              (string-append out "/bin"))
+               (install-file "docs/info/cedille-info-main.info"
+                             (string-append out "/share/info"))
                #t))))))
     (home-page "https://cedille.github.io/")
     (synopsis

@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2016 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2018 Sou Bunnbu <iyzsong@member.fsf.org>
-;;; Copyright © 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Gábor Boskovits <boskovits@gmail.com>
 ;;; Copyright © 2018, 2019 Oleg Pykhalov <go.wigust@gmail.com>
@@ -152,7 +152,7 @@ etc. via a Web interface.  Features include:
 (define-public zabbix-agentd
   (package
     (name "zabbix-agentd")
-    (version "4.4.1")
+    (version "4.4.6")
     (source
      (origin
        (method url-fetch)
@@ -161,7 +161,7 @@ etc. via a Web interface.  Features include:
              "/zabbix-" version ".tar.gz"))
        (sha256
         (base32
-         "0jjn2przn9s25slrcxmq8iqdgqkgxnqs45zy0n1ma6nlgmclxxqb"))))
+         "03mf4sklnw1x0ixp41vnibkz0794yi9jhws7ixld8jj2czk2ifr2"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -401,28 +401,26 @@ WSGI and the node exporter textfile collector.")
   (package-with-python2 python-prometheus-client))
 
 (define-public go-github-com-prometheus-node-exporter
-  (let ((commit "55c32fcf02492fe4946f7ab563547cc5df7fc61e")
-        (revision "0"))
-    (package
-      (name "go-github-com-prometheus-node-exporter")
-      (version (git-version "0.0.0" revision commit))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://github.com/prometheus/node_exporter.git")
-                      (commit commit)))
-                (file-name (git-file-name name version))
-                (sha256
-                 (base32
-                  "041b87a0sid23c29swqmi5hw6cxbxvkfj3415jg73cm2pi8wh5s6"))))
-      (build-system go-build-system)
-      (arguments
-       '(#:import-path "github.com/prometheus/node_exporter"))
-      (synopsis "Prometheus exporter for hardware and OS metrics")
-      (description "Prometheus exporter for metrics exposed by *NIX kernels,
+  (package
+    (name "go-github-com-prometheus-node-exporter")
+    (version "0.18.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/prometheus/node_exporter.git")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0s3sp1gj86p7npxl38hkgs6ymd3wjjmc5hydyg1b5wh0x3yvpx07"))))
+    (build-system go-build-system)
+    (arguments
+     '(#:import-path "github.com/prometheus/node_exporter"))
+    (synopsis "Prometheus exporter for hardware and OS metrics")
+    (description "Prometheus exporter for metrics exposed by *NIX kernels,
 written in Go with pluggable metric collectors.")
-      (home-page "https://github.com/prometheus/node_exporter")
-      (license license:asl2.0))))
+    (home-page "https://github.com/prometheus/node_exporter")
+    (license license:asl2.0)))
 
 (define-public fswatch
   (package

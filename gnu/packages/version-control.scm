@@ -1,21 +1,21 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2013 Cyril Roelandt <tipecaml@gmail.com>
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2014 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015, 2016 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2014, 2015, 2016 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2016, 2019 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2015, 2018 Kyle Meyer <kyle@kyleam.com>
-;;; Copyright © 2015, 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2017, 2018, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017, 2018 ng0 <ng0@n0.is>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Vasile Dumitrascu <va511e@yahoo.com>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 André <eu@euandre.org>
-;;; Copyright © 2017, 2018 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017, 2018, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2017 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018 Sou Bunnbu <iyzsong@member.fsf.org>
@@ -26,6 +26,8 @@
 ;;; Copyright © 2019 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2020 Roel Janssen <roel@gnu.org>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 John D. Boy <jboy@bius.moe>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -146,16 +148,14 @@ as well as the classic centralized workflow.")
 (define-public git
   (package
    (name "git")
-   ;; XXX When updating Git, check if the special 'git-source' input to cgit
-   ;; needs to be updated as well.
-   (version "2.25.0")
+   (version "2.26.0")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://kernel.org/software/scm/git/git-"
                                 version ".tar.xz"))
             (sha256
              (base32
-              "1l58v42aazj0x9276gk8r9mwyl9pgp9w99aakz4xfhzv7wd2jq60"))))
+              "1mlmwibfgcv42c28fxmbd3iim8fc06r17dljd8vdgq550z5hvkly"))))
    (build-system gnu-build-system)
    (native-inputs
     `(("native-perl" ,perl)
@@ -168,9 +168,9 @@ as well as the classic centralized workflow.")
                 version ".tar.xz"))
           (sha256
            (base32
-            "1gf8b1k6i4dlwskwq7dd2vz9bzc3m1qnknj9daq2vp39vmxpg5nk"))))
+            "09ilv5gg7167mwc0qqw2fz3lmdm360crnxc0xzkqn53wnsh4cziq"))))
       ;; For subtree documentation.
-      ("asciidoc" ,asciidoc)
+      ("asciidoc" ,asciidoc-py3)
       ("docbook-xsl" ,docbook-xsl)
       ("xmlto" ,xmlto)))
    (inputs
@@ -178,7 +178,7 @@ as well as the classic centralized workflow.")
       ("expat" ,expat)
       ("openssl" ,openssl)
       ("perl" ,perl)
-      ("python" ,python-2) ; CAVEAT: incompatible with python-3 according to INSTALL
+      ("python" ,python) ; for git-p4
       ("zlib" ,zlib)
 
       ;; Note: we keep this in inputs rather than native-inputs to work around
@@ -233,9 +233,6 @@ as well as the classic centralized workflow.")
 
       #:test-target "test"
 
-      ;; Tests fail randomly when parallel: <https://bugs.gnu.org/29512>.
-      #:parallel-tests? #f
-
       ;; The explicit --with-tcltk forces the build system to hardcode the
       ;; absolute file name to 'wish'.
       #:configure-flags (list (string-append "--with-tcltk="
@@ -261,7 +258,7 @@ as well as the classic centralized workflow.")
           (lambda _
             (substitute* "Makefile"
               (("/usr/bin/perl") (which "perl"))
-              (("/usr/bin/python") (which "python")))
+              (("/usr/bin/python") (which "python3")))
             #t))
         (add-after 'configure 'add-PM.stamp
           (lambda _
@@ -339,8 +336,10 @@ as well as the classic centralized workflow.")
         (add-after 'install 'install-credential-netrc
           (lambda* (#:key outputs #:allow-other-keys)
             (let* ((netrc (assoc-ref outputs "credential-netrc")))
-              (install-file "contrib/credential/netrc/git-credential-netrc"
+              (install-file "contrib/credential/netrc/git-credential-netrc.perl"
                             (string-append netrc "/bin"))
+              (rename-file (string-append netrc "/bin/git-credential-netrc.perl")
+                           (string-append netrc "/bin/git-credential-netrc"))
               ;; Previously, Git.pm was automatically found by netrc.
               ;; Perl 5.26 changed how it locates modules so that @INC no
               ;; longer includes the current working directory (the Perl
@@ -530,10 +529,79 @@ everything from small to very large projects with speed and efficiency.")
        ("zlib" ,zlib)
        ("bash-for-tests" ,bash)))))
 
+(define-public gitless
+  (package
+    (name "gitless")
+    (version "0.8.8")
+    (source
+     (origin
+       ;; The PyPI package lacks a test suite.  Build directly from git.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/gitless-vcs/gitless")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "048kl27zjr68hgs70g3l98ci9765wxva6azzrhcdys7nsdd493n6"))
+       (file-name (git-file-name name version))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'loosen-requirements
+           (lambda _
+             (substitute* "setup.py"
+               ;; Using Guix's python-pygit2 1.1.0 appears to work fine…
+               (("pygit2==") "pygit2>="))
+             #t))
+         (add-before 'check 'prepare-for-tests
+           (lambda _
+             ;; Find the 'gl' command.
+             (rename-file "gl.py" "gl")
+             (setenv "PATH" (string-append (getcwd) ":" (getenv "PATH")))
+
+             ;; The tests try to run git as if it were already set up.
+             (setenv "HOME" (getcwd))
+             (invoke "git" "config" "--global" "user.email" "git@example.com")
+             (invoke "git" "config" "--global" "user.name" "Guix")))
+         (replace 'wrap
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out"))
+                   (git (assoc-ref inputs "git")))
+               (wrap-program (string-append out "/bin/gl")
+                 `("PATH" ":" prefix (,(string-append git "/bin")))
+                 `("PYTHONPATH" ":" =
+                   (,(string-append out "/lib/python"
+                                    ,(version-major+minor
+                                      (package-version python))
+                                    "/site-packages:")
+                    ,(getenv "PYTHONPATH"))))
+               #t))))))
+    (native-inputs
+     `(("git-for-tests" ,git-minimal)))
+    (inputs
+     `(("git" ,git-minimal)
+       ("python-clint" ,python-clint)
+       ("python-pygit2" ,python-pygit2)
+       ("python-sh" ,python-sh)))
+    (home-page "https://gitless.com")
+    (synopsis "Simple version control system built on top of Git")
+    (description
+     "Gitless is a Git-compatible version control system that aims to be easy to
+learn and use.  It simplifies the common workflow by committing changes to
+tracked files by default and saving any uncommitted changes as part of a branch.
+
+The friendly @command{gl} command-line interface gives feedback and helps you
+figure out what to do next.
+
+Gitless is implemented on top of Git and its commits and repositories are
+indistinguishable from Git's.  You (or other contributors) can always fall back
+on @command{git}, and use any regular Git hosting service.")
+    (license license:expat)))
+
 (define-public libgit2
   (package
     (name "libgit2")
-    (version "0.28.4")
+    (version "0.99.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -542,21 +610,37 @@ everything from small to very large projects with speed and efficiency.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "171b25aym4q88bidc4c76y4l6jmdwifm3q9zjqsll0wjhlkycfy1"))
-              (patches (search-patches "libgit2-avoid-python.patch"
-                                       "libgit2-mtime-0.patch"))
+                "0qxzv49ip378g1n7hrbifb9c6pys2kj1hnxcafmbb94gj3pgd9kg"))
+              (patches (search-patches "libgit2-mtime-0.patch"))
 
-              ;; Remove bundled software.
+              ;; Remove bundled software.  Keep "http-parser" because it
+              ;; contains patches that are not available in the system version.
               (snippet '(begin
-                          (delete-file-recursively "deps")
+                          (with-directory-excursion "deps"
+                            (for-each (lambda (dir)
+                                        (delete-file-recursively dir))
+                                      (lset-difference equal?
+                                                       (scandir ".")
+                                                       '("." ".." "http-parser"))))
                           #t))
-              (modules '((guix build utils)))))
+              (modules '((guix build utils)
+                         (srfi srfi-1)
+                         (ice-9 ftw)))))
     (build-system cmake-build-system)
     (outputs '("out" "debug"))
     (arguments
-     `(#:configure-flags '("-DUSE_SHA1DC=ON") ; SHA-1 collision detection
+     `(#:configure-flags '("-DUSE_NTLMCLIENT=OFF" ;TODO: package this
+                           "-DREGEX_BACKEND=pcre2")
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'fix-pcre2-reference
+           (lambda _
+             ;; Use PCRE2 with 8-bit character support, as there is no "libpcre2.pc".
+             ;; See <https://github.com/libgit2/libgit2/issues/5438>.
+             (substitute* "src/CMakeLists.txt"
+               (("\"libpcre2\"")
+                "\"libpcre2-8\""))
+             #t))
          (add-after 'unpack 'fix-hardcoded-paths
            (lambda _
              (substitute* "tests/repo/init.c"
@@ -573,14 +657,14 @@ everything from small to very large projects with speed and efficiency.")
          (replace 'check
            (lambda _ (invoke "./libgit2_clar" "-v" "-Q"))))))
     (inputs
-     `(("libssh2" ,libssh2)
-       ("http-parser" ,http-parser)))
+     `(("libssh2" ,libssh2)))
     (native-inputs
-     `(("guile" ,guile-2.2)
-       ("pkg-config" ,pkg-config)))
+     `(("pkg-config" ,pkg-config)
+       ("python" ,python)))
     (propagated-inputs
-     ;; These two libraries are in 'Requires.private' in libgit2.pc.
+     ;; These libraries are in 'Requires.private' in libgit2.pc.
      `(("openssl" ,openssl)
+       ("pcre2" ,pcre2)
        ("zlib" ,zlib)))
     (home-page "https://libgit2.github.com/")
     (synopsis "Library providing Git core methods")
@@ -594,7 +678,7 @@ write native speed custom Git applications in any language with bindings.")
 (define-public git-crypt
   (package
     (name "git-crypt")
-    (version "0.5.0")
+    (version "0.6.0")
     (source
      (origin
        (method git-fetch)
@@ -603,25 +687,38 @@ write native speed custom Git applications in any language with bindings.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1x9209n3k49k998saadr2d0lmvs01smjinx7gzzyjdwj9l904sii"))))
+        (base32 "1ba5s0fvmd9hhnfhfsjrm40v0qpxfnwc8vmm55m0k4dryzkzx66q"))))
     (build-system gnu-build-system)
     (inputs
      `(("git" ,git)
        ("openssl" ,openssl)))
+    (native-inputs
+     `(("docbook-xsl" ,docbook-xsl)
+       ("libxslt" ,libxslt)))
     (arguments
      `(#:tests? #f ; No tests.
        #:phases
        (modify-phases %standard-phases
          (delete 'configure)
+         (add-after 'unpack 'patch-makefile
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "Makefile"
+               (("http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl")
+                (string-append (assoc-ref inputs "docbook-xsl")
+                               "/xml/xsl/docbook-xsl-"
+                               ,(package-version docbook-xsl)
+                               "/manpages/docbook.xsl")))
+             #t))
          (replace 'build
            (lambda _
-             (invoke "make")))
+             (invoke "make" "ENABLE_MAN=yes")))
          (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (invoke "make" "install"
+                       "ENABLE_MAN=yes"
                        (string-append "PREFIX=" out))))))))
-    (home-page "https://www.agwa.name/projects/git-crypt")
+    (home-page "https://www.agwa.name/projects/git-crypt/")
     (synopsis "Transparent encryption of files in a git repository")
     (description "git-crypt enables transparent encryption and decryption of
 files in a git repository.  Files which you choose to protect are encrypted when
@@ -680,7 +777,7 @@ collaboration using typical untrusted file hosts or services.")
   (package
     (name "cgit")
     ;; Update the ‘git-source’ input as well.
-    (version "1.2.2")
+    (version "1.2.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -688,7 +785,7 @@ collaboration using typical untrusted file hosts or services.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "0dmjsisigjz5k4gw7gm55qhm3wazzbm4cg7a5dwf0gqg9nacx5rz"))))
+                "193d990ym10qlslk0p8mjwp2j6rhqa7fq0y1iff65lvbyv914pss"))))
     (build-system gnu-build-system)
     (arguments
      '(#:tests? #f ; XXX: fail to build the in-source git.
@@ -768,9 +865,9 @@ collaboration using typical untrusted file hosts or services.")
            (method url-fetch)
            ;; cgit is tightly bound to git.  Use GIT_VER from the Makefile,
            ;; which may not match the current (package-version git).
-           (uri "mirror://kernel.org/software/scm/git/git-2.25.0.tar.xz")
+           (uri "mirror://kernel.org/software/scm/git/git-2.25.1.tar.xz")
            (sha256
-            (base32 "1l58v42aazj0x9276gk8r9mwyl9pgp9w99aakz4xfhzv7wd2jq60"))))
+            (base32 "09lzwa183nblr6l8ib35g2xrjf9wm9yhk3szfvyzkwivdv69c9r2"))))
        ("openssl" ,openssl)
        ("groff" ,groff)
        ("python" ,python)
@@ -866,13 +963,13 @@ default) of the repository.")
 (define-public python-gitdb
   (package
     (name "python-gitdb")
-    (version "2.0.4")
+    (version "4.0.2")
     (source (origin
               (method url-fetch)
-              (uri (pypi-uri "gitdb2" version))
+              (uri (pypi-uri "gitdb" version))
               (sha256
                (base32
-                "0i608q9c47rdsmyac1cn6s0hzwwj7cb957y8fc9wacc5lnw8ak5v"))))
+                "0l113fphn6msjl3cl3kyf332b6lal7daxdd0nfma0x9ipfb013jr"))))
     (build-system python-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
@@ -904,7 +1001,7 @@ default) of the repository.")
                       (setenv "TRAVIS" "1")
                       (invoke "nosetests" "-v"))))))
     (propagated-inputs
-     `(("python-smmap2" ,python-smmap2)))
+     `(("python-smmap" ,python-smmap)))
     (native-inputs
      `(("git" ,git)
        ("python-nose" ,python-nose)))
@@ -917,19 +1014,16 @@ with performance and scalability in mind.  It operates exclusively on streams,
 allowing to handle large objects with a small memory footprint.")
     (license license:bsd-3)))
 
-(define-public python2-gitdb
-  (package-with-python2 python-gitdb))
-
 (define-public python-gitpython
   (package
     (name "python-gitpython")
-    (version "2.1.11")
+    (version "3.1.0")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "GitPython" version))
               (sha256
                (base32
-                "1a357c28dnhgvq3saia7v29r71ynp48l2qp5xsmnc4vgzmdxqdw2"))))
+                "1jzllsy9lwc9yibccgv7h9naxisazx2n3zmpy21c8n5xhysw69p4"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f ;XXX: Tests can only be run within the GitPython repository.
@@ -960,9 +1054,6 @@ and additionally allows you to access the Git repository more directly using
 either a pure Python implementation, or the faster, but more resource intensive
 @command{git} command implementation.")
     (license license:bsd-3)))
-
-(define-public python2-gitpython
-  (package-with-python2 python-gitpython))
 
 (define-public shflags
   (package
@@ -1007,16 +1098,16 @@ will work.")
     (name "git-flow")
     ;; This version has not be officially released yet, so we build it
     ;; directly from the git repository.
-    (version "0.4.2-pre")
+    (version "1.12.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/nvie/gitflow/")
-                    (commit "15aab26490facf285acef56cb5d61025eacb3a69")))
+                    (url "https://github.com/petervanderdoes/gitflow-avh/")
+                    (commit version)))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "01fs97q76fdfnvmrh2cyjhywcs3pykf1dg58sy0frflnsdzs6prx"))))
+                "13q4mnrxr03wz2dkhzy73j384g299m4d545cnhxcaznvdwfany4h"))))
     (build-system gnu-build-system)
     (inputs `(("shflags" ,shflags)))
     (arguments
@@ -1036,7 +1127,7 @@ will work.")
                           "gitflow-shFlags")))))
          (delete 'configure)
          (delete 'build))))
-    (home-page "http://nvie.com/posts/a-successful-git-branching-model/")
+    (home-page "https://nvie.com/posts/a-successful-git-branching-model/")
     (synopsis "Git extensions for Vincent Driessen's branching model")
     (description
      "Vincent Driessen's branching model is a git branching and release
@@ -1165,7 +1256,7 @@ though this can be overridden.")
                        (install-file (string-append source "/" script)
                                      bindir)
                        #t))))
-      (home-page "http://dustin.sallings.org/2010/03/28/git-test-sequence.html")
+      (home-page "https://dustin.sallings.org/2010/03/28/git-test-sequence.html")
       (synopsis "Run a command over a sequence of commits")
       (description
        "git-test-sequence is similar to an automated git bisect except it’s
@@ -1280,7 +1371,7 @@ also walk each side of a merge and test those changes individually.")
     (propagated-inputs
      `(("git" ,git)
        ("openssh" ,openssh)))
-    (home-page "http://gitolite.com")
+    (home-page "https://gitolite.com")
     (synopsis "Git access control layer")
     (description
      "Gitolite is an access control layer on top of Git, providing fine access
@@ -1290,39 +1381,51 @@ control to Git repositories.")
 (define-public mercurial
   (package
     (name "mercurial")
-    (version "5.2.1")
+    (version "5.3.1")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://www.mercurial-scm.org/"
                                  "release/mercurial-" version ".tar.gz"))
              (sha256
               (base32
-               "1pxkd37b0a1mi2zakk1hi122lgz1ffy2fxdnbs8acwlqpw55bc8q"))))
+               "1nbjpzjrzgql4hrvslpxwbcgn885ikq6ba1yb4w6p78rw9nzkhgp"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'patch-tests
+           (lambda _
+             (substitute* '("tests/test-extdiff.t"
+                            "tests/test-logtoprocess.t"
+                            "tests/test-patchbomb.t"
+                            "tests/test-run-tests.t"
+                            "tests/test-transplant.t")
+               (("/bin/sh")
+                (which "sh")))
+             #t))
          (replace 'check
            (lambda* (#:key tests? #:allow-other-keys)
              (with-directory-excursion "tests"
                ;; The following tests are known to fail.
-               (for-each (lambda (file)
-                           (delete-file file))
-                         '("test-extdiff.t"
+               (for-each delete-file
+                         '(;; XXX: This test calls 'run-tests.py --with-hg=
+                           ;; `which hg`' and fails because there is no hg on
+                           ;; PATH from before (that's why we are building it!)?
                            "test-hghave.t"
+
+                           ;; FIXME: Why does this fail in the build container, but
+                           ;; not in 'guix environment -C' (even without /bin/sh)?
+                           "test-nointerrupt.t"
+
+                           ;; TODO: the fqaddr() call fails in the build
+                           ;; container, causing these server tests to fail.
                            "test-hgwebdir.t"
                            "test-http-branchmap.t"
-                           "test-logtoprocess.t"
-                           "test-merge-combination.t"
-                           "test-nointerrupt.t"
-                           "test-patchbomb.t"
                            "test-pull-bundle.t"
                            "test-push-http.t"
-                           "test-run-tests.t"
                            "test-serve.t"
                            "test-subrepo-deep-nested-change.t"
-                           "test-subrepo-recursion.t"
-                           "test-transplant.t"))
+                           "test-subrepo-recursion.t"))
                (when tests?
                  (invoke "./run-tests.py"
                          ;; ‘make check’ does not respect ‘-j’.
@@ -1339,7 +1442,8 @@ control to Git repositories.")
     ;; The following inputs are only needed to run the tests.
     (native-inputs
      `(("python-nose" ,python-nose)
-       ("unzip" ,unzip)))
+       ("unzip" ,unzip)
+       ("which" ,which)))
     (home-page "https://www.mercurial-scm.org/")
     (synopsis "Decentralized version control system")
     (description
@@ -1416,7 +1520,10 @@ following features:
                "19zc215mhpnm92mlyl5jbv57r5zqp6cavr3s2g9yglp6j4kfgj0q"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases
+     '(#:parallel-tests? #f             ; TODO Seems to cause test failures on
+                                        ; i686-linux
+       #:configure-flags '("--enable-static=no")
+       #:phases
        (modify-phases %standard-phases
          (add-after 'configure 'patch-libtool-wrapper-ls
            (lambda* (#:key inputs #:allow-other-keys)
@@ -1433,6 +1540,12 @@ following features:
            (lambda _
              (substitute* "subversion/tests/libsvn_repos/repos-test.c"
                (("#!/bin/sh") (string-append "#!" (which "sh"))))
+             #t))
+         (add-before 'check 'set-PARALLEL
+           (lambda* (#:key parallel-tests? #:allow-other-keys)
+             (if parallel-tests?
+                 (setenv "PARALLEL" (number->string (parallel-job-count)))
+                 (simple-format #t "parallel-tests? are disabled\n"))
              #t))
          (add-after 'install 'install-perl-bindings
            (lambda* (#:key outputs #:allow-other-keys)
@@ -1542,34 +1655,30 @@ RCS, PRCS, and Aegis packages.")
 (define-public cvs-fast-export
   (package
     (name "cvs-fast-export")
-    (version "1.45")
+    (version "1.51")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://www.catb.org/~esr/cvs-fast-export/"
                                   "cvs-fast-export-" version ".tar.gz"))
               (sha256
                (base32
-                "19pxg6p0pcgyd2fbnh3wy1kazv6vcfi5lzc2whhdi1w9kj4r9c4z"))))
+                "0nn5cf8syb5nbjvkn8w561pk25clv187h4hs9pnc700g9w56chzf"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
        (modify-phases %standard-phases
-         (delete 'configure)            ; no configure script
-         (add-after 'unpack 'remove-optimizations
-           (lambda _
-             ;; Don't optimize for a specific processor architecture.
-             (substitute* "Makefile"
-               (("CFLAGS \\+= -march=native") ""))
-             #t)))
-       #:parallel-build? #f ; parallel a2x commands fail spectacularly
+         (delete 'configure))       ; no configure script
+       #:parallel-build? #f         ; parallel a2x commands fail spectacularly
        #:make-flags
        (list "CC=gcc" (string-append "prefix?=" (assoc-ref %outputs "out")))))
-    (inputs `(("git" ,git)))
-    (native-inputs `(("asciidoc"    ,asciidoc)
-                     ;; These are needed for the tests.
-                     ("cvs"    ,cvs)
-                     ("python" ,python-2)
-                     ("rcs"    ,rcs)))
+    (inputs
+     `(("git" ,git)
+       ("python" ,python-wrapper)))
+    (native-inputs
+     `(("asciidoc" ,asciidoc)
+       ;; These are needed for the tests.
+       ("cvs" ,cvs)
+       ("rcs" ,rcs)))
     (home-page "http://www.catb.org/esr/cvs-fast-export/")
     (synopsis "Export an RCS or CVS history as a fast-import stream")
     (description "This program analyzes a collection of RCS files in a CVS
@@ -1951,36 +2060,6 @@ supports a large number of version control systems: Git, Subversion,
 Mercurial, Bazaar, Darcs, CVS, Fossil, and Veracity.")
     (license license:gpl2+)))
 
-(define-public git-annex-remote-hubic
-  (package
-    (name "git-annex-remote-hubic")
-    (version "0.3.1")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/Schnouki/git-annex-remote-hubic.git")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "16y9sk67hfi17h9n2kkffyabfccksh5rab40hhk69v6cxmbpn2sx"))))
-    (build-system python-build-system)
-    (arguments `(#:python ,python-2))
-    (native-inputs
-     `(;; for the tests
-       ("python2-six" ,python2-six)))
-    (propagated-inputs
-     `(("python2-dateutil" ,python2-dateutil)
-       ("python2-futures" ,python2-futures)
-       ("python2-rauth" ,python2-rauth)
-       ("python2-swiftclient" ,python2-swiftclient)))
-    (home-page "https://github.com/Schnouki/git-annex-remote-hubic/")
-    (synopsis "Use hubic as a git-annex remote")
-    (description
-     "This package allows you to use your hubic account as a \"special
-repository\" with git-annex.")
-    (license license:gpl3+)))
-
 (define-public git-annex-remote-rclone
   (package
     (name "git-annex-remote-rclone")
@@ -2026,21 +2105,16 @@ by rclone usable with git-annex.")
 (define-public fossil
   (package
     (name "fossil")
-    (version "2.8")
+    (version "2.10")
     (source
      (origin
        (method url-fetch)
-       ;; Older downloads are moved to another URL.
-       (uri (list
-             (string-append
-              "https://www.fossil-scm.org/index.html/uv/download/"
-              "fossil-src-" version ".tar.gz")
-             (string-append
+       (uri (string-append
               "https://www.fossil-scm.org/index.html/uv/"
-              "fossil-src-" version ".tar.gz")))
+              "fossil-src-" version ".tar.gz"))
        (sha256
         (base32
-         "0pbinf8d2kj1j7niblhzjd2l2khg6r2pn2xvig6gavz27p3vwcka"))
+         "041bs4fgk52fw58p7s084pxk9d9vs5v2f2pjbznqawz75inpg8yq"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -2119,7 +2193,7 @@ be served with a HTTP file server of your choice.")
 (define-public gource
   (package
     (name "gource")
-    (version "0.49")
+    (version "0.51")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2127,7 +2201,7 @@ be served with a HTTP file server of your choice.")
                     "/gource-" version "/gource-" version ".tar.gz"))
               (sha256
                (base32
-                "12hf5ipcsp9dxsqn84n4kr63xaiskrnf5a084wr29qk171lj7pd9"))))
+                "16p7b1x4r0915w883lp374jcdqqja37fnb7m8vnsfnl2n64gi8qr"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -2146,7 +2220,7 @@ be served with a HTTP file server of your choice.")
        ("mesa"      ,mesa)
        ("pcre"      ,pcre)
        ("sdl-union" ,(sdl-union (list sdl2 sdl2-image)))))
-    (home-page "http://gource.io/")
+    (home-page "https://gource.io/")
     (synopsis "3D visualisation tool for source control repositories")
     (description "@code{gource} provides a software version control
 visualization.  The repository is displayed as a tree where the root of the
@@ -2325,3 +2399,60 @@ interrupted, published, and collaborated on while in progress.")
 videos, datasets, and graphics with text pointers inside Git, while storing the
 file contents on a remote server.")
     (license license:expat)))
+
+(define-public tla
+  (package
+    (name "gnu-arch")
+    (version "1.3.5")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://ftp.gnu.org/old-gnu/gnu-arch/"
+                                  "tla-" version ".tar.gz"))
+              (sha256
+               (base32
+                "01mfzj1i6p4s8191cgd5850hds1zls88hkf9rb6qx1vqjv585aj0"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; In tar 1.32, '--preserve' is ambiguous and leads to an
+                  ;; error, so address that.
+                  (substitute* "src/tla/libarch/archive.c"
+                    (("\"--preserve\"")
+                     "\"--preserve-permissions\""))
+                  #t))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:phases (modify-phases %standard-phases
+                  (replace 'configure
+                    (lambda* (#:key inputs outputs #:allow-other-keys)
+                      (let ((out (assoc-ref outputs "out")))
+                        (chdir "src")
+
+                        (mkdir "=build")
+                        (chdir "=build")
+
+                        ;; For libneon's 'configure' script.
+                        ;; XXX: There's a bundled copy of neon.
+                        (setenv "CONFIG_SHELL" (which "sh"))
+
+                        (invoke "../configure" "--prefix" out
+                                "--config-shell" (which "sh")
+                                "--with-posix-shell" (which "sh")
+                                "--with-cc" "gcc")))))
+
+
+       ;; There are build failures when building in parallel.
+       #:parallel-build? #f
+       #:parallel-tests? #f
+
+       #:test-target "test"))
+    (native-inputs
+     `(("which" ,which)))
+    (synopsis "Historical distributed version-control system")
+    (description
+     "GNU Arch, aka. @code{tla}, was one of the first free distributed
+version-control systems (DVCS).  It saw its last release in 2006.  This
+package is provided for users who need to recover @code{tla} repositories and
+for historians.")
+    (home-page "https://www.gnu.org/software/gnu-arch/")
+    (license license:gpl2)))                      ;version 2 only

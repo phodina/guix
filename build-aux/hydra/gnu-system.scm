@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2018, 2019 Clément Lassieur <clement@lassieur.org>
 ;;;
@@ -31,7 +31,7 @@
 
 ;; XXX: Debugging hack: since `hydra-eval-guile-jobs' redirects the output
 ;; port to the bit bucket, let us write to the error port instead.
-(setvbuf (current-error-port) _IOLBF)
+(setvbuf (current-error-port) 'line)
 (set-current-output-port (current-error-port))
 
 (define (find-current-checkout arguments)
@@ -65,6 +65,8 @@ Return #f if no such checkout is found."
     (run-with-store store
       (channel-instances->derivation (list instance))))
 
+  ;; TODO: Remove 'show-what-to-build' call when Cuirass' 'evaluate' scripts
+  ;; uses 'with-build-handler'.
   (show-what-to-build store (list derivation))
   (build-derivations store (list derivation))
 

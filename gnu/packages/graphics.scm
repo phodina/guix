@@ -16,8 +16,10 @@
 ;;; Copyright © 2019 Steve Sprang <scs@stevesprang.com>
 ;;; Copyright © 2019 John Soo <jsoo1@asu.edu>
 ;;; Copyright © 2019 Pierre Neidhardt <mail@ambrevar.xyz>
-;;; Copyright © 2019 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2019 Tanguy Le Carrour <tanguy@bioneland.org>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -88,14 +90,14 @@
 (define-public blender
   (package
     (name "blender")
-    (version "2.81a")
+    (version "2.82a")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://download.blender.org/source/"
                                   "blender-" version ".tar.xz"))
               (sha256
                (base32
-                "1zl0ar95qkxsrbqw9miz2hrjijlqjl06vg3clfk9rm7krr2l3b2j"))))
+                "18zbdgas6qf2kmvvlimxgnq7y9kj7hdxcgixrs6fj50x40q01q2d"))))
     (build-system cmake-build-system)
     (arguments
       (let ((python-version (version-major+minor (package-version python))))
@@ -127,11 +129,11 @@
          (modify-phases %standard-phases
            ;; XXX This file doesn't exist in the Git sources but will probably
            ;; exist in the eventual 2.80 source tarball.
-;           (add-after 'unpack 'fix-broken-import
-;             (lambda _
-;               (substitute* "release/scripts/addons/io_scene_fbx/json2fbx.py"
-;                 (("import encode_bin") "from . import encode_bin"))
-;               #t))
+           (add-after 'unpack 'fix-broken-import
+             (lambda _
+               (substitute* "release/scripts/addons/io_scene_fbx/json2fbx.py"
+                 (("import encode_bin") "from . import encode_bin"))
+               #t))
            (add-after 'set-paths 'add-ilmbase-include-path
              (lambda* (#:key inputs #:allow-other-keys)
                ;; OpenEXR propagates ilmbase, but its include files do not appear
@@ -174,95 +176,6 @@
 the 3D pipeline—modeling, rigging, animation, simulation, rendering,
 compositing and motion tracking, even video editing and game creation.  The
 application can be customized via its API for Python scripting.")
-    (license license:gpl2+)))
-
-(define-public blender-2.79
-  (package
-    (name "blender")
-    (version "2.79b")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://download.blender.org/source/"
-                                  "blender-" version ".tar.gz"))
-              (sha256
-               (base32
-                "1g4kcdqmf67srzhi3hkdnr4z1ph4h9sza1pahz38mrj998q4r52c"))
-              (patches (search-patches "blender-2.79-newer-ffmpeg.patch"
-                                       "blender-2.79-python-3.7-fix.patch"))))
-    (build-system cmake-build-system)
-    (arguments
-      (let ((python-version (version-major+minor (package-version python))))
-       `(;; Test files are very large and not included in the release tarball.
-         #:tests? #f
-         #:configure-flags
-         (list "-DWITH_CODEC_FFMPEG=ON"
-               "-DWITH_CODEC_SNDFILE=ON"
-               "-DWITH_CYCLES=ON"
-               "-DWITH_DOC_MANPAGE=ON"
-               "-DWITH_FFTW3=ON"
-               "-DWITH_GAMEENGINE=ON"
-               "-DWITH_IMAGE_OPENJPEG=ON"
-               "-DWITH_INPUT_NDOF=ON"
-               "-DWITH_INSTALL_PORTABLE=OFF"
-               "-DWITH_JACK=ON"
-               "-DWITH_MOD_OCEANSIM=ON"
-               "-DWITH_PLAYER=ON"
-               "-DWITH_PYTHON_INSTALL=OFF"
-               "-DWITH_PYTHON_INSTALL=OFF"
-               "-DWITH_SYSTEM_OPENJPEG=ON"
-               (string-append "-DPYTHON_LIBRARY=python" ,python-version "m")
-               (string-append "-DPYTHON_LIBPATH=" (assoc-ref %build-inputs "python")
-                              "/lib")
-               (string-append "-DPYTHON_INCLUDE_DIR=" (assoc-ref %build-inputs "python")
-                              "/include/python" ,python-version "m")
-               (string-append "-DPYTHON_VERSION=" ,python-version))
-         #:phases
-         (modify-phases %standard-phases
-           (add-after 'unpack 'fix-broken-import
-             (lambda _
-               (substitute* "release/scripts/addons/io_scene_fbx/json2fbx.py"
-                 (("import encode_bin") "from . import encode_bin"))
-               #t))
-           (add-after 'set-paths 'add-ilmbase-include-path
-             (lambda* (#:key inputs #:allow-other-keys)
-               ;; OpenEXR propagates ilmbase, but its include files do not appear
-               ;; in the CPATH, so we need to add "$ilmbase/include/OpenEXR/" to
-               ;; the CPATH to satisfy the dependency on "half.h".
-               (setenv "CPATH"
-                       (string-append (assoc-ref inputs "ilmbase")
-                                      "/include/OpenEXR"
-                                      ":" (or (getenv "CPATH") "")))
-               #t))))))
-    (inputs
-     `(("boost" ,boost)
-       ("jemalloc" ,jemalloc)
-       ("libx11" ,libx11)
-       ("openimageio" ,openimageio-1.7)
-       ("openexr" ,openexr)
-       ("ilmbase" ,ilmbase)
-       ("openjpeg" ,openjpeg-1)
-       ("libjpeg" ,libjpeg)
-       ("libpng" ,libpng)
-       ("libtiff" ,libtiff)
-       ("ffmpeg" ,ffmpeg)
-       ("fftw" ,fftw)
-       ("jack" ,jack-1)
-       ("libsndfile" ,libsndfile)
-       ("freetype" ,freetype)
-       ("glew" ,glew)
-       ("openal" ,openal)
-       ("python" ,python)
-       ("zlib" ,zlib)))
-    (home-page "https://blender.org/")
-    (synopsis "3D graphics creation suite")
-    (description
-     "Blender is a 3D graphics creation suite.  It supports the entirety of
-the 3D pipeline—modeling, rigging, animation, simulation, rendering,
-compositing and motion tracking, even video editing and game creation.  The
-application can be customized via its API for Python scripting.
-
-NOTE: This older version of Blender is the last release that does not require
-OpenGL 3.  It is retained for use with older computers.")
     (license license:gpl2+)))
 
 (define-public assimp
@@ -330,7 +243,7 @@ many more.")
 (define-public ilmbase
   (package
     (name "ilmbase")
-    (version "2.4.0")
+    (version "2.4.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -339,7 +252,7 @@ many more.")
               (file-name (git-file-name "ilmbase" version))
               (sha256
                (base32
-                "0g3rz11cvb7gnphp2np9z7bfl7v4dprq4w5hnsvx7yrasgsdyn8s"))
+                "020gyl8zv83ag6gbcchmqiyx9rh2jca7j8n52zx1gk4rck7kwc01"))
               (patches (search-patches "ilmbase-fix-tests.patch"
                                        "ilmbase-openexr-pkg-config.patch"))))
     (build-system cmake-build-system)
@@ -362,50 +275,55 @@ exception-handling library.")
 (define-public ogre
   (package
     (name "ogre")
-    (version "1.10.11")
+    (version "1.12.5")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-              (url "https://github.com/OGRECave/ogre.git")
-              (commit (string-append "v" version))))
+             (url "https://github.com/OGRECave/ogre.git")
+             (commit (string-append "v" version))
+             (recursive? #t)))          ;for Dear ImGui submodule
        (file-name (git-file-name name version))
        (sha256
-        (base32
-         "072rzw9mxymbiypgkrbkk9h10rgly6gczik4dlmssk6xkpqckaqr"))))
+        (base32 "1sx0jsw4kmb4ycf62bgx3ygwv8k1cgjx52y47d7dk07z6gk6wpyj"))))
     (build-system cmake-build-system)
     (arguments
      '(#:phases
        (modify-phases %standard-phases
          (add-before 'configure 'pre-configure
-           (lambda* (#:key inputs #:allow-other-keys)
-             (substitute* "Tests/CMakeLists.txt"
-               (("URL(.*)$")
-                (string-append "URL " (assoc-ref inputs "googletest-source"))))
+           ;; CMakeLists.txt forces CMAKE_INSTALL_RPATH value.  As
+           ;; a consequence, we cannot suggest ours in configure flags.  Fix
+           ;; it.
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (substitute* "CMakeLists.txt"
+               (("set\\(CMAKE_INSTALL_RPATH .*") ""))
              #t)))
        #:configure-flags
-       (list "-DOGRE_BUILD_TESTS=TRUE"
-             (string-append "-DCMAKE_INSTALL_RPATH="
-                            (assoc-ref %outputs "out") "/lib:"
-                            (assoc-ref %outputs "out") "/lib/OGRE:"
-                            (assoc-ref %build-inputs "googletest") "/lib")
-             "-DOGRE_INSTALL_DOCS=TRUE"
-             "-DOGRE_INSTALL_SAMPLES=TRUE"
-             "-DOGRE_INSTALL_SAMPLES_SOURCE=TRUE")))
+       (let* ((out (assoc-ref %outputs "out"))
+              (runpath
+               (string-join (list (string-append out "/lib")
+                                  (string-append out "/lib/OGRE"))
+                            ";")))
+         (list (string-append "-DCMAKE_INSTALL_RPATH=" runpath)
+               "-DOGRE_BUILD_DEPENDENCIES=OFF"
+               "-DOGRE_BUILD_TESTS=TRUE"
+               "-DOGRE_INSTALL_DOCS=TRUE"
+               "-DOGRE_INSTALL_SAMPLES=TRUE"
+               "-DOGRE_INSTALL_SAMPLES_SOURCE=TRUE"))))
     (native-inputs
      `(("boost" ,boost)
        ("doxygen" ,doxygen)
-       ("googletest-source" ,(package-source googletest))
+       ("googletest" ,googletest-1.8)
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("font-dejavu" ,font-dejavu)
        ("freeimage" ,freeimage)
        ("freetype" ,freetype)
        ("glu" ,glu)
-       ("googletest" ,googletest)
-       ("sdl2" ,sdl2)
        ("libxaw" ,libxaw)
        ("libxrandr" ,libxrandr)
+       ("pugixml" ,pugixml)
+       ("sdl2" ,sdl2)
        ("tinyxml" ,tinyxml)
        ("zziplib" ,zziplib)))
     (synopsis "Scene-oriented, flexible 3D engine written in C++")
@@ -414,7 +332,7 @@ exception-handling library.")
 flexible 3D engine written in C++ designed to make it easier and more intuitive
 for developers to produce applications utilising hardware-accelerated 3D
 graphics.")
-    (home-page "http://www.ogre3d.org/")
+    (home-page "https://www.ogre3d.org/")
     (license license:expat)))
 
 (define-public openexr
@@ -508,7 +426,7 @@ storage of the \"EXR\" file format for storing 16-bit floating-point images.")
 related classes, utilities, and applications.  There is a particular emphasis
 on formats and functionality used in professional, large-scale animation and
 visual effects work for film.")
-    (home-page "http://www.openimageio.org")
+    (home-page "https://www.openimageio.org")
     (license license:bsd-3)))
 
 ;; This older version of OpenImageIO is required for Blender 2.79.
@@ -530,7 +448,7 @@ visual effects work for film.")
 (define-public openscenegraph
   (package
     (name "openscenegraph")
-    (version "3.6.4")
+    (version "3.6.5")
     (source
      (origin
        (method git-fetch)
@@ -538,14 +456,13 @@ visual effects work for film.")
              (url "https://github.com/openscenegraph/OpenSceneGraph")
              (commit (string-append "OpenSceneGraph-" version))))
        (sha256
-        (base32
-         "0x8hdbzw0b71j91fzp9cwmy9a7ava8v8wwyj8nxijq942vdx1785"))
+        (base32 "00i14h82qg3xzcyd8p02wrarnmby3aiwmz0z43l50byc9f8i05n1"))
        (file-name (git-file-name name version))))
     (properties
      `((upstream-name . "OpenSceneGraph")))
     (build-system cmake-build-system)
     (arguments
-     `(#:tests? #f ; no test target available
+     `(#:tests? #f                      ; no test target available
        ;; Without this flag, 'rd' will be added to the name of the
        ;; library binaries and break linking with other programs.
        #:build-type "Release"
@@ -558,15 +475,15 @@ visual effects work for film.")
        ("unzip" ,unzip)))
     (inputs
      `(("giflib" ,giflib)
-       ("libjpeg" ,libjpeg)             ; Required for the JPEG texture plugin.
+       ("libjpeg" ,libjpeg)             ; required by the JPEG texture plugin
        ("jasper" ,jasper)
        ("librsvg" ,librsvg)
        ("libxrandr" ,libxrandr)
        ("ffmpeg" ,ffmpeg)
        ("mesa" ,mesa)))
-    (synopsis "High performance real-time graphics toolkit")
+    (synopsis "High-performance real-time graphics toolkit")
     (description
-     "The OpenSceneGraph is a high performance 3D graphics toolkit
+     "The OpenSceneGraph is a high-performance 3D graphics toolkit
 used by application developers in fields such as visual simulation, games,
 virtual reality, scientific visualization and modeling.")
     (home-page "http://www.openscenegraph.org")
@@ -854,7 +771,7 @@ exec -a \"$0\" ~a/.brdf-real~%"
          ("glew" ,glew)
          ("freeglut" ,freeglut)
          ("zlib" ,zlib)))
-      (home-page "http://www.disneyanimation.com/technology/brdf.html")
+      (home-page "https://www.disneyanimation.com/technology/brdf.html")
       (synopsis
        "Analyze bidirectional reflectance distribution functions (BRDFs)")
       (description
@@ -923,14 +840,14 @@ rendering SVG graphics.")
 (define-public python-pastel
   (package
     (name "python-pastel")
-    (version "0.1.1")
+    (version "0.2.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pastel" version))
        (sha256
         (base32
-         "1qxcrcl8pzh66l8s6hym153mijdhwna0afcsmgca0bj4n80ijfxz"))))
+         "0dnaw44ss10i10z4ksy0xljknvjap7rb7g0b8p6yzm5x4g2my5a6"))))
     (build-system python-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
@@ -1068,7 +985,7 @@ requirements.")
        ("libxi" ,libxi)
        ("zlib" ,zlib)
        ("glfw" ,glfw)))
-    (home-page "http://graphics.pixar.com/opensubdiv/")
+    (home-page "https://graphics.pixar.com/opensubdiv/")
     (synopsis "High performance subdivision surface evaluation")
     (description "OpenSubdiv is a set of libraries that implement high
 performance subdivision surface (subdiv) evaluation on massively parallel CPU
@@ -1165,3 +1082,37 @@ interaction library, written in C++, which has become the de facto
 standard graphics library for 3D visualization and visual simulation
 software in the scientific and engineering community.")
       (license license:bsd-3))))
+
+(define-public superfamiconv
+  (package
+    (name "superfamiconv")
+    (version "0.8.8")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Optiroc/SuperFamiconv")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0848szv6a2b8wdganh6mw5i8vn8cqvn1kbwzx7mb9wlrf5wzqn37"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ; no tests
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((outdir (assoc-ref outputs "out"))
+                    (bindir (string-append outdir "/bin")))
+               (install-file "bin/superfamiconv" bindir)
+               #t))))))
+    (home-page "https://github.com/Optiroc/SuperFamiconv")
+    (synopsis "Tile graphics converter supporting SNES, Game Boy Color
+and PC Engine formats")
+    (description "SuperFamiconv is a converter for tiled graphics, supporting
+the graphics formats of the SNES, Game Boy Color and PC Engine game consoles.
+Automated palette selection is supported.")
+    (license license:expat)))

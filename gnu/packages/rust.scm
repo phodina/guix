@@ -55,6 +55,32 @@
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-26))
 
+;; This is the hash for the empty file, and the reason it's relevant is not
+;; the most obvious.
+;;
+;; The root of the problem is that Cargo keeps track of a file called
+;; Cargo.lock, that contains the hash of the tarball source of each dependency.
+;;
+;; However, tarball sources aren't handled well by Guix because of the need to
+;; patch shebangs in any helper scripts. This is why we use Cargo's vendoring
+;; capabilities, where instead of the tarball, a directory is provided in its
+;; place. (In the case of rustc, the source code already ships with vendored
+;; dependencies, but crates built with cargo-build-system undergo vendoring
+;; during the build.)
+;;
+;; To preserve the advantages of checksumming, vendored dependencies contain
+;; a file called .cargo-checksum.json, which contains the hash of the tarball,
+;; as well as the list of files in it, with the hash of each file.
+;;
+;; The patch-cargo-checksums phase of cargo-build-system runs after
+;; any Guix-specific patches to the vendored dependencies and regenerates the
+;; .cargo-checksum.json files, but it's hard to know the tarball checksum that
+;; should be written to the file - and taking care of any unhandled edge case
+;; would require rebuilding everything that depends on rust. This is why we lie,
+;; and say that the tarball has the hash of an empty file. It's not a problem
+;; because cargo-build-system removes the Cargo.lock file. We can't do that
+;; for rustc because of a quirk of its build system, so we modify the lock file
+;; to substitute the hash.
 (define %cargo-reference-hash
   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 
@@ -91,7 +117,7 @@
   (let ((rustc-version "1.19.0"))
     (package
       (name "mrustc")
-      (version "0.8.0")
+      (version "0.9")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
@@ -100,57 +126,61 @@
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "0a7v8ccyzp1sdkwni8h1698hxpfz2sxhcpx42n6l2pbm0rbjp08i"))
-                (patches
-                 (search-patches "mrustc-0.8.0-fix-variable-length-integer-receiving.patch"))))
+                  "194ny7vsks5ygiw7d8yxjmp1qwigd71ilchis6xjl6bb2sj97rd2"))))
       (outputs '("out" "cargo"))
       (build-system gnu-build-system)
       (inputs
-       `(("llvm" ,llvm-3.9.1)))
+       `(("zlib" ,zlib)))
       (native-inputs
        `(("bison" ,bison)
          ("flex" ,flex)
          ;; Required for the libstd sources.
          ("rustc" ,(package-source rust-1.19))))
       (arguments
-       `(#:test-target "local_tests"
-         #:make-flags (list (string-append "LLVM_CONFIG="
-                                           (assoc-ref %build-inputs "llvm")
-                                           "/bin/llvm-config"))
+       `(#:test-target "test"
+         #:make-flags
+         (list ,(string-append "RUSTC_TARGET="
+                               (or (%current-target-system)
+                                   (nix-system->gnu-triplet-for-rust))))
          #:phases
          (modify-phases %standard-phases
           (add-after 'unpack 'patch-date
             (lambda _
               (substitute* "Makefile"
                (("shell date") "shell date -d @1"))
+              (substitute* "run_rustc/Makefile"
+               (("[$]Vtime ") "$V "))
               #t))
            (add-after 'patch-date 'unpack-target-compiler
              (lambda* (#:key inputs outputs #:allow-other-keys)
-               (substitute* "minicargo.mk"
-                 ;; Don't try to build LLVM.
-                 (("^[$][(]LLVM_CONFIG[)]:") "xxx:")
-                 ;; Build for the correct target architecture.
-                 (("^RUSTC_TARGET := x86_64-unknown-linux-gnu")
-                  (string-append "RUSTC_TARGET := "
-                                 ,(or (%current-target-system)
-                                      (nix-system->gnu-triplet-for-rust)))))
                (invoke "tar" "xf" (assoc-ref inputs "rustc"))
-               (chdir "rustc-1.19.0-src")
-               (invoke "patch" "-p0" "../rust_src.patch")
+               (chdir ,(string-append "rustc-" rustc-version "-src"))
+               (invoke "patch" "-p0" ,(string-append "../rustc-" rustc-version
+                                                     "-src.patch"))
                (chdir "..")
+               (setenv "RUSTC_VERSION" ,rustc-version)
+               (setenv "MRUSTC_TARGET_VER"
+                ,(version-major+minor rustc-version))
+               (setenv "OUTDIR_SUF" "")
                #t))
            (replace 'configure
              (lambda* (#:key inputs #:allow-other-keys)
-               (setenv "CC" (string-append (assoc-ref inputs "gcc") "/bin/gcc"))
+               (setenv "CC" (string-append (assoc-ref inputs "gcc")
+                                           "/bin/gcc"))
+               (setenv "CXX" (string-append (assoc-ref inputs "gcc")
+                                            "/bin/g++"))
                #t))
            (add-after 'build 'build-minicargo
-             (lambda _
-               (for-each (lambda (target)
-                           (invoke "make" "-f" "minicargo.mk" target))
-                         '("output/libstd.hir" "output/libpanic_unwind.hir"
-                           "output/libproc_macro.hir" "output/libtest.hir"))
-               ;; Technically the above already does it - but we want to be clear.
-               (invoke "make" "-C" "tools/minicargo")))
+             (lambda* (#:key make-flags #:allow-other-keys)
+               ;; TODO: minicargo.mk: RUSTC_VERSION=$(RUSTC_VERSION) RUSTC_CHANNEL=$(RUSTC_SRC_TY) OUTDIR_SUF=$(OUTDIR_SUF)
+               (apply invoke "make" "-f" "minicargo.mk" "LIBS" make-flags)
+               (apply invoke "make" "-C" "tools/minicargo" make-flags)))
+           ;(add-after 'check 'check-locally
+           ;  (lambda* (#:key make-flags #:allow-other-keys)
+           ;    ;; The enum test wouldn't work otherwise.
+           ;    ;; See <https://github.com/thepowersgang/mrustc/issues/137>.
+           ;    (setenv "MRUSTC_TARGET_VER" ,(version-major+minor rustc-version))
+           ;    (apply invoke "make" "local_tests" make-flags)))
            (replace 'install
              (lambda* (#:key inputs outputs #:allow-other-keys)
                (let* ((out (assoc-ref outputs "out"))
@@ -160,11 +190,13 @@
                       (cargo-bin (string-append cargo-out "/bin"))
                       (lib (string-append out "/lib"))
                       (lib/rust (string-append lib "/mrust"))
-                      (gcc (assoc-ref inputs "gcc")))
+                      (gcc (assoc-ref inputs "gcc"))
+                      (run_rustc (string-append out
+                                                "/share/mrustc/run_rustc")))
                  ;; These files are not reproducible.
                  (for-each delete-file (find-files "output" "\\.txt$"))
-                 (delete-file-recursively "output/local_tests")
-                 (mkdir-p lib)
+                 ;(delete-file-recursively "output/local_tests")
+                 (mkdir-p (dirname lib/rust))
                  (copy-recursively "output" lib/rust)
                  (mkdir-p bin)
                  (mkdir-p tools-bin)
@@ -172,8 +204,11 @@
                  ;; minicargo uses relative paths to resolve mrustc.
                  (install-file "tools/bin/minicargo" tools-bin)
                  (install-file "tools/bin/minicargo" cargo-bin)
+                 (mkdir-p run_rustc)
+                 (copy-file "run_rustc/Makefile"
+                            (string-append run_rustc "/Makefile"))
                  #t))))))
-      (synopsis "Compiler for the Rust progamming language")
+      (synopsis "Compiler for the Rust programming language")
       (description "Rust is a systems programming language that provides memory
 safety and thread safety guarantees.")
       (home-page "https://github.com/thepowersgang/mrustc")
@@ -289,8 +324,12 @@ test = { path = \"../libtest\" }
                (setenv "CFG_RELEASE_CHANNEL" "stable")
                (setenv "CFG_LIBDIR_RELATIVE" "lib")
                (setenv "CFG_VERSION" "1.19.0-stable-mrustc")
+               (setenv "MRUSTC_TARGET_VER" ,(version-major+minor version))
                ; bad: (setenv "CFG_PREFIX" "mrustc") ; FIXME output path.
                (mkdir-p "output")
+               ;; mrustc 0.9 doesn't check the search paths for crates anymore.
+               (copy-recursively (string-append rustc-bootstrap "/lib/mrust")
+                                 "output")
                (invoke (string-append rustc-bootstrap "/tools/bin/minicargo")
                        "src/rustc" "--vendor-dir" "src/vendor"
                        "--output-dir" "output/rustc-build"
@@ -896,8 +935,29 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
              (replace 'disable-amd64-avx-test
                (lambda _
                  (substitute* "src/test/ui/run-pass/issues/issue-44056.rs"
-	          (("only-x86_64") "ignore-test"))
+                  (("only-x86_64") "ignore-test"))
                   #t)))))))))
+
+(define (patch-command-exec-tests-phase test-path)
+  "The command-exec.rs test moves around between releases.  We need to apply
+a Guix-specific patch to it for each release.  This function generates the phase
+that applies said patch, parametrized by the test-path.  This is done this way
+because the phase is more complex than the equivalents for other tests that
+move around."
+ `(lambda* (#:key inputs #:allow-other-keys)
+    (let ((coreutils (assoc-ref inputs "coreutils")))
+      (substitute* ,test-path
+        ;; This test suite includes some tests that the stdlib's
+        ;; `Command` execution properly handles situations where
+        ;; the environment or PATH variable are empty, but this
+        ;; fails since we don't have `echo` available in the usual
+        ;; Linux directories.
+        ;; NB: the leading space is so we don't fail a tidy check
+        ;; for trailing whitespace, and the newlines are to ensure
+        ;; we don't exceed the 100 chars tidy check as well
+        ((" Command::new\\(\"echo\"\\)")
+         (string-append "\nCommand::new(\"" coreutils "/bin/echo\")\n")))
+      #t)))
 
 (define-public rust-1.31
   (let ((base-rust
@@ -910,26 +970,14 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
          ((#:phases phases)
           `(modify-phases ,phases
              (add-after 'patch-tests 'patch-command-exec-tests
-               (lambda* (#:key inputs #:allow-other-keys)
-                 (let ((coreutils (assoc-ref inputs "coreutils")))
-                   (substitute* "src/test/run-pass/command-exec.rs"
-                     ;; This test suite includes some tests that the stdlib's
-                     ;; `Command` execution properly handles situations where
-                     ;; the environment or PATH variable are empty, but this
-                     ;; fails since we don't have `echo` available in the usual
-                     ;; Linux directories.
-                     ;; NB: the leading space is so we don't fail a tidy check
-                     ;; for trailing whitespace, and the newlines are to ensure
-                     ;; we don't exceed the 100 chars tidy check as well
-                     ((" Command::new\\(\"echo\"\\)")
-                      (string-append "\nCommand::new(\"" coreutils "/bin/echo\")\n")))
-                   #t)))
-	      ;; The test has been moved elsewhere.
-	      (replace 'disable-amd64-avx-test
-	        (lambda _
-	          (substitute* "src/test/ui/issues/issue-44056.rs"
-                   (("only-x86_64") "ignore-test"))
-                  #t))
+               ,(patch-command-exec-tests-phase
+                  "src/test/run-pass/command-exec.rs"))
+             ;; The test has been moved elsewhere.
+             (replace 'disable-amd64-avx-test
+               (lambda _
+                 (substitute* "src/test/ui/issues/issue-44056.rs"
+                  (("only-x86_64") "ignore-test"))
+                 #t))
              (add-after 'patch-tests 'patch-process-docs-rev-cmd
                (lambda* _
                  ;; Disable some doc tests which depend on the "rev" command
@@ -1071,7 +1119,7 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
           `(modify-phases ,phases
              (delete 'patch-process-docs-rev-cmd))))))))
 
-(define-public rust
+(define-public rust-1.37
   (let ((base-rust
          (rust-bootstrapped-package rust-1.36 "1.37.0"
            "1hrqprybhkhs6d9b5pjskfnc5z9v2l2gync7nb39qjb5s0h703hj")))
@@ -1087,3 +1135,45 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
                    (mkdir-p cargo-home)
                    (setenv "CARGO_HOME" cargo-home)
                    #t))))))))))
+
+(define-public rust-1.38
+  (let ((base-rust
+         (rust-bootstrapped-package rust-1.37 "1.38.0"
+           "101dlpsfkq67p0hbwx4acqq6n90dj4bbprndizpgh1kigk566hk4")))
+    (package
+      (inherit base-rust)
+      (arguments
+       (substitute-keyword-arguments (package-arguments base-rust)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             (replace 'patch-command-exec-tests
+               ,(patch-command-exec-tests-phase
+                  "src/test/ui/command-exec.rs"))
+             (add-after 'patch-tests 'patch-command-uid-gid-test
+               (lambda _
+                 (substitute* "src/test/ui/command-uid-gid.rs"
+                   (("/bin/sh") (which "sh"))
+                   (("ignore-sgx") "ignore-sgx\n// ignore-tidy-linelength"))
+                 #t)))))))))
+
+(define-public rust-1.39
+  (let ((base-rust
+         (rust-bootstrapped-package rust-1.38 "1.39.0"
+           "0mwkc1bnil2cfyf6nglpvbn2y0zfbv44zfhsd5qg4c9rm6vgd8dl")))
+    (package
+      (inherit base-rust)
+      (arguments
+       (substitute-keyword-arguments (package-arguments base-rust)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             (replace 'patch-cargo-checksums
+               ;; The Cargo.lock format changed.
+               (lambda* _
+                 (use-modules (guix build cargo-utils))
+                 (substitute* "Cargo.lock"
+                   (("(checksum = )\".*\"" all name)
+                    (string-append name "\"" ,%cargo-reference-hash "\"")))
+                 (generate-all-checksums "vendor")
+                 #t)))))))))
+
+(define-public rust rust-1.37)

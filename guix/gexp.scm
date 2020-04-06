@@ -2,7 +2,7 @@
 ;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2018 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2018 Jan Nieuwenhuizen <janneke@gnu.org>
-;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2019, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -81,6 +81,9 @@
 
             raw-derivation-file
             raw-derivation-file?
+
+            with-parameters
+            parameterized?
 
             load-path-expression
             gexp-modules
@@ -218,7 +221,7 @@ procedure to expand it; otherwise return #f."
 
 (define* (lower-object obj
                        #:optional (system (%current-system))
-                       #:key target)
+                       #:key (target 'current))
   "Return as a value in %STORE-MONAD the derivation or store item
 corresponding to OBJ for SYSTEM, cross-compiling for TARGET if TARGET is true.
 OBJ must be an object that has an associated gexp compiler, such as a
@@ -228,7 +231,10 @@ OBJ must be an object that has an associated gexp compiler, such as a
      (raise (condition (&gexp-input-error (input obj)))))
     (lower
      ;; Cache in STORE the result of lowering OBJ.
-     (mlet %store-monad ((graft? (grafting?)))
+     (mlet %store-monad ((target (if (eq? target 'current)
+                                     (current-target-system)
+                                     (return target)))
+                         (graft? (grafting?)))
        (mcached (let ((lower (lookup-compiler obj)))
                   (lower obj system target))
                 obj
@@ -520,6 +526,62 @@ SUFFIX."
                           (base   (expand base lowered output)))
                      (string-append base (string-concatenate suffix)))))))
 
+;; Representation of SRFI-39 parameter settings in the dynamic scope of an
+;; object lowering.
+(define-record-type <parameterized>
+  (parameterized bindings thunk)
+  parameterized?
+  (bindings parameterized-bindings)             ;list of parameter/value pairs
+  (thunk    parameterized-thunk))               ;thunk
+
+(define-syntax-rule (with-parameters ((param value) ...) body ...)
+  "Bind each PARAM to the corresponding VALUE for the extent during which BODY
+is lowered.  Consider this example:
+
+  (with-parameters ((%current-system \"x86_64-linux\"))
+    coreutils)
+
+It returns a <parameterized> object that ensures %CURRENT-SYSTEM is set to
+x86_64-linux when COREUTILS is lowered."
+  (parameterized (list (list param (lambda () value)) ...)
+                 (lambda ()
+                   body ...)))
+
+(define-gexp-compiler compile-parameterized <parameterized>
+  compiler =>
+  (lambda (parameterized system target)
+    (match (parameterized-bindings parameterized)
+      (((parameters values) ...)
+       (let ((fluids (map parameter-fluid parameters))
+             (thunk  (parameterized-thunk parameterized)))
+         ;; Install the PARAMETERS for the dynamic extent of THUNK.
+         (with-fluids* fluids
+           (map (lambda (thunk) (thunk)) values)
+           (lambda ()
+             ;; Special-case '%current-system' and '%current-target-system' to
+             ;; make sure we get the desired effect.
+             (let ((system (if (memq %current-system parameters)
+                               (%current-system)
+                               system))
+                   (target (if (memq %current-target-system parameters)
+                               (%current-target-system)
+                               target)))
+               (lower-object (thunk) system #:target target))))))))
+
+  expander => (lambda (parameterized lowered output)
+                (match (parameterized-bindings parameterized)
+                  (((parameters values) ...)
+                   (let ((fluids (map parameter-fluid parameters))
+                         (thunk  (parameterized-thunk parameterized)))
+                     ;; Install the PARAMETERS for the dynamic extent of THUNK.
+                     (with-fluids* fluids
+                       (map (lambda (thunk) (thunk)) values)
+                       (lambda ()
+                         ;; Delegate to the expander of the wrapped object.
+                         (let* ((base   (thunk))
+                                (expand (lookup-expander base)))
+                           (expand base lowered output)))))))))
+
 
 ;;;
 ;;; Inputs & outputs.
@@ -621,22 +683,22 @@ When TARGET is true, use it as the cross-compilation target triplet."
     (and (string? obj) (store-path? obj)))
 
   (with-monad %store-monad
-    (mapm %store-monad
-          (match-lambda
-            (((? struct? thing) sub-drv ...)
-             (mlet %store-monad ((obj (lower-object
-                                       thing system #:target target)))
-               (return (match obj
-                         ((? derivation? drv)
-                          (let ((outputs (if (null? sub-drv)
-                                             '("out")
-                                             sub-drv)))
-                            (derivation-input drv outputs)))
-                         ((? store-item? item)
-                          item)))))
-            (((? store-item? item))
-             (return item)))
-          inputs)))
+    (mapm/accumulate-builds
+     (match-lambda
+       (((? struct? thing) sub-drv ...)
+        (mlet %store-monad ((obj (lower-object
+                                  thing system #:target target)))
+          (return (match obj
+                    ((? derivation? drv)
+                     (let ((outputs (if (null? sub-drv)
+                                        '("out")
+                                        sub-drv)))
+                       (derivation-input drv outputs)))
+                    ((? store-item? item)
+                     item)))))
+       (((? store-item? item))
+        (return item)))
+     inputs)))
 
 (define* (lower-reference-graphs graphs #:key system target)
   "Given GRAPHS, a list of (FILE-NAME INPUT ...) lists for use as a
@@ -668,7 +730,7 @@ names and file names suitable for the #:allowed-references argument to
                                                #:target target)))
           (return (derivation->output-path drv))))))
 
-    (mapm %store-monad lower lst)))
+    (mapm/accumulate-builds lower lst)))
 
 (define default-guile-derivation
   ;; Here we break the abstraction by talking to the higher-level layer.
@@ -779,7 +841,8 @@ derivations--e.g., code evaluated for its side effects."
                        (extensions -> (gexp-extensions exp))
                        (exts     (mapm %store-monad
                                        (lambda (obj)
-                                         (lower-object obj system))
+                                         (lower-object obj system
+                                                       #:target #f))
                                        extensions))
                        (modules+compiled (imported+compiled-modules
                                           %modules system
@@ -1597,16 +1660,19 @@ are searched for in PATH.  Return #f when MODULES and EXTENSIONS are empty."
                        #:key (guile (default-guile))
                        (module-path %load-path)
                        (system (%current-system))
-                       target)
+                       (target 'current))
   "Return an executable script NAME that runs EXP using GUILE, with EXP's
 imported modules in its search path.  Look up EXP's modules in MODULE-PATH."
-  (mlet %store-monad ((set-load-path
-                       (load-path-expression (gexp-modules exp)
-                                             module-path
-                                             #:extensions
-                                             (gexp-extensions exp)
-                                             #:system system
-                                             #:target target)))
+  (mlet* %store-monad ((target (if (eq? target 'current)
+                                   (current-target-system)
+                                   (return target)))
+                       (set-load-path
+                        (load-path-expression (gexp-modules exp)
+                                              module-path
+                                              #:extensions
+                                              (gexp-extensions exp)
+                                              #:system system
+                                              #:target target)))
     (gexp->derivation name
                       (gexp
                        (call-with-output-file (ungexp output)
@@ -1640,7 +1706,7 @@ imported modules in its search path.  Look up EXP's modules in MODULE-PATH."
                      (module-path %load-path)
                      (splice? #f)
                      (system (%current-system))
-                     target)
+                     (target 'current))
   "Return a derivation that builds a file NAME containing EXP.  When SPLICE?
 is true, EXP is considered to be a list of expressions that will be spliced in
 the resulting file.
@@ -1651,36 +1717,44 @@ Lookup EXP's modules in MODULE-PATH."
   (define modules (gexp-modules exp))
   (define extensions (gexp-extensions exp))
 
-  (if (or (not set-load-path?)
-          (and (null? modules) (null? extensions)))
-      (gexp->derivation name
-                        (gexp
-                         (call-with-output-file (ungexp output)
-                           (lambda (port)
-                             (for-each (lambda (exp)
-                                         (write exp port))
-                                       '(ungexp (if splice?
-                                                    exp
-                                                    (gexp ((ungexp exp)))))))))
-                        #:local-build? #t
-                        #:substitutable? #f
-                        #:system system
-                        #:target target)
-      (mlet %store-monad ((set-load-path
-                           (load-path-expression modules module-path
-                                                 #:extensions extensions
-                                                 #:system system
-                                                 #:target target)))
+  (mlet* %store-monad
+      ((target (if (eq? target 'current)
+                   (current-target-system)
+                   (return target)))
+       (no-load-path? -> (or (not set-load-path?)
+                             (and (null? modules)
+                                  (null? extensions))))
+       (set-load-path
+        (load-path-expression modules module-path
+                              #:extensions extensions
+                              #:system system
+                              #:target target)))
+    (if no-load-path?
+        (gexp->derivation name
+                          (gexp
+                           (call-with-output-file (ungexp output)
+                             (lambda (port)
+                               (for-each
+                                (lambda (exp)
+                                  (write exp port))
+                                '(ungexp (if splice?
+                                             exp
+                                             (gexp ((ungexp exp)))))))))
+                          #:local-build? #t
+                          #:substitutable? #f
+                          #:system system
+                          #:target target)
         (gexp->derivation name
                           (gexp
                            (call-with-output-file (ungexp output)
                              (lambda (port)
                                (write '(ungexp set-load-path) port)
-                               (for-each (lambda (exp)
-                                           (write exp port))
-                                         '(ungexp (if splice?
-                                                      exp
-                                                      (gexp ((ungexp exp)))))))))
+                               (for-each
+                                (lambda (exp)
+                                  (write exp port))
+                                '(ungexp (if splice?
+                                             exp
+                                             (gexp ((ungexp exp)))))))))
                           #:module-path module-path
                           #:local-build? #t
                           #:substitutable? #f

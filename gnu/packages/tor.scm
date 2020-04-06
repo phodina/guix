@@ -1,12 +1,13 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013, 2014, 2015 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014, 2015 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017, 2018, 2019 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -50,14 +51,14 @@
 (define-public tor
   (package
     (name "tor")
-    (version "0.4.2.5")
+    (version "0.4.2.7")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://dist.torproject.org/tor-"
                                  version ".tar.gz"))
              (sha256
               (base32
-               "1hnqg6psf7shcmlvfk44mkpaz7v66mify3cnx7mzl23q5s37anad"))))
+               "0v82ngwwmmcb7i9563bgsmrjy6xp83xyhqhaljygd0pkvlsxi886"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
@@ -141,8 +142,9 @@ rejects UDP traffic from the application you're using.")
     (inputs
      `(("w3m" ,w3m)
        ("pcre" ,pcre)
-       ("zlib" ,zlib)
-       ("autoconf" ,autoconf)
+       ("zlib" ,zlib)))
+    (native-inputs
+     `(("autoconf" ,autoconf)
        ("automake" ,automake)))
     (home-page "https://www.privoxy.org")
     (synopsis "Web proxy with advanced filtering capabilities for enhancing privacy")

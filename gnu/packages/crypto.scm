@@ -3,7 +3,7 @@
 ;;; Copyright © 2015, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2018, 2019 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Lukas Gradl <lgradl@openmailbox>
-;;; Copyright © 2016, 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
 ;;; Copyright © 2016, 2017, 2019 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017 Pierre Langlois <pierre.langlois@gmx.com>
@@ -14,6 +14,7 @@
 ;;; Copyright © 2018 Tim Gesthuizen <tim.gesthuizen@yahoo.de>
 ;;; Copyright © 2019 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2019 Tanguy Le Carrour <tanguy@bioneland.org>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -70,6 +71,7 @@
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system perl)
+  #:use-module (guix utils)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26))
 
@@ -132,7 +134,7 @@ communication, encryption, decryption, signatures, etc.")
 (define-public signify
   (package
     (name "signify")
-    (version "27")
+    (version "29")
     (home-page "https://github.com/aperezdc/signify")
     (source (origin
               (method url-fetch)
@@ -140,13 +142,12 @@ communication, encryption, decryption, signatures, etc.")
                                   "/download/v" version "/signify-" version ".tar.xz"))
               (sha256
                (base32
-                "0ngjsqz95yb0knlw9zs02fnclif40s63r1mydgiv17ii3mds82df"))))
+                "1bzcax5kb4lr0rmpmrdpq5q0iq6b2dxzpl56li8aanbkck1c7hd9"))))
     (build-system gnu-build-system)
     ;; TODO Build with libwaive (described in README.md), to implement something
     ;; like OpenBSD's pledge().
     (arguments
-     `(#:tests? #f ; no test suite
-       #:make-flags
+     `(#:make-flags
        (list "CC=gcc"
              (string-append "PREFIX=" (assoc-ref %outputs "out")))
        #:phases
@@ -238,7 +239,7 @@ the wrong hands.")
 (define-public keyutils
   (package
     (name "keyutils")
-    (version "1.6")
+    (version "1.6.1")
     (source
      (origin
        (method url-fetch)
@@ -246,8 +247,7 @@ the wrong hands.")
         (string-append "https://people.redhat.com/dhowells/keyutils/keyutils-"
                        version ".tar.bz2"))
        (sha256
-        (base32
-         "05bi5ja6f3h3kdi7p9dihlqlfrsmi1wh1r2bdgxc0180xh6g5bnk"))
+        (base32 "1kk4pmyflgplkgxn2bzpc069ph9c9jdd9ikcsyd5pnaimqi5gcf8"))
        (modules '((guix build utils)))
        ;; Create relative symbolic links instead of absolute ones to /lib/*.
        (snippet '(begin
@@ -602,7 +602,7 @@ data on your platform, so the seed itself will be as random as possible.
 (define-public crypto++
   (package
     (name "crypto++")
-    (version "8.0.0")
+    (version "8.2.0")
     (source (origin
               (method url-fetch/zipbomb)
               (uri (string-append "https://cryptopp.com/cryptopp"
@@ -610,7 +610,7 @@ data on your platform, so the seed itself will be as random as possible.
                                   ".zip"))
               (sha256
                (base32
-                "0b5qrsm4jhy4nzxgrm13nixhvbswr242plx1jw6r4sw492rqkzdv"))))
+                "0n40hlz5jkvlcp9vxrj0fsrcfp7dm0zmmv6h52dx3f8i5qjf5w03"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
@@ -628,19 +628,25 @@ data on your platform, so the seed itself will be as random as possible.
                ((" -march=native") ""))
              #t))
          (delete 'configure)
-         (add-after 'build 'build-shared
-           (lambda _
-             ;; By default, only the static library is built.
-             (invoke "make" "shared")))
+         (replace 'build
+           ;; By default, only the static library is built.
+           (lambda* (#:key (make-flags '()) #:allow-other-keys)
+             (apply invoke "make" "shared"
+                    "-j" (number->string (parallel-job-count))
+                    make-flags)))
          (add-after 'install 'install-shared-library-links
            ;; By default, only .so and .so.x.y.z are installed.
            ;; Create all the ‘intermediates’ expected by dependent packages.
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
-                    (lib (string-append out "/lib")))
+                    (lib (string-append out "/lib"))
+                    (prefix "libcryptopp.so.")
+                    (target (string-append prefix ,version)))
                (with-directory-excursion lib
-                 (symlink "libcryptopp.so.8.0.0" "libcryptopp.so.8.0")
-                 (symlink "libcryptopp.so.8.0.0" "libcryptopp.so.8")
+                 (symlink target
+                          (string-append prefix ,(version-major+minor version)))
+                 (symlink target
+                          (string-append prefix ,(version-major version)))
                  #t))))
          (add-after 'install 'install-pkg-config
            (lambda* (#:key outputs #:allow-other-keys)
@@ -658,7 +664,8 @@ data on your platform, so the seed itself will be as random as possible.
                      "Description: Class library of cryptographic schemes"
                      "Version: " ,version "\n"
                      "Libs: -L${libdir} -lcryptopp\n"
-                     "Cflags: -I${includedir}\n"))))))))))
+                     "Cflags: -I${includedir}\n"))
+                   #t))))))))
     (native-inputs
      `(("unzip" ,unzip)))
     (home-page "https://cryptopp.com/")
@@ -1066,3 +1073,45 @@ cryptographic ratchet.  It is written in C and C++11, and exposed as a C
 API.")
     (home-page "https://matrix.org/docs/projects/other/olm/")
     (license license:asl2.0)))
+
+(define-public hash-extender
+  (let ((commit "cb8aaee49f93e9c0d2f03eb3cafb429c9eed723d")
+        (revision "2"))
+    (package
+      (name "hash-extender")
+      (version (git-version "0.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/iagox86/hash_extender")
+                      (commit commit)))
+                (sha256
+                 (base32
+                  "1fj118566hr1wv03az2w0iqknazsqqkak0mvlcvwpgr6midjqi9b"))
+                (file-name (git-file-name name version))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           (delete 'configure)
+           (replace 'check
+             (lambda _
+               (invoke "./hash_extender_test")))
+           (replace 'install
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((outdir (assoc-ref outputs "out"))
+                      (bindir (string-append outdir "/bin"))
+                      (docdir (string-append outdir
+                                             "/share/doc/hash-extender-"
+                                             ,version)))
+                 (install-file "hash_extender" bindir)
+                 (install-file "README.md" docdir)
+                 #t))))))
+      (inputs
+       `(("openssl" ,openssl)))
+      (synopsis "Tool for hash length extension attacks")
+      (description "@command{hash_extender} is a utility for performing hash
+length extension attacks supporting MD4, MD5, RIPEMD-160, SHA-0, SHA-1,
+SHA-256, SHA-512, and WHIRLPOOL hashes.")
+      (home-page "https://github.com/iagox86/hash_extender")
+      (license license:bsd-3))))

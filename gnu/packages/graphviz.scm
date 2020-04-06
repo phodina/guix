@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013, 2015 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2015 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
@@ -228,13 +228,16 @@ visualization tool suite.")
      `(("python-nose" ,python-nose)
        ("python-mock" ,python-mock)
        ("python-doctest-ignore-unicode" ,python-doctest-ignore-unicode)))
-    (home-page "http://pygraphviz.github.io")
+    (home-page "https://pygraphviz.github.io")
     (synopsis "Python interface to Graphviz")
     (description "PyGraphviz is a Python interface to the Graphviz graph
 layout and visualization package.  With PyGraphviz you can create, edit, read,
 write, and draw graphs using Python to access the Graphviz graph data
 structure and layout algorithms.")
     (license license:bsd-3)))
+
+(define-public python2-pygraphviz
+  (package-with-python2 python-pygraphviz))
 
 (define-public gts
   (package
@@ -308,7 +311,7 @@ structure and layout algorithms.")
        ("gtk+" ,gtk+)
        ("python-pycairo" ,python-pycairo)
        ("python-pygobject" ,python-pygobject)))
-    (home-page "https://pypi.python.org/pypi/xdot")
+    (home-page "https://pypi.org/project/xdot/")
     (synopsis "Interactive viewer for graphviz dot files")
     (description "Xdot is an interactive viewer for graphs written in
 @code{graphviz}’s dot language.  Internally, it uses the xdot output format as

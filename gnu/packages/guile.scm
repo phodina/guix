@@ -6,7 +6,7 @@
 ;;; Copyright © 2015, 2017 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2016, 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2016, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Andy Wingo <wingo@igalia.com>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2019 Mathieu Othacehe <m.othacehe@gmail.com>
@@ -250,17 +250,21 @@ without requiring the source code to be rewritten.")
             (variable "GUILE_LOAD_COMPILED_PATH")
             (files '("lib/guile/2.2/site-ccache")))))))
 
-(define-public guile-2.2/bug-fix
-  ;; This variant contains a bug fix for a relatively rare crash that could
+(define-public guile-2.2.7
+  ;; This version contains a bug fix for a relatively rare crash that could
   ;; affect shepherd as PID 1: <https://bugs.gnu.org/37757>.
   (package
     (inherit guile-2.2)
-    (version (string-append (package-version guile-2.2) "-1"))
+    (version "2.2.7")
     (source (origin
               (inherit (package-source guile-2.2))
-              (patches
-               (append (search-patches "guile-finalization-crash.patch")
-                       (origin-patches (package-source guile-2.2))))))))
+              (uri (string-append "mirror://gnu/guile/guile-" version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "013mydzhfswqci6xmyc1ajzd59pfbdak15i0b090nhr9bzm7dxyd"))))))
+
+(define-deprecated guile-2.2/bug-fix guile-2.2.7)
 
 (define-public guile-2.2/fixed
   ;; A package of Guile 2.2 that's rarely changed.  It is the one used
@@ -288,14 +292,14 @@ without requiring the source code to be rewritten.")
   (package
     (inherit guile-2.2)
     (name "guile-next")                           ;to be renamed to "guile"
-    (version "3.0.0")
+    (version "3.0.2")
     (source (origin
               (inherit (package-source guile-2.2))
-              (uri (string-append "ftp://ftp.gnu.org/gnu/guile/guile-"
+              (uri (string-append "mirror://gnu/guile/guile-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "0x8ca6q1qdmk29lh12gj6ngvgn7kp79w42rxfgwrpxm9jmjqs4y9"))))
+                "12lziar4j27j9whqp2n18427q45y9ghq7gdd8lqhmj1k0lr7vi2k"))))
     (native-search-paths
      (list (search-path-specification
             (variable "GUILE_LOAD_PATH")
@@ -389,40 +393,50 @@ GNU@tie{}Guile.  Use the @code{(ice-9 readline)} module and call its
                            (guile-variant-package-name "guile3.0")))
 
 (define-public guile-for-guile-emacs
-  (package (inherit guile-2.2)
-    (name "guile-for-guile-emacs")
-    (version "20150510.d8d9a8d")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "git://git.hcoop.net/git/bpt/guile.git")
-                    (commit "d8d9a8da05ec876acba81a559798eb5eeceb5a17")))
-              (file-name (string-append name "-" version "-checkout"))
-              (sha256
-               (base32
-                "00sprsshy16y8pxjy126hr2adqcvvzzz96hjyjwgg8swva1qh6b0"))))
-    (arguments
-     `(;; Tests aren't passing for now.
-       ;; Obviously we should re-enable this!
-       #:tests? #f
-       ,@(package-arguments guile-2.2)))
-    (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("libtool" ,libtool)
-       ("flex" ,flex)
-       ("texinfo" ,texinfo)
-       ("gettext" ,gettext-minimal)
-       ,@(package-native-inputs guile-2.2)))
-    ;; Same as in guile-2.0
-    (native-search-paths
-     (list (search-path-specification
-            (variable "GUILE_LOAD_PATH")
-            (files '("share/guile/site/2.0")))
-           (search-path-specification
-            (variable "GUILE_LOAD_COMPILED_PATH")
-            (files '("lib/guile/2.0/site-ccache"
-                     "share/guile/site/2.0")))))))
+  (let ((commit "15ca78482ac0dd2e3eb36dcb31765d8652d7106d")
+        (revision "1"))
+    (package (inherit guile-2.2)
+      (name "guile-for-guile-emacs")
+      (version (git-version "2.1.2" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "git://git.savannah.gnu.org/guile.git")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "1l7ik4q4zk7vq4m3gnwizc0b64b1mdr31hxqlzxs94xaf2lvi7s2"))))
+      (arguments
+       (substitute-keyword-arguments (package-arguments guile-2.2)
+         ((#:phases phases '%standard-phases)
+          `(modify-phases ,phases
+             (replace 'bootstrap
+               (lambda _
+                 ;; Disable broken tests.
+                 ;; TODO: Fix them!
+                 (substitute* "test-suite/tests/gc.test"
+                   (("\\(pass-if \"after-gc-hook gets called\"" m)
+                    (string-append "#;" m)))
+                 (substitute* "test-suite/tests/version.test"
+                   (("\\(pass-if \"version reporting works\"" m)
+                    (string-append "#;" m)))
+                 ;; Warning: Unwind-only `out-of-memory' exception; skipping pre-unwind handler.
+                 ;; FAIL: test-out-of-memory
+                 (substitute* "test-suite/standalone/Makefile.am"
+                   (("(check_SCRIPTS|TESTS) \\+= test-out-of-memory") ""))
+                 
+                 (patch-shebang "build-aux/git-version-gen")
+                 (invoke "sh" "autogen.sh")
+                 #t))))))
+      (native-inputs
+       `(("autoconf" ,autoconf)
+         ("automake" ,automake)
+         ("libtool" ,libtool)
+         ("flex" ,flex)
+         ("texinfo" ,texinfo)
+         ("gettext" ,gettext-minimal)
+         ,@(package-native-inputs guile-2.2))))))
 
 
 ;;;
@@ -646,7 +660,9 @@ type system, elevating types to first-class status.")
                 "0c5i3d16hp7gp9rd78vk9zc45js8bphf92m4lbb5gyi4l1yl7kkm"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("pkg-config" ,pkg-config)
+       ("guile" ,guile-2.2)
+       ("guile-bytestructures" ,guile-bytestructures)))
     (inputs
      `(("guile" ,guile-2.2)
        ("libgit2" ,libgit2)))

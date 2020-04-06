@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014, 2015, 2017 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014 Ian Denhardt <ian@zenhack.net>
 ;;; Copyright © 2014 Sou Bunnbu <iyzsong@gmail.com>
@@ -8,7 +8,7 @@
 ;;; Copyright © 2015 Paul van der Walt <paul@denknerd.org>
 ;;; Copyright © 2015, 2016, 2018 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2016 Al McElrath <hello@yrns.org>
 ;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
@@ -27,8 +27,10 @@
 ;;; Copyright © 2018, 2019 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2018 Gábor Boskovits <boskovits@gmail.com>
-;;; Copyright © 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Tanguy Le Carrour <tanguy@bioneland.org>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
+;;; Copyright © 2020 Justus Winter <justus@sequoia-pgp.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -81,12 +83,14 @@
   #:use-module (gnu packages guile)
   #:use-module (gnu packages guile-xyz)
   #:use-module (gnu packages flex)
+  #:use-module (gnu packages haskell-xyz)
   #:use-module (gnu packages kerberos)
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages libevent)
   #:use-module (gnu packages libidn)
   #:use-module (gnu packages libunistring)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages lsof)
   #:use-module (gnu packages lua)
   #:use-module (gnu packages m4)
   #:use-module (gnu packages man)
@@ -136,22 +140,24 @@
   #:use-module (guix build-system guile)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
-  #:use-module (guix build-system trivial))
+  #:use-module (guix build-system trivial)
+  #:use-module (srfi srfi-1)
+  #:use-module (ice-9 match))
 
 (define-public mailutils
   (package
     (name "mailutils")
-    (version "3.8")
+    (version "3.9")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://gnu/mailutils/mailutils-"
                                  version ".tar.xz"))
              (sha256
               (base32
-               "1wkn9ch664477r4d8jk9153w5msljsbj99907k7zgzpmywbs6ba7"))))
+               "1g1xf2lal04nsnf1iym9n9n0wxjpqbcr9nysxpm98v4pniinqwsz"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases
+     `(#:phases
        (modify-phases %standard-phases
          (add-before 'check 'prepare-test-suite
            (lambda _
@@ -163,7 +169,8 @@
              ;; Tests try to invoke 'mda' such that it looks up the
              ;; 'root' user, which does not exist in the build
              ;; environment.
-             (substitute* "mda/tests/testsuite"
+             (substitute* '("mda/mda/tests/testsuite"
+                            "mda/lmtpd/tests/testsuite")
                (("root <")         "nobody <")
                (("spool/root")     "spool/nobody")
                (("root@localhost") "nobody@localhost"))
@@ -199,20 +206,26 @@
 
              #t)))
        ;; TODO: Add `--with-sql'.
-       #:configure-flags (list "--sysconfdir=/etc"
+       #:configure-flags
+       (list "--sysconfdir=/etc"
 
-                               ;; Add "/2.2" to the installation directory.
-                               (string-append "--with-guile-site-dir="
-                                              (assoc-ref %outputs "out")
-                                              "/share/guile/site/2.2"))
+             ;; Add "/X.Y" to the installation directory.
+             (string-append "--with-guile-site-dir="
+                            (assoc-ref %outputs "out")
+                            "/share/guile/site/"
+                            ,(match (assoc "guile"
+                                           (package-inputs this-package))
+                               (("guile" guile)
+                                (version-major+minor
+                                 (package-version guile))))))
 
        #:parallel-tests? #f))
     (native-inputs
-     `(("perl" ,perl)))                           ;for 'gylwrap'
-    (inputs
-     `(("dejagnu" ,dejagnu)
-       ("m4" ,m4)
+     `(("perl" ,perl)                           ;for 'gylwrap'
        ("texinfo" ,texinfo)
+       ("dejagnu" ,dejagnu)))
+    (inputs
+     `(("m4" ,m4)
        ("guile" ,guile-2.2)
        ("gsasl" ,gsasl)
        ("gnutls" ,gnutls)
@@ -236,6 +249,14 @@ software.")
     (license
      ;; Libraries are under LGPLv3+, and programs under GPLv3+.
      (list gpl3+ lgpl3+))))
+
+(define-public guile3.0-mailutils
+  (package
+    (inherit mailutils)
+    (name "guile3.0-mailutils")
+    (inputs
+     `(("guile" ,guile-3.0)
+       ,@(alist-delete "guile" (package-inputs mailutils))))))
 
 (define-public nullmailer
   (package
@@ -363,26 +384,28 @@ aliasing facilities to work just as they would on normal mail.")
 (define-public mutt
   (package
     (name "mutt")
-    (version "1.13.2")
+    (version "1.13.4")
     (source (origin
              (method url-fetch)
              (uri (list
-                    (string-append "ftp://ftp.mutt.org/pub/mutt/mutt-"
-                                   version ".tar.gz")
                     (string-append "https://bitbucket.org/mutt/mutt/downloads/"
-                                   "mutt-" version ".tar.gz")))
+                                   "mutt-" version ".tar.gz")
+                    (string-append "http://ftp.mutt.org/pub/mutt/mutt-"
+                                   version ".tar.gz")))
              (sha256
               (base32
-               "0x4yfvk8415p80h9an242n6q3b43mw6mnnczh95zd3j0zwdr6wrg"))
+               "016dzx2c0kr9xgnw4nfzpkn4nvpk56rdlcqhrwa820fq8083yzdm"))
              (patches (search-patches "mutt-store-references.patch"))))
     (build-system gnu-build-system)
     (inputs
      `(("cyrus-sasl" ,cyrus-sasl)
        ("gdbm" ,gdbm)
        ("gpgme" ,gpgme)
+       ("libidn2" ,libidn2)
        ("ncurses" ,ncurses)
        ("openssl" ,openssl)
-       ("perl" ,perl)))
+       ("perl" ,perl)
+       ("sqlite" ,sqlite)))
     (arguments
      `(#:configure-flags '("--enable-smtp"
                            "--enable-imap"
@@ -390,8 +413,11 @@ aliasing facilities to work just as they would on normal mail.")
                            "--enable-gpgme"
                            "--enable-hcache" ; for header caching
                            "--enable-sidebar"
+                           "--enable-autocrypt"
                            "--with-ssl"
                            "--with-sasl"
+                           "--with-sqlite3" ; required for Autocrypt
+                           "--with-idn2" ; recommended for Autocrypt
                            ;; so that mutt does not check whether the path
                            ;; exists, which it does not in the chroot
                            "--with-mailpath=/var/mail")))
@@ -405,7 +431,7 @@ operating systems.")
 (define-public neomutt
   (package
     (name "neomutt")
-    (version "20191207")
+    (version "20200313")
     (source
      (origin
        (method git-fetch)
@@ -414,7 +440,7 @@ operating systems.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "147yjpqnsbfy01fhsflxlixk0985r91a6bjmqq3cwmf7gka3sihm"))))
+        (base32 "1k4k07l6h5krc3fx928qvdq3ssw9fxn95aj7k885xlckd2i1lnb5"))))
     (build-system gnu-build-system)
     (inputs
      `(("cyrus-sasl" ,cyrus-sasl)
@@ -499,7 +525,7 @@ It adds a large amount of new and improved features to mutt.")
 (define-public gmime
   (package
     (name "gmime")
-    (version "3.2.5")
+    (version "3.2.7")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/gmime/"
@@ -507,7 +533,7 @@ It adds a large amount of new and improved features to mutt.")
                                   "/gmime-" version ".tar.xz"))
               (sha256
                (base32
-                "0ndsg1z1kq4w4caascydvialpyn4rfbjdn7xclzbzhw53x85cxgv"))))
+                "0i3xfc84qn1z99i70q68kbnp9rmgqrnprqb418ba52s6g9j9dsia"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
@@ -651,7 +677,7 @@ repository and Maildir/IMAP as LOCAL repository.")
        ("ruby" ,ruby))) ; to set GEM_PATH so ruby-sqlite3 is found at runtime
     (build-system gnu-build-system)
     (arguments
-     (let ((elisp-dir "/share/emacs/site-lisp/guix.d/mew")
+     (let ((elisp-dir "/share/emacs/site-lisp")
            (icon-dir  "/share/mew"))
        `(#:modules ((guix build gnu-build-system)
                     (guix build utils)
@@ -759,7 +785,7 @@ security functionality including PGP, S/MIME, SSH, and SSL.")
               (string-append (assoc-ref outputs "out")
                              "/share/emacs/site-lisp"))
              #t)))))
-    (home-page "http://www.djcbsoftware.nl/code/mu/")
+    (home-page "https://www.djcbsoftware.nl/code/mu/")
     (synopsis "Quickly find emails")
     (description
      "Mu is a tool for dealing with e-mail messages stored in the
@@ -771,14 +797,12 @@ attachments, create new maildirs, and so on.")
 (define mumimu
   ;; This is a fork of mu for use in Mumi that stores message bug IDs in its
   ;; database.  It also renames the library to "mumimu" to avoid confusion.
-  (let ((commit "ad30b5e9c85f0465aeeeac461d8c32d95775d450")
-        (revision "1"))
+  (let ((commit "6b42431052c7cc9a2e147938e1b67f14a93e4ee5")
+        (revision "2"))
     (package
       (inherit mu)
       (name "mumimu")
-      ;; TODO The version here used to be (package-version guile-email), but
-      ;; that code caused problems
-      (version (git-version "0.2.2" revision commit))
+      (version (git-version (package-version mu) revision commit))
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
@@ -787,7 +811,7 @@ attachments, create new maildirs, and so on.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "1y8r8csvkyxncgpi469dir4n4sga4z9xdzc18qh5s8bk29qj689n"))))
+                  "044scxmjrckidqx935yza3aqnjyzrmhyvgx2gs2jyf68hl2qzb89"))))
       (arguments
        (substitute-keyword-arguments (package-arguments mu)
          ((#:tests? anything '())
@@ -795,15 +819,7 @@ attachments, create new maildirs, and so on.")
          ((#:phases phases)
           `(modify-phases ,phases
              (replace 'patch-configure
-               (lambda _
-                 (delete-file "autogen.sh")
-                 (substitute* "configure.ac"
-                   ;; Use latest Guile
-                   (("guile-2.0") "guile-2.2"))
-                 (substitute* '("guile/Makefile.am"
-                                "guile/mu/Makefile.am")
-                   (("share/guile/site/2.0/") "share/guile/site/2.2/"))
-                 #t))
+               (lambda _ (delete-file "autogen.sh") #t))
              (replace 'fix-ffi
                (lambda* (#:key outputs #:allow-other-keys)
                  (substitute* "guile/mumimu.scm"
@@ -929,7 +945,9 @@ invoking @command{notifymuch} from the post-new hook.")
        #:imported-modules (,@%gnu-build-system-modules
                            (guix build emacs-build-system)
                            (guix build emacs-utils))
-       #:make-flags (list "V=1")        ; verbose test output
+       #:make-flags
+       (list "V=1"                      ; verbose test output
+             "NOTMUCH_TEST_TIMEOUT=1h") ; don't fail on slow machines
        #:phases (modify-phases %standard-phases
                   (add-after 'unpack 'patch-notmuch-lib.el
                     (lambda _
@@ -1058,6 +1076,38 @@ and search library.")
 (define-public python2-notmuch
   (package-with-python2 python-notmuch))
 
+(define-public muchsync
+  (package
+    (name "muchsync")
+    (version "5")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://www.muchsync.org/src/"
+                           "muchsync-" version ".tar.gz"))
+       (sha256
+        (base32 "1k2m44pj5i6vfhp9icdqs42chsp208llanc666p3d9nww8ngq2lb"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("ghc-pandoc" ,ghc-pandoc)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libcrypto" ,openssl)
+       ("notmuch" ,notmuch)
+       ("sqlite" ,sqlite)
+       ("xapian" ,xapian)))
+    (home-page "http://www.muchsync.org/")
+    (synopsis "Synchronize notmuch mail across machines")
+    (description
+     "Muchsync brings Notmuch to all of your computers by synchronizing your
+mail messages and Notmuch tags across machines.  The protocol is heavily
+pipelined to work efficiently over high-latency networks such as mobile
+broadband.  Muchsync supports arbitrary pairwise synchronization among
+replicas.  A version-vector-based algorithm allows it to exchange only the
+minimum information necessary to bring replicas up to date regardless of which
+pairs have previously synchronized.")
+    (license gpl2+)))
+
 (define-public getmail
   (package
     (name "getmail")
@@ -1136,7 +1186,7 @@ MailCore 2.")
               (method url-fetch)
               (uri (string-append "https://ftp.heanet.ie/mirrors/"
                                   "ftp.xemacs.org/aux/"
-                                  name "-" version ".tar.gz"))
+                                  "compface-" version ".tar.gz"))
               (sha256
                (base32
                 "09b89wg63hg502hsz592cd2h87wdprb1dq1k1y07n89hym2q56d6"))))
@@ -1146,13 +1196,13 @@ MailCore 2.")
     (synopsis "Portrait image compressor")
     (description "This package takes your 48x48x1 portrait image and
 compresses it.")
-    (home-page "http://www.cs.indiana.edu/pub/faces/")
+    (home-page "https://legacy.cs.indiana.edu/ftp/faces/")
     (license (x11-style "file://README"))))
 
 (define-public claws-mail
   (package
     (name "claws-mail")
-    (version "3.17.4")
+    (version "3.17.5")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1160,7 +1210,7 @@ compresses it.")
                     ".tar.xz"))
               (sha256
                (base32
-                "00mfhaac16sv67rwiq98hr4nl5zmd1h2afswwwksdcsi3q9x23jr"))))
+                "1gjrmdmhc7zzilrlss9yl86ybv9sra8v0qi7mkwv7d9azidx5kns"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs `(("bogofilter" ,bogofilter)
@@ -1248,6 +1298,10 @@ which can add many functionalities to the base client.")
                (install-file (string-append msmtpq "/msmtp-queue") bin)
                (install-file (string-append msmtpq "/README.msmtpq") doc)
                (install-file "scripts/vim/msmtp.vim" vimfiles)
+               ;; Don't rely on netcat being in the PATH to test for a
+               ;; connection, instead try tp ing debian.org.
+               (substitute* (string-append bin "/msmtpq")
+                 (("EMAIL_CONN_TEST=n") "EMAIL_CONN_TEST=p"))
                #t))))))
     (synopsis
      "Simple and easy to use SMTP client with decent sendmail compatibility")
@@ -1366,7 +1420,7 @@ facilities for checking incoming mail.")
 (define-public dovecot
   (package
     (name "dovecot")
-    (version "2.3.9.2")
+    (version "2.3.10")
     (source
      (origin
        (method url-fetch)
@@ -1374,19 +1428,22 @@ facilities for checking incoming mail.")
                            (version-major+minor version) "/"
                            "dovecot-" version ".tar.gz"))
        (sha256
-        (base32 "1yc6hi4hqg4hcc4495sf4m5f1lnargphi6dawj43if21vncgp127"))))
+        (base32 "1ibiz3k2flablkcqbkvfzsjnq5b5kxximhcrplflsjl57mr88ca7"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (inputs
-     `(("openssl" ,openssl)
-       ("zlib" ,zlib)
-       ("bzip2" ,bzip2)
+     `(("bzip2" ,bzip2)
+       ("libsodium" ,libsodium)         ; extra password algorithms
+       ("linux-pam" ,linux-pam)
+       ("lz4" ,lz4)
+       ("openssl" ,openssl)
        ("sqlite" ,sqlite)
-       ("linux-pam" ,linux-pam)))
+       ("zlib" ,zlib)))
     (arguments
      `(#:configure-flags '("--sysconfdir=/etc"
-                           "--localstatedir=/var")
+                           "--localstatedir=/var"
+                           "--with-sqlite") ; not auto-detected
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'patch-file-names
@@ -1500,8 +1557,8 @@ using libsodium sealed boxes.
       (home-page "https://github.com/LuckyFellow/dovecot-libsodium-plugin")
       (synopsis "Libsodium password hashing schemes plugin for Dovecot")
       (description
-       "@code{dovecot-libsodium-plugin} provides libsodium password
-hashing schemes plugin for @code{Dovecot}.")
+       "@code{dovecot-libsodium-plugin} provides a libsodium password
+hashing scheme (such as scrypt) plug-in for @code{Dovecot}.")
       (license gpl3+))))
 
 (define-public isync
@@ -2284,88 +2341,20 @@ transfer protocols.")
 (define-public opensmtpd
   (package
     (name "opensmtpd")
-    (version "6.0.3p1")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://www.opensmtpd.org/archives/"
-                                  name "-" version ".tar.gz"))
-              (sha256
-               (base32
-                "10bsfsnlg9d9i6l2izdnxp05s3ri8fvwzqxvx1jmarc852382619"))
-              ;; Fixed upstream: <github.com/OpenSMTPD/OpenSMTPD/pull/835>.
-              (patches (search-patches "opensmtpd-fix-crash.patch"))))
-    (build-system gnu-build-system)
-    (inputs
-     `(("bdb" ,bdb)
-       ("libressl" ,libressl)
-       ("libevent" ,libevent)
-       ("libasr" ,libasr)
-       ("linux-pam" ,linux-pam)
-       ("zlib" ,zlib)))
-    (native-inputs
-     `(("bison" ,bison)
-       ("groff" ,groff)))
-    (arguments
-     `(#:configure-flags
-       (list "--with-table-db" "--with-auth-pam" "--localstatedir=/var"
-             "--with-user-smtpd=smtpd" "--with-user-queue=smtpq"
-             "--with-group-queue=smtpq"
-             "--with-path-socket=/var/run" ; not default (./configure lies)
-             "--with-path-CAfile=/etc/ssl/certs/ca-certificates.crt")
-       #:phases
-       (modify-phases %standard-phases
-         ;; Fix some incorrectly hard-coded external tool file names.
-         (add-after 'unpack 'patch-FHS-file-names
-           (lambda _
-             (substitute* "smtpd/smtpctl.c"
-               (("/bin/cat") (which "cat"))
-               (("/bin/sh") (which "sh")))
-             #t))
-         ;; OpenSMTPD provides a single utility smtpctl to control the daemon and
-         ;; the local submission subsystem.  To accomodate systems that require
-         ;; historical interfaces such as sendmail, newaliases or makemap, the
-         ;; smtpctl utility can operate in compatibility mode if called with the
-         ;; historical name.
-         (add-after 'install 'install-compability-links
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let* ((out  (assoc-ref outputs "out"))
-                    (sbin (string-append out "/sbin/")))
-               (for-each (lambda (command)
-                           (symlink "smtpctl" (string-append sbin command)))
-                         '("makemap" "sendmail" "send-mail"
-                           "newaliases" "mailq")))
-             #t)))))
-    (synopsis "Lightweight SMTP daemon")
-    (description
-     "OpenSMTPD is an implementation of the server-side SMTP protocol, with
-some additional standard extensions.  It allows ordinary machines to exchange
-e-mails with other systems speaking the SMTP protocol.")
-    (home-page "https://www.opensmtpd.org")
-    (license (list bsd-2 bsd-3 bsd-4 (non-copyleft "file://COPYING")
-                   public-domain isc license:openssl))))
-
-;; OpenSMTPd 6.4 introduced a new and incompatible configuration file format.
-;; Use a different name, for now, to avoid auto-upgrades and broken mail boxes.
-;; OPENSMTP-CONFIGURATION in (gnu services mail) will also need an overhaul.
-(define-public opensmtpd-next
-  (package
-    (name "opensmtpd-next")
-    (version "6.6.1p1")
+    (version "6.6.4p1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.opensmtpd.org/archives/"
                            "opensmtpd-" version ".tar.gz"))
        (sha256
-        (base32 "1ngil8j13m2rq07g94j4yjr6zmaimzy8wbfr17shi7rxnazys6zb"))))
+        (base32 "1kyph9ycq0j21dl9n1sq5fns9p4gckdi0fmnf8awrcwrdcm9dyg2"))))
     (build-system gnu-build-system)
     (inputs
      `(("bdb" ,bdb)
        ("libasr" ,libasr)
        ("libevent" ,libevent)
-       ;; XXX Upstream recommends LibreSSL, which doesn't support TLS 1.3 yet,
-       ;; and requires a development release (3.0.2).  Use OpenSSL instead.
-       ("openssl" ,openssl)
+       ("libressl" ,libressl)           ; recommended, and supports e.g. ECDSA
        ("linux-pam" ,linux-pam)
        ("zlib" ,zlib)))
     (native-inputs
@@ -2748,7 +2737,13 @@ operators and scripters.")
              (commit "abeb2c25935ef8c75f1e5deef0f81276754dc975")))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0rqgbw08a5lj41dkp82aq480lqkc4bnxagna7wpqffi821n8gkwz"))))
+        (base32 "0rqgbw08a5lj41dkp82aq480lqkc4bnxagna7wpqffi821n8gkwz"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           ;; Remove pre-built binaries scattered across the source repository.
+           (for-each delete-file (find-files "." "\\.(dll|exe)"))
+           #t))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags (list "CC=gcc")
@@ -3008,8 +3003,8 @@ replacement for the @code{urlview} program.")
     (license gpl2+)))
 
 (define-public mumi
-  (let ((commit "8a57c87797ffb07baa88697130204184db643521")
-        (revision "5"))
+  (let ((commit "1fee105324ff9a1bd776c1244a280f4ab6ae2161")
+        (revision "13"))
     (package
       (name "mumi")
       (version (git-version "0.0.0" revision commit))
@@ -3021,29 +3016,7 @@ replacement for the @code{urlview} program.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "1575gn5p086sjxz5hvg6iyskq6cxf6vf50s9nsc4xgrbcqa3pv2c"))
-                (modules '((guix build utils)))
-                (snippet
-                 '(begin
-                    (substitute* "Makefile.am"
-                      ;; Install .go files to $prefix/lib instead of
-                      ;; $prefix/share.
-                      (("^godir[[:space:]]*=.*")
-                       "godir = \
-$(libdir)/guile/@GUILE_EFFECTIVE_VERSION@/site-ccache\n")
-
-                      ;; Install assets.
-                      (("^assetsdir.*" _)
-                       "\
-assetsdir    = $(pkgdatadir)/assets
-assetscssdir = $(assetsdir)/css
-assetsimgdir = $(assetsdir)/img
-assetsjsdir  = $(assetsdir)/js
-
-assetscss_DATA = $(wildcard assets/css/*)
-assetsimg_DATA = $(wildcard assets/img/*)
-assetsjs_DATA  = $(wildcard assets/js/*)\n"))
-                    #t))))
+                  "03liks9yavagy12sqkdvhils9s0903qi52zgszp1g98p819r0djl"))))
       (build-system gnu-build-system)
       (arguments
        `(#:modules ((guix build gnu-build-system)
@@ -3072,13 +3045,17 @@ assetsjs_DATA  = $(wildcard assets/js/*)\n"))
                      (,go ,(getenv "GUILE_LOAD_COMPILED_PATH"))))
                  #t))))))
       (inputs
-       `(("guile-debbugs" ,guile-debbugs-next)
+       `(("guile-debbugs" ,guile-debbugs)
          ("guile-email" ,guile-email)
-         ("guile-fibers" ,guile-fibers)
-         ("guile-json" ,guile-json-1)
+         ("guile-gcrypt" ,guile-gcrypt)
+         ("guile-json" ,guile-json-3)
+         ("guile-redis" ,guile-redis)
+         ("guile-sqlite3" ,guile-sqlite3)
          ("guile-syntax-highlight" ,guile-syntax-highlight)
+         ("guile-webutils" ,guile-webutils)
          ("gnutls" ,gnutls)         ;needed to talk to https://debbugs.gnu.org
          ("guile" ,guile-2.2)
+         ("mailutils" ,mailutils)
          ("mumimu" ,mumimu)))   ;'mumimu' executable recorded in (mumi config)
       (native-inputs
        `(("autoconf" ,autoconf)
@@ -3114,11 +3091,11 @@ related tools to process winmail.dat files.")
     (license gpl2+)))
 
 (define-public public-inbox
-  (let ((commit "3cf66514aea9e958999973b9f104473b6d800fbe")
+  (let ((commit "05a06f3262a2ddbf46adb85169e13ce9127e4524")
         (revision "0"))
     (package
      (name "public-inbox")
-     (version (git-version "1.0.0" revision commit))
+     (version (git-version "1.2.0" revision commit))
      (source
       (origin (method git-fetch)
               (uri (git-reference
@@ -3126,7 +3103,7 @@ related tools to process winmail.dat files.")
                     (commit commit)))
               (sha256
                (base32
-                "1sxycwlm2n6p544gn9f0vf3xs6gz8vdswdhs2ha6fka8mgabvmdh"))
+                "06cclxg46gsls3x19l9s8s9x8gkjghm6gd4jb1v9ng6fds6xi2fg"))
               (file-name (git-file-name name version))))
      (build-system perl-build-system)
      (arguments
@@ -3143,6 +3120,13 @@ related tools to process winmail.dat files.")
             (lambda _
               (substitute* "t/spawn.t"
                 (("\\['env'\\]") (string-append "['" (which "env") "']")))
+              (substitute* "t/ds-leak.t"
+                (("/bin/sh") (which "sh")))
+              (invoke "./certs/create-certs.perl")
+              ;; XXX: This test fails due to zombie process is not reaped by
+              ;; the builder.
+              (substitute* "t/httpd-unix.t"
+                (("^SKIP: \\{") "SKIP: { skip('Guix');"))
               #t))
           (add-after 'install 'wrap-programs
             (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -3162,15 +3146,18 @@ related tools to process winmail.dat files.")
               #t)))))
      (native-inputs
       `(("git" ,git)
-        ("xapian" ,xapian)))
+        ("xapian" ,xapian)
+        ;; For testing.
+        ("lsof" ,lsof)
+        ("openssl" ,openssl)))
      (inputs
-      `(("perl-danga-socket" ,perl-danga-socket)
-        ("perl-dbd-sqlite" ,perl-dbd-sqlite)
+      `(("perl-dbd-sqlite" ,perl-dbd-sqlite)
         ("perl-dbi" ,perl-dbi)
         ("perl-email-address-xs" ,perl-email-address-xs)
         ("perl-email-mime-contenttype" ,perl-email-mime-contenttype)
         ("perl-email-mime" ,perl-email-mime)
         ("perl-email-simple" ,perl-email-simple)
+        ("perl-net-server" ,perl-net-server)
         ("perl-filesys-notify-simple" ,perl-filesys-notify-simple)
         ("perl-plack-middleware-deflater" ,perl-plack-middleware-deflater)
         ("perl-plack-middleware-reverseproxy" ,perl-plack-middleware-reverseproxy)

@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014, 2018 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015, 2018 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Christopher Baines <mail@cbaines.net>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -111,7 +111,7 @@ listing the files modified by a patch.")
         (base32 "01vfvk4pqigahx82fhaaffg921ivd3k7rylz1yfvy4zbdyd32jri"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("gettext" ,gnu-gettext)))
+     `(("gettext" ,gettext-minimal)))
     (inputs `(("perl" ,perl)
               ("less" ,less)
               ("file" ,file)
@@ -247,7 +247,7 @@ GiB).")
 (define-public meld
   (package
     (name "meld")
-    (version "3.20.1")
+    (version "3.20.2")
     (source
      (origin
        (method url-fetch)
@@ -255,7 +255,7 @@ GiB).")
                            (version-major+minor version)
                            "/meld-" version ".tar.xz"))
        (sha256
-        (base32 "0jdj7kd6vj1mdc16gvrj1kar88b2j5875ajq18fx7cbc9ny46j55"))))
+        (base32 "0a0x156zr3w2yg0rnhwy39giy3xnfm6sqcfa4xcw4i6ahvwqa2dc"))))
     (build-system python-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -322,7 +322,7 @@ you to figure out what is going on in that merge you keep avoiding.")
 (define-public patchwork
   (package
     (name "patchwork")
-    (version "2.1.4")
+    (version "2.1.5")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -331,7 +331,7 @@ you to figure out what is going on in that merge you keep avoiding.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0zi1hcqb0pi2diyznbv0c1631qk4rx02zl8ghyrr59g3ljlyr18y"))))
+                "1n4hfwlgmw6mj5kp261zfx47mgb0l7g2yzl1rf0rnm8x69lr3as6"))))
     (build-system python-build-system)
     (arguments
      `(;; TODO: Tests require a running database

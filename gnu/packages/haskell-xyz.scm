@@ -23,6 +23,9 @@
 ;;; Copyright © 2019 Kyle Meyer <kyle@kyleam.com>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2020 Brett Gilio <brettg@gnu.org>
+;;; Copyright © 2020 JoJo <jo@jo.zone>
+;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2020 Alexandru-Sergiu Marton <brown121407@member.fsf.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -54,6 +57,7 @@
   #:use-module (gnu packages haskell-web)
   #:use-module (gnu packages libffi)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages llvm)
   #:use-module (gnu packages lua)
   #:use-module (gnu packages maths)
   #:use-module (gnu packages ncurses)
@@ -787,7 +791,7 @@ pragmas in your code.")
     (arguments
      `(#:cabal-revision
        ("1" "15sn2qc8k0hxbb2nai341kkrci98hlhzcj2ci087m0zxcg5jcdbp")))
-    (home-page "http://hackage.haskell.org/package/base-compat-batteries")
+    (home-page "https://hackage.haskell.org/package/base-compat-batteries")
     (synopsis "base-compat with extra batteries")
     (description "This library provides functions available in later
 versions of @code{base} to a wider range of compilers, without requiring
@@ -902,6 +906,45 @@ language extension}.  This extension enables Unicode characters to be used to
 stand for certain ASCII character sequences, i.e. → instead of @code{->},
 ∀ instead of @code{forall} and many others.")
     (license license:bsd-3)))
+
+(define-public ghc-basic-prelude
+  (package
+    (name "ghc-basic-prelude")
+    (version "0.7.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/basic-prelude/"
+             "basic-prelude-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0yckmnvm6i4vw0mykj4fzl4ldsf67v8d2h0vp1bakyj84n4myx8h"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-hashable" ,ghc-hashable)
+       ("ghc-unordered-containers"
+        ,ghc-unordered-containers)
+       ("ghc-vector" ,ghc-vector)))
+    (home-page "https://github.com/snoyberg/basic-prelude#readme")
+    (synopsis "Enhanced core prelude; a common foundation for alternate preludes")
+    (description
+     "The premise of basic-prelude is that there are a lot of very commonly
+desired features missing from the standard Prelude, such as commonly used
+operators (<$> and >=>, for instance) and imports for common datatypes
+(e.g., ByteString and Vector).  At the same time, there are lots of other
+components which are more debatable, such as providing polymorphic versions
+of common functions.
+
+So basic-prelude is intended to give a common foundation for a number of
+alternate preludes.  The package provides two modules: CorePrelude provides
+the common ground for other preludes to build on top of, while BasicPrelude
+exports CorePrelude together with commonly used list functions to provide a
+drop-in replacement for the standard Prelude.
+
+Users wishing to have an improved Prelude can use BasicPrelude.  Developers
+wishing to create a new prelude should use CorePrelude.")
+    (license license:expat)))
 
 (define-public ghc-bifunctors
   (package
@@ -3574,7 +3617,7 @@ Double.")
      `(("ghc-quickcheck" ,ghc-quickcheck)
        ("ghc-hspec" ,ghc-hspec)
        ("hspec-discover" ,hspec-discover)))
-    (home-page "http://hackage.haskell.org/package/errorcall-eq-instance")
+    (home-page "https://hackage.haskell.org/package/errorcall-eq-instance")
     (synopsis "Orphan Eq instance for ErrorCall")
     (description
      "Prior to @code{base-4.7.0.0} there was no @code{Eq} instance for @code{ErrorCall}.
@@ -3609,7 +3652,7 @@ directly uses the type system, rather than out-of-band exceptions.")
 (define-public ghc-esqueleto
   (package
     (name "ghc-esqueleto")
-    (version "3.0.0")
+    (version "3.3.1.1")
     (source
      (origin
        (method url-fetch)
@@ -3617,7 +3660,7 @@ directly uses the type system, rather than out-of-band exceptions.")
                            "esqueleto/esqueleto-" version ".tar.gz"))
        (sha256
         (base32
-         "187c098h2xyf2nhifkdy2bqfl6iap7a93mzwd2kirl5yyicpc9zy"))))
+         "1qi28ma8j5kfygjxnixlazxsyrkdqv8ljz3icwqi5dlscsnj6v3v"))))
     (build-system haskell-build-system)
     (arguments
      `(#:haddock? #f  ; Haddock reports an internal error.
@@ -3690,7 +3733,7 @@ generated SQL and optimize it for your backend.")
        ("ghc-silently" ,ghc-silently)
        ("ghc-filemanip" ,ghc-filemanip)))
     (home-page
-     "http://hackage.haskell.org/package/ghc-exactprint")
+     "https://hackage.haskell.org/package/ghc-exactprint")
     (synopsis "ExactPrint for GHC")
     (description
      "Using the API Annotations available from GHC 7.10.2, this library
@@ -3771,7 +3814,7 @@ versions of GHC (i.e., < 6.10).")
 (define-public ghc-extra
   (package
     (name "ghc-extra")
-    (version "1.6.18")
+    (version "1.6.21")
     (source
      (origin
        (method url-fetch)
@@ -3781,12 +3824,13 @@ versions of GHC (i.e., < 6.10).")
              ".tar.gz"))
        (sha256
         (base32
-         "0jvd4l0hi8pf5899pxc32yc638y0mrc357w0rph99k3hm277i0cy"))))
+         "1gjx98w4w61g043k6rzc8i34cbxpcigi8lb6i7pp1vwp8w8jm5vl"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-clock" ,ghc-clock)
        ("ghc-semigroups" ,ghc-semigroups)
-       ("ghc-quickcheck" ,ghc-quickcheck)))
+       ("ghc-quickcheck" ,ghc-quickcheck)
+       ("ghc-quickcheck-instances" ,ghc-quickcheck-instances)))
     (home-page "https://github.com/ndmitchell/extra")
     (synopsis "Extra Haskell functions")
     (description "This library provides extra functions for the standard
@@ -4015,7 +4059,7 @@ file contents, and more.")
     (build-system haskell-build-system)
     (native-inputs
      `(("ghc-quickcheck" ,ghc-quickcheck)))
-    (home-page "http://hackage.haskell.org/package/filepath-bytestring")
+    (home-page "https://hackage.haskell.org/package/filepath-bytestring")
     (synopsis "Library for manipulating RawFilePaths in a cross-platform way")
     (description "This package provides a drop-in replacement for the standard
 @code{filepath} library, operating on @code{RawFilePath} values rather than
@@ -5053,7 +5097,7 @@ a set of wrappers to use the hash tables in the IO monad.")
        (sha256
         (base32 "1wyxd8x33x4v5vxyzkhm610pl86gbkc8y439092fr1735q9g7kfq"))))
     (build-system haskell-build-system)
-    (home-page "http://hackage.haskell.org/package/haskell-lexer")
+    (home-page "https://hackage.haskell.org/package/haskell-lexer")
     (synopsis "Fully compliant Haskell 98 lexer")
     (description
      "This package provides a fully compliant Haskell 98 lexer.")
@@ -5282,8 +5326,7 @@ descriptions.")
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out   (assoc-ref outputs "out"))
                     (elisp-file "elisp/hindent.el")
-                    (dest  (string-append out "/share/emacs/site-lisp"
-                                          "/guix.d/hindent-" ,version))
+                    (dest  (string-append out "/share/emacs/site-lisp"))
                     (emacs (string-append (assoc-ref inputs "emacs")
                                           "/bin/emacs")))
                (make-file-writable elisp-file)
@@ -5789,7 +5832,7 @@ for general types.")
         (base32
          "1kfx1bwfjczj93a8yqz1n8snqiq5655qgzwv1lrycry8wb1vzlwa"))))
     (build-system haskell-build-system)
-    (home-page "http://hackage.haskell.org/package/IfElse")
+    (home-page "https://hackage.haskell.org/package/IfElse")
     (synopsis "Monadic control flow with anaphoric variants")
     (description "This library provides functions for control flow inside of
 monads with anaphoric variants on @code{if} and @code{when} and a C-like
@@ -5842,7 +5885,7 @@ lines continued at an indented level below.")
     (native-inputs
      `(("ghc-hspec" ,ghc-hspec)
        ("hspec-discover" ,hspec-discover)))
-    (home-page "http://hackage.haskell.org/package/infer-license")
+    (home-page "https://hackage.haskell.org/package/infer-license")
     (synopsis "Infer software license from a given license file")
     (description "This library provides tools to infer a software
 license from a given license file.")
@@ -5873,7 +5916,7 @@ license from a given license file.")
        ("ghc-hspec" ,ghc-hspec)
        ("ghc-raw-strings-qq" ,ghc-raw-strings-qq)
        ("ghc-regex-posix" ,ghc-regex-posix)))
-    (home-page "http://hackage.haskell.org/package/inline-c")
+    (home-page "https://hackage.haskell.org/package/inline-c")
     (synopsis "Write Haskell source files including C code inline")
     (description
      "inline-c lets you seamlessly call C libraries and embed high-performance
@@ -6097,7 +6140,7 @@ functors).  For more information, see Edward Kmett's article
        ("ghc-test-framework-hunit" ,ghc-test-framework-hunit)
        ("ghc-test-framework-quickcheck2" ,ghc-test-framework-quickcheck2)
        ("ghc-zlib" ,ghc-zlib)))
-    (home-page "http://hackage.haskell.org/package/io-streams")
+    (home-page "https://hackage.haskell.org/package/io-streams")
     (synopsis "Simple and composable stream I/O")
     (description "This library contains simple and easy-to-use
 primitives for I/O using streams.")
@@ -6338,7 +6381,7 @@ and a large set of GNU extensions.")
      `(#:tests? #f
        #:cabal-revision
        ("1" "10ac9pk4jy75k03j1ns4b5136l4kw8krr2d2nw2fdmpm5jzyghc5")))
-    (home-page "http://hackage.haskell.org/package/language-glsl")
+    (home-page "https://hackage.haskell.org/package/language-glsl")
     (synopsis "GLSL abstract syntax tree, parser, and pretty-printer")
     (description "This package is a Haskell library for the
 representation, parsing, and pretty-printing of GLSL 1.50 code.")
@@ -6442,7 +6485,7 @@ indexed variants.")
     (build-system haskell-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs `(("libffi" ,libffi)))
-    (home-page "http://hackage.haskell.org/package/libffi")
+    (home-page "https://hackage.haskell.org/package/libffi")
     (synopsis "Haskell binding to libffi")
     (description
      "A binding to libffi, allowing C functions of types only known at runtime
@@ -6704,6 +6747,72 @@ ByteString, for types that support input and output, and for types that
 can handle infinite lists.")
     (license license:bsd-3)))
 
+(define-public ghc-llvm-hs-pure
+  (package
+    (name "ghc-llvm-hs-pure")
+    (version "9.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://hackage.haskell.org/package/llvm-hs-pure/"
+                           "llvm-hs-pure-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0pxb5ah8r5pzpz2ibqw3g9g1isigb4z7pbzfrwr8kmcjn74ab3kf"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-attoparsec" ,ghc-attoparsec)
+       ("ghc-fail" ,ghc-fail)
+       ("ghc-unordered-containers" ,ghc-unordered-containers)))
+    (native-inputs
+     `(("ghc-tasty" ,ghc-tasty)
+       ("ghc-tasty-hunit" ,ghc-tasty-hunit)
+       ("ghc-tasty-quickcheck" ,ghc-tasty-quickcheck)))
+    (home-page "https://github.com/llvm-hs/llvm-hs/")
+    (synopsis "Pure Haskell LLVM functionality (no FFI)")
+    (description "llvm-hs-pure is a set of pure Haskell types and functions
+for interacting with LLVM.  It includes an algebraic datatype (ADT) to represent
+LLVM IR.  The llvm-hs package builds on this one with FFI bindings to LLVM, but
+llvm-hs-pure does not require LLVM to be available.")
+    (license license:bsd-3)))
+
+(define-public ghc-llvm-hs
+  (package
+    (name "ghc-llvm-hs")
+    (version "9.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://hackage.haskell.org/package/llvm-hs/llvm-hs-"
+                           version ".tar.gz"))
+       (sha256
+        (base32
+         "0723xgh45h9cyxmmjsvxnsp8bpn1ljy4qgh7a7vqq3sj9d6wzq00"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-attoparsec" ,ghc-attoparsec)
+       ("ghc-exceptions" ,ghc-exceptions)
+       ("ghc-utf8-string" ,ghc-utf8-string)
+       ("ghc-llvm-hs-pure" ,ghc-llvm-hs-pure)
+       ("llvm" ,llvm-9)))
+    (native-inputs
+     `(("ghc-tasty" ,ghc-tasty)
+       ("ghc-tasty-hunit" ,ghc-tasty-hunit)
+       ("ghc-tasty-quickcheck" ,ghc-tasty-quickcheck)
+       ("ghc-quickcheck" ,ghc-quickcheck)
+       ("ghc-temporary" ,ghc-temporary)
+       ("ghc-pretty-show" ,ghc-pretty-show)
+       ("ghc-temporary" ,ghc-temporary)))
+    (home-page "https://github.com/llvm-hs/llvm-hs/")
+    (synopsis "General purpose LLVM bindings for Haskell")
+    (description "llvm-hs is a set of Haskell bindings for LLVM.  Unlike other
+current Haskell bindings, it uses an algebraic datatype (ADT) to represent LLVM
+IR, and so offers two advantages: it handles almost all of the stateful
+complexities of using the LLVM API to build IR; and it supports moving IR not
+only from Haskell into LLVM C++ objects, but the other direction - from LLVM C++
+into Haskell.")
+    (license license:bsd-3)))
+
 (define-public ghc-logging-facade
   (package
     (name "ghc-logging-facade")
@@ -6830,7 +6939,7 @@ compression algorithm used in the @code{.xz} file format.")
         (base32
          "10p0gjjjwr1dda7hahwrwn5njbfhl67arq3v3nf1jr3vymlkn75j"))))
     (build-system haskell-build-system)
-    (home-page "http://hackage.haskell.org/package/magic")
+    (home-page "https://hackage.haskell.org/package/magic")
     (synopsis "Interface to C file/magic library")
     (description
      "This package provides a full-featured binding to the C libmagic library.
@@ -7717,7 +7826,7 @@ network database (<netdb.h>) API.")
     (build-system haskell-build-system)
     (native-inputs
      `(("ghc-doctest" ,ghc-doctest)))
-    (home-page "http://hackage.haskell.org/package/network-byte-order")
+    (home-page "https://hackage.haskell.org/package/network-byte-order")
     (synopsis "Network byte order utilities")
     (description "This library provides peek and poke functions for network
 byte order.")
@@ -7827,6 +7936,36 @@ a wrapper which can turn any ordered numeric type into a member of that
 class, and a lazy number type for non-negative numbers (a generalization
 of Peano numbers).")
     (license license:gpl3+)))
+
+(define-public ghc-nonce
+  (package
+    (name "ghc-nonce")
+    (version "1.0.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/nonce/"
+             "nonce-" version ".tar.gz"))
+       (sha256
+        (base32
+         "1q9ph0aq51mvdvydnriqd12sfin36pfb8f588zgac1ybn8r64ksb"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-base64-bytestring" ,ghc-base64-bytestring)
+       ("ghc-entropy" ,ghc-entropy)
+       ("ghc-unliftio" ,ghc-unliftio)
+       ("ghc-unliftio-core" ,ghc-unliftio-core)))
+    (home-page "https://github.com/prowdsponsor/nonce")
+    (synopsis "Generate cryptographic nonces in Haskell")
+    (description
+     "A nonce is an arbitrary number used only once in a cryptographic
+communication.  This package contain helper functions for generating nonces.
+There are many kinds of nonces used in different situations.  It's not
+guaranteed that by using the nonces from this package you won't have any
+security issues.  Please make sure that the nonces generated via this
+package are usable on your design.")
+    (license license:bsd-3)))
 
 (define-public ghc-numeric-extras
   (package
@@ -8095,6 +8234,114 @@ easily work with command-line options.")
     (synopsis "Utilities and combinators for parsing command line options")
     (description "This package provides utilities and combinators for parsing
 command line options in Haskell.")
+    (license license:bsd-3)))
+
+(define-public ghc-jira-wiki-markup
+  (package
+    (name "ghc-jira-wiki-markup")
+    (version "1.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/jira-wiki-markup/"
+             "jira-wiki-markup-" version ".tar.gz"))
+       (sha256
+        (base32 "1sl2jjcsqg61si33mxjwpf8zdn56kbbgcwqqqzbgifx2qbv4wmf8"))))
+    (build-system haskell-build-system)
+    (native-inputs
+     `(("ghc-tasty" ,ghc-tasty)
+       ("ghc-tasty-hunit" ,ghc-tasty-hunit)))
+    (home-page "https://github.com/tarleb/jira-wiki-markup")
+    (synopsis "Handle Jira wiki markup")
+    (description
+     "Parse jira wiki text into an abstract syntax tree for easy transformation
+to other formats.")
+    (license license:expat)))
+
+(define-public ghc-emojis
+  (package
+    (name "ghc-emojis")
+    (version "0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/emojis/"
+             "emojis-" version ".tar.gz"))
+       (sha256
+        (base32 "1c6zkj9gmk1y90gbdrn50hyp7mw1mggzhnr2khqd728ryipw60ss"))))
+    (build-system haskell-build-system)
+    (native-inputs
+     `(("ghc-hunit" ,ghc-hunit)))
+    (home-page "https://github.com/jgm/emojis#readme")
+    (synopsis "Conversion between emoji characters and their names.")
+    (description
+     "This package provides functions for converting emoji names to emoji
+characters and vice versa.
+
+How does it differ from the @code{emoji} package?
+@itemize
+@item It supports a fuller range of emojis, including all those supported by
+GitHub
+@item It supports lookup of emoji aliases from emoji
+@item It uses Text rather than String
+@item It has a lighter dependency footprint: in particular, it does not
+require aeson
+@item It does not require TemplateHaskell
+@end itemize")
+    (license license:bsd-3)))
+
+(define-public ghc-text-conversions
+  (package
+    (name "ghc-text-conversions")
+    (version "0.3.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/text-conversions/"
+             "text-conversions-" version ".tar.gz"))
+       (sha256
+        (base32 "089c56vdj9xysqfr1hnvbnrghlg83q6w10xk02gflpsidcpvwmhp"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-base16-bytestring" ,ghc-base16-bytestring)
+       ("ghc-base64-bytestring" ,ghc-base64-bytestring)
+       ("ghc-errors" ,ghc-errors)))
+    (native-inputs
+     `(("ghc-hspec" ,ghc-hspec)
+       ("hspec-discover" ,hspec-discover)))
+    (home-page "https://github.com/cjdev/text-conversions#readme")
+    (synopsis "Safe conversions between textual types")
+    (description "Safe conversions between textual types")
+    (license license:isc)))
+
+(define-public ghc-doclayout
+  (package
+    (name "ghc-doclayout")
+    (version "0.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/doclayout/"
+             "doclayout-" version ".tar.gz"))
+       (sha256
+        (base32 "1wmnwq28jcyd6c80srivsnd5znmyl9sgmwwnlk2crwiiwqadbal7"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-safe" ,ghc-safe)))
+    (native-inputs
+     `(("ghc-tasty" ,ghc-tasty)
+       ("ghc-tasty-golden" ,ghc-tasty-golden)
+       ("ghc-tasty-hunit" ,ghc-tasty-hunit)))
+    (home-page "https://github.com/jgm/doclayout")
+    (synopsis "Pretty-printing library for laying out text documents")
+    (description
+     "doclayout is a pretty-printing library for laying out text documents,
+with several features not present in pretty-printing libraries designed for
+code.  It was designed for use in @code{Pandoc}.")
     (license license:bsd-3)))
 
 (define-public ghc-pandoc
@@ -8391,7 +8638,7 @@ the parsers provided by @code{parsec}, @code{attoparsec} and @code{base}'s
        ("ghc-hspec" ,ghc-hspec)
        ("ghc-validity" ,ghc-validity)))
     (home-page
-     "http://hackage.haskell.org/package/path")
+     "https://hackage.haskell.org/package/path")
     (synopsis "Support for well-typed paths")
     (description "This package introduces a type for paths upholding useful
 invariants.")
@@ -8507,41 +8754,36 @@ syntax and semantics as Perl 5.")
 (define-public ghc-persistent
   (package
     (name "ghc-persistent")
-    (version "2.9.2")
+    (version "2.10.4")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://hackage.haskell.org/package/"
-                           "persistent-" version "/"
-                           "persistent-" version ".tar.gz"))
+       (uri (string-append
+             "https://hackage.haskell.org/package/persistent/"
+             "persistent-" version ".tar.gz"))
        (sha256
         (base32
-         "1wsa3kn427v88a6r0vwr6mz23snik2krbsgc8zqp18xajqn5szj9"))))
+         "1cxswz72sqdg2z1nbpgp1k5qr41djgk8qbf8nz7wfppsrhacyffi"))))
     (build-system haskell-build-system)
-    (inputs `(("ghc-old-locale" ,ghc-old-locale)
-              ("ghc-conduit" ,ghc-conduit)
-              ("ghc-resourcet" ,ghc-resourcet)
-              ("ghc-exceptions" ,ghc-exceptions)
-              ("ghc-monad-control" ,ghc-monad-control)
-              ("ghc-lifted-base" ,ghc-lifted-base)
-              ("ghc-resource-pool" ,ghc-resource-pool)
-              ("ghc-path-pieces" ,ghc-path-pieces)
-              ("ghc-http-api-data" ,ghc-http-api-data)
-              ("ghc-aeson" ,ghc-aeson)
-              ("ghc-monad-logger" ,ghc-monad-logger)
-              ("ghc-transformers-base" ,ghc-transformers-base)
-              ("ghc-base64-bytestring" ,ghc-base64-bytestring)
-              ("ghc-unordered-containers" ,ghc-unordered-containers)
-              ("ghc-vector" ,ghc-vector)
-              ("ghc-attoparsec" ,ghc-attoparsec)
-              ("ghc-haskell-src-meta" ,ghc-haskell-src-meta)
-              ("ghc-blaze-html" ,ghc-blaze-html)
-              ("ghc-blaze-markup" ,ghc-blaze-markup)
-              ("ghc-silently" ,ghc-silently)
-              ("ghc-fast-logger" ,ghc-fast-logger)
-              ("ghc-scientific" ,ghc-scientific)
-              ("ghc-tagged" ,ghc-tagged)
-              ("ghc-void" ,ghc-void)))
+    (inputs
+     `(("ghc-aeson" ,ghc-aeson)
+       ("ghc-attoparsec" ,ghc-attoparsec)
+       ("ghc-base64-bytestring" ,ghc-base64-bytestring)
+       ("ghc-blaze-html" ,ghc-blaze-html)
+       ("ghc-conduit" ,ghc-conduit)
+       ("ghc-fast-logger" ,ghc-fast-logger)
+       ("ghc-http-api-data" ,ghc-http-api-data)
+       ("ghc-monad-logger" ,ghc-monad-logger)
+       ("ghc-path-pieces" ,ghc-path-pieces)
+       ("ghc-resource-pool" ,ghc-resource-pool)
+       ("ghc-resourcet" ,ghc-resourcet)
+       ("ghc-scientific" ,ghc-scientific)
+       ("ghc-silently" ,ghc-silently)
+       ("ghc-unliftio-core" ,ghc-unliftio-core)
+       ("ghc-unliftio" ,ghc-unliftio)
+       ("ghc-unordered-containers"
+        ,ghc-unordered-containers)
+       ("ghc-vector" ,ghc-vector)))
     (native-inputs `(("ghc-hspec" ,ghc-hspec)))
     (home-page "https://www.yesodweb.com/book/persistent")
     (synopsis "Type-safe, multi-backend data serialization for Haskell")
@@ -8553,30 +8795,40 @@ way.")
 (define-public ghc-persistent-sqlite
   (package
     (name "ghc-persistent-sqlite")
-    (version "2.9.3")
+    (version "2.10.5.2")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://hackage.haskell.org/package/"
-                           "persistent-sqlite-" version "/"
-                           "persistent-sqlite-" version ".tar.gz"))
+       (uri (string-append
+             "https://hackage.haskell.org/package/persistent-sqlite/"
+             "persistent-sqlite-" version ".tar.gz"))
        (sha256
         (base32
-         "13wbn88ixv4d4dfjl1gabm1q60fbcnygbmixz57pi3z84drrynwq"))))
+         "0agag3cgivl6mk38pqzr0qw5lxps9p2bgdwvi5658l46hs7bixxn"))))
     (build-system haskell-build-system)
-    (inputs `(("ghc-persistent" ,ghc-persistent)
-              ("ghc-unliftio-core" ,ghc-unliftio-core)
-              ("ghc-aeson" ,ghc-aeson)
-              ("ghc-conduit" ,ghc-conduit)
-              ("ghc-monad-logger" ,ghc-monad-logger)
-              ("ghc-microlens-th" ,ghc-microlens-th)
-              ("ghc-resourcet" ,ghc-resourcet)
-              ("ghc-old-locale" ,ghc-old-locale)
-              ("ghc-resource-pool" ,ghc-resource-pool)
-              ("ghc-unordered-containers" ,ghc-unordered-containers)))
-    (native-inputs `(("ghc-hspec" ,ghc-hspec)
-                     ("ghc-persistent-template" ,ghc-persistent-template)
-                     ("ghc-temporary" ,ghc-temporary)))
+    (inputs
+     `(("ghc-persistent" ,ghc-persistent)
+       ("ghc-aeson" ,ghc-aeson)
+       ("ghc-conduit" ,ghc-conduit)
+       ("ghc-microlens-th" ,ghc-microlens-th)
+       ("ghc-monad-logger" ,ghc-monad-logger)
+       ("ghc-resource-pool" ,ghc-resource-pool)
+       ("ghc-resourcet" ,ghc-resourcet)
+       ("ghc-unliftio-core" ,ghc-unliftio-core)
+       ("ghc-unordered-containers"
+        ,ghc-unordered-containers)))
+    (native-inputs
+     `(("ghc-persistent-template"
+        ,ghc-persistent-template)
+       ("ghc-persistent-test" ,ghc-persistent-test)
+       ("ghc-exceptions" ,ghc-exceptions)
+       ("ghc-fast-logger" ,ghc-fast-logger)
+       ("ghc-hspec" ,ghc-hspec)
+       ("ghc-hunit" ,ghc-hunit)
+       ("ghc-quickcheck" ,ghc-quickcheck)
+       ("ghc-system-fileio" ,ghc-system-fileio)
+       ("ghc-system-filepath" ,ghc-system-filepath)
+       ("ghc-temporary" ,ghc-temporary)))
     (home-page
      "https://www.yesodweb.com/book/persistent")
     (synopsis "Backend for the persistent library using sqlite3")
@@ -8588,32 +8840,77 @@ system dependencies.")
 (define-public ghc-persistent-template
   (package
     (name "ghc-persistent-template")
-    (version "2.6.0")
+    (version "2.8.0")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://hackage.haskell.org/package/"
-                           "persistent-template-" version "/"
-                           "persistent-template-" version ".tar.gz"))
+       (uri (string-append
+             "https://hackage.haskell.org/package/persistent-template/"
+             "persistent-template-" version ".tar.gz"))
        (sha256
         (base32
-         "0wr1z2nfrl6jv1lprxb0d2jw4izqfcbcwvkdrhryzg95gjz8ryjv"))))
+         "16yjrl0gh4jbs4skr7iv6a55lny59bqhd6hjmvch1cl9j5d0c0g3"))))
     (build-system haskell-build-system)
-    (inputs `(("ghc-persistent" ,ghc-persistent)
-              ("ghc-monad-control" ,ghc-monad-control)
-              ("ghc-aeson" ,ghc-aeson)
-              ("ghc-aeson-compat" ,ghc-aeson-compat)
-              ("ghc-monad-logger" ,ghc-monad-logger)
-              ("ghc-unordered-containers" ,ghc-unordered-containers)
-              ("ghc-tagged" ,ghc-tagged)
-              ("ghc-path-pieces" ,ghc-path-pieces)
-              ("ghc-http-api-data" ,ghc-http-api-data)))
-    (native-inputs `(("ghc-hspec" ,ghc-hspec)
-                     ("ghc-quickcheck" ,ghc-quickcheck)))
+    (inputs
+     `(("ghc-persistent" ,ghc-persistent)
+       ("ghc-aeson" ,ghc-aeson)
+       ("ghc-http-api-data" ,ghc-http-api-data)
+       ("ghc-monad-control" ,ghc-monad-control)
+       ("ghc-monad-logger" ,ghc-monad-logger)
+       ("ghc-path-pieces" ,ghc-path-pieces)
+       ("ghc-th-lift-instances" ,ghc-th-lift-instances)
+       ("ghc-unordered-containers"
+        ,ghc-unordered-containers)))
+    (native-inputs
+     `(("ghc-hspec" ,ghc-hspec)
+       ("ghc-quickcheck" ,ghc-quickcheck)))
     (home-page "https://www.yesodweb.com/book/persistent")
     (synopsis "Type-safe, non-relational, multi-backend persistence")
     (description "This Haskell package provides interfaces and helper
 functions for the ghc-persistent package.")
+    (license license:expat)))
+
+(define-public ghc-persistent-test
+  (package
+    (name "ghc-persistent-test")
+    (version "2.0.3.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/persistent-test/"
+             "persistent-test-" version ".tar.gz"))
+       (sha256
+        (base32
+         "11aq5cy0n43jamf6mg4sr4300bc2zdbjxsczzxwjkb4hzs0ijsdv"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-aeson" ,ghc-aeson)
+       ("ghc-blaze-html" ,ghc-blaze-html)
+       ("ghc-conduit" ,ghc-conduit)
+       ("ghc-monad-control" ,ghc-monad-control)
+       ("ghc-monad-logger" ,ghc-monad-logger)
+       ("ghc-path-pieces" ,ghc-path-pieces)
+       ("ghc-persistent" ,ghc-persistent)
+       ("ghc-persistent-template" ,ghc-persistent-template)
+       ("ghc-random" ,ghc-random)
+       ("ghc-resourcet" ,ghc-resourcet)
+       ("ghc-transformers-base" ,ghc-transformers-base)
+       ("ghc-unliftio" ,ghc-unliftio)
+       ("ghc-unliftio-core" ,ghc-unliftio-core)
+       ("ghc-unordered-containers" ,ghc-unordered-containers)))
+    (native-inputs
+     `(("ghc-quickcheck" ,ghc-quickcheck)
+       ("ghc-quickcheck-instances" ,ghc-quickcheck-instances)
+       ("ghc-hspec" ,ghc-hspec)
+       ("ghc-hspec-expectations" ,ghc-hspec-expectations)
+       ("ghc-hunit" ,ghc-hunit)))
+    (home-page "https://www.yesodweb.com/book/persistent")
+    (synopsis "Tests for the Persistent database library")
+    (description
+     "This is only for use in developing libraries that should conform to
+the persistent interface, not for users of the persistent suite of database
+libraries.")
     (license license:expat)))
 
 (define-public ghc-pipes
@@ -8674,7 +8971,7 @@ dependencies
          "16xsrzqql7i4z6a3xy07sqnbyqdmcar1jiacla58y4mvkkwb0g3l"))))
     (build-system haskell-build-system)
     (home-page
-     "http://hackage.haskell.org/package/pointedlist")
+     "https://hackage.haskell.org/package/pointedlist")
     (synopsis
      "Zipper-like comonad which works as a list, tracking a position")
     (description
@@ -8769,7 +9066,7 @@ reduce @code{UndecidableInstances}.")
         (base32
          "11l9ajci7nh1r547hx8hgxrhq8mh5gdq30pdf845wvilg9p48dz5"))))
     (build-system haskell-build-system)
-    (home-page "http://hackage.haskell.org/package/prettyclass")
+    (home-page "https://hackage.haskell.org/package/prettyclass")
     (synopsis "Pretty printing class similar to Show")
     (description "This package provides a pretty printing class similar
 to @code{Show}, based on the HughesPJ pretty printing library.  It
@@ -8909,6 +9206,46 @@ API.")
     (description "This library provides profunctors for Haskell.")
     (license license:bsd-3)))
 
+(define-public ghc-project-template
+  (package
+    (name "ghc-project-template")
+    (version "0.2.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/project-template/project-template-"
+             version ".tar.gz"))
+       (sha256
+        (base32
+         "1p69ww4rhah2qxragl615wl4a6mk4x9w09am8knmz3s4lxpljlpb"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-base64-bytestring" ,ghc-base64-bytestring)
+       ("ghc-conduit" ,ghc-conduit)
+       ("ghc-conduit-extra" ,ghc-conduit-extra)
+       ("ghc-resourcet" ,ghc-resourcet)))
+    (native-inputs
+     `(("ghc-hspec" ,ghc-hspec)
+       ("hspec-discover" ,hspec-discover)
+       ("ghc-quickcheck" ,ghc-quickcheck)))
+    (arguments
+     `(#:cabal-revision
+       ("1"
+        "0lq3sqnq0nr0gbvgzp0lqdl3j3mqdmdlf8xsw0j3pjh581xj3k0a")))
+    (home-page "https://github.com/fpco/haskell-ide")
+    (synopsis "Specify Haskell project templates and generate files")
+    (description
+     "Haskell library for both generating and consuming project templates.
+
+ost IDEs provide the concept of a project template: instead of writing all
+of the code for a project from scratch, you select a template, answer a few
+questions, and a bunch of files are automatically generated.
+
+project-template tries to provide a canonical Haskell library for implementing
+the ideal templating system.")
+    (license license:bsd-3)))
+
 (define-public ghc-psqueues
   (package
     (name "ghc-psqueues")
@@ -8972,6 +9309,36 @@ Typical applications of Priority Search Queues include:
 @item Schedulers;
 @item Pathfinding algorithms, such as Dijkstra's and A*.
 @end itemize")
+    (license license:bsd-3)))
+
+(define-public ghc-pwstore-fast
+  (package
+    (name "ghc-pwstore-fast")
+    (version "2.4.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/pwstore-fast/"
+             "pwstore-fast-" version ".tar.gz"))
+       (sha256
+        (base32
+         "1cpvlwzg3qznhygrr78f75p65mnljd9v5cvnagfxjqppnrkay6bj"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-base64-bytestring" ,ghc-base64-bytestring)
+       ("ghc-cryptohash" ,ghc-cryptohash)
+       ("ghc-random" ,ghc-random)
+       ("ghc-byteable" ,ghc-byteable)))
+    (home-page "https://github.com/PeterScott/pwstore")
+    (synopsis "Secure password storage")
+    (description
+     "To store passwords securely, they should be salted, then hashed with
+a slow hash function.  This library uses PBKDF1-SHA256, and handles all the
+details.  It uses the cryptohash package for speed; if you need a pure
+Haskell library, pwstore-purehaskell has the exact same API, but uses only
+pure Haskell.  It is about 25 times slower than this package, but still quite
+usable.")
     (license license:bsd-3)))
 
 (define-public ghc-random
@@ -9136,7 +9503,7 @@ containers and a general map/reduce framework for Haskell.")
         (base32
          "0v0zxcx29b8jxs2kgy9csykqcp8kzhdvyylw2xfwmj4pfxr2kl0a"))))
     (build-system haskell-build-system)
-    (home-page "http://hackage.haskell.org/package/refact")
+    (home-page "https://hackage.haskell.org/package/refact")
     (synopsis "Specify refactorings to perform with apply-refact")
     (description
      "This library provides a datatype which can be interpreted by
@@ -9404,7 +9771,7 @@ inspired by libtre.")
      `(("ghc-regex-base" ,ghc-regex-base)
        ("ghc-regex-tdfa" ,ghc-regex-tdfa)))
     (home-page
-     "http://hackage.haskell.org/package/regex-tdfa-text")
+     "https://hackage.haskell.org/package/regex-tdfa-text")
     (synopsis "Text interface for regex-tdfa")
     (description
      "This provides an extra text interface for regex-tdfa.")
@@ -9921,7 +10288,7 @@ programming.")
        ("sdl2-image" ,sdl2-image)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
-    (home-page "http://hackage.haskell.org/package/sdl2-image")
+    (home-page "https://hackage.haskell.org/package/sdl2-image")
     (synopsis "Bindings to SDL2_image")
     (description "This package provides Haskell bindings to
 @code{SDL2_image}.")
@@ -9949,7 +10316,7 @@ programming.")
        ("sdl2-mixer" ,sdl2-mixer)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
-    (home-page "http://hackage.haskell.org/package/sdl2-mixer")
+    (home-page "https://hackage.haskell.org/package/sdl2-mixer")
     (synopsis "Bindings to SDL2 mixer")
     (description "This package provides Haskell bindings to
 @code{SDL2_mixer}.")
@@ -10453,7 +10820,7 @@ automatically by SmallCheck.")
         (base32
          "07ci2mh8cbjvipb576rxsj3iyhkj5c5dnsns4xkdppp2p3pv10d3"))))
     (build-system haskell-build-system)
-    (home-page "http://hackage.haskell.org/package/sop-core")
+    (home-page "https://hackage.haskell.org/package/sop-core")
     (synopsis "True Sums of Products")
     (description "This package provides an implementation of
 @math{n}-ary sums and @math{n}-ary products.  The module @code{Data.SOP}
@@ -10512,7 +10879,7 @@ mainstream languages.")
        ("ghc-base-compat-batteries" ,ghc-base-compat-batteries)
        ("ghc-tf-random" ,ghc-tf-random)
        ("ghc-vector" ,ghc-vector)))
-    (home-page "http://hackage.haskell.org/package/splitmix")
+    (home-page "https://hackage.haskell.org/package/splitmix")
     (synopsis "Fast and splittable pseudorandom number generator")
     (description "This package provides a Pure Haskell implementation of the
 SplitMix pseudorandom number generator.  SplitMix is a \"splittable\"
@@ -10907,7 +11274,7 @@ literals.")
     (build-system haskell-build-system)
     (native-inputs
      `(("ghc-hunit" ,ghc-hunit)))
-    (home-page "http://hackage.haskell.org/package/string-qq")
+    (home-page "https://hackage.haskell.org/package/string-qq")
     (synopsis
      "QuasiQuoter for non-interpolated strings, texts and bytestrings.")
     (description
@@ -10939,70 +11306,6 @@ and bytestrings.")
 for substrings in strict or lazy @code{ByteStrings}.  It also provides
 functions for breaking or splitting on substrings and replacing all
 occurrences of a substring (the first in case of overlaps) with another.")
-    (license license:bsd-3)))
-
-(define-public ghc-stylish-haskell
-  (package
-    (name "ghc-stylish-haskell")
-    (version "0.9.2.1")
-    (source
-      (origin
-        (method url-fetch)
-        (uri (string-append
-               "mirror://hackage/package/stylish-haskell/stylish-haskell-"
-               version
-               ".tar.gz"))
-        (sha256
-          (base32
-            "1ls11fdx6snvfx8yykpidz142zzxwi5bazl49hgfqlwx50rqcp7w"))))
-    (build-system haskell-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'configure 'update-constraints
-           (lambda _
-             (substitute* "stylish-haskell.cabal"
-               (("haskell-src-exts >= 1\\.18   && < 1\\.21,")
-                "haskell-src-exts >= 1.18   && < 1.22,"))
-             #t)))))
-    (inputs
-      `(("ghc-aeson" ,ghc-aeson)
-        ("ghc-file-embed" ,ghc-file-embed)
-        ("ghc-haskell-src-exts" ,ghc-haskell-src-exts)
-        ("ghc-semigroups" ,ghc-semigroups)
-        ("ghc-syb" ,ghc-syb)
-        ("ghc-yaml" ,ghc-yaml)
-        ("ghc-strict" ,ghc-strict)
-        ("ghc-optparse-applicative"
-         ,ghc-optparse-applicative)))
-    (native-inputs
-      `(("ghc-hunit" ,ghc-hunit)
-        ("ghc-test-framework" ,ghc-test-framework)
-        ("ghc-test-framework-hunit" ,ghc-test-framework-hunit)))
-    (home-page "https://github.com/jaspervdj/stylish-haskell")
-    (synopsis "Haskell code prettifier")
-    (description "Stylish-haskell is a Haskell code prettifier.  The goal is
-not to format all of the code in a file, to avoid \"getting in the way\".
-However, this tool can e.g. clean up import statements and help doing various
-tasks that get tedious very quickly.  It can
-@itemize
-@item
-Align and sort @code{import} statements
-@item
-Group and wrap @code{{-# LANGUAGE #-}} pragmas, remove (some) redundant
-pragmas
-@item
-Remove trailing whitespaces
-@item
-Align branches in @code{case} and fields in records
-@item
-Convert line endings (customisable)
-@item
-Replace tabs by four spaces (turned off by default)
-@item
-Replace some ASCII sequences by their Unicode equivalent (turned off by
-default)
-@end itemize")
     (license license:bsd-3)))
 
 (define-public ghc-svg-builder
@@ -11674,7 +11977,7 @@ function which generates instances.")
        ("1" "0k8ph4sydaiqp8dav4if6hpiaq8h1xsr93khmdr7a1mmfwdxr64r")))
     (home-page "https://github.com/phadej/time-compat")
     (synopsis "Compatibility package for time")
-    (description "This packages tries to compat as many @code{time}
+    (description "This package tries to compat as many @code{time}
 features as possible.")
     (license license:bsd-3)))
 
@@ -12036,7 +12339,7 @@ upon it.")
        #:cabal-revision
        ("1"
         "09pqi867wskwgc5lpn197f895mbn1174ydgllvcppcsmrz2b6yr6")))
-    (home-page "http://hackage.haskell.org/package/unagi-chan")
+    (home-page "https://hackage.haskell.org/package/unagi-chan")
     (synopsis "Fast concurrent queues with a Chan-like API, and more")
     (description
      "This library provides implementations of concurrent FIFO queues (for
@@ -13047,7 +13350,7 @@ parts.")
         (base32
          "0g814lj7vaxvib2g3r734221k80k7ap9czv9hinifn8syals3l9j"))))
     (build-system haskell-build-system)
-    (home-page "http://code.galois.com")
+    (home-page "https://github.com/GaloisInc/xml")
     (synopsis "Simple XML library for Haskell")
     (description "This package provides a simple XML library for Haskell.")
     (license license:bsd-3)))

@@ -3,6 +3,8 @@
 ;;; Copyright © 2016 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2019 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -34,6 +36,7 @@
   #:use-module (ice-9 match)
   #:use-module (ice-9 regex)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-2)
   #:export (grub-image
             grub-image?
             grub-image-aspect-ratio
@@ -88,7 +91,9 @@ denoting a file name."
   (color-normal    grub-theme-color-normal
                    (default '((fg . cyan) (bg . blue))))
   (color-highlight grub-theme-color-highlight
-                   (default '((fg . white) (bg . blue)))))
+                   (default '((fg . white) (bg . blue))))
+  (gfxmode         grub-gfxmode
+                   (default '("auto"))))          ;list of string
 
 (define %background-image
   (grub-image
@@ -145,29 +150,26 @@ STORE-MOUNT-POINT is its mount point; these are used to determine where the
 background image and fonts must be searched for.  SYSTEM must be the target
 system string---e.g., \"x86_64-linux\"."
   (define setup-gfxterm-body
-    ;; Intel and EFI systems need to be switched into graphics mode, whereas
-    ;; most other modern architectures have no other mode and therefore don't
-    ;; need to be switched.
-    (if (string-match "^(x86_64|i[3-6]86)-" system)
-        "
-  # Leave 'gfxmode' to 'auto'.
-  insmod video_bochs
-  insmod video_cirrus
-  insmod gfxterm
+    (let ((gfxmode
+           (or (and-let* ((theme (bootloader-configuration-theme config))
+                          (gfxmode (grub-gfxmode theme)))
+                 (string-join gfxmode ";"))
+               "auto")))
 
-  if [ \"${grub_platform}\" == efi ]; then
-    # This is for (U)EFI systems (these modules are unavailable in the
-    # non-EFI GRUB.)  If we don't load them, GRUB boots in \"blind mode\",
-    # which isn't convenient.
-    insmod efi_gop
-    insmod efi_uga
-  else
-    # These are specific to non-EFI Intel machines.
-    insmod vbe
-    insmod vga
-  fi
-"
-        ""))
+      ;; Intel and EFI systems need to be switched into graphics mode, whereas
+      ;; most other modern architectures have no other mode and therefore
+      ;; don't need to be switched.
+
+      ;; XXX: Do we really need to restrict to x86 systems?  We could imitate
+      ;; what the GRUB default configuration does and decide based on whether
+      ;; a user provided 'gfxterm' in the terminal-outputs field of their
+      ;; bootloader-configuration record.
+      (if (string-match "^(x86_64|i[3-6]86)-" system)
+          (format #f "
+  set gfxmode=~a
+  insmod all_video
+  insmod gfxterm~%" gfxmode)
+          "")))
 
   (define (setup-gfxterm config font-file)
     (if (memq 'gfxterm (bootloader-configuration-terminal-outputs config))
@@ -238,7 +240,11 @@ the 'share/X11/xkb/symbols/' directory of 'xkeyboard-config'."
                   "-i" #+(keyboard-layout->console-keymap layout)
                   "-o" #$output))))
 
-  (computed-file (string-append "grub-keymap." (keyboard-layout-name layout))
+  (computed-file (string-append "grub-keymap."
+                                (string-map (match-lambda
+                                              (#\, #\-)
+                                              (chr chr))
+                                            (keyboard-layout-name layout)))
                  builder))
 
 (define (grub-setup-io config)

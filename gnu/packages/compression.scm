@@ -13,7 +13,7 @@
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016, 2019 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2016, 2018, 2019 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 ng0 <ng0@n0.is>
 ;;; Copyright © 2017 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2017 Theodoros Foradis <theodoros@foradis.org>
@@ -25,6 +25,7 @@
 ;;; Copyright © 2018, 2019 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2019 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -410,7 +411,8 @@ compatible with bzip2 – both at file format and command line level.")
        #:phases (modify-phases %standard-phases
                   (delete 'configure))  ; no configure script
        #:make-flags (list (string-append "PREFIX=" %output))))
-    (home-page "http://compression.ca/pbzip2/")
+    (home-page (string-append "https://web.archive.org/web/20180412020219/"
+                              "http://compression.ca/pbzip2/"))
     (synopsis "Parallel bzip2 implementation")
     (description
      "Pbzip2 is a parallel implementation of the bzip2 block-sorting file
@@ -764,7 +766,12 @@ decompression of some loosely related file formats used by Microsoft.")
                       (substitute* "tests/Makefile"
                         (("^test: (.*) test-install" _ targets)
                          (string-append "test: " targets)))
-                      #t)))))
+                      #t))
+                  (add-after 'install 'delete-static-library
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let ((out (assoc-ref outputs "out")))
+                        (delete-file (string-append out "/lib/liblz4.a"))
+                        #t))))))
     (home-page "https://www.lz4.org")
     (synopsis "Compression algorithm focused on speed")
     (description "LZ4 is a lossless compression algorithm, providing
@@ -808,7 +815,7 @@ time for compression ratio.")
        ("lzo" ,lzo)
        ("xz" ,xz)
        ("zlib" ,zlib)))
-    (home-page "http://squashfs.sourceforge.net/")
+    (home-page "https://github.com/plougher/squashfs-tools")
     (synopsis "Tools to create and extract squashfs file systems")
     (description
      "Squashfs is a highly compressed read-only file system for Linux.  It uses
@@ -882,49 +889,6 @@ a collection of smaller blocks which makes random access to the original data
 possible and can compress in parallel.  This is especially useful for large
 tarballs.")
     (license license:bsd-2)))
-
-(define-public brotli
-  (let ((commit "e992cce7a174d6e2b3486616499d26bb0bad6448")
-        (revision "1"))
-    (package
-      (name "brotli")
-      (version (string-append "0.1-" revision "."
-                              (string-take commit 7)))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://github.com/bagder/libbrotli.git")
-                      (commit commit)
-                      (recursive? #t)))
-                (file-name (string-append name "-" version ".tar.xz"))
-                (sha256
-                 (base32
-                  "1qxxsasvwbbbh6dl3138y9h3fg0q2v7xdk5jjc690bdg7g1wrj6n"))
-                (modules '((guix build utils)))
-                (snippet '(begin
-                            ;; This is a recursive submodule that is
-                            ;; unnecessary for this package, so delete it.
-                            (delete-file-recursively "brotli/terryfy")
-                            #t))))
-      (build-system gnu-build-system)
-      (native-inputs
-       `(("autoconf" ,autoconf)
-         ("automake" ,automake)
-         ("libtool" ,libtool)))
-      (arguments
-       `(#:phases (modify-phases %standard-phases
-                    (add-after 'unpack 'autogen
-                      (lambda _
-                        (mkdir "m4")
-                        (invoke "autoreconf" "-vfi"))))))
-      (home-page "https://github.com/bagder/libbrotli/")
-      (synopsis "Implementation of the Brotli compression algorithm")
-      (description
-       "Brotli is a general-purpose lossless compression algorithm.  It is
-similar in speed to deflate but offers denser compression.  This package
-provides encoder and a decoder libraries: libbrotlienc and libbrotlidec,
-respectively, based on the reference implementation from Google.")
-      (license license:expat))))
 
 (define-public bsdiff
   (package
@@ -1584,6 +1548,7 @@ recreates the stored directory structure by default.")
   (package
     (name "zziplib")
     (version "0.13.69")
+    (replacement zziplib/fixed)
     (home-page "https://github.com/gdraheim/zziplib")
     (source (origin
               (method git-fetch)
@@ -1621,21 +1586,29 @@ recreates the stored directory structure by default.")
     ;; files carry the Zlib license; see "docs/copying.html" for details.
     (license (list license:lgpl2.0+ license:mpl1.1))))
 
+(define zziplib/fixed
+  (package
+    (inherit zziplib)
+    (source (origin
+              (inherit (package-source zziplib))
+              (patches (search-patches "zziplib-CVE-2018-16548.patch"))))))
+
 (define-public libzip
   (package
     (name "libzip")
-    (version "1.5.2")
+    (version "1.6.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
                     "https://libzip.org/download/libzip-" version ".tar.xz"))
               (sha256
                (base32
-                "1d53shcy7nvls5db573bbdlm25lfz1iw2zshng5f00cssi5lvpmk"))))
+                "0h9nsgkw0dk4srsvmz6xy6f9l4h815xn07j8h40l8gqvcxxaqpbh"))))
     (native-inputs
      `(("perl" ,perl)))
     (inputs
      `(("gnutls" ,gnutls)
+       ("liblzma" ,xz)
        ("openssl" ,openssl)
        ("zlib" ,zlib)))
     (build-system cmake-build-system)
@@ -1874,6 +1847,10 @@ with @code{deflate} but offers more dense compression.
 The specification of the Brotli Compressed Data Format is defined in RFC 7932.")
     (license license:expat)))
 
+(define-public brotli
+  ;; We used to provide an older version under the name "brotli".
+  (deprecated-package "brotli" google-brotli))
+
 (define-public ucl
   (package
     (name "ucl")
@@ -1903,15 +1880,14 @@ decompression is a little bit slower.")
 (define-public upx
   (package
     (name "upx")
-    (version "3.94")
+    (version "3.96")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://github.com/upx/upx/releases/download/v"
-                                 version "/" name "-" version "-src.tar.xz"))
+                                 version "/upx-" version "-src.tar.xz"))
              (sha256
               (base32
-               "08anybdliqsbsl6x835iwzljahnm9i7v26icdjkcv33xmk6p5vw1"))
-             (patches (search-patches "upx-fix-CVE-2017-15056.patch"))))
+               "051pk5jk8fcfg5mpgzj43z5p4cn7jy5jbyshyn78dwjqr7slsxs7"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("perl" ,perl)))
@@ -1920,36 +1896,25 @@ decompression is a little bit slower.")
        ("zlib" ,zlib)))
     (arguments
      `(#:make-flags
-       (list "all"
-             ;; CHECK_WHITESPACE does not seem to work.
-             ;; See https://git.archlinux.org/svntogit/community.git/tree/trunk/PKGBUILD?h=packages/upx.
-             "CHECK_WHITESPACE=true")
+       (list "all")
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure)
-         (delete 'check)
-         (delete 'install)
+         (delete 'configure)            ; no configure script
+         (delete 'check)                ; no test suite
          (add-before 'build 'patch-exec-bin-sh
            (lambda _
-             (substitute* (find-files "Makefile")
-               (("/bin/sh") (which "sh")))
-             (substitute* "src/Makefile"
+             (substitute* (list "Makefile"
+                                "src/Makefile")
                (("/bin/sh") (which "sh")))
              #t))
-         (add-after 'build 'install-upx
+         (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
-                   (bin (string-append out "/bin")))
+                    (bin (string-append out "/bin")))
                (mkdir-p bin)
                (copy-file "src/upx.out" (string-append bin "/upx")))
-             #t))
-         )))
+             #t)))))
     (home-page "https://upx.github.io/")
-    ;; CVE-2017-16869 is about Mach-O files which is not of a big concern for Guix.
-    ;; See https://github.com/upx/upx/issues/146 and
-    ;; https://nvd.nist.gov/vuln/detail?vulnId=CVE-2017-16869.
-    ;; The issue will be fixed after version 3.94.
-    (properties `((lint-hidden-cve . ("CVE-2017-16869"))))
     (synopsis "Compression tool for executables")
     (description
      "The Ultimate Packer for eXecutables (UPX) is an executable file

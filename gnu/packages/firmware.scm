@@ -52,7 +52,7 @@
               (sha256
                (base32
                 "16jbj8avg5jkgvq5lxm0hdxxn4c3zn7fx8b4nxllvr024apk9w23"))
-              (file-name (string-append name "-" version "-checkout"))
+              (file-name (git-file-name name version))
               (patches (search-patches "ath9k-htc-firmware-objcopy.patch"))))
     (build-system gnu-build-system)
     (arguments
@@ -86,7 +86,7 @@
                      ("cross-binutils" ,(cross-binutils "xtensa-elf"))
                      ("cmake" ,cmake-minimal)
                      ("perl" ,perl)))
-    (home-page "http://wireless.kernel.org/en/users/Drivers/ath9k_htc")
+    (home-page "https://wireless.wiki.kernel.org/en/users/Drivers/ath9k_htc")
     (synopsis "Firmware for the Atheros AR7010 and AR9271 USB 802.11n NICs")
     (description
      "This is the firmware for the Qualcomm Atheros AR7010 and AR9271 USB
@@ -106,7 +106,7 @@ Linux-libre.")
          (uri (git-reference
                (url "http://git.bues.ch/git/b43-tools.git")
                (commit commit)))
-         (file-name (string-append name "-" version "-checkout"))
+         (file-name (git-file-name name version))
          (sha256
           (base32
            "1wgmj4d65izbhprwb5bcwimc2ryv19b9066lqzy4sa5m6wncm9cn"))))
@@ -182,6 +182,71 @@ driver.")
 Broadcom/AirForce chipset BCM43xx with Wireless-Core Revision 5.  It is used
 by the b43-open driver of Linux-libre.")
     (license license:gpl2)))
+
+(define* (make-opensbi-package platform variant #:optional (arch "riscv64"))
+  (package
+    (name (string-replace-substring
+           (string-append "opensbi-" platform "-" variant)
+           "_" "-"))
+    (version "0.6")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/riscv/opensbi.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "129ypdga0fzn657n2f42g2a1vx3hf8x7sd78h06d35pgkry0jkl7"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(,@(if (and (not (string-prefix? "riscv64" (%current-system)))
+                  (string-prefix? "riscv64" arch))
+           `(("cross-gcc" ,(cross-gcc "riscv64-linux-gnu" #:xgcc gcc-7))
+             ("cross-binutils" ,(cross-binutils "riscv64-linux-gnu")))
+           '())))
+    (arguments
+     `(#:tests? #f ; no check target
+       #:make-flags (list (string-append "PLATFORM=" ,platform "/" ,variant)
+                          ,@(if (and (not (string-prefix? "riscv64"
+                                                          (%current-system)))
+                                     (string-prefix? "riscv64" arch))
+                                `("CROSS_COMPILE=riscv64-linux-gnu-")
+                                '())
+                          "FW_PAYLOAD=n"
+                          "V=1")
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out"))
+                   (bin (find-files "." ".*fw_.*.elf$")))
+               (for-each
+                 (lambda (file)
+                   (install-file file out))
+                 bin))
+             #t)))))
+    (home-page "https://github.com/riscv/opensbi")
+    (synopsis "RISC-V Open Source Supervisor Binary Interface")
+    (description "A reference implementation of the RISC-V SBI specifications
+for platform-specific firmwares executing in M-mode.")
+    (license (list license:bsd-2
+                   ;; lib/utils/libfdt/* is dual licensed under bsd-2 and gpl2+.
+                   license:gpl2+
+                   ;; platform/ariane-fpga/* is gpl2.
+                   license:gpl2))))
+
+(define-public opensbi-qemu-virt
+  (make-opensbi-package "qemu" "virt"))
+
+(define-public opensbi-sifive-fu540
+  (make-opensbi-package "sifive" "fu540"))
+
+(define-public opensbi-qemu-sifive-u
+  ;; Dropped upstream, as all functionality is present in the sifive-fu540
+  ;; target for recent versions of qemu, u-boot and linux.
+  (deprecated-package "opensbi-qemu-sifive-u" opensbi-sifive-fu540))
 
 (define-public seabios
   (package

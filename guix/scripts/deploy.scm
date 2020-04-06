@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2019 David Thompson <davet@gnu.org>
-;;; Copyright © 2019 Jakob L. Kreuze <zerodaysfordays@sdf.lonestar.org>
+;;; Copyright © 2019 Jakob L. Kreuze <zerodaysfordays@sdf.org>
+;;; Copyright © 2020 Ludovic Courtès <ludo@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -29,6 +30,7 @@
   #:use-module (guix status)
   #:use-module (ice-9 format)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
   #:use-module (srfi srfi-37)
@@ -97,6 +99,43 @@ Perform the deployment specified by FILE.\n"))
                                            environment-modules))))
     (load* file module)))
 
+(define (show-what-to-deploy machines)
+  "Show the list of machines to deploy, MACHINES."
+  (let ((count (length machines)))
+    (format (current-error-port)
+            (N_ "The following ~d machine will be deployed:~%"
+                "The following ~d machines will be deployed:~%"
+                count)
+            count)
+    (display (indented-string
+              (fill-paragraph (string-join (map machine-display-name machines)
+                                           ", ")
+                              (- (%text-width) 2) 2)
+              2)
+             (current-error-port))
+    (display "\n\n" (current-error-port))))
+
+(define (deploy-machine* store machine)
+  "Deploy MACHINE, taking care of error handling."
+  (info (G_ "deploying to ~a...~%")
+        (machine-display-name machine))
+
+  (guard (c ((message-condition? c)
+             (report-error (G_ "failed to deploy ~a: ~a~%")
+                           (machine-display-name machine)
+                           (condition-message c)))
+            ((deploy-error? c)
+             (when (deploy-error-should-roll-back c)
+               (info (G_ "rolling back ~a...~%")
+                     (machine-display-name machine))
+               (run-with-store store (roll-back-machine machine)))
+             (apply throw (deploy-error-captured-args c))))
+    (run-with-store store (deploy-machine machine))
+
+    (info (G_ "successfully deployed ~a~%")
+          (machine-display-name machine))))
+
+
 (define (guix-deploy . args)
   (define (handle-argument arg result)
     (alist-cons 'file arg result))
@@ -105,22 +144,14 @@ Perform the deployment specified by FILE.\n"))
                                    #:argument-handler handle-argument))
          (file (assq-ref opts 'file))
          (machines (or (and file (load-source-file file)) '())))
+    (show-what-to-deploy machines)
+
     (with-status-verbosity (assoc-ref opts 'verbosity)
       (with-store store
         (set-build-options-from-command-line store opts)
-        (for-each (lambda (machine)
-                    (info (G_ "deploying to ~a...~%")
-                          (machine-display-name machine))
-                    (parameterize ((%graft? (assq-ref opts 'graft?)))
-                      (guard (c ((message-condition? c)
-                                 (report-error (G_ "failed to deploy ~a: ~a~%")
-                                               (machine-display-name machine)
-                                               (condition-message c)))
-                                ((deploy-error? c)
-                                 (when (deploy-error-should-roll-back c)
-                                   (info (G_ "rolling back ~a...~%")
-                                         (machine-display-name machine))
-                                   (run-with-store store (roll-back-machine machine)))
-                                 (apply throw (deploy-error-captured-args c))))
-                        (run-with-store store (deploy-machine machine)))))
-                  machines)))))
+        (with-build-handler (build-notifier #:use-substitutes?
+                                            (assoc-ref opts 'substitutes?))
+          (parameterize ((%graft? (assq-ref opts 'graft?)))
+            (map/accumulate-builds store
+                                   (cut deploy-machine* store <>)
+                                   machines)))))))

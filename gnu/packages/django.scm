@@ -42,13 +42,13 @@
 (define-public python-django
   (package
     (name "python-django")
-    (version "1.11.25")
+    (version "1.11.28")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "Django" version))
               (sha256
                (base32
-                "0rpgx212n8gh61nwizkyldvskna808xpcvawmavk5mc5c9cfh52k"))))
+                "1ss1jyip7mlbfjn27m0j6wx80s8h4ksg6g5annkgwigp8xgy6g5k"))))
     (build-system python-build-system)
     (arguments
      '(#:modules ((srfi srfi-1)
@@ -99,7 +99,7 @@
        ("python-tblib" ,python-tblib)))
     (propagated-inputs
      `(("python-pytz" ,python-pytz)))
-    (home-page "http://www.djangoproject.com/")
+    (home-page "https://www.djangoproject.com/")
     (synopsis "High-level Python Web framework")
     (description
      "Django is a high-level Python Web framework that encourages rapid
@@ -223,6 +223,30 @@ with arguments to the field constructor.")
      "Django-taggit is a reusable Django application for simple tagging.")
     (license license:bsd-3)))
 
+(define-public python-easy-thumbnails
+  (package
+    (name "python-easy-thumbnails")
+    (version "2.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "easy-thumbnails" version))
+       (sha256
+        (base32
+         "14gzp5cv24z0qhxb7f7k7v9jgzpaj4n8yhjq83ynpx8183fs1rz4"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-django" ,python-django)
+       ("python-pillow" ,python-pillow)))
+    (home-page "https://github.com/SmileyChris/easy-thumbnails")
+    (synopsis "Easy thumbnails for Django")
+    (description
+     "Easy thumbnails is a Django plugin to dynamically create thumbnails
+based on source images.  Multiple thumbnails can be created from a single
+source image, using different options to control parameters like the image
+size and quality.")
+    (license license:bsd-3)))
+
 (define-public python-pytest-django
   (package
     (name "python-pytest-django")
@@ -248,7 +272,7 @@ with arguments to the field constructor.")
        ("python-setuptools-scm" ,python-setuptools-scm)))
     (propagated-inputs
      `(("python-pytest" ,python-pytest)))
-    (home-page "http://pytest-django.readthedocs.org/")
+    (home-page "https://pytest-django.readthedocs.org/")
     (synopsis "Django plugin for py.test")
     (description "Pytest-django is a plugin for py.test that provides a set of
 useful tools for testing Django applications and projects.")
@@ -930,7 +954,7 @@ static files.")
        ("python2-pytest-catchlog" ,python2-pytest-catchlog)
        ("python2-pytest-cov" ,python2-pytest-cov)
        ("python2-factory-boy" ,python2-factory-boy)))
-    (home-page "http://pootle.translatehouse.org/")
+    (home-page "https://pootle.translatehouse.org/")
     (synopsis "Community localization server")
     (description
       "Pootle is an online translation and localization tool.  It works to

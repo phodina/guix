@@ -6,11 +6,13 @@
 ;;; Copyright © 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Andy Patterson <ajpatter@uwaterloo.ca>
 ;;; Copyright © 2017, 2018, 2019 Rutger Helling <rhelling@mykolab.com>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2018 Sou Bunnbu <iyzsong@member.fsf.org>
 ;;; Copyright © 2018 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2019 Guy Fleury Iteriteka <hoonandon@gmail.com>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -33,6 +35,7 @@
   #:use-module (gnu packages assembly)
   #:use-module (gnu packages attr)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages backup)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages check)
   #:use-module (gnu packages cmake)
@@ -75,6 +78,7 @@
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages selinux)
   #:use-module (gnu packages sdl)
+  #:use-module (gnu packages sphinx)
   #:use-module (gnu packages spice)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages textutils)
@@ -89,6 +93,7 @@
   #:use-module (guix build-system go)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system python)
+  #:use-module (guix build-system trivial)
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
@@ -109,20 +114,26 @@
 (define-public qemu
   (package
     (name "qemu")
-    (version "4.1.1")
+    (version "4.2.0")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://download.qemu.org/qemu-"
                                  version ".tar.xz"))
+             (patches (search-patches "qemu-CVE-2020-1711.patch"
+                                      "qemu-CVE-2020-7039.patch"
+                                      "qemu-CVE-2020-7211.patch"
+                                      "qemu-CVE-2020-8608.patch"
+                                      "qemu-fix-documentation-build-failure.patch"))
              (sha256
               (base32
-               "1lm1jndfpc5sydwrxyiz5sms414zkcg9jdl0zx318qbjsayxnvzd"))))
+               "1w38hzlw7xp05gcq1nhga7hxvndxy6dfcnzi7q2il8ff110isj6k"))))
     (build-system gnu-build-system)
     (arguments
      '(;; Running tests in parallel can occasionally lead to failures, like:
        ;; boot_sector_test: assertion failed (signature == SIGNATURE): (0x00000000 == 0x0000dead)
        #:parallel-tests? #f
        #:configure-flags (list "--enable-usb-redir" "--enable-opengl"
+                               "--enable-docs"
                                (string-append "--smbd="
                                               (assoc-ref %outputs "out")
                                               "/libexec/samba-wrapper")
@@ -232,6 +243,7 @@ exec smbd $@")))
                      ("bison" ,bison)
                      ("pkg-config" ,pkg-config)
                      ("python-wrapper" ,python-wrapper)
+                     ("python-sphinx" ,python-sphinx)
                      ("texinfo" ,texinfo)))
     (home-page "https://www.qemu.org")
     (synopsis "Machine emulator and virtualizer")
@@ -272,34 +284,6 @@ server and embedded PowerPC, and S390 guests.")
                   '("libusb" "mesa" "sdl2" "spice" "virglrenderer" "gtk+"
                     "usbredir" "libdrm" "libepoxy" "pulseaudio" "vde2")))))
 
-;; The GRUB test suite fails with later versions of Qemu, so we
-;; keep it at 2.10 for now.  See
-;; <https://lists.gnu.org/archive/html/bug-grub/2018-02/msg00004.html>.
-;; This package is hidden since we do not backport updates to it.
-(define-public qemu-minimal-2.10
-  (hidden-package
-   (package
-    (inherit qemu-minimal)
-    (version "2.10.2")
-    (source (origin
-             (method url-fetch)
-             (uri (string-append "https://download.qemu.org/qemu-"
-                                 version ".tar.xz"))
-             (sha256
-              (base32
-               "17w21spvaxaidi2am5lpsln8yjpyp2zi3s3gc6nsxj5arlgamzgw"))
-             (patches
-              (search-patches "qemu-glibc-2.27.patch"))))
-    ;; qemu-minimal-2.10 needs Python 2. Remove below once no longer necessary.
-    (native-inputs `(("python-2" ,python-2)
-                     ,@(fold alist-delete (package-native-inputs qemu)
-                             '("python-wrapper"))))
-    (inputs
-     (fold alist-delete (package-inputs qemu)
-           ;; Disable seccomp support, because it's not required for the GRUB
-           ;; test suite, and because it fails with libseccomp 2.4.2 and later.
-           '("libseccomp"))))))
-
 (define-public libosinfo
   (package
     (name "libosinfo")
@@ -318,14 +302,24 @@ server and embedded PowerPC, and S390 guests.")
        (list (string-append "-Dwith-usb-ids-path="
                             (assoc-ref %build-inputs "usb.ids"))
              (string-append "-Dwith-pci-ids-path="
-                            (assoc-ref %build-inputs "pci.ids")))))
+                            (assoc-ref %build-inputs "pci.ids")))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-osinfo-path
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "osinfo/osinfo_loader.c"
+               (("path = DATA_DIR.*")
+                (string-append "path = \"" (assoc-ref inputs "osinfo-db")
+                               "/share/osinfo\";")))
+             #t)))))
     (inputs
      `(("libsoup" ,libsoup)
        ("libxml2" ,libxml2)
        ("libxslt" ,libxslt)
-       ("gobject-introspection" ,gobject-introspection)))
+       ("osinfo-db" ,osinfo-db)))
     (native-inputs
      `(("glib" ,glib "bin")  ; glib-mkenums, etc.
+       ("gobject-introspection" ,gobject-introspection)
        ("gtk-doc" ,gtk-doc)
        ("vala" ,vala)
        ("intltool" ,intltool)
@@ -454,8 +448,8 @@ manage system or application containers.")
          (add-before 'configure 'disable-broken-tests
            (lambda _
              (let ((tests (list "commandtest"      ; hangs idly
-				"qemuxml2argvtest" ; fails
-				"qemuhotplugtest"  ; fails
+                                "qemuxml2argvtest" ; fails
+                                "qemuhotplugtest"  ; fails
                                 "virnetsockettest" ; tries to network
                                 "virshtest")))     ; fails
                (substitute* "tests/Makefile.in"
@@ -509,14 +503,14 @@ to integrate other virtualization mechanisms if needed.")
 (define-public libvirt-glib
   (package
     (name "libvirt-glib")
-    (version "2.0.0")
+    (version "3.0.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "ftp://libvirt.org/libvirt/glib/"
                                   "libvirt-glib-" version ".tar.gz"))
               (sha256
                (base32
-                "0six9ckmvlwwyavyjkgc262qkpvfqgi8rjij7cyk00bmqq8c9s4l"))))
+                "1zpbv4ninc57c9rw4zmmkvvqn7154iv1qfr20kyxn8xplalqrzvz"))))
     (build-system gnu-build-system)
     (inputs
      `(("openssl" ,openssl)
@@ -622,8 +616,8 @@ virtualization library.")
          (add-after 'unpack 'fix-qemu-img-reference
            (lambda* (#:key inputs #:allow-other-keys)
              (substitute* "virtconv/formats.py"
-	       (("/usr(/bin/qemu-img)" _ suffix)
-		(string-append (assoc-ref inputs "qemu") suffix)))
+               (("/usr(/bin/qemu-img)" _ suffix)
+                (string-append (assoc-ref inputs "qemu") suffix)))
              #t))
          (add-after 'unpack 'fix-default-uri
            (lambda* (#:key inputs #:allow-other-keys)
@@ -664,7 +658,6 @@ virtualization library.")
        ("libvirt-glib" ,libvirt-glib)
        ("libosinfo" ,libosinfo)
        ("vte" ,vte)
-       ("gobject-introspection" ,gobject-introspection)
        ("python-libvirt" ,python-libvirt)
        ("python-requests" ,python-requests)
        ("python-ipaddress" ,python-ipaddress)
@@ -677,6 +670,7 @@ virtualization library.")
      `(("qemu" ,qemu)))
     (native-inputs
      `(("glib" ,glib "bin")             ; glib-compile-schemas
+       ("gobject-introspection" ,gobject-introspection)
        ("gtk+" ,gtk+ "bin")             ; gtk-update-icon-cache
        ("perl" ,perl)                   ; pod2man
        ("intltool" ,intltool)))
@@ -896,9 +890,6 @@ monitor/GPU.")
      ;; This package requires SSE instructions.
      (supported-systems '("i686-linux" "x86_64-linux"))
      (license license:gpl2+))))
-
-(define-public lookingglass
-  (deprecated-package "lookingglass" looking-glass-client))
 
 (define-public runc
   (package
@@ -1150,17 +1141,17 @@ by default and can be made read-only.")
 (define-public bochs
   (package
     (name "bochs")
-    (version "2.6.10")
+    (version "2.6.11")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://sourceforge.net/projects/bochs/files/bochs/"
                            version "/bochs-" version ".tar.gz"))
        (sha256
-        (base32 "1c3mw4b8wrjf8z44fvhycs95j1wd1c0b4khcv63giiia5j5q0gvj"))))
+        (base32 "0ql8q6y1k356li1g9gbvl21448mlxphxxi6kjb2b3pxvzd0pp2b3"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? #f)) ; No tests exist
+     `(#:tests? #f))                    ; no tests exist
     (inputs
      `(("libxrandr" ,libxrandr)))
     (home-page "http://bochs.sourceforge.net/")
@@ -1375,3 +1366,73 @@ which is a hypervisor.")
     ;; TODO: Some files are licensed differently.  List those.
     (license license:gpl2)
     (supported-systems '("i686-linux" "x86_64-linux" "armhf-linux"))))
+
+(define-public osinfo-db-tools
+  (package
+    (name "osinfo-db-tools")
+    (version "1.7.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://releases.pagure.org/libosinfo/osinfo-db-tools-"
+                                  version ".tar.xz"))
+
+              (sha256
+               (base32
+                "08x8mrafphyll0d35xdc143rip3ahrz6bmzhc85nwhq7yk2vxpab"))))
+    (build-system meson-build-system)
+    (inputs
+     `(("libsoup" ,libsoup)
+       ("libxml2" ,libxml2)
+       ("libxslt" ,libxslt)
+       ("json-glib" ,json-glib)
+       ("libarchive" ,libarchive)))
+    (native-inputs
+     `(("perl" ,perl)
+       ("gobject-introspection" ,gobject-introspection)
+       ("gettext" ,gettext-minimal)
+       ("pkg-config" ,pkg-config)
+       ;; Tests
+       ("python" ,python)
+       ("pytest" ,python-pytest)
+       ("requests" ,python-requests)))
+    (home-page "https://gitlab.com/libosinfo/osinfo-db-tools")
+    (synopsis "Tools for managing the osinfo database")
+    (description "This package contains a set of tools to assist
+administrators and developers in managing the database.")
+    (license license:lgpl2.0+)))
+
+(define-public osinfo-db
+  (package
+    (name "osinfo-db")
+    (version "20200203")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://releases.pagure.org/libosinfo/osinfo-db-"
+                                  version ".tar.xz"))
+              (sha256
+               (base32
+                "1zjq1dhlci00j17dij7s3l30hybzmaykpk5b6bd5xbllp745njn5"))))
+    (build-system trivial-build-system)
+    (arguments
+     `(#:modules ((guix build utils))
+       #:builder
+       (begin
+         (use-modules (guix build utils))
+         (let* ((out (assoc-ref %outputs "out"))
+                (osinfo-dir (string-append out "/share/osinfo"))
+                (source (assoc-ref %build-inputs "source"))
+                (osinfo-db-import
+                 (string-append (assoc-ref %build-inputs "osinfo-db-tools")
+                                "/bin/osinfo-db-import")))
+           (mkdir-p osinfo-dir)
+           (invoke osinfo-db-import "--dir" osinfo-dir source)
+           #t))))
+    (native-inputs
+     `(("intltool" ,intltool)
+       ("osinfo-db-tools" ,osinfo-db-tools)))
+    (home-page "https://gitlab.com/libosinfo/osinfo-db")
+    (synopsis "Database of information about operating systems")
+    (description "Osinfo-db provides the database files for use with the
+libosinfo library.  It provides information about guest operating systems for
+use with virtualization provisioning tools")
+    (license license:lgpl2.0+)))

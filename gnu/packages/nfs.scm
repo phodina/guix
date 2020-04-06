@@ -27,6 +27,7 @@
   #:use-module (gnu packages kerberos)
   #:use-module (gnu packages onc-rpc)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages python)
   #:use-module (gnu packages sqlite)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
@@ -115,10 +116,11 @@
        ("lvm2" ,lvm2)
        ("util-linux" ,util-linux)
        ("mit-krb5" ,mit-krb5)
-       ("libtirpc" ,libtirpc)))
+       ("libtirpc" ,libtirpc)
+       ("python-wrapper" ,python-wrapper))) ;for the Python based tools
     (native-inputs
      `(("pkg-config" ,pkg-config)))
-    (home-page "http://www.kernel.org/pub/linux/utils/nfs-utils/")
+    (home-page "https://www.kernel.org/pub/linux/utils/nfs-utils/")
     (synopsis "Tools for loading and managing Linux NFS mounts")
     (description "The Network File System (NFS) was developed to allow
 machines to mount a disk partition on a remote machine as if it were a local

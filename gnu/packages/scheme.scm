@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2018 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2018, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2015, 2016 Federico Beffa <beffa@fbengineering.ch>
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
@@ -11,6 +11,7 @@
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Adam Massmann <massmannak@gmail.com>
 ;;; Copyright © 2018 Gabriel Hondet <gabrielhondet@gmail.com>
+;;; Copyright © 2020 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -31,7 +32,7 @@
   #:use-module (gnu packages)
   #:use-module ((guix licenses)
                 #:select (gpl2+ lgpl2.0+ lgpl2.1+ lgpl3+ asl2.0 bsd-3
-                          cc-by-sa4.0 non-copyleft))
+                          cc-by-sa4.0 non-copyleft expat))
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
@@ -368,47 +369,6 @@ applications in many fields such as multimedia (web galleries, music players,
 mashups, office (web agendas, mail clients, ...), etc.")
     (license gpl2+)))
 
-(define-public chicken
-  (package
-    (name "chicken")
-    (version "5.0.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://code.call-cc.org/releases/"
-                                  version "/chicken-" version ".tar.gz"))
-              (sha256
-               (base32
-                "15b5yrzfa8aimzba79x7v6y282f898rxqxfxrr446sjx9jwlpfd8"))))
-    (build-system gnu-build-system)
-    (arguments
-     `(#:modules ((guix build gnu-build-system)
-                  (guix build utils)
-                  (srfi srfi-1))
-
-       ;; No `configure' script; run "make check" after "make install" as
-       ;; prescribed by README.
-       #:phases
-       (modify-phases %standard-phases
-         (delete 'configure)
-         (delete 'check)
-         (add-after 'install 'check
-           (assoc-ref %standard-phases 'check)))
-
-       #:make-flags (let ((out (assoc-ref %outputs "out")))
-                      (list "PLATFORM=linux"
-                            (string-append "PREFIX=" out)
-                            (string-append "VARDIR=" out "/var/lib")))
-
-       ;; Parallel builds are not supported, as noted in README.
-       #:parallel-build? #f))
-    (home-page "http://www.call-cc.org/")
-    (synopsis "R5RS Scheme implementation that compiles native code via C")
-    (description
-     "CHICKEN is a compiler for the Scheme programming language.  CHICKEN
-produces portable and efficient C, supports almost all of the R5RS Scheme
-language standard, and includes many enhancements and extensions.")
-    (license bsd-3)))
-
 (define-public scheme48
   (package
     (name "scheme48")
@@ -435,7 +395,7 @@ implementation techniques and as an expository tool.")
 (define-public racket
   (package
     (name "racket")
-    (version "7.3")
+    (version "7.6")
     (source (origin
               (method url-fetch)
               (uri (list (string-append "http://mirror.racket-lang.org/installers/"
@@ -445,29 +405,22 @@ implementation techniques and as an expository tool.")
                           version "/racket-" version "-src.tgz")))
               (sha256
                (base32
-                "0h6072njhb87rkz4arijvahxgjzn8r14s4wns0ijvxm89bg136yl"))
+                "0yagy7qrnz96gwafnj3whh2vs54788k1ci3vkm100h68gsw638b8"))
               (patches (search-patches
                         "racket-store-checksum-override.patch"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
        (modify-phases %standard-phases
-         (add-before 'configure 'pre-configure
+         (add-before 'configure 'pre-configure-minimal
            (lambda* (#:key inputs #:allow-other-keys)
              ;; Patch dynamically loaded libraries with their absolute paths.
-             (let* ((library-path   (search-path-as-string->list
-                                     (getenv "LIBRARY_PATH")))
-                    (find-so        (lambda (soname)
-                                      (search-path
-                                       library-path
-                                       (format #f "~a.so" soname))))
-                    (patch-ffi-libs (lambda (file libs)
-                                      (for-each
-                                       (lambda (lib)
-                                         (substitute* file
-                                           (((format #f "\"~a\"" lib))
-                                            (format #f "\"~a\"" (find-so lib)))))
-                                       libs))))
+             (let* ((library-path (search-path-as-string->list
+                                   (getenv "LIBRARY_PATH")))
+                    (find-so (lambda (soname)
+                               (search-path
+                                library-path
+                                (format #f "~a.so" soname)))))
                (substitute* "collects/db/private/sqlite3/ffi.rkt"
                  (("ffi-lib sqlite-so")
                   (format #f "ffi-lib \"~a\"" (find-so "libsqlite3"))))
@@ -476,7 +429,25 @@ implementation techniques and as an expository tool.")
                   (format #f "ffi-lib \"~a\"" (find-so "libssl"))))
                (substitute* "collects/openssl/libcrypto.rkt"
                  (("ffi-lib libcrypto-so")
-                  (format #f "ffi-lib \"~a\"" (find-so "libcrypto"))))
+                  (format #f "ffi-lib \"~a\"" (find-so "libcrypto")))))
+             (chdir "src")
+             #t))
+         (add-before 'pre-configure-minimal 'pre-configure
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; Patch dynamically loaded libraries with their absolute paths.
+             (let* ((library-path (search-path-as-string->list
+                                   (getenv "LIBRARY_PATH")))
+                    (find-so (lambda (soname)
+                               (search-path
+                                library-path
+                                (format #f "~a.so" soname))))
+                    (patch-ffi-libs (lambda (file libs)
+                                      (for-each
+                                       (lambda (lib)
+                                         (substitute* file
+                                           (((format #f "\"~a\"" lib))
+                                            (format #f "\"~a\"" (find-so lib)))))
+                                       libs))))
                (substitute* "share/pkgs/math-lib/math/private/bigfloat/gmp.rkt"
                  (("ffi-lib libgmp-so")
                   (format #f "ffi-lib \"~a\"" (find-so "libgmp"))))
@@ -514,15 +485,14 @@ implementation techniques and as an expository tool.")
                    ("libGL"))
                   ("share/pkgs/sgl/gl.rkt"
                    ("libGL" "libGLU")))))
-             (chdir "src")
              #t))
          (add-after 'unpack 'patch-/bin/sh
            (lambda _
              (substitute* "collects/racket/system.rkt"
                (("/bin/sh") (which "sh")))
              #t)))
-       #:tests? #f                      ; XXX: how to run them?
-       ))
+       ;; XXX: how to run them?
+       #:tests? #f))
     (inputs
      `(("libffi" ,libffi)
        ;; Hardcode dynamically loaded libraries for better functionality.
@@ -543,14 +513,53 @@ implementation techniques and as an expository tool.")
        ("sqlite" ,sqlite)
        ("unixodbc" ,unixodbc)
        ("libedit" ,libedit)))
-    (home-page "http://racket-lang.org")
+    (home-page "https://racket-lang.org")
     (synopsis "Implementation of Scheme and related languages")
     (description
      "Racket is an implementation of the Scheme programming language (R5RS and
 R6RS) and related languages, such as Typed Racket.  It features a compiler and
 a virtual machine with just-in-time native compilation, as well as a large set
 of libraries.")
-    (license lgpl2.0+)))
+    ;; https://download.racket-lang.org/license.html
+    (license (list lgpl3+ asl2.0 expat))))
+
+(define-public racket-minimal
+  (package
+    (inherit racket)
+    (name "racket-minimal")
+    (version (package-version racket))
+    (source (origin
+              (method url-fetch)
+              (uri (list (string-append "http://mirror.racket-lang.org/installers/"
+                                        version "/racket-minimal-" version "-src.tgz")
+                         (string-append
+                          "http://mirror.informatik.uni-tuebingen.de/mirror/racket/"
+                          version "/racket-minimal-" version "-src.tgz")))
+              (sha256
+               (base32
+                "0id094q9024hj2n3907l7dblp3iix1v5289xzskmh5c26xfygp9y"))
+              (patches (search-patches
+                        "racket-store-checksum-override.patch"))))
+    (synopsis "Racket without bundled packages such as Dr. Racket")
+    (arguments
+     (substitute-keyword-arguments (package-arguments racket)
+       ((#:phases phases)
+        `(modify-phases ,phases
+           ;; Delete fix that applies to files not included in the minimal package.
+           (delete 'pre-configure)))))
+    (inputs
+     `(("libffi" ,libffi)
+       ("openssl" ,openssl)
+       ("sqlite" ,sqlite)))
+    (description
+     "Racket is an implementation of the Scheme programming language (R5RS and
+R6RS) and related languages, such as Typed Racket.  It features a compiler and
+a virtual machine with just-in-time native compilation, as well as a large set
+of libraries.
+
+In this minimal package, the essential package racket-libs is included, as
+well as libraries that live in collections.  In particular, @command{raco} and
+the @code{pkg} library are still bundled.")))
 
 (define-public gambit-c
   (package
@@ -637,13 +646,10 @@ threads.")
                        ("source" ,source)
                        ("texinfo" ,texinfo)))
       (arguments
-       `(#:modules ((guix build utils)
-                    (srfi srfi-1)
-                    (srfi srfi-26))
+       `(#:modules ((guix build utils))
          #:builder
          (begin
            (use-modules (guix build utils)
-                        (srfi srfi-1)
                         (srfi srfi-26))
            (let ((gzip (assoc-ref %build-inputs "gzip"))
                  (source (assoc-ref %build-inputs "source"))
@@ -738,7 +744,7 @@ regular-expression notation.")
                                            (assoc-ref outputs "out"))))))))
     (native-inputs `(("unzip" ,unzip)
                      ("texinfo" ,texinfo)))
-    (home-page "http://people.csail.mit.edu/jaffer/SLIB.html")
+    (home-page "https://people.csail.mit.edu/jaffer/SLIB.html")
     (synopsis "Compatibility and utility library for Scheme")
     (description "SLIB is a portable Scheme library providing compatibility and
 utility functions for all standard Scheme implementations.")
@@ -749,7 +755,7 @@ utility functions for all standard Scheme implementations.")
 (define-public scm
   (package
     (name "scm")
-    (version "5f2")
+    (version "5f3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -757,7 +763,7 @@ utility functions for all standard Scheme implementations.")
                     version ".zip"))
               (sha256
                (base32
-                "050ijb51jm1cij9g3r89zl9rawsrikhbb5y8zb7lspb7bsxq5w99"))))
+                "1jxxlhmgal26mpcl97kz37djkn97rfy9h5pvw0hah6f3f6w49j97"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -795,7 +801,7 @@ utility functions for all standard Scheme implementations.")
     (inputs `(("slib" ,slib)))
     (native-inputs `(("unzip" ,unzip)
                      ("texinfo" ,texinfo)))
-    (home-page "http://people.csail.mit.edu/jaffer/SCM")
+    (home-page "https://people.csail.mit.edu/jaffer/SCM")
     (synopsis "Scheme implementation conforming to R5RS and IEEE P1178")
     (description "GNU SCM is an implementation of Scheme.  This
 implementation includes Hobbit, a Scheme-to-C compiler, which can
@@ -1002,7 +1008,7 @@ The core is 12 builtin special forms and 33 builtin functions.")
   (package
     (name "gauche")
     (version "0.9.9")
-    (home-page "http://practical-scheme.net/gauche/index.html")
+    (home-page "https://practical-scheme.net/gauche/index.html")
     (source
      (origin
        (method url-fetch)

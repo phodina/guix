@@ -104,6 +104,7 @@
              (delete-file "resources/calibre-portable.sh")
              #t))
         (patches (search-patches "calibre-no-updates-dialog.patch"
+                                 "calibre-msgpack-compat.patch"
                                  "calibre-remove-test-bs4.patch" ; TODO: fix test.
                                  "calibre-remove-test-sqlite.patch" ; TODO: fix test.
                                  "calibre-remove-test-unrar.patch"))))
@@ -227,7 +228,7 @@
                (delete-file-recursively font-dest)
                (symlink font-src font-dest))
              #t)))))
-    (home-page "http://calibre-ebook.com/")
+    (home-page "https://calibre-ebook.com/")
     (synopsis "E-book library management software")
     (description "Calibre is an e-book library manager.  It can view, convert
 and catalog e-books in most of the major e-book formats.  It can also talk

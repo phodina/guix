@@ -3,10 +3,12 @@
 ;;; Copyright © 2014, 2015, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2015, 2016, 2017, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2015, 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Carlos Sánchez de La Lama <csanchezdll@gmail.com>
 ;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2020 Joseph LaFreniere <joseph@lafreniere.xyz>
+;;; Copyright © 2020 Guy Fleury Iteriteka <gfleury@disroot.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -509,28 +511,28 @@ It also includes runtime support libraries for these languages.")))
 (define-public gcc-8
   (package
     (inherit gcc-7)
-    (version "8.3.0")
+    (version "8.4.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/gcc/gcc-"
                                   version "/gcc-" version ".tar.xz"))
               (sha256
                (base32
-                "0b3xv411xhlnjmin2979nxcbnidgvzqdf4nbhix99x60dkzavfk4"))
+                "1m1d3gfix56w4aq8myazzfffkl8bqcrx4jhhapnjf7qfs596w2p3"))
               (patches (search-patches "gcc-8-strmov-store-file-names.patch"
                                        "gcc-5.0-libvtv-runpath.patch"))))))
 
 (define-public gcc-9
   (package
    (inherit gcc-8)
-   (version "9.2.0")
+   (version "9.3.0")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/gcc/gcc-"
                                 version "/gcc-" version ".tar.xz"))
             (sha256
              (base32
-              "01mj3yk7z49i49168hg2cg7qs4bsccrrnv7pjmbdlf8j2a7z0vpa"))
+              "1la2yy27ziasyf0jvzk58y1i5b5bq2h176qil550bxhifs39gqbi"))
             (patches (search-patches "gcc-9-strmov-store-file-names.patch"
                                      "gcc-9-asan-fix-limits-include.patch"
                                      "gcc-5.0-libvtv-runpath.patch"))))))
@@ -577,26 +579,22 @@ using compilers other than GCC."
        #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'chdir
-                     (lambda _
-                       (chdir "libiberty")
-                       #t))
-         (replace
-          'install
-          (lambda* (#:key outputs #:allow-other-keys)
-            (let* ((out     (assoc-ref outputs "out"))
-                   (lib     (string-append out "/lib/"))
-                   (include (string-append out "/include/")))
-              (mkdir-p lib)
-              (mkdir-p include)
-              (copy-file "libiberty.a"
-                         (string-append lib "libiberty.a"))
-              (copy-file "../include/libiberty.h"
-                         (string-append include "libiberty.h"))
-              #t))))))
+           (lambda _
+             (chdir "libiberty")
+             #t))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out     (assoc-ref outputs "out"))
+                    (lib     (string-append out "/lib/"))
+                    (include (string-append out "/include/")))
+               (install-file "libiberty.a" lib)
+               (install-file "../include/libiberty.h" include))
+             #t)))))
     (inputs '())
     (outputs '("out"))
     (native-inputs '())
     (propagated-inputs '())
+    (properties '())
     (synopsis "Collection of subroutines used by various GNU programs")))
 
 (define-public libiberty
@@ -689,6 +687,34 @@ as the 'native-search-paths' field."
   ;; that is not 'eq?' with GFORTRAN-5, and thus 'fold-packages' would
   ;; report two gfortran@5 that are in fact identical.
   gfortran-7)
+
+(define-public libgccjit
+  (package
+    (inherit gcc-9)
+    (name "libgccjit")
+    (outputs (delete "lib" (package-outputs gcc)))
+    (properties (alist-delete 'hidden? (package-properties gcc)))
+    (arguments
+     (substitute-keyword-arguments `(#:modules ((guix build gnu-build-system)
+                                                (guix build utils)
+                                                (ice-9 regex)
+                                                (srfi srfi-1)
+                                                (srfi srfi-26))
+                                     ,@(package-arguments gcc))
+       ((#:configure-flags flags)
+        `(append `("--enable-host-shared"
+                   ,(string-append "--enable-languages=jit"))
+                 (remove (cut string-match "--enable-languages.*" <>)
+                         ,flags)))
+       ((#:phases phases)
+        `(modify-phases ,phases
+           (add-after 'install 'remove-broken-or-conflicting-files
+             (lambda* (#:key outputs #:allow-other-keys)
+               (for-each delete-file
+                         (find-files (string-append (assoc-ref outputs "out") "/bin")
+                                     ".*(c\\+\\+|cpp|g\\+\\+|gcov|gcc|gcc-.*)"))
+               #t))))))))
+
 
 (define-public gccgo-4.9
   (custom-gcc gcc-4.9 "gccgo" '("go")

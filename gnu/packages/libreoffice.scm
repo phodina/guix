@@ -4,7 +4,7 @@
 ;;; Copyright © 2016, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Andy Wingo <wingo@igalia.com>
 ;;; Copyright © 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017, 2018, 2019 Marius Bakke <mbakke@fastmail.com>
@@ -31,16 +31,16 @@
 (define-module (gnu packages libreoffice)
   #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
   #:use-module (guix download)
   #:use-module (guix git-download)
-  #:use-module ((guix licenses)
-                #:select (gpl2+ lgpl2.1+ lgpl3+ mpl1.1 mpl2.0
-                          non-copyleft x11-style bsd-3))
+  #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
   #:use-module (ice-9 match)
   #:use-module (gnu packages)
+  #:use-module (gnu packages aidc)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bison)
@@ -67,6 +67,7 @@
   #:use-module (gnu packages image)
   #:use-module (gnu packages java)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages logging)
   #:use-module (gnu packages maths)
   #:use-module (gnu packages nss)
   #:use-module (gnu packages openldap)
@@ -85,7 +86,7 @@
 (define-public ixion
   (package
     (name "ixion")
-    (version "0.14.1")
+    (version "0.15.0")
     (source
      (origin
        (method url-fetch)
@@ -93,33 +94,34 @@
                            version ".tar.xz"))
        (sha256
         (base32
-         "14gdd6div4l22vnz3jn2qjxgjly98ck6p8c1v7386c41rx7kilba"))))
+         "1rmrl2zjzi4z0abf2cd54acypkccdhx2065dlyzy6xg83gv0mxmi"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (inputs
      `(("mdds" ,mdds)
-       ("python" ,python)))
+       ("python" ,python)
+       ("spdlog" ,spdlog)))
     (home-page "https://gitlab.com/ixion/ixion")
     (synopsis "General purpose formula parser and interpreter")
     (description "Ixion is a library for calculating the results of formula
 expressions stored in multiple named targets, or \"cells\".  The cells can
 be referenced from each other, and the library takes care of resolving
 their dependencies automatically upon calculation.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public orcus
   (package
     (name "orcus")
-    (version "0.14.1")
+    (version "0.15.3")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://kohei.us/files/" name "/src/lib"
-                           name "-" version ".tar.xz"))
+       (uri (string-append "http://kohei.us/files/orcus/src/lib"
+                           "orcus-" version ".tar.xz"))
        (sha256
         (base32
-         "1ays13a1x15j81dsrq0d3697v1bbqd3bfz3ajn6kb9d61y2drlgj"))))
+         "14gbnqsv5n2fm4sxa17014f440clrzls6p2w2ixk9wipg4950v9s"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -136,7 +138,64 @@ spreadsheet documents.  The library includes import filters for
 Microsoft Excel 2007 XML, Microsoft Excel 2003 XML, Open Document Spreadsheet,
 Plain Text, Gnumeric XML, Generic XML.  It also includes low-level parsers for
 CSV, CSS and XML.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
+
+(define-public unoconv
+  (package
+    (name "unoconv")
+    (version "0.9.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "unoconv" version))
+       (sha256
+        (base32 "0cb0bvyxib3xrj0jdgizhp6p057lr8kqnd3n921rin37ivcvz3ih"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'stop-hash-sniffing
+           ;; Fixes <https://debbugs.gnu.org/cgi/bugreport.cgi?bug=39647#11>.
+           ;; Submitted upsteam: <https://github.com/unoconv/unoconv/pull/531>.
+           (lambda _
+             (substitute* "unoconv"
+               (("sys.argv\\[0\\]\\.split\\('2'\\)")
+                "os.path.basename(sys.argv[0]).split('2')"))
+             #t))
+         (add-after 'unpack 'patch-find_offices
+           ;; find_offices is a convoluted cross-platform treasure hunt.
+           ;; Keep things simple and return the correct paths immediately.
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let* ((libreoffice (assoc-ref inputs "libreoffice")))
+               (substitute* "unoconv"
+                 (("def find_offices\\(\\):" match)
+                  (string-append
+                   match "\n"
+                   "    return [Office("
+                   "'" libreoffice "/lib/libreoffice', "
+                   "'" libreoffice "/lib/libreoffice/program', "
+                   "'" libreoffice "/lib/libreoffice/program', "
+                   "'" libreoffice "/lib/libreoffice/program/pyuno.so', "
+                   "'" libreoffice "/bin/soffice', "
+                   "sys.executable, "
+                   "None)]\n")))
+               #t))))))
+    (inputs
+     `(("libreoffice" ,libreoffice)))
+    (home-page "http://dag.wiee.rs/home-made/unoconv/")
+    (synopsis "Convert between any document format supported by LibreOffice")
+    (description
+     "Unoconv is a command-line utility to convert documents from any format
+that LibreOffice can import, to any format it can export.  It can be used for
+batch processing and can apply custom style templates and filters.
+
+Unoconv converts between over a hundred formats, including Open Document
+Format (@file{.odt}, @file{.ods}, @file{.odp})), Portable Document Format
+(@file{.pdf}), HTML and XHTML, RTF, DocBook (@file{.xml}), @file{.doc} and
+@file{.docx}), @file{.xls} and @file{.xlsx}).
+
+All required fonts must be installed on the converting system.")
+    (license license:gpl2)))
 
 (define-public librevenge
   (package
@@ -145,8 +204,8 @@ CSV, CSS and XML.")
     (source
      (origin
       (method url-fetch)
-      (uri (string-append "mirror://sourceforge/libwpd/" name "/" name "-"
-                          version "/" name "-" version ".tar.xz"))
+      (uri (string-append "mirror://sourceforge/libwpd/librevenge/librevenge-"
+                          version "/librevenge-" version ".tar.xz"))
       (sha256 (base32
                "1cj76cz4mqcy2mgv9l5xlc95bypyk8zbq0ls9cswqrs2y0lhfgwk"))))
     (build-system gnu-build-system)
@@ -168,7 +227,7 @@ CSV, CSS and XML.")
     (description "Librevenge is a base library for writing document import
 filters.  It has interfaces for text documents, vector graphics,
 spreadsheets and presentations.")
-    (license (list mpl2.0 lgpl2.1+))))            ;dual licensed
+    (license (list license:mpl2.0 license:lgpl2.1+)))) ; dual-licensed
 
 (define-public libwpd
   (package
@@ -196,7 +255,7 @@ spreadsheets and presentations.")
     (description "Libwpd is a C++ library designed to help process
 WordPerfect documents.  It is most commonly used to import such documents
 into other word processors.")
-    (license (list mpl2.0 lgpl2.1+))))            ;dual licensed
+    (license (list license:mpl2.0 license:lgpl2.1+)))) ; dual-licensed
 
 (define-public libe-book
   (package
@@ -233,7 +292,7 @@ Broad Band eBook, eReader .pdb, FictionBook v. 2 (including zipped files),
 PalmDoc Ebook, Plucker .pdb, QiOO (mobile format, for java-enabled
 cellphones), TCR (simple compressed text format), TealDoc, zTXT,
 ZVR (simple compressed text format).")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public libepubgen
   (package
@@ -261,7 +320,7 @@ ZVR (simple compressed text format).")
     (description "libepubgen is an EPUB generator for librevenge.  It supports
 librevenge's text document interface and--currently in a very limited
 way--presentation and vector drawing interfaces.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public libwpg
   (package
@@ -287,7 +346,7 @@ way--presentation and vector drawing interfaces.")
     (synopsis "Library and tools for the WordPerfect Graphics format")
     (description "The libwpg project provides a library and tools for
 working with graphics in the WPG (WordPerfect Graphics) format.")
-    (license (list mpl2.0 lgpl2.1+))))            ;dual licensed
+    (license (list license:mpl2.0 license:lgpl2.1+)))) ; dual-licensed
 
 (define-public libcmis
   (package
@@ -329,7 +388,8 @@ working with graphics in the WPG (WordPerfect Graphics) format.")
     (description "LibCMIS is a C++ client library for the CMIS interface.  It
 allows C++ applications to connect to any ECM behaving as a CMIS server such
 as Alfresco or Nuxeo.")
-    (license (list mpl1.1 gpl2+ lgpl2.1+)))) ; triple license
+    (license
+     (list license:mpl1.1 license:gpl2+ license:lgpl2.1+)))) ; triple license
 
 (define-public libabw
   (package
@@ -357,19 +417,19 @@ as Alfresco or Nuxeo.")
     (synopsis "Library for parsing the AbiWord format")
     (description "Libabw is a library that parses the file format of
 AbiWord documents.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public libcdr
   (package
     (name "libcdr")
-    (version "0.1.5")
+    (version "0.1.6")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "https://dev-www.libreoffice.org/src/" name "/"
                           name "-" version ".tar.xz"))
       (sha256 (base32
-               "0j1skr11jwvafn0l6p37v3i4lqc8wcn489g8f7c4mqwbk94mrkka"))))
+               "0qgqlw6i25zfq1gf7f6r5hrhawlrgh92sg238kjpf2839aq01k81"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("cppunit" ,cppunit)
@@ -386,7 +446,7 @@ AbiWord documents.")
     (synopsis "Library for parsing the CorelDRAW format")
     (description "Libcdr is a library that parses the file format of
 CorelDRAW documents of all versions.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public libetonyek
   (package
@@ -401,7 +461,7 @@ CorelDRAW documents of all versions.")
                "0jhsbdimiyijdqriy0zzkjjgc4wi6fjimhdg4mdybrlwg7l7f5p6"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:configure-flags '("--with-mdds=1.4")))
+     `(#:configure-flags '("--with-mdds=1.5")))
     (native-inputs
      `(("cppunit" ,cppunit)
        ("doxygen" ,doxygen)
@@ -420,27 +480,25 @@ CorelDRAW documents of all versions.")
     (synopsis "Library for parsing the Apple Keynote format")
     (description "Libetonyek is a library that parses the file format of
 Apple Keynote documents.  It currently supports Keynote versions 2 to 5.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public liblangtag
   (package
     (name "liblangtag")
-    (version "0.6.2")
+    (version "0.6.3")
     (source
       (origin
         (method url-fetch)
         (uri (string-append "https://bitbucket.org/tagoh/liblangtag/downloads/"
-                            name "-" version ".tar.bz2"))
+                            "liblangtag-" version ".tar.bz2"))
         (sha256
-         (base32
-          "0bnm4hllr8cfrybm8rw7b8n0nlhzhnv73bkg1bxk452g6a82f96n"))))
+         (base32 "1g9kwxx60q0hpwvs66ys1cb9qg54hfvbivadwli8sfpc085a44hz"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("libtool" ,libtool)
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("libxml2" ,libxml2)))
-    ;; As of December 2017, tagoh.bitbucket.org redirects to a hosting advert.
     (home-page "https://bitbucket.org/tagoh/liblangtag")
     (synopsis "Library to access tags for identifying languages")
     (description "Liblangtag implements an interface to work with tags
@@ -448,7 +506,7 @@ for identifying languages as described in RFC 5646.  It supports the
 extensions described in RFC6067 and RFC6497, and Extension T for
 language/locale identifiers as described in the Unicode CLDR
 standard 21.0.2.")
-    (license (list lgpl3+ mpl2.0)))) ; dual license
+    (license (list license:lgpl3+ license:mpl2.0)))) ; dual license
 
 (define-public libexttextcat
   (package
@@ -466,8 +524,8 @@ standard 21.0.2.")
     (synopsis "Text Categorization library")
     (description "Libexttextcat is an N-Gram-Based Text Categorization
 library primarily intended for language guessing.")
-    (license (non-copyleft "file://LICENSE"
-                           "See LICENSE in the distribution."))))
+    (license (license:non-copyleft "file://LICENSE"
+                                   "See LICENSE in the distribution."))))
 
 (define-public libfreehand
   (package
@@ -497,7 +555,7 @@ library primarily intended for language guessing.")
     (synopsis "Library for parsing the FreeHand format")
     (description "Libfreehand is a library that parses the file format of
 Aldus/Macromedia/Adobe FreeHand documents.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public libmspub
   (package
@@ -524,7 +582,7 @@ Aldus/Macromedia/Adobe FreeHand documents.")
     (synopsis "Library for parsing the Microsoft Publisher format")
     (description "Libmspub is a library that parses the file format of
 Microsoft Publisher documents of all versions.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public libnumbertext
   (package
@@ -547,7 +605,7 @@ Microsoft Publisher documents of all versions.")
      "The libnumbertext library provides language-neutral @code{NUMBERTEXT}
 and @code{MONEYTEXT} functions for LibreOffice Calc, available for C++ and
 Java.")
-    (license (list lgpl3+ bsd-3))))
+    (license (list license:lgpl3+ license:bsd-3))))
 
 (define-public libpagemaker
   (package
@@ -576,7 +634,7 @@ Java.")
     (description "Libpagemaker is a library that parses the file format of
 Aldus/Adobe PageMaker documents.  Currently it only understands documents
 created by PageMaker version 6.x and 7.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public libvisio
   (package
@@ -606,7 +664,7 @@ created by PageMaker version 6.x and 7.")
     (synopsis "Library for parsing the Microsoft Visio format")
     (description "Libvisio is a library that parses the file format of
 Microsoft Visio documents of all versions.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public libodfgen
   (package
@@ -637,7 +695,7 @@ Microsoft Visio documents of all versions.")
 Open Document Format (ODF).  It provides generator implementations for all
 document interfaces supported by librevenge:
 text documents, vector drawings, presentations and spreadsheets.")
-    (license (list mpl2.0 lgpl2.1+)))) ; dual license
+    (license (list license:mpl2.0 license:lgpl2.1+)))) ; dual license
 
 (define-public libmwaw
   (package
@@ -664,7 +722,7 @@ text documents, vector drawings, presentations and spreadsheets.")
     (description "Libmwaw contains some import filters for old Macintosh
 text documents (MacWrite, ClarisWorks, ... ) and for some graphics and
 spreadsheet documents.")
-    (license (list mpl2.0 lgpl2.1+))))  ; dual license
+    (license (list license:mpl2.0 license:lgpl2.1+))))  ; dual license
 
 (define-public libstaroffice
   (package
@@ -687,7 +745,7 @@ spreadsheet documents.")
     (synopsis "Provides LibreOffice support for old StarOffice documents")
     (description "@code{libstaroffice} is an import filter for the document formats
 from the old StarOffice (.sdc, .sdw, ...).")
-    (license (list mpl2.0 lgpl2.1+)))) ; dual license
+    (license (list license:mpl2.0 license:lgpl2.1+)))) ; dual license
 
 (define-public libwps
   (package
@@ -713,7 +771,7 @@ from the old StarOffice (.sdc, .sdw, ...).")
     (synopsis "Import library for Microsoft Works text documents")
     (description "Libwps is a library for importing files in the Microsoft
 Works word processor file format.")
-    (license (list mpl2.0 lgpl2.1+))))  ; dual license
+    (license (list license:mpl2.0 license:lgpl2.1+))))  ; dual license
 
 (define-public libzmf
   (package
@@ -745,7 +803,7 @@ Works word processor file format.")
     (description "Libzmf is a library that parses the file format of Zoner
 Callisto/Draw documents.  Currently it only understands documents created by
 Zoner Draw version 4 and 5.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public hunspell
   (package
@@ -777,7 +835,7 @@ Zoner Draw version 4 and 5.")
 library and program designed for languages with rich morphology and complex
 word compounding or character encoding.")
     ;; Triple license, including "mpl1.1 or later".
-    (license (list mpl1.1 gpl2+ lgpl2.1+))))
+    (license (list license:mpl1.1 license:gpl2+ license:lgpl2.1+))))
 
 (define (dicollecte-french-dictionary variant synopsis)
   ;; Return a French dictionary package from dicollecte.org, for the given
@@ -825,7 +883,7 @@ word compounding or character encoding.")
      "This package provides a dictionary for the Hunspell spell-checking
 library.")
     (home-page "https://www.dicollecte.org/home.php?prj=fr")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-syntax define-french-dictionary
   (syntax-rules (synopsis)
@@ -870,8 +928,9 @@ library.")
     (synopsis "Hyphenation library")
     (description "Hyphen is a hyphenation library using TeX hyphenation
 patterns, which are pre-processed by a perl script.")
-    ;; triple license, including "mpl1.1 or later"
-    (license (list mpl1.1 mpl2.0 gpl2+ lgpl2.1+))))
+    ;; Triple license, including "mpl1.1 or later".
+    (license
+     (list license:mpl1.1 license:mpl2.0 license:gpl2+ license:lgpl2.1+))))
 
 (define-public mythes
   (package
@@ -895,8 +954,8 @@ patterns, which are pre-processed by a perl script.")
     (description "MyThes is a simple thesaurus that uses a structured text
 data file and an index file with binary search to look up words and phrases
 and to return information on pronunciations, meanings and synonyms.")
-    (license (non-copyleft "file://COPYING"
-                           "See COPYING in the distribution."))))
+    (license (license:non-copyleft "file://COPYING"
+                                   "See COPYING in the distribution."))))
 
 (define-public libqxp
   (package
@@ -923,12 +982,12 @@ and to return information on pronunciations, meanings and synonyms.")
     (synopsis "Library and tools for the QuarkXPress file format")
     (description "libqxp is a library and a set of tools for reading and
 converting QuarkXPress file format.  It supports versions 3.1 to 4.1.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))
 
 (define-public libreoffice
   (package
     (name "libreoffice")
-    (version "6.3.4.2")
+    (version "6.4.2.2")
     (source
      (origin
        (method url-fetch)
@@ -938,17 +997,7 @@ converting QuarkXPress file format.  It supports versions 3.1 to 4.1.")
          (version-prefix version 3) "/libreoffice-" version ".tar.xz"))
        (sha256
         (base32
-         "1774vmf3lr5x24ikpn1z5vqcdwrhiwfkjy7sx09jqkvpm6d5awnb"))
-       (patches (search-patches "libreoffice-icu.patch"
-                                "libreoffice-glm.patch"))
-       (modules '((guix build utils)))
-       (snippet
-        '(begin
-           (for-each (lambda (file)
-                       ;; Adjust to renamed function in Poppler 0.72.
-                       (substitute* file (("getCString") "c_str")))
-                     (find-files "sdext/source/pdfimport/xpdfwrapper"))
-           #t))))
+         "06acm41q9nda8r30b13cn9zafsw1gszjdphh6lx90s09d2sf7f23"))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
      `(("bison" ,bison)
@@ -1021,6 +1070,7 @@ converting QuarkXPress file format.  It supports versions 3.1 to 4.1.")
        ("postgresql" ,postgresql)
        ("python" ,python)
        ("python-lxml" ,python-lxml)
+       ("qrcodegen-cpp" ,qrcodegen-cpp)
        ("redland" ,redland)
        ("sane-backends" ,sane-backends)
        ("unixodbc" ,unixodbc)
@@ -1041,6 +1091,14 @@ converting QuarkXPress file format.  It supports versions 3.1 to 4.1.")
                          "solenv/gbuild/gbuild.mk"
                          "solenv/gbuild/platform/unxgcc.mk")
                  (("/bin/sh") (which "sh")))
+
+               ;; Use store references for strictly necessary commands,
+               ;; but not for optional tools like ‘gdb’ and ‘valgrind’.
+               (for-each (lambda (command)
+                           (substitute* "desktop/scripts/soffice.sh"
+                             (((format #f"~a " command))
+                              (format #f "~a " (which command)))))
+                         (list "dirname" "grep" "uname"))
 
                ;; GPGME++ headers are installed in a gpgme++ subdirectory, but
                ;; files in "xmlsecurity/source/gpg/" and elsewhere expect to
@@ -1145,4 +1203,4 @@ a number of components: Writer, a word processor; Calc, a spreadsheet
 application; Impress, a presentation engine; Draw, a drawing and
 flowcharting application; Base, a database and database frontend;
 Math for editing mathematics.")
-    (license mpl2.0)))
+    (license license:mpl2.0)))

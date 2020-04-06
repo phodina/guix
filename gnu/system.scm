@@ -5,6 +5,7 @@
 ;;; Copyright © 2016 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2019 Meiyo Peng <meiyo.peng@gmail.com>
+;;; Copyright © 2020 Danny Milosavljevic <dannym@scratchpost.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -100,6 +101,15 @@
             operating-system-user-accounts
             operating-system-shepherd-service-names
             operating-system-user-kernel-arguments
+            operating-system-firmware
+            operating-system-keyboard-layout
+            operating-system-name-service-switch
+            operating-system-pam-services
+            operating-system-setuid-programs
+            operating-system-skeletons
+            operating-system-sudoers-file
+            operating-system-swap-devices
+            operating-system-kernel-loadable-modules
 
             operating-system-derivation
             operating-system-profile
@@ -130,6 +140,7 @@
             local-host-aliases
             %root-account
             %setuid-programs
+            %sudoers-specification
             %base-packages
             %base-firmware))
 
@@ -142,16 +153,11 @@
 (define (bootable-kernel-arguments system root-device)
   "Return a list of kernel arguments (gexps) to boot SYSTEM from ROOT-DEVICE."
   (list (string-append "--root="
-                       (cond ((uuid? root-device)
-
-                              ;; Note: Always use the DCE format because that's
-                              ;; what (gnu build linux-boot) expects for the
-                              ;; '--root' kernel command-line option.
-                              (uuid->string (uuid-bytevector root-device)
-                                            'dce))
-                             ((file-system-label? root-device)
-                              (file-system-label->string root-device))
-                             (else root-device)))
+                       ;; Note: Always use the DCE format because that's what
+                       ;; (gnu build linux-boot) expects for the '--root'
+                       ;; kernel command-line option.
+                       (file-system-device->string root-device
+                                                   #:uuid-type 'dce))
         #~(string-append "--system=" #$system)
         #~(string-append "--load=" #$system "/boot")))
 
@@ -164,6 +170,8 @@
 
   (kernel operating-system-kernel                 ; package
           (default linux-libre))
+  (kernel-loadable-modules operating-system-kernel-loadable-modules
+                    (default '()))                ; list of packages
   (kernel-arguments operating-system-user-kernel-arguments
                     (default '("quiet")))         ; list of gexps/strings
   (bootloader operating-system-bootloader)        ; <bootloader-configuration>
@@ -468,9 +476,22 @@ OS."
   "Return the basic entries of the 'system' directory of OS for use as the
 value of the SYSTEM-SERVICE-TYPE service."
   (let ((locale (operating-system-locale-directory os)))
-    (mlet %store-monad ((kernel -> (operating-system-kernel os))
-                        (initrd -> (operating-system-initrd-file os))
-                        (params    (operating-system-boot-parameters-file os)))
+    (mlet* %store-monad ((kernel -> (operating-system-kernel os))
+                         (kernel-modules (package-file kernel "lib/modules"))
+                         (modules ->
+                          (operating-system-kernel-loadable-modules os))
+                         (has-modules? ->
+                          (or (not (null? modules))
+                              (file-exists? kernel-modules)))
+                         (kernel
+                          (profile-derivation
+                           (packages->manifest
+                            (cons kernel modules))
+                           #:hooks (if has-modules?
+                                       (list linux-module-database)
+                                       '())))
+                         (initrd -> (operating-system-initrd-file os))
+                         (params    (operating-system-boot-parameters-file os)))
       (return `(("kernel" ,kernel)
                 ("parameters" ,params)
                 ("initrd" ,initrd)

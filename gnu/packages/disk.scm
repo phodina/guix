@@ -3,7 +3,7 @@
 ;;; Copyright © 2015 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2016, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
@@ -15,6 +15,8 @@
 ;;; Copyright © 2018, 2019 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2019 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2019 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2020 Pkill -9 <pkill9@runbox.com>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -62,11 +64,14 @@
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages swig)
+  #:use-module (gnu packages terminals)
+  #:use-module (gnu packages textutils)
   #:use-module (gnu packages vim)
   #:use-module (gnu packages w3m)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
   #:use-module (guix build-system scons)
@@ -157,29 +162,32 @@ tables, and it understands a variety of different formats.")
 (define-public gptfdisk
   (package
     (name "gptfdisk")
-    (version "1.0.4")
+    (version "1.0.5")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://sourceforge/gptfdisk/gptfdisk/"
-                          version "/" name "-" version ".tar.gz"))
+                          version "/gptfdisk-" version ".tar.gz"))
       (sha256
-       (base32
-        "13d7gff4prl1nsdknjigmb7bbqhn79165n01v4y9mwbnd0d3jqxn"))))
+       (base32 "0bybgp30pqxb6x5krxazkq4drca0gz4inxj89fpyr204rn3kjz8f"))))
     (build-system gnu-build-system)
     (inputs
      `(("gettext" ,gettext-minimal)
        ("ncurses" ,ncurses)
        ("popt" ,popt)
-       ("util-linux" ,util-linux))) ; libuuid
+       ("util-linux" ,util-linux)))     ; libuuid
     (arguments
      `(#:test-target "test"
        #:phases
        (modify-phases %standard-phases
-         ;; no configure script
-         (delete 'configure)
-         ;; no install target
+         (add-after 'unpack 'fix-include-directory
+           (lambda _
+             (substitute* "gptcurses.cc"
+               (("ncursesw/ncurses.h") "ncurses.h"))
+             #t))
+         (delete 'configure)            ; no configure script
          (replace 'install
+           ;; There's no ‘make install’ target.
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
                     (bin (string-append out "/bin"))
@@ -192,7 +200,7 @@ tables, and it understands a variety of different formats.")
                (install-file "fixparts.8" man)
                (install-file "gdisk.8" man)
                (install-file "sgdisk.8" man)))))))
-    (home-page "http://www.rodsbooks.com/gdisk/")
+    (home-page "https://www.rodsbooks.com/gdisk/")
     (synopsis "Low-level GPT disk partitioning and formatting")
     (description "GPT fdisk (aka gdisk) is a text-mode partitioning tool that
 works on Globally Unique Identifier (@dfn{GUID}) Partition Table (@dfn{GPT})
@@ -203,14 +211,14 @@ scheme.")
 (define-public ddrescue
   (package
     (name "ddrescue")
-    (version "1.24")
+    (version "1.25")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://gnu/ddrescue/ddrescue-"
                           version ".tar.lz"))
       (sha256
-       (base32 "11qh0bbzf00mfb4yq35gnv5m260k4d7q9ixklry6bqvhvvp3ypab"))))
+       (base32 "0qqh38izl5ppap9a5izf3hijh94k65s3zbfkczd4b7x04syqwlyf"))))
     (build-system gnu-build-system)
     (home-page "https://www.gnu.org/software/ddrescue/ddrescue.html")
     (synopsis "Data recovery utility")
@@ -286,15 +294,14 @@ and a @command{fsck.vfat} compatibility symlink for use in an initrd.")
 (define-public sdparm
   (package
     (name "sdparm")
-    (version "1.10")
+    (version "1.11")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://sg.danny.cz/sg/p/"
-                           name "-" version ".tar.xz"))
+                           "sdparm-" version ".tar.xz"))
        (sha256
-        (base32
-         "1jjq3lzgfy4r76rc26q02lv4wm5cb4dx5nh913h489zjrr4f3jbx"))))
+        (base32 "1nqjc4w2w47zavcbf5xmm53x1zbwgljaw1lpajcdi537cgy32fa8"))))
     (build-system gnu-build-system)
     (home-page "http://sg.danny.cz/sg/sdparm.html")
     (synopsis "Provide access to SCSI device parameters")
@@ -344,15 +351,14 @@ and can dramatically shorten the lifespan of the drive if left unchecked.")
 (define-public gparted
   (package
     (name "gparted")
-    (version "1.0.0")
+    (version "1.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/gparted/gparted/gparted-"
                            version "/gparted-" version ".tar.gz"))
        (sha256
-        (base32
-         "0mdvn85jvy72ff7nds3dakx9kzknh8gx1z8i0w2sf970q03qp2z4"))))
+        (base32 "092rgwjh1825fal6v3yafq2wr0i61hh0a2n0j4296zn0zdx7pzp2"))))
     (build-system gnu-build-system)
     (arguments
       ;; Tests require access to paths outside the build container, such
@@ -363,12 +369,12 @@ and can dramatically shorten the lifespan of the drive if left unchecked.")
        ("parted" ,parted)
        ("glib" ,glib)
        ("gtkmm" ,gtkmm)
-       ("libxml2" ,libxml2)
-       ("yelp-tools" ,yelp-tools)))
+       ("libxml2" ,libxml2)))
     (native-inputs
      `(("intltool" ,intltool)
        ("itstool" ,itstool)
        ("lvm2" ,lvm2) ; for tests
+       ("yelp-tools" ,yelp-tools)
        ("pkg-config" ,pkg-config)))
     (home-page "https://gparted.org/")
     (synopsis "Partition editor to graphically manage disk partitions")
@@ -823,3 +829,30 @@ on your file system and offers to remove it.  @command{rmlint} can find:
 @item files with broken user and/or group ID.
 @end itemize\n")
     (license license:gpl3+)))
+
+(define-public lf
+  (package
+    (name "lf")
+    (version "13")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/gokcehan/lf.git")
+                    (commit (string-append "r" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1ld3q75v8rvp169w5p85z1vznqs9bhck6bm2f6fykxx16hmpb6ga"))))
+    (build-system go-build-system)
+    (native-inputs
+     `(("go-github.com-mattn-go-runewidth" ,go-github.com-mattn-go-runewidth)
+       ("go-github.com-nsf-termbox-go" ,go-github.com-nsf-termbox-go)))
+    (arguments
+     `(#:import-path "github.com/gokcehan/lf"))
+    (home-page "https://github.com/gokcehan/lf")
+    (synopsis "Console file browser similar to Ranger")
+    (description "lf (as in \"list files\") is a terminal file manager
+written in Go.  It is heavily inspired by ranger with some missing and
+extra features.  Some of the missing features are deliberately omitted
+since they are better handled by external tools.")
+    (license license:expat)))

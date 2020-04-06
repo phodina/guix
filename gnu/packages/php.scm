@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2016 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Oleg Pykhalov <go.wigust@gmail.com>
 ;;;
@@ -59,7 +59,7 @@
 (define-public php
   (package
     (name "php")
-    (version "7.4.1")
+    (version "7.4.4")
     (home-page "https://secure.php.net/")
     (source (origin
               (method url-fetch)
@@ -67,7 +67,7 @@
                                   "php-" version ".tar.xz"))
               (sha256
                (base32
-                "0qn7zwf2jzj3h7p4b1l79lf9gv236mycwkhgw15hj2fmpmkbh6sn"))
+                "0k57zj1z8kf8403rd72wymj08bswpa5ikcpzviw9mpykzp7c8wqq"))
               (modules '((guix build utils)))
               (snippet
                '(with-directory-excursion "ext"
@@ -237,6 +237,9 @@
                          ;; complete.  It's a warning in both cases and test
                          ;; result is the same.
                          "ext/gd/tests/bug77973.phpt"
+                         ;; New test failures added with 7.4.3
+                         "ext/gd/tests/bug79067.phpt"
+                         "ext/gd/tests/bug79068.phpt"
 
                          ;; XXX: These iconv tests have the expected outcome,
                          ;; but with different error messages.
@@ -338,6 +341,3 @@ systems, web content management systems and web frameworks." )
               license:lgpl2.1+                              ; ext/bcmath/libbcmath
               license:bsd-2                                 ; ext/fileinfo/libmagic
               license:expat))))                             ; ext/date/lib
-
-(define-public php-with-bcmath
-  (deprecated-package "php-with-bcmath" php))

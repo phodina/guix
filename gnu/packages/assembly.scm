@@ -7,6 +7,7 @@
 ;;; Copyright © 2019 Guy Fleury Iteriteka <hoonandon@gmail.com>
 ;;; Copyright © 2019 Andy Tai <atai@atai.org>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Christopher Lemmer Webber <cwebber@dustycloud.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -111,7 +112,7 @@ has strong support for macros.")
     (inputs
      `(("python" ,python-wrapper)
        ("xmlto" ,xmlto)))
-    (home-page "http://yasm.tortall.net/")
+    (home-page "https://yasm.tortall.net/")
     (synopsis "Rewrite of the NASM assembler")
     (description
      "Yasm is a complete rewrite of the NASM assembler.
@@ -148,14 +149,14 @@ to the clients.")
 (define-public fasm
   (package
     (name "fasm")
-    (version "1.73.21")
+    (version "1.73.22")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://flatassembler.net/fasm-"
                            version ".tgz"))
        (sha256
-        (base32 "143zh7x3q0r2kclshh8n5w4i5pw4lh60si7rspvc725xxjpjkvcv"))))
+        (base32 "1pb0rcfdsb0h89khjjrbikz5wjdllavj3ajim0rcyh7x12xr1hw5"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no tests exist
@@ -232,7 +233,7 @@ assembler, a C compiler and a linker.  The assembler uses Intel syntax
                 (uri (git-reference
                       (url "https://git.savannah.gnu.org/r/libjit.git")
                       (commit commit)))
-                (file-name (string-append name "-" version "-checkout"))
+                (file-name (git-file-name name version))
                 (sha256
                  (base32
                   "0p6wklslkkp3s4aisj3w5a53bagqn5fy4m6088ppd4fcfxgqkrcd"))))
@@ -258,7 +259,7 @@ runtime")
 (define-public rgbds
   (package
     (name "rgbds")
-    (version "0.3.9")
+    (version "0.4.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -267,7 +268,7 @@ runtime")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0pzd9ig3ahpgq7jbj82grllxx1v01d620insr2m8h0c6jj25n5hv"))))
+                "15680964nlsa83nqgxk7knxajn98lddz2hg6jnn8ffmnms5wdam7"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -341,4 +342,32 @@ Supported architectures are:
 @item huc6280
 @item spc700
 @end itemize")
+    (license license:gpl2)))
+
+(define-public xa
+  (package
+    (name "xa")
+    (version "2.3.10")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://www.floodgap.com/retrotech/xa"
+                                  "/dists/xa-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0y5sd247g11jfk5msxy91hz2nhpy7smj125dzfyfhjsjnqk5nyw6"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f   ; TODO: custom test harness, not sure how it works
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))            ; no "configure" script
+       #:make-flags (list (string-append "DESTDIR=" (assoc-ref %outputs "out")))))
+    (native-inputs `(("perl" ,perl)))
+    (home-page "https://www.floodgap.com/retrotech/xa/")
+    (synopsis "Two-pass portable cross-assembler")
+    (description
+     "xa is a high-speed, two-pass portable cross-assembler.
+It understands mnemonics and generates code for NMOS 6502s (such
+as 6502A, 6504, 6507, 6510, 7501, 8500, 8501, 8502 ...),
+ CMOS 6502s (65C02 and Rockwell R65C02) and the 65816.")
     (license license:gpl2)))

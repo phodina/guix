@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014, 2019 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Paul van der Walt <paul@denknerd.org>
 ;;; Copyright © 2016 Al McElrath <hello@yrns.org>
 ;;; Copyright © 2016, 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
@@ -10,10 +10,10 @@
 ;;; Copyright © 2016 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2017 ng0 <ng0@n0.is>
 ;;; Copyright © 2017 Rodger Fox <thylakoid@openmailbox.org>
-;;; Copyright © 2017, 2018, 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2017, 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2017, 2018, 2019 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 nee <nee.git@hidamari.blue>
 ;;; Copyright © 2018 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2018 Pierre Neidhardt <mail@ambrevar.xyz>
@@ -21,10 +21,11 @@
 ;;; Copyright © 2018 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
 ;;; Copyright © 2019 Gabriel Hondet <gabrielhondet@gmail.com>
 ;;; Copyright © 2019 Timotej Lazar <timotej.lazar@araneo.si>
-;;; Copyright © 2019 Jakob L. Kreuze <zerodaysfordays@sdf.lonestar.org>
+;;; Copyright © 2019 Jakob L. Kreuze <zerodaysfordays@sdf.org>
 ;;; Copyright © 2019 raingloom <raingloom@protonmail.com>
 ;;; Copyright © 2019 David Wilson <david@daviwil.com>
-;;; Copyright © 2019 Alexandros Theodotou <alex@zrythm.org>
+;;; Copyright © 2019, 2020 Alexandros Theodotou <alex@zrythm.org>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -380,22 +381,28 @@ many input formats and provides a customisable Vi-style user interface.")
 (define-public denemo
   (package
     (name "denemo")
-    (version "2.1")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "mirror://gnu/denemo/denemo-"
-                                  version ".tar.gz"))
-              (sha256
-               (base32
-                "0hggf8c4xcrjcxd5m00r788r7jg7g8ff54w2idfaqpj5j2ix3299"))))
+    (version "2.3.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://gnu/denemo/"
+                           "denemo-" version ".tar.gz"))
+       (sha256
+        (base32 "1blkcl3slbsq9jlhwcf2m9v9g38a0sjfhh9advgi2qr1gxri08by"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
          (replace 'check
-           ;; Denemo's documentation says to use this command to run its
-           ;; testsuite.
-           (lambda _
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; Tests require to write $HOME.
+             (setenv "HOME" (getcwd))
+             ;; Replace hard-coded diff file name.
+             (substitute* "tests/integration.c"
+               (("/usr/bin/diff")
+                (string-append (assoc-ref inputs "diffutils") "/bin/diff")))
+             ;; Denemo's documentation says to use this command to run its
+             ;; test suite.
              (invoke "make" "-C" "tests" "check")))
          (add-before 'build 'set-lilypond
            ;; This phase sets the default path for lilypond to its current
@@ -408,24 +415,12 @@ many input formats and provides a customisable Vi-style user interface.")
                   (string-append "g_string_new (\""
                                  lilypond
                                  "\");"))))
-             #t))
-         (add-after 'install 'correct-filename
-           ;; "graft-derivation/shallow" from the (guix grafts) module runs in
-           ;; the C locale, expecting file names to be ASCII encoded. This
-           ;; phase renames a filename with a Unicode character in it to meet
-           ;; the aforementioned condition.
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out")))
-               (chdir (string-append
-                       out
-                       "/share/denemo/templates/instruments/woodwind"))
-               (rename-file "Clarinet in B♭.denemo"
-                            "Clarinet in Bb.denemo"))
              #t)))))
     (native-inputs
-     `(("intltool" ,intltool)
+     `(("diffutils" ,diffutils)
        ("glib:bin" ,glib "bin")         ; for gtester
        ("gtk-doc" ,gtk-doc)
+       ("intltool" ,intltool)
        ("libtool" ,libtool)
        ("pkg-config" ,pkg-config)))
     (inputs
@@ -504,16 +499,16 @@ settings (aliasing, linear interpolation and cubic interpolation).")
 (define-public hydrogen
   (package
     (name "hydrogen")
-    (version "1.0.0-beta1")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/hydrogen-music/hydrogen.git")
-                    (commit version)))
-              (file-name (string-append name "-" version "-checkout"))
-              (sha256
-               (base32
-                "0nv83l70j5bjz2wd6n3a8cq3bmgrvdvg6g2hjhc1g5h6xnbqsh9x"))))
+    (version "1.0.0-beta2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/hydrogen-music/hydrogen.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1s3jrdyjpm92flw9mkkxchnj0wz8nn1y1kifii8ws252iiqjya4a"))))
     (build-system cmake-build-system)
     (arguments
      `(#:test-target "tests"
@@ -528,16 +523,18 @@ settings (aliasing, linear interpolation and cubic interpolation).")
              #t)))))
     (native-inputs
      `(("cppunit" ,cppunit)
-       ("pkg-config" ,pkg-config)))
+       ("pkg-config" ,pkg-config)
+       ("qtlinguist" ,qttools)))
     (inputs
      `(("alsa-lib" ,alsa-lib)
        ("jack" ,jack-1)
-       ;; ("ladspa" ,ladspa) ; cannot find during configure
+       ;; ("ladspa" ,ladspa) ; require LADSPA_PATH to be set
        ("lash" ,lash)
        ("libarchive" ,libarchive)
+       ("liblo" ,liblo)
        ("libsndfile" ,libsndfile)
-       ("libtar" ,libtar)
        ("lrdf" ,lrdf)
+       ("pulseaudio" ,pulseaudio)
        ("qtbase" ,qtbase)
        ("qtxmlpatterns" ,qtxmlpatterns)
        ("zlib" ,zlib)))
@@ -754,7 +751,7 @@ MusePack, Monkey's Audio, and WavPack files.")
        ("emacs" ,emacs-no-x)))
     ;; Extempore refuses to build on architectures other than x86_64
     (supported-systems '("x86_64-linux"))
-    (home-page "http://digego.github.io/extempore/")
+    (home-page "https://digego.github.io/extempore/")
     (synopsis "Programming environment for live coding of multimedia")
     (description
      "Extempore is a programming language and runtime environment designed
@@ -864,7 +861,7 @@ interface.  It is implemented as a frontend to @code{klick}.")
 (define-public libgme
   (package
     (name "libgme")
-    (version "0.6.2")
+    (version "0.6.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://bitbucket.org/mpyne/game-music-emu/"
@@ -872,15 +869,10 @@ interface.  It is implemented as a frontend to @code{klick}.")
                                   ".tar.xz"))
               (sha256
                (base32
-                "0hkkmxbaas2sirlb5i4r10mgbbiaapjx8pazifabwba23m3wnijh"))))
+                "07857vdkak306d9s5g6fhmjyxk7vijzjhkmqb15s7ihfxx9lx8xb"))))
     (build-system cmake-build-system)
     (arguments
-     '(#:tests? #f)) ; no check target
-    (native-inputs
-     `(;; Use gcc-4.9 to work around an internal compiler error that happens
-       ;; when using gcc-5.5.0.  FIXME: Try removing this when the default
-       ;; compiler is no longer gcc-5.5.0.
-       ("gcc" ,gcc-4.9)))
+     '(#:tests? #f))                    ; no check target
     (home-page "https://bitbucket.org/mpyne/game-music-emu")
     (synopsis "Video game music file playback library")
     (description
@@ -913,21 +905,20 @@ Sega Master System/Mark III, Sega Genesis/Mega Drive, BBC Micro
 (define-public lilypond
   (package
     (name "lilypond")
-    (version "2.19.80")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append
-                    "http://download.linuxaudio.org/lilypond/sources/v"
-                    (version-major+minor version) "/"
-                    name "-" version ".tar.gz"))
-              (sha256
-               (base32
-                "0lql4q946gna2pl1g409mmmsvn2qvnq2z5cihrkfhk7plcqdny9n"))))
+    (version "2.20.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://lilypond.org/download/sources/"
+                           "v" (version-major+minor version) "/"
+                           "lilypond-" version ".tar.gz"))
+       (sha256
+        (base32 "0qd6pd4siss016ffmcyw5qc6pr2wihnvrgd4kh1x725w7wr02nar"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? #f ; out-test/collated-files.html fails
+     `(#:tests? #f                      ;out-test/collated-files.html fails
        #:out-of-source? #t
-       #:make-flags '("conf=www") ;to generate images for info manuals
+       #:make-flags '("conf=www")       ;to generate images for info manuals
        #:configure-flags
        (list "CONFIGURATION=www"
              (string-append "--with-texgyre-dir="
@@ -945,25 +936,25 @@ Sega Master System/Mark III, Sega Genesis/Mega Drive, BBC Micro
                (("TEX_FIKPARM=.*") "TEX_FIKPARM=found\n"))
              #t))
          (add-after 'unpack 'fix-path-references
-          (lambda _
-            (substitute* "scm/backend-library.scm"
-              (("\\(search-executable '\\(\"gs\"\\)\\)")
-               (string-append "\"" (which "gs") "\""))
-              (("\"/bin/sh\"")
-               (string-append "\"" (which "sh") "\"")))
-            #t))
+           (lambda _
+             (substitute* "scm/backend-library.scm"
+               (("\\(search-executable '\\(\"gs\"\\)\\)")
+                (string-append "\"" (which "gs") "\""))
+               (("\"/bin/sh\"")
+                (string-append "\"" (which "sh") "\"")))
+             #t))
          (add-before 'configure 'prepare-configuration
-          (lambda _
-            (substitute* "configure"
-              (("SHELL=/bin/sh") "SHELL=sh")
-              ;; When checking the fontforge version do not consider the
-              ;; version string that's part of the directory.
-              (("head -n") "tail -n")
-              ;; Also allow for SOURCE_DATE_EPOCH = 0 in fontforge.
-              (("20110222") "19700101"))
-            (setenv "out" "www")
-            (setenv "conf" "www")
-            #t))
+           (lambda _
+             (substitute* "configure"
+               (("SHELL=/bin/sh") "SHELL=sh")
+               ;; When checking the fontforge version do not consider the
+               ;; version string that's part of the directory.
+               (("head -n") "tail -n")
+               ;; Also allow for SOURCE_DATE_EPOCH = 0 in fontforge.
+               (("20110222") "19700101"))
+             (setenv "out" "www")
+             (setenv "conf" "www")
+             #t))
          (add-after 'install 'install-info
            (lambda _
              (invoke "make"
@@ -987,13 +978,13 @@ Sega Master System/Mark III, Sega Genesis/Mega Drive, BBC Micro
        ("dblatex" ,dblatex)
        ("gettext" ,gettext-minimal)
        ("imagemagick" ,imagemagick)
-       ("netpbm" ,netpbm) ;for pngtopnm
+       ("netpbm" ,netpbm)               ;for pngtopnm
        ("texlive" ,(texlive-union (list texlive-metapost
                                         texlive-generic-epsf
                                         texlive-latex-lh
                                         texlive-latex-cyrillic)))
        ("texinfo" ,texinfo)
-       ("texi2html" ,texi2html)
+       ("texi2html" ,texi2html-1.82)
        ("rsync" ,rsync)
        ("pkg-config" ,pkg-config)
        ("zip" ,zip)))
@@ -1045,7 +1036,7 @@ Guile.")
          ("ntk" ,ntk)))
       (native-inputs
        `(("pkg-config" ,pkg-config)))
-      (home-page "http://non.tuxfamily.org/wiki/Non%20Sequencer")
+      (home-page "https://non.tuxfamily.org/wiki/Non%20Sequencer")
       (synopsis "Pattern-based MIDI sequencer")
       (description
        "The Non Sequencer is a powerful, lightweight, real-time,
@@ -1069,7 +1060,7 @@ transport is rolling.")
        ("ntk" ,ntk)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
-    (home-page "http://non.tuxfamily.org/nsm/")
+    (home-page "https://non.tuxfamily.org/nsm/")
     (synopsis "Audio session management")
     (description
      "The Non Session Manager is an API and an implementation for audio
@@ -1093,7 +1084,7 @@ communicate with the session management daemon.")
        ("ntk" ,ntk)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
-    (home-page "http://non.tuxfamily.org/wiki/Non%20Mixer")
+    (home-page "https://non.tuxfamily.org/wiki/Non%20Mixer")
     (synopsis "Modular digital audio mixer")
     (description
      "The Non Mixer is a powerful, reliable and fast modular digital audio
@@ -1118,7 +1109,7 @@ studio.")
        ("ntk" ,ntk)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
-    (home-page "http://non.tuxfamily.org/wiki/Non%20Timeline")
+    (home-page "https://non.tuxfamily.org/wiki/Non%20Timeline")
     (synopsis "Modular digital audio timeline arranger")
     (description
      "The Non Timeline is a powerful, reliable and fast modular digital audio
@@ -1414,7 +1405,7 @@ users to select LV2 plugins and run them with jalv.")
 (define-public synthv1
   (package
     (name "synthv1")
-    (version "0.9.12")
+    (version "0.9.13")
     (source (origin
               (method url-fetch)
               (uri
@@ -1422,7 +1413,7 @@ users to select LV2 plugins and run them with jalv.")
                               "/synthv1-" version ".tar.gz"))
               (sha256
                (base32
-                "1amxrl1cqwgncw5437r572frgf6xhss3cfpbgh178i8phlq1q731"))))
+                "0bb48myvgvqcibwm68qhd4852pjr2g19rasf059a799d1hzgfq3l"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f))                    ; there are no tests
@@ -1432,10 +1423,10 @@ users to select LV2 plugins and run them with jalv.")
        ("alsa-lib" ,alsa-lib)
        ("non-session-manager" ,non-session-manager)
        ("liblo" ,liblo)
-       ("qtbase" ,qtbase)
-       ("qttools" ,qttools)))
+       ("qtbase" ,qtbase)))
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("pkg-config" ,pkg-config)
+       ("qttools" ,qttools)))
     (home-page "https://synthv1.sourceforge.io")
     (synopsis "Polyphonic subtractive synthesizer")
     (description
@@ -1446,7 +1437,7 @@ oscillators and stereo effects.")
 (define-public drumkv1
   (package
     (name "drumkv1")
-    (version "0.9.12")
+    (version "0.9.13")
     (source (origin
               (method url-fetch)
               (uri
@@ -1454,7 +1445,7 @@ oscillators and stereo effects.")
                               "/drumkv1-" version ".tar.gz"))
               (sha256
                (base32
-                "0hmnmk9vvi43wl6say0dg7j088h7mmwmfdwjhsq89c7i7cpg78da"))))
+                "1h88sakxs0b20k8v2sh14y05fin1zqmhnid6h9mk9c37ixxg58ia"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f))                    ; there are no tests
@@ -1479,7 +1470,7 @@ effects.")
 (define-public samplv1
   (package
     (name "samplv1")
-    (version "0.9.12")
+    (version "0.9.13")
     (source (origin
               (method url-fetch)
               (uri
@@ -1487,7 +1478,7 @@ effects.")
                               "/samplv1-" version ".tar.gz"))
               (sha256
                (base32
-                "0xzjxiqzcf1ygabrjsy0iachhnpy85rp9519fmj2f568r6ml6hzg"))))
+                "0clsp6s5qfnh0xaxbd35vq2ppi72q9dfayrzlgl73800a8p7gh9m"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f))                    ; there are no tests
@@ -1512,7 +1503,7 @@ effects.")
 (define-public padthv1
   (package
     (name "padthv1")
-    (version "0.9.12")
+    (version "0.9.13")
     (source (origin
               (method url-fetch)
               (uri
@@ -1520,7 +1511,7 @@ effects.")
                               "/padthv1-" version ".tar.gz"))
               (sha256
                (base32
-                "1zz3rz990k819q0rlzllqdwvag0x9k63443lb0mp8lwlczxnza6l"))))
+                "1c1zllph86qswcxddz4vpsj6r9w21hbv4gkba0pyd3q7pbfqr7nz"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f))                    ; there are no tests
@@ -1568,7 +1559,7 @@ special variant of additive synthesis.")
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("intltool" ,intltool)))
-    (home-page "http://amsynth.github.io")
+    (home-page "https://amsynth.github.io")
     (synopsis "Analog modeling synthesizer")
     (description
      "amsynth is an easy-to-use software synthesizer with a classic
@@ -1749,58 +1740,84 @@ is subjective.")
        #:tests? #f                      ; no tests
        #:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'enter-dir
-           (lambda _ (chdir "TuxGuitar-lib") #t))
-         (add-after 'build 'build-libraries
+         (replace 'build
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((initial-classpath (getenv "CLASSPATH"))
                     (build-dir (lambda (dir)
-                                 (chdir "..")
-                                 (setenv "CLASSPATH"
-                                         (string-join (cons initial-classpath
-                                                            (find-files (getcwd) "\\.jar$"))
-                                                      ":"))
-                                 (chdir dir)
-                                 (if (file-exists? "build.xml")
-                                     ((assoc-ref %standard-phases 'build)
-                                      #:build-target "build")
-                                     (begin
-                                       ;; Generate default build.xml.
-                                       ((@@ (guix build ant-build-system) default-build.xml)
-                                        (string-append (string-downcase dir) ".jar")
-                                        (string-append (assoc-ref outputs "out")
-                                                       "/share/java"))
-                                       ((assoc-ref %standard-phases 'build)))))))
-               (map build-dir '("TuxGuitar-editor-utils"
+                                 (setenv
+                                  "CLASSPATH"
+                                  (string-join (cons initial-classpath
+                                                     (find-files (getcwd) "\\.jar$"))
+                                               ":"))
+                                 (with-directory-excursion dir
+                                   (if (file-exists? "build.xml")
+                                       ((assoc-ref %standard-phases 'build)
+                                        #:build-target "build")
+                                       (begin
+                                         ;; Generate default build.xml.
+                                         ((@@ (guix build ant-build-system)
+                                              default-build.xml)
+                                          (string-append (string-downcase dir) ".jar")
+                                          (string-append (assoc-ref outputs "out")
+                                                         "/share/java"))
+                                         ((assoc-ref %standard-phases 'build))))))))
+               (map build-dir '("TuxGuitar-lib"
+                                "TuxGuitar-editor-utils"
                                 "TuxGuitar-ui-toolkit"
                                 "TuxGuitar-ui-toolkit-swt"
-                                "TuxGuitar-awt-graphics")))))
-         (add-after 'build-libraries 'build-application
+                                "TuxGuitar-viewer"
+                                "TuxGuitar"
+                                "TuxGuitar-gm-utils"
+                                "TuxGuitar-alsa"
+                                "TuxGuitar-midi"
+                                "TuxGuitar-midi-ui"))
+               #t)))
+         (add-after 'build 'build-jni
            (lambda _
-             (chdir "../TuxGuitar")
-             ((assoc-ref %standard-phases 'build)
-              #:build-target "build")))
+             (setenv "CC" "gcc")
+             (setenv "CFLAGS" (string-append
+                               "-fpic -I"
+                               (getcwd)
+                               "/build-scripts/native-modules/common-include"))
+             (invoke "make" "-C" "./TuxGuitar-alsa/jni" "-f" "GNUmakefile")))
          (replace 'install
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out   (assoc-ref outputs "out"))
                     (bin   (string-append out "/bin"))
                     (share (string-append out "/share"))
+                    (jni-lib (string-append out "/lib"))
                     (lib   (string-append share "/java"))
-                    (swt   (assoc-ref inputs "java-swt")))
+                    (swt   (assoc-ref inputs "java-swt"))
+                    (mime  (string-append share "/mime/packages"))
+                    (app   (string-append share "/applications"))
+                    (man   (string-append share "/man/man1")))
+
                (mkdir-p bin)
                ;; Install all jars.
                (for-each (lambda (file)
                            (install-file file lib))
-                         (find-files ".." "\\.jar$"))
+                         (find-files "." "\\.jar$"))
+
+               ;; Install jni libraries
+               (for-each (lambda (file)
+                           (install-file file jni-lib))
+                         (find-files "." "\\-jni.so$"))
 
                ;; Install all resources.
-               (copy-recursively "share" share)
+               (copy-recursively "./TuxGuitar/share" share)
+
+               ;; Install desktop and mime files
+               (install-file "./misc/tuxguitar.xml" mime)
+               (install-file "./misc/tuxguitar.desktop" app)
+
+               ;; Install manaual
+               (install-file "./misc/tuxguitar.1" man)
 
                ;; Create wrapper.
                (call-with-output-file (string-append bin "/tuxguitar")
                  (lambda (port)
-                   (let ((classpath (string-join (append (find-files lib "\\.jar$")
-                                                         (find-files swt "\\.jar$"))
+                   (let ((classpath (string-join (append  (find-files lib "\\.jar$")
+                                                          (find-files swt "\\.jar$"))
                                                  ":")))
                      (format
                       port
@@ -1810,12 +1827,14 @@ is subjective.")
                                      " -Dtuxguitar.home.path=" out
                                      " -Dtuxguitar.share.path=" out "/share"
                                      " -Dswt.library.path=" swt "/lib"
+                                     " -Djava.library.path=" out "/lib"
                                      " org.herac.tuxguitar.app.TGMainSingleton"
                                      " \"$1\" \"$2\"")))))
                (chmod (string-append bin "/tuxguitar") #o555)
                #t))))))
     (inputs
-     `(("java-swt" ,java-swt)))
+     `(("alsa-lib" ,alsa-lib)
+       ("java-swt" ,java-swt)))
     (home-page "http://tuxguitar.com.ar/")
     (synopsis "Multitrack tablature editor and player")
     (description
@@ -2014,25 +2033,26 @@ using a system-independent interface.")
 (define-public frescobaldi
   (package
     (name "frescobaldi")
-    (version "3.0.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append
-                    "https://github.com/wbsoft/frescobaldi/releases/download/v"
-                    version "/frescobaldi-" version ".tar.gz"))
-              (sha256
-               (base32
-                "15cqhbjbjikr7ljgiq56bz2gxrr38j8p0f78p2vhyzydaviy9a2z"))))
+    (version "3.1.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://github.com/wbsoft/frescobaldi/releases/download/v"
+             version "/frescobaldi-" version ".tar.gz"))
+       (sha256
+        (base32 "0kfwvgygx2ds01w8g7vzykfrajglmr2brchk9d67ahzijpgvfkj5"))))
     (build-system python-build-system)
-    (arguments `(#:tests? #f)) ; no tests included
+    (arguments
+     `(#:tests? #f))                    ;no tests included
     (inputs
      `(("lilypond" ,lilypond)
-       ("portmidi" ,portmidi)
-       ("python-pyqt" ,python-pyqt)
-       ("python-ly" ,python-ly)
-       ("python-pyportmidi" ,python-pyportmidi)
        ("poppler" ,poppler)
+       ("portmidi" ,portmidi)
+       ("python-ly" ,python-ly)
        ("python-poppler-qt5" ,python-poppler-qt5)
+       ("python-pyportmidi" ,python-pyportmidi)
+       ("python-pyqt" ,python-pyqt)
        ("python-sip" ,python-sip)))
     (home-page "http://www.frescobaldi.org/")
     (synopsis "LilyPond sheet music text editor")
@@ -2119,11 +2139,11 @@ backends, including ALSA, OSS, Network and FluidSynth.")
      `(("drumstick" ,drumstick)
        ("qtbase" ,qtbase)
        ("qtsvg" ,qtsvg)
-       ("qttools" ,qttools)
        ("qtx11extras" ,qtx11extras)))
     (native-inputs
      `(("libxslt" ,libxslt) ;for xsltproc
        ("docbook-xsl" ,docbook-xsl)
+       ("qttools" ,qttools)
        ("pkg-config" ,pkg-config)))
     (home-page "http://vmpk.sourceforge.net")
     (synopsis "Virtual MIDI piano keyboard")
@@ -2185,7 +2205,7 @@ capabilities, custom envelopes, effects, etc.")
 (define-public yoshimi
   (package
     (name "yoshimi")
-    (version "1.6.1")
+    (version "1.7.0.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/yoshimi/"
@@ -2193,7 +2213,7 @@ capabilities, custom envelopes, effects, etc.")
                                   "/yoshimi-" version ".tar.bz2"))
               (sha256
                (base32
-                "1shnz429zgl0b4y5bpb61frk1747jwqfahq4hx44c972580zghzh"))))
+                "1pkqrrr51vlxh96vy0c0rf5ijjvymys4brsw9rv1bdp1bb8izw6c"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f                      ; there are no tests
@@ -2256,7 +2276,7 @@ improves on support for JACK features, such as JACK MIDI.")
        ("libsndfile" ,libsndfile)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
-    (home-page "http://linuxsampler.org/libgig/")
+    (home-page "https://linuxsampler.org/libgig/")
     (synopsis "C++ library for working with Gigasampler (.gig) files")
     (description
      "Libgig is a C++ library for loading, modifying existing and creating new
@@ -2329,6 +2349,64 @@ allows you to send JACK MIDI events (i.e. play) using your PC keyboard.")
     (description "This is a program for recording sound files with JACK.  It
 can connect to any JACK port and record the output into a stereo WAV file.")
     (license license:gpl2+)))
+
+(define-public jack-select
+  (package
+    (name "jack-select")
+    (version "1.5.0")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "jack-select" version))
+              (sha256
+               (base32
+                "1zijk9ly2fczxsnnrqr8s0ajmlyx1j1vd8gk0rm5dj5zyhhmia7f"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:modules ((guix build gnu-build-system)
+                  ((guix build python-build-system) #:prefix python:)
+                  (guix build utils))
+       #:imported-modules (,@%gnu-build-system-modules
+                           (guix build python-build-system))
+       #:make-flags
+       (list (string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:tests? #f                      ; there are none
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; python-dbus cannot be found but it's really there.  See
+             ;; https://github.com/SpotlightKid/jack-select/issues/2
+             (substitute* "setup.py"
+               (("'dbus-python',") ""))
+             ;; Fix reference to dlopened libraries.
+             (substitute* "jackselect/alsainfo.py"
+               (("libasound.so.2")
+                (string-append (assoc-ref inputs "alsa-lib")
+                               "/lib/libasound.so.2")))
+             #t))
+         (replace 'build
+           (assoc-ref python:%standard-phases 'build))
+         (add-after 'install 'wrap
+           (assoc-ref python:%standard-phases 'wrap)))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("alsa-lib" ,alsa-lib)
+       ("python" ,python-wrapper)
+       ("python-pyudev" ,python-pyudev)
+       ("python-pyxdg" ,python-pyxdg)
+       ("python-dbus" ,python-dbus)
+       ("python-pygobject" ,python-pygobject)))
+    (home-page "https://github.com/SpotlightKid/jack-select")
+    (synopsis "Systray application to quickly change the JACK-DBus configuration")
+    (description "This application displays an icon in the system tray (also
+known as notification area) of your desktop, which shows the status of the
+JACK audio server and when you click on it, a menu pops up, which lets you
+quickly select from the JACK configuration presets you created with QjackCtl.
+When you select a preset, its JACK engine and driver configuration settings
+are loaded via DBus into JACK and then the server is restarted.  This allows
+you to switch between different audio setups with just two mouse clicks.")
+    (license license:expat)))
 
 (define-public cursynth
   (package
@@ -2593,7 +2671,7 @@ tune-in sender list from @url{http://opml.radiotime.com}.")
 (define-public pianobar
   (package
     (name "pianobar")
-    (version "2016.06.02")
+    (version "2019.02.14")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -2602,10 +2680,10 @@ tune-in sender list from @url{http://opml.radiotime.com}.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "058fbdxp7n35hxwy3b8slfy4pb4n63cb173vfmywqa06wh1dv6f6"))))
+                "1bfabkj3m9kmhxl64w4azmi0xf7w52fmqfbw2ag28hbb5yy01k1m"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? #f ; no tests
+     `(#:tests? #f                      ; no tests
        #:make-flags (list "CC=gcc" "CFLAGS=-std=c99"
                           (string-append "PREFIX=" %output))
        #:phases (modify-phases %standard-phases
@@ -2615,10 +2693,10 @@ tune-in sender list from @url{http://opml.radiotime.com}.")
        ("curl" ,curl)
        ("libgcrypt" ,libgcrypt)
        ("json-c" ,json-c)
-       ("ffmpeg" ,ffmpeg-3.4)))
+       ("ffmpeg" ,ffmpeg)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
-    (home-page "http://6xq.net/projects/pianobar/")
+    (home-page "https://6xq.net/pianobar/")
     (synopsis "Console-based pandora.com player")
     (description "pianobar is a console-based music player for the
 personalized online radio pandora.com.  It has configurable keys for playing
@@ -2847,7 +2925,7 @@ websites such as Libre.fm.")
                                 (find-files "instantmusic.egg-info"
                                             "PKG-INFO|.*\\.txt"))
                       #t)))))
-    (home-page "http://iyask.me/Instant-Music-Downloader/")
+    (home-page "https://github.com/yask123/Instant-Music-Downloader")
     (synopsis "Command-line program to download a song from YouTube")
     (description "InstantMusic downloads a song from YouTube in MP3 format.
 Songs can be searched by artist, name or even by a part of the song text.")
@@ -2860,6 +2938,7 @@ Songs can be searched by artist, name or even by a part of the song text.")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "beets" version))
+              (patches (search-patches "beets-werkzeug-compat.patch"))
               (sha256
                (base32
                 "0m40rjimvfgy1dv04p8f8d5dvi2855v4ix99a9xr900cmcn476yj"))))
@@ -2971,7 +3050,7 @@ using the beets FetchArt plugin.")
 module files.  It attempts to recreate the module replay and user experience of
 the popular DOS program Fasttracker II, with special playback modes available
 for improved Amiga ProTracker 2/3 compatibility.")
-    (home-page "http://milkytracker.titandemo.org/")
+    (home-page "https://milkytracker.titandemo.org/")
     ;; 'src/milkyplay' is under Modified BSD, the rest is under GPL3 or later.
     (license (list license:bsd-3 license:gpl3+))))
 
@@ -3850,34 +3929,30 @@ audio samples and various soft sythesizers.  It can receive input from a MIDI ke
 (define-public musescore
   (package
     (name "musescore")
-    (version "3.3.4")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/musescore/MuseScore.git")
-                    (commit (string-append "v" version))))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "1jwj89v69nhyawj8x7niwznm1vgvp51dhzw6ggnarc3wdvp6qq8y"))
-              (modules '((guix build utils)))
-              (snippet
-               ;; Un-bundle OpenSSL and remove unused libraries.
-               '(begin
-                  (substitute* "thirdparty/kQOAuth/CMakeLists.txt"
-                    (("-I \\$\\{PROJECT_SOURCE_DIR\\}/thirdparty/openssl/include ")
-                     ""))
-                  (substitute* "thirdparty/kQOAuth/kqoauthutils.cpp"
-                    (("#include <openssl/.*") ""))
-                  (for-each delete-file-recursively
-                            '("thirdparty/freetype"
-                              "thirdparty/openssl"
-                              "thirdparty/portmidi"))
-                  #t))))
+    (version "3.4.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/musescore/MuseScore.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "14a9sg87nx7xca1qfbkplnpbx9pyg9k9vy87dq0g401ag6g6bi66"))
+       (modules '((guix build utils)))
+       (snippet
+        ;; Un-bundle OpenSSL and remove unused libraries.
+        '(begin
+           (for-each delete-file-recursively
+                     '("thirdparty/freetype"
+                       "thirdparty/openssl"
+                       "thirdparty/portmidi"))
+           #t))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags
-       `("-DBUILD_WEBENGINE=OFF"
+       `("-DBUILD_TELEMETRY_MODULE=OFF" ;don't phone home
+         "-DBUILD_WEBENGINE=OFF"
          "-DDOWNLOAD_SOUNDFONT=OFF"
          "-DUSE_SYSTEM_FREETYPE=ON")
        ;; There are tests, but no simple target to run.  The command used to
@@ -3903,6 +3978,7 @@ audio samples and various soft sythesizers.  It can receive input from a MIDI ke
        ("pulseaudio" ,pulseaudio)
        ("qtbase" ,qtbase)
        ("qtdeclarative" ,qtdeclarative)
+       ("qtquickcontrols2" ,qtquickcontrols2)
        ("qtscript" ,qtscript)
        ("qtsvg" ,qtsvg)
        ("qtxmlpatterns" ,qtxmlpatterns)))
@@ -3971,7 +4047,7 @@ sample library.")
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("qttools" ,qttools)))
-    (home-page "http://muse-sequencer.org")
+    (home-page "https://muse-sequencer.github.io/")
     (synopsis "MIDI/Audio sequencer")
     (description "MusE is a MIDI/Audio sequencer with recording and editing
 capabilities.  Its audio sequencer supports the LADSPA, DSSI, and LV2 audio
@@ -4017,15 +4093,14 @@ specification and header.")
 (define-public rosegarden
   (package
     (name "rosegarden")
-    (version "18.12")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append
-                    "mirror://sourceforge/rosegarden/rosegarden/"
-                    version "/rosegarden-" version ".tar.bz2"))
-              (sha256
-               (base32
-                "15i9fm0vkn3wsgahaxqi1j5zs0wc0j3wdwml0x49084gk2p328vb"))))
+    (version "19.12")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://sourceforge/rosegarden/rosegarden/"
+                           version "/rosegarden-" version ".tar.bz2"))
+       (sha256
+        (base32 "1qcaxc6hdzva7kwxxhgl95437fagjbxzv4mihsgpr7y9qk08ppw1"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags '("-DCMAKE_BUILD_TYPE=Release")
@@ -4067,9 +4142,9 @@ specification and header.")
                (("COMMAND [$][{]QT_RCC_EXECUTABLE[}]")
                 "COMMAND ${QT_RCC_EXECUTABLE} --format-version 1")
                ;; Extraneous.
-               ;(("qt5_add_resources[(]rg_SOURCES ../data/data.qrc[)]")
-               ; "qt5_add_resources(rg_SOURCES ../data/data.qrc OPTIONS --format-version 1)")
-                )
+               ;;(("qt5_add_resources[(]rg_SOURCES ../data/data.qrc[)]")
+               ;; "qt5_add_resources(rg_SOURCES ../data/data.qrc OPTIONS --format-version 1)")
+               )
              ;; Make hashtable traversal order predicable.
              (setenv "QT_RCC_TEST" "1") ; important
              #t))
@@ -4537,42 +4612,6 @@ discard bad quality ones.
 @end itemize\n")
       (license license:expat))))
 
-(define-public lpd8editor
-  (package
-    (name "lpd8editor")
-    (version "0.0.13")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                     (url "https://github.com/charlesfleche/lpd8editor.git")
-                     (commit (string-append "v" version))))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "0lsz3v493ilq2zr016m7kvymrplxd0n3pqv1pjglpq1h7sjw9764"))))
-    (build-system gnu-build-system)
-    (arguments
-     '(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'setenv
-           (lambda _
-             (setenv "INSTALL_PREFIX"
-                     (assoc-ref %outputs "out"))))
-         (delete 'configure) ; no configure script
-         (add-before 'build 'qmake
-           (lambda _ (invoke "qmake"))))))
-    (native-inputs
-     `(("pkg-config" ,pkg-config)))
-    (inputs
-     `(("alsa" ,alsa-lib)
-       ("qtbase" ,qtbase)
-       ("qtsvg" ,qtsvg)))
-    (synopsis "Graphical editor for the Akai LPD8 MIDI controller")
-    (description "lpd8editor is a graphical patch editor for the Akai LPD8 MIDI
-controller.")
-    (home-page "https://github.com/charlesfleche/lpd8editor")
-    (license license:expat)))
-
 (define-public fmit
   (package
     (name "fmit")
@@ -4623,7 +4662,7 @@ controller.")
        ("qtmultimedia" ,qtmultimedia)
        ("qtsvg" ,qtsvg)))
     (native-inputs
-     `(("gettext" ,gnu-gettext)
+     `(("gettext" ,gettext-minimal)
        ("hicolor-icon-theme" ,hicolor-icon-theme)
        ("itstool" ,itstool)
        ("qttools" ,qttools)))
@@ -4927,7 +4966,7 @@ ZaMultiComp, ZaMultiCompX2 and ZamSynth.")
 (define-public geonkick
   (package
     (name "geonkick")
-    (version "1.9.0")
+    (version "1.10.0")
     (source
      (origin
        (method git-fetch)
@@ -4937,7 +4976,7 @@ ZaMultiComp, ZaMultiCompX2 and ZamSynth.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "17mwxnmxszdm2wjbigciwh8qx0487q9qhf4sl92y6nqdb0dlghnl"))))
+         "1a59wnm4035kjhs66hihlkiv45p3ffb2yaj1awvyyi5f0lds5zvh"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f                      ;no tests included
@@ -5114,3 +5153,230 @@ MIDI drums and comes as two separate drumkits: Black Pearl and Red Zeppelin.")
     (description "Helm is a cross-platform polyphonic synthesizer available standalone
 and as an LV2 plugin.")
     (license license:gpl3+)))
+
+(define-public zrythm
+  (package
+    (name "zrythm")
+    (version "0.8.200")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append "https://www.zrythm.org/releases/zrythm-"
+                            version ".tar.xz"))
+        (sha256
+          (base32
+            "13ivxbrd44qnhyh46dcr94dvqxg8cn4bbd8xm77ljw0p9b4ks4zs"))))
+   (build-system meson-build-system)
+   (arguments
+    `(#:glib-or-gtk? #t
+      #:configure-flags
+      `("-Denable_tests=true" "-Dmanpage=true"
+        "-Dinstall_dseg_font=false" "-Denable_ffmpeg=true")
+      #:phases
+      (modify-phases %standard-phases
+        (add-after 'unpack 'patch-xdg-open
+          (lambda _
+            (substitute* "src/utils/io.c"
+                         (("OPEN_DIR_CMD")
+                          (string-append "\"" (which "xdg-open") "\"")))
+            #t)))))
+   (inputs
+    `(("alsa-lib" ,alsa-lib)
+      ("jack" ,jack-1)
+      ("font-dseg" ,font-dseg)
+      ("ffmpeg" ,ffmpeg)
+      ("fftw" ,fftw)
+      ("fftwf" ,fftwf)
+      ("gettext" ,gettext-minimal)
+      ("glibc" ,glibc)
+      ("gtk+" ,gtk+)
+      ("guile" ,guile-2.2)
+      ("libcyaml" ,libcyaml)
+      ("libsamplerate" ,libsamplerate)
+      ("libsndfile" ,libsndfile)
+      ("libyaml" ,libyaml)
+      ("lilv" ,lilv)
+      ("xdg-utils" ,xdg-utils)
+      ("rubberband" ,rubberband)))
+   (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("help2man" ,help2man)
+       ("libaudec" ,libaudec)
+       ("lv2" ,lv2)
+       ("glib" ,glib "bin"))) ;for 'glib-compile-resources'
+   (synopsis "Digital audio workstation focusing on usability")
+   (description "Zrythm is a digital audio workstation designed to be
+featureful and easy to use.  It offers unlimited automation options, LV2
+plugin support, JACK support and chord assistance.")
+   (home-page "https://www.zrythm.org")
+   (license license:agpl3+)))
+
+(define-public dragonfly-reverb
+  (package
+    (name "dragonfly-reverb")
+    (version "2.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/michaelwillis/dragonfly-reverb.git")
+         (commit version)
+         ;; Bundles a specific commit of the DISTRHO plugin framework.
+         (recursive? #t)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1qrbv4kk5v6ynx424h1i54qj0w8v6vpw81b759jawxvzzprpgq72"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ; no check target
+       #:make-flags (list "CC=gcc")
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)            ;no configure target
+         (replace 'install              ;no install target
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin"))
+                    (lv2 (string-append out "/lib/lv2")))
+               ;; Install LV2.
+               (for-each
+                (lambda (file)
+                  (copy-recursively file
+                                    (string-append lv2 "/" (basename file))))
+                (find-files "bin" "\\.lv2$" #:directories? #t))
+               ;; Install executables.
+               (install-file "bin/DragonflyRoomReverb" bin)
+               (install-file "bin/DragonflyHallReverb" bin)
+               #t))))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("jack" ,jack-1)
+       ("libx11" ,libx11)
+       ("mesa" ,mesa)))
+    (home-page "https://michaelwillis.github.io/dragonfly-reverb/")
+    (synopsis "Concert hall reverb and room reverb effects")
+    (description
+     "Dragonfly Reverb is a bundle of two free audio effects: a concert
+hall reverb and a room reverb.  Both are available as LV2 plugins as well
+as JACK standalone applications.")
+    (license license:gpl3+)))
+
+(define-public zlfo
+  (package
+    (name "zlfo")
+    (version "0.1.3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://git.zrythm.org/git/ZLFO")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0bm466ci5xyvxvq7l9p6xyh789lvk6i31b4zja1igqh13akbjnjz"))))
+    (build-system meson-build-system)
+    (inputs
+     `(("librsvg" ,librsvg)
+       ("lv2" ,lv2)
+       ("ztoolkit-rsvg" ,ztoolkit-rsvg)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (synopsis "Low frequency oscillator plugin")
+    (description "ZLFO is a fully featured
+@dfn{low frequency oscillator} (LFO) for @dfn{control voltage} (CV)-based
+automation that comes as an LV2 plugin bundle with a custom UI.")
+    (home-page "https://git.zrythm.org/cgit/ZLFO/")
+    (license license:agpl3+)))
+
+(define-public vl1-emulator
+  (package
+    (name "vl1-emulator")
+    (version "1.1.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/linuxmao-org/VL1-emulator.git")
+             (commit (string-append "v" version))
+             ;; bundles a specific commit of the DISTRHO plugin framework
+             (recursive? #t)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1npc86vqma8gk1hawa0lii0r2xmnv846plyl1ci3bdswyrdk5chm"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ;no check target
+       #:make-flags
+       (list (string-append "PREFIX=" (assoc-ref %outputs "out"))
+             "CC=gcc")
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))))         ;no configure target
+    (inputs
+     `(("cairo" ,cairo)
+       ("jack" ,jack-1)
+       ("mesa" ,mesa)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (home-page "https://github.com/linuxmao-org/VL1-emulator")
+    (synopsis "Emulator of Casio VL-Tone VL1")
+    (description "The VL1-Emulator is an emulator of Casio VL-Tone VL1,
+based on source code by PolyValens, offered as an LV2 plugin and a
+standalone JACK application.")
+    ;; Expat or CC0
+    (license (list license:expat license:cc0))))
+
+(define-public regrader
+  (package
+    (inherit vl1-emulator)
+    (name "regrader")
+    (version "1.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/linuxmao-org/regrader.git")
+             (commit (string-append "v" version))
+             ;; bundles a specific commit of the DISTRHO plugin framework
+             (recursive? #t)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0gl4d5lf2afqknz22jz7hh7029sc9v1xrz6nbz9dlv42bwc0cvl0"))))
+    (home-page "https://github.com/linuxmao-org/regrader")
+    (synopsis "Delay effect plugin")
+    (description
+     "Regrader is a delay effect where the repeats degrade in resolution.
+This is an unofficial port of the Regrader plugin created by Igorski.  It
+is available as an LV2 plugin and a standalone JACK application.")
+    (license license:expat)))
+
+(define-public fogpad
+  (package
+    (inherit vl1-emulator)
+    (name "fogpad")
+    (version "1.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/linuxmao-org/fogpad")
+             (commit (string-append "v" version))
+             ;; bundles a specific commit of the DISTRHO plugin framework
+             (recursive? #t)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1j1hbya2dsqpf22zkpi4kwz3dram9g1ndxzmgfwpmf3i4jd3csgb"))))
+    (home-page "https://github.com/linuxmao-org/fogpad")
+    (synopsis "Reverb effect plugin")
+    (description
+     "Fogpad is a reverb effect in which the reflections can be frozen,
+filtered, pitch shifted and ultimately disintegrated.  This is an unofficial
+port of the Regrader plugin created by Igorski.  It is available as an LV2
+plugin and a standalone JACK application.")
+    (license license:expat)))

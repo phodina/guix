@@ -6,6 +6,8 @@
 ;;; Copyright © 2016 Troy Sankey <sankeytms@gmail.com>
 ;;; Copyright © 2016 Stefan Reichoer <stefan@xsteve.at>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com
+;;; Copyright © 2020 Brendan Tildesley <mail@brendan.scot>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -25,6 +27,7 @@
 (define-module (gnu packages calendar)
   #:use-module (gnu packages)
   #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (guix git-download)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix build-system gnu)
@@ -47,10 +50,66 @@
   #:use-module (gnu packages xml)
   #:use-module (srfi srfi-26))
 
+(define-public date
+  ;; We make the same choice as the Arch package maintainer by choosing a
+  ;; recent commit to fix some bugs.
+  ;; https://github.com/Alexays/Waybar/issues/565
+  (let ((commit "9a0ee2542848ab8625984fc8cdbfb9b5414c0082"))
+    (package
+      (name "date")
+      (version (string-append "2.4.1-" (string-take commit 8)))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/HowardHinnant/date.git")
+               (commit "9a0ee2542848ab8625984fc8cdbfb9b5414c0082")))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0yxsn0hj22n61bjywysxqgfv7hj5xvsl6isma95fl8xrimpny083"))
+         (patches
+          ;; Install pkg-config files
+          ;; https://github.com/HowardHinnant/date/pull/538
+          (search-patches "date-output-pkg-config-files.patch"))))
+      (inputs `(("tzdata" ,tzdata)))
+      (build-system cmake-build-system)
+      (arguments
+       '(#:configure-flags (list "-DUSE_SYSTEM_TZ_DB=ON"
+                                 "-DBUILD_SHARED_LIBS=ON"
+                                 "-DBUILD_TZ_LIB=ON"
+                                 "-DENABLE_DATE_TESTING=ON")
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'patch-bin-bash
+             (lambda* (#:key inputs #:allow-other-keys)
+               (substitute* "compile_fail.sh"
+                 (("/bin/bash") (which "bash")))
+               #t))
+           (add-after 'unpack 'patch-zoneinfo-path
+             (lambda* (#:key inputs #:allow-other-keys)
+               (substitute* "src/tz.cpp"
+                 (("/usr/share/zoneinfo")
+                  (string-append (assoc-ref inputs "tzdata") "/share/zoneinfo")))
+               #t))
+           (replace 'check
+             (lambda _
+               ;; Disable test that requires checking timezone that
+               ;; isn't set in the build environment.
+               (substitute* "CTestTestfile.cmake"
+                 (("add_test.tz_test_pass_zoned_time_deduction_test.*") "")
+                 (("set_tests_properties.tz_test_pass_zoned_time_deduction_test.*") ""))
+               (invoke "make" "testit"))))))
+      (synopsis "Date and time library for C++11 and C++14")
+      (description "Date is a header only C++ library that extends the chrono
+date algorithms library for calendar dates and durations.  It also provides
+the <tz.h> library for handling time zones and leap seconds.")
+      (home-page "https://howardhinnant.github.io/date/date.html")
+      (license license:expat))))
+
 (define-public libical
   (package
     (name "libical")
-    (version "3.0.6")
+    (version "3.0.7")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -58,7 +117,22 @@
                     version "/libical-" version ".tar.gz"))
               (sha256
                (base32
-                "15sdmh8w4vszd7jhv9fdpd48anpkniq2k1jw7siy9v1jnz1232jw"))))
+                "1z33wzaazbd7drl6qbh1750whd78xl2cg0gjnxyya9m83vgndgha"))
+              (patches
+               ;; Add a patch slated for 3.0.8 which preserves backwards-
+               ;; compatibility in the icalattach_new_from_data() function,
+               ;; which accidentally changed in 3.0.7 and could break some uses.
+               ;; https://gitlab.gnome.org/GNOME/evolution-data-server/issues/185
+               ;; http://lists.infradead.org/pipermail/libical-devel/2020-January/000907.html
+               (list (origin
+                       (method url-fetch)
+                       (uri (string-append
+                             "https://github.com/libical/libical/commit/"
+                             "ae394010c889e4c185160da5e81527849f9de350.patch"))
+                       (file-name "libical-3.0.7-preserve-icalattach-api.patch")
+                       (sha256
+                        (base32
+                         "0v8qcxn8a6sh78grzxd61j9478928dx38l5mf8mkdrbxv47vmvvp")))))))
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f ; test suite appears broken
@@ -67,7 +141,8 @@
        (modify-phases %standard-phases
          (add-before 'configure 'patch-paths
            (lambda* (#:key inputs #:allow-other-keys)
-             ;; FIXME: This should be patched to use TZDIR so we can drop
+             ;; TODO: libical 3.1.0 supports using TZDIR instead of a hard-coded
+             ;; zoneinfo database.  When that is released we can drop
              ;; the tzdata dependency.
              (let ((tzdata (assoc-ref inputs "tzdata")))
                (substitute* "src/libical/icaltz-util.c"

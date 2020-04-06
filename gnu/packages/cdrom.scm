@@ -213,7 +213,7 @@ files.")
      `(#:tests? #f ; there is no check target
        #:configure-flags ; Add $libdir to the RUNPATH of all the executables.
        (list (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib"))))
-    (home-page "http://www.xiph.org/paranoia/")
+    (home-page "https://www.xiph.org/paranoia/")
     (synopsis "Audio CD reading utility")
     (description "Cdparanoia retrieves audio tracks from CDDA capable CDROM
 drives.  The data can be saved to a file or directed to standard output
@@ -466,7 +466,7 @@ capacity is user-selectable.")
        ("flex" ,flex)
        ("python" ,python-2)
        ("xmlto" ,xmlto)
-       ("gettext" ,gnu-gettext)
+       ("gettext" ,gettext-minimal)
        ("docbook-xml" ,docbook-xml)
        ("docbook-xsl" ,docbook-xsl)
        ("zip" ,zip)))

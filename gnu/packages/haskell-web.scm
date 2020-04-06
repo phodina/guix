@@ -7,6 +7,7 @@
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Robert Vollmert <rob@vllmrt.net>
 ;;; Copyright © 2019 John Soo <jsoo1@asu.edu>
+;;; Copyright © 2020 Alexandru-Sergiu Marton <brown121407@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -51,7 +52,7 @@
     (build-system haskell-build-system)
     (native-inputs
      `(("ghc-quickcheck" ,ghc-quickcheck)))
-    (home-page "http://community.haskell.org/~ndm/tagsoup/")
+    (home-page "https://github.com/ndmitchell/tagsoup")
     (synopsis
      "Parsing and extracting information from (possibly malformed) HTML/XML
 documents")
@@ -619,7 +620,7 @@ based WAI (Web Application Interface in Haskell).")
       ("ghc-clock" ,ghc-clock)
       ("ghc-psqueues" ,ghc-psqueues)
       ("ghc-tls" ,ghc-tls)))
-  (home-page "http://hackage.haskell.org/package/tls-session-manager")
+  (home-page "https://hackage.haskell.org/package/tls-session-manager")
   (synopsis "In-memory TLS session manager")
   (description "This Haskell library provides a TLS session manager with
 limitation, automatic pruning, energy saving and replay resistance.")
@@ -750,6 +751,41 @@ Haskell.")
      "This package contains a combinator library for constructing HTML
 documents.")
     (license license:bsd-3)))
+
+(define-public ghc-html-conduit
+  (package
+    (name "ghc-html-conduit")
+    (version "1.3.2.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/html-conduit/"
+             "html-conduit-" version ".tar.gz"))
+       (sha256
+        (base32
+         "196c8zcnjp1pc5qvqxd8arx3xkw0a90rvg9mmiw2l4zwnx65709n"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-resourcet" ,ghc-resourcet)
+       ("ghc-conduit" ,ghc-conduit)
+       ("ghc-xml-conduit" ,ghc-xml-conduit)
+       ("ghc-xml-types" ,ghc-xml-types)
+       ("ghc-attoparsec" ,ghc-attoparsec)
+       ("ghc-conduit-extra" ,ghc-conduit-extra)))
+    (native-inputs
+     `(("ghc-hspec" ,ghc-hspec)
+       ("ghc-hunit" ,ghc-hunit)))
+    (home-page "https://github.com/snoyberg/xml")
+    (synopsis "Parse HTML documents using xml-conduit datatypes")
+    (description
+     "This package provides a parser for HTML documents that uses
+tagstream-conduit.  It automatically balances mismatched tags, so that
+there shouldn't be any parse failures.  It does not handle a full HTML
+document rendering, such as adding missing html and head tags.  Note that,
+since version 1.3.1, it uses an inlined copy of tagstream-conduit with
+entity decoding bugfixes applied.")
+    (license license:expat)))
 
 (define-public ghc-blaze-html
   (package
@@ -1093,7 +1129,7 @@ functions, widgets, etc.")
 (define-public ghc-yesod-persistent
   (package
     (name "ghc-yesod-persistent")
-    (version "1.6.0.2")
+    (version "1.6.0.4")
     (source
      (origin
        (method url-fetch)
@@ -1102,7 +1138,7 @@ functions, widgets, etc.")
                            "yesod-persistent-" version ".tar.gz"))
        (sha256
         (base32
-         "17adw0aaj29ia7ii3jka301442860b5wvfrms079q973gzahz5fd"))))
+         "1gsiw2zx6z7za7a164h0fxfggkrdqz6fn0qyb2zn9qr7r2jbg1c0"))))
     (build-system haskell-build-system)
     (arguments `(#:tests? #f)) ; FIXME: hspec-discover not available in PATH.
     (inputs `(("ghc-yesod-core" ,ghc-yesod-core)
@@ -1595,3 +1631,65 @@ cookies, serving files, and more.")
     (description
      "Haskell library which exposes zero-copy sendfile functionality in a portable way.")
     (license license:bsd-3)))
+
+(define-public ghc-scalpel-core
+  (package
+    (name "ghc-scalpel-core")
+    (version "0.6.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append
+               "https://hackage.haskell.org/package/scalpel-core/"
+               "scalpel-core-" version ".tar.gz"))
+        (sha256
+         (base32
+          "1qf0gnidyh8zk0acj99vn6hsj37m410lrm50sqpiv1i36rpmmsqh"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-data-default" ,ghc-data-default)
+       ("ghc-fail" ,ghc-fail)
+       ("ghc-pointedlist" ,ghc-pointedlist)
+       ("ghc-regex-base" ,ghc-regex-base)
+       ("ghc-regex-tdfa" ,ghc-regex-tdfa)
+       ("ghc-tagsoup" ,ghc-tagsoup)
+       ("ghc-vector" ,ghc-vector)))
+    (native-inputs `(("ghc-hunit" ,ghc-hunit)))
+    (home-page "https://github.com/fimad/scalpel")
+    (synopsis
+     "High level web scraping library for Haskell")
+    (description
+     "Scalpel core provides a subset of the scalpel web scraping library
+that is intended to have lightweight dependencies and to be free of all
+non-Haskell dependencies.")
+    (license license:asl2.0)))
+
+(define-public ghc-scalpel
+  (package
+    (name "ghc-scalpel")
+    (version "0.6.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append
+               "https://hackage.haskell.org/package/scalpel/"
+               "scalpel-" version ".tar.gz"))
+        (sha256
+         (base32
+          "0jbrfcgljl8kbcwi2zqx1jp3c3dpxrkc94za44x56kcz68n89hlz"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-scalpel-core" ,ghc-scalpel-core)
+       ("ghc-case-insensitive" ,ghc-case-insensitive)
+       ("ghc-data-default" ,ghc-data-default)
+       ("ghc-http-client" ,ghc-http-client)
+       ("ghc-http-client-tls" ,ghc-http-client-tls)
+       ("ghc-tagsoup" ,ghc-tagsoup)))
+    (home-page "https://github.com/fimad/scalpel")
+    (synopsis
+     "High level web scraping library for Haskell")
+    (description
+     "Scalpel is a web scraping library inspired by libraries like Parsec
+and Perl's @code{Web::Scraper}.  Scalpel builds on top of TagSoup to provide a
+declarative and monadic interface.")
+    (license license:asl2.0)))

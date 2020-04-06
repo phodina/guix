@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2018 Mathieu Othacehe <m.othacehe@gmail.com>
-;;; Copyright © 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2018, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -26,6 +26,9 @@
   #:use-module (guix utils)
   #:use-module (guix ui)
   #:use-module ((guix self) #:select (make-config.scm))
+  #:use-module (guix packages)
+  #:use-module (guix git-download)
+  #:use-module (gnu installer utils)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
@@ -58,6 +61,14 @@
     (('guix 'build _ ...) #t)
     (_ #f)))
 
+(define not-config?
+  ;; Select (guix …) and (gnu …) modules, except (guix config).
+  (match-lambda
+    (('guix 'config) #f)
+    (('guix _ ...) #t)
+    (('gnu _ ...) #t)
+    (_ #f)))
+
 (define* (build-compiled-file name locale-builder)
   "Return a file-like object that evalutes the gexp LOCALE-BUILDER and store
 its result in the scheme file NAME. The derivation will also build a compiled
@@ -72,8 +83,10 @@ version of this file."
 
   (define builder
     (with-extensions (list guile-json-3)
-      (with-imported-modules (source-module-closure
-                              '((gnu installer locale)))
+      (with-imported-modules `(,@(source-module-closure
+                                  '((gnu installer locale))
+                                  #:select? not-config?)
+                               ((guix config) => ,(make-config.scm)))
         #~(begin
             (use-modules (gnu installer locale))
 
@@ -100,8 +113,10 @@ version of this file."
          (setlocale LC_ALL locale))
 
         ;; Restart the documentation viewer so it displays the manual in
-        ;; language that corresponds to LOCALE.
-        (with-error-to-port (%make-void-port "w")
+        ;; language that corresponds to LOCALE.  Make sure that nothing is
+        ;; printed on the console.
+        (parameterize ((shepherd-message-port
+                        (%make-void-port "w")))
           (lambda ()
             (stop-service 'term-tty2)
             (start-service 'term-tty2 (list locale)))))))
@@ -159,7 +174,7 @@ been performed at build time."
        (kmscon-update-keymap (default-keyboard-model)
                              layout variant))))
 
-(define* (compute-keymap-step)
+(define* (compute-keymap-step context)
   "Return a gexp that runs the keymap-page of INSTALLER and install the
 selected keymap."
   #~(lambda (current-installer)
@@ -171,7 +186,7 @@ selected keymap."
                                    "/share/X11/xkb/rules/base.xml")))
                (lambda (models layouts)
                  ((installer-keymap-page current-installer)
-                  layouts)))))
+                  layouts '#$context)))))
         (#$apply-keymap result)
         result)))
 
@@ -180,10 +195,15 @@ selected keymap."
                       #:locales-name "locales"
                       #:iso639-languages-name "iso639-languages"
                       #:iso3166-territories-name "iso3166-territories"))
-        (keymap-step (compute-keymap-step))
         (timezone-data #~(string-append #$tzdata
                                         "/share/zoneinfo/zone.tab")))
     #~(lambda (current-installer)
+        ((installer-help-menu current-installer)
+         (lambda ()
+           ((installer-help-page current-installer)
+            (lambda _
+              (#$(compute-keymap-step 'help)
+               current-installer)))))
         (list
          ;; Ask the user to choose a locale among those supported by
          ;; the glibc.  Install the selected locale right away, so that
@@ -225,7 +245,8 @@ selected keymap."
           (id 'keymap)
           (description (G_ "Keyboard mapping selection"))
           (compute (lambda _
-                     (#$keymap-step current-installer)))
+                     (#$(compute-keymap-step 'default)
+                      current-installer)))
           (configuration-formatter keyboard-layout->configuration))
 
          ;; Ask the user to input a hostname for the system.
@@ -258,7 +279,7 @@ selected keymap."
           (description (G_ "Services"))
           (compute (lambda _
                      ((installer-services-page current-installer))))
-	  (configuration-formatter system-services->configuration))
+          (configuration-formatter system-services->configuration))
 
          ;; Run a partitioning tool allowing the user to modify
          ;; partition tables, partitions and their mount points.
@@ -271,13 +292,32 @@ selected keymap."
                      ((installer-partition-page current-installer))))
           (configuration-formatter user-partitions->configuration))
 
-	 (installer-step
+         (installer-step
           (id 'final)
           (description (G_ "Configuration file"))
           (compute
            (lambda (result prev-steps)
              ((installer-final-page current-installer)
               result prev-steps))))))))
+
+(define guile-newt
+  ;; Guile-Newt with 'form-watch-fd'.
+  ;; TODO: Remove once a new release is out.
+  (let ((commit "c3cdeb0b53ac71aedabee669f57d44563c662446")
+        (revision "2"))
+    (package
+      (inherit (@ (gnu packages guile-xyz) guile-newt))
+      (name "guile-newt")
+      (version (git-version "0.0.1" revision commit))
+      (source  (origin
+                 (method git-fetch)
+                 (uri (git-reference
+                       (url "https://gitlab.com/mothacehe/guile-newt")
+                       (commit commit)))
+                 (file-name (git-file-name name version))
+                 (sha256
+                  (base32
+                   "1gksd1lzgjjh1p9vczghg8jw995d22hm34kbsiv8rcryirv2xy09")))))))
 
 (define (installer-program)
   "Return a file-like object that runs the given INSTALLER."
@@ -389,11 +429,14 @@ selected keymap."
                      ;; We did it!  Let's reboot!
                      (sync)
                      (stop-service 'root))
-                    (_                            ;installation failed
-                     ;; TODO: Honor the result of 'run-install-failed-page'.
+                    (_
+                     ;; The installation failed, exit so that it is restarted
+                     ;; by login.
                      #f)))
                 (const #f)
                 (lambda (key . args)
+                  (syslog "crashing due to uncaught exception: ~s ~s~%"
+                          key args)
                   (let ((error-file "/tmp/last-installer-error"))
                     (call-with-output-file error-file
                       (lambda (port)

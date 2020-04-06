@@ -2,20 +2,20 @@
 ;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2019 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015, 2016, 2017, 2019 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2015, 2016, 2017, 2019 Eric Bavier <bavier@member.fsf.org>
+;;; Copyright © 2015, 2016, 2017, 2019, 2020 Eric Bavier <bavier@posteo.net>
 ;;; Copyright © 2015 Eric Dvorsak <eric@dvorsak.fr>
 ;;; Copyright © 2016, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Jochem Raat <jchmrt@riseup.net>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 ng0 <ng0@n0.is>
 ;;; Copyright © 2016 Alex Sassmannshausen <alex@pompo.co>
-;;; Copyright © 2016, 2018 Roel Janssen <roel@gnu.org>
+;;; Copyright © 2016, 2018, 2020 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2017 Raoul J.P. Bonnal <ilpuccio.febo@gmail.com>
 ;;; Copyright © 2017, 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Adriano Peluso <catonano@gmail.com>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2018, 2019 Oleg Pykhalov <go.wigust@gmail.com>
@@ -23,6 +23,8 @@
 ;;; Copyright © 2018 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2019 Stephen J. Scheck <sscheck@cpan.org>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
+;;; Copyright © 2020 Paul Garlick <pgarlick@tourbillion-technology.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -51,6 +53,7 @@
   #:use-module (gnu packages base)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages gd)
   #:use-module (gnu packages less)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages perl-check)
@@ -58,7 +61,8 @@
   #:use-module (gnu packages perl-web)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages readline)
-  #:use-module (gnu packages textutils))
+  #:use-module (gnu packages textutils)
+  #:use-module (gnu packages web))
 
 ;;;
 ;;; Please: Try to add new module packages in alphabetic order.
@@ -331,6 +335,33 @@ not asynchronous - it won't interrupt a running perl interpreter.
 This module implements asynchronous notifications that enable you to
 signal running perl code from another thread, asynchronously, and
 sometimes even without using a single syscall.")
+    (license (package-license perl))))
+
+(define-public perl-attribute-util
+  (package
+    (name "perl-attribute-util")
+    (version "1.07")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://cpan.metacpan.org/authors/id/D/DA/DANKOGAI/"
+                    "Attribute-Util-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1z79d845dy96lg0pxw0kr2za0gniwnpn963r7ccajfpj6k7jfw07"))))
+    (build-system perl-build-system)
+    (home-page "https://metacpan.org/pod/Attribute::Util")
+    (synopsis "Assorted general utility attributes")
+    (description "This packages provides various utility functions.  When used
+without argument, this module provides four universally accessible attributes
+of general interest as follows:
+@itemize
+@item Abstract
+@item Alias
+@item Memoize
+@item Method
+@item SigHandler
+@end itemize")
     (license (package-license perl))))
 
 (define-public perl-autovivification
@@ -842,6 +873,101 @@ the Carp.pm module doesn't help.")
     ;; Either GPLv2 or the "Artistic" license.
     (license (list gpl2 artistic2.0))))
 
+(define-public circos
+  (package
+    (name "circos")
+    (version "0.69-9")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "http://circos.ca/distribution/circos-" version ".tgz"))
+              (sha256
+               (base32 "1ll9yxbk0v64813np0qz6h8bc53qlnhg9y1053b57xgkxgmxgn1l"))
+              (patches (list (search-patch "circos-remove-findbin.patch")))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ; There are no tests.
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (delete 'build)
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin"))
+                    (datapath (string-append out "/share/Circos"))
+                    (error (string-append out "/share/Circos/error"))
+                    (fonts (string-append out "/share/Circos/fonts"))
+                    (data (string-append out "/share/Circos/data"))
+                    (tiles (string-append out "/share/Circos/tiles"))
+                    (etc (string-append out "/share/Circos/etc"))
+                    (lib (string-append out "/lib/perl5/site_perl/"
+                                        ,(package-version perl)))
+                    (install-directory (lambda (source target)
+                                         (mkdir-p target)
+                                         (copy-recursively source target))))
+               ;; Circos looks into a relative path for its configuration
+               ;; files.  We need to provide an absolute path towards the
+               ;; corresponding paths in the store.
+               (substitute* '("bin/circos" "etc/colors_fonts_patterns.conf"
+                              "etc/gddiag.conf" "etc/brewer.conf" "README")
+                 (("<<include etc") (string-append "<<include " etc)))
+               (substitute* '("etc/colors.conf" "etc/image.black.conf"
+                              "etc/patterns.conf" "etc/image.conf")
+                 (("<<include ") (string-append "<<include " etc "/")))
+               (substitute* '("etc/fonts.conf" "fonts/README.fonts")
+                 (("= fonts") (string-append "= " fonts)))
+               (substitute* "etc/patterns.conf"
+                 (("= tiles") (string-append "= " tiles)))
+               (substitute* "lib/Circos/Error.pm"
+                 (("error/configuration.missing.txt")
+                  (string-append error "/configuration.missing.txt")))
+               (substitute* "etc/housekeeping.conf"
+                 (("# data_path = /home/martink/circos-tutorials ")
+                  (string-append "data_path = " datapath)))
+               (substitute* "lib/Circos/Configuration.pm"
+                 (("my @possibilities = \\(")
+                  (string-append "my @possibilities = ("
+                                 "catfile( \"" datapath "\", $arg ), "
+                                 "catfile( \"" etc "\", $arg ), "
+                                 "catfile( \"" etc "/tracks\", $arg ), ")))
+               (for-each install-directory
+                         (list "error" "fonts" "data" "tiles" "etc" "lib")
+                         (list error fonts data tiles etc lib))
+               (install-file "bin/circos" bin)
+               #t))))))
+    (propagated-inputs
+     `(("perl" ,perl)
+       ("perl-carp" ,perl-carp)
+       ("perl-clone" ,perl-clone)
+       ("perl-config-general" ,perl-config-general)
+       ("perl-digest-md5" ,perl-digest-md5)
+       ("perl-file-temp" ,perl-file-temp)
+       ("perl-font-ttf" ,perl-font-ttf)
+       ("perl-gd" ,perl-gd)
+       ("perl-getopt-long" ,perl-getopt-long)
+       ("perl-list-allutils" ,perl-list-allutils)
+       ("perl-math-bezier" ,perl-math-bezier)
+       ("perl-math-round" ,perl-math-round)
+       ("perl-math-vecstat" ,perl-math-vecstat)
+       ("perl-memoize" ,perl-memoize)
+       ("perl-number-format" ,perl-number-format)
+       ("perl-params-validate" ,perl-params-validate)
+       ("perl-readonly" ,perl-readonly)
+       ("perl-regexp-common" ,perl-regexp-common)
+       ("perl-set-intspan" ,perl-set-intspan)
+       ("perl-statistics-basic" ,perl-statistics-basic)
+       ("perl-svg" ,perl-svg)
+       ("perl-text-balanced" ,perl-text-balanced)
+       ("perl-text-format" ,perl-text-format)
+       ("perl-time-hires" ,perl-time-hires)))
+    (home-page "http://circos.ca/")
+    (synopsis "Generation of circularly composited renditions")
+    (description
+     "Circos is a program for the generation of publication-quality, circularly
+composited renditions of genomic data and related annotations.")
+    (license gpl2+)))
+
 (define-public perl-class-accessor
   (package
     (name "perl-class-accessor")
@@ -1181,6 +1307,34 @@ that original method.  @code{around} is run in place of the original method,
 with a hook to easily call that original method.")
     (license (package-license perl))))
 
+(define-public perl-class-mix
+  (package
+    (name "perl-class-mix")
+    (version "0.006")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Class-Mix-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "02vwzzqn1s24g525arbrjh9s9j0y1inp3wbr972gh51ri51zciw7"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (propagated-inputs
+     `(("perl-params-classify" ,perl-params-classify)))
+    (home-page "https://metacpan.org/release/Class-Mix")
+    (synopsis "Dynamic class mixing")
+    (description "The @code{mix_class} function provided by this
+module dynamically generates anonymous classes with specified
+inheritance.  This is useful where an incomplete class requires use of
+a mixin in order to become instantiable.")
+    (license perl-license)))
+
 (define-public perl-class-singleton
   (package
     (name "perl-class-singleton")
@@ -1380,6 +1534,26 @@ parser in your Perl programme and allows sharing configuration files between
 languages.")
     (license bsd-3)))
 
+(define-public perl-config-grammar
+  (package
+    (name "perl-config-grammar")
+    (version "1.13")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://cpan/authors/id/D/DS/DSCHWEI/"
+                           "Config-Grammar-" version ".tar.gz"))
+       (sha256
+        (base32 "1qynf5bk6mnk90nggm3z8rdz2535kmqg46s0vj93pi68r6ia7cx8"))))
+    (build-system perl-build-system)
+    (home-page "https://metacpan.org/release/Config-Grammar")
+    (synopsis "Grammar-based config parser")
+    (description
+     "Config::Grammar is a module to parse configuration files.  The
+configuration may consist of multiple-level sections with assignments and
+tabular data.")
+    (license (package-license perl))))
+
 (define-public perl-config-any
   (package
     (name "perl-config-any")
@@ -1400,6 +1574,28 @@ languages.")
     (description "Config::Any provides a facility for Perl applications and
 libraries to load configuration data from multiple different file formats.  It
 supports XML, YAML, JSON, Apache-style configuration, and Perl code.")
+    (license (package-license perl))))
+
+(define-public perl-config-inifiles
+  (package
+    (name "perl-config-inifiles")
+    (version "3.000002")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF/"
+                           "Config-IniFiles-" version ".tar.gz"))
+       (sha256
+        (base32 "02dsz3inh5jwgaxmbcz8qxwgin8mkhm6vj9jyzfmm3dr5pnxcbnr"))))
+    (build-system perl-build-system)
+    (propagated-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-io-stringy",perl-io-stringy)))
+    (home-page "https://metacpan.org/pod/Config::IniFiles")
+    (synopsis "Package for configuration files outside your Perl script")
+    (description "This package provides a way to have readable configuration
+files outside your Perl script.  Configurations can be imported, sections
+can be grouped, and settings can be accessed from a tied hash.")
     (license (package-license perl))))
 
 (define-public perl-config-autoconf
@@ -1631,6 +1827,40 @@ CPAN::Meta object are present.")
 versa.")
     (license (package-license perl))))
 
+(define-public perl-crypt-eksblowfish
+  (package
+    (name "perl-crypt-eksblowfish")
+    (version "0.009")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Crypt-Eksblowfish-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "0k01aw3qb2s4m1w4dqsc9cycyry1zg3wabdym4vp4421b1ni5irw"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (propagated-inputs
+     `(("perl-class-mix" ,perl-class-mix)))
+    (home-page "https://metacpan.org/release/Crypt-Eksblowfish")
+    (synopsis "The Eksblowfish block cipher")
+    (description "Eksblowfish is a variant of the Blowfish cipher,
+modified to make the key setup very expensive.  This doesn't make it
+significantly cryptographically stronger but is intended to hinder
+brute-force attacks.  Eksblowfish is a parameterised (family-keyed)
+cipher.  It takes a cost parameter that controls how expensive the key
+scheduling is.  It also takes a family key, known as the \"salt\".
+Cost and salt parameters together define a cipher family.  Within each
+family, the key determines the encryption function.  This distribution
+also includes an implementation of @code{bcrypt}, the Unix crypt()
+password hashing algorithm based on Eksblowfish.")
+    (license perl-license)))
+
 (define-public perl-crypt-randpasswd
   (package
     (name "perl-crypt-randpasswd")
@@ -1654,6 +1884,36 @@ Pronounceable Passwords\".  This code is a re-engineering of the program
 contained in Appendix A of FIPS Publication 181, \"Standard for Automated
 Password Generator\".")
     (license (package-license perl))))
+
+(define-public perl-crypt-rijndael
+  (package
+    (name "perl-crypt-rijndael")
+    (version "1.14")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/L/LE/LEONT/Crypt-Rijndael-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "03l5nwq97a8q9na4dpd4m3r7vrwpranx225vw8xm40w7zvgw6lb4"))))
+    (build-system perl-build-system)
+    (home-page "https://metacpan.org/release/Crypt-Rijndael")
+    (synopsis "Crypt::CBC compliant Rijndael encryption module")
+    (description "This module implements the Rijndael cipher which has
+been selected as the Advanced Encryption Standard.  The keysize for
+Rijndael is 32 bytes.  The blocksize is 16 bytes (128 bits).  The
+supported encryption modes are:
+
+@itemize
+@item @code{MODE_CBC}---Cipher Block Chaining
+@item @code{MODE_CFB}---Cipher feedback
+@item @code{MODE_CTR}---Counter mode
+@item @code{MODE_ECB}---Electronic cookbook mode
+@item @code{MODE_OFB}---Output feedback
+@end itemize")
+    (license gpl3)))
 
 (define-public perl-crypt-rc4
   (package
@@ -1789,6 +2049,44 @@ input.")
 they are copies of each other.")
     (license (package-license perl))))
 
+(define-public perl-data-entropy
+  (package
+    (name "perl-data-entropy")
+    (version "0.007")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Data-Entropy-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "1r176jjzir2zg5kidx85f7vzi6jsw7ci9vd4kvbr9183lfhw8496"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (propagated-inputs
+     `(("perl-crypt-rijndael" ,perl-crypt-rijndael)
+       ("perl-data-float" ,perl-data-float)
+       ("perl-http-lite" ,perl-http-lite)
+       ("perl-params-classify" ,perl-params-classify)))
+    (home-page "https://metacpan.org/release/Data-Entropy")
+    (synopsis "Entropy (randomness) management")
+    (description "@code{Data::Entropy} provides modules relating to
+the generation and use of entropy.  The Data::Entropy::Source class
+manages the entropy coming from a particular source.  This class acts
+as a layer over a raw entropy source, which may be a normal I/O handle
+or a special-purpose class.  The Data::Entropy::RawSource::* classes
+provide fundamental sources of entropy.  The sources specially
+supported are an OS-supplied entropy collector, downloads from servers
+on the Internet, and cryptographic fake entropy.  The
+Data::Entropy::Algorithms module contains a collection of fundamental
+algorithms that use entropy.  There are random number generators and
+functions to shuffle arrays.")
+    (license perl-license)))
+
 (define-public perl-data-uniqid
   (package
     (name "perl-data-uniqid")
@@ -1868,6 +2166,34 @@ statement.  It handles self-referential structures correctly.")
     (description "Data::Dumper::Concise provides a dumper with Less
 indentation and newlines plus sub deparsing.")
     (license (package-license perl))))
+
+(define-public perl-data-float
+  (package
+    (name "perl-data-float")
+    (version "0.013")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Data-Float-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "12ji4yf3nc965rqqgfhr96w7irpm6n1g15nivfxvhc49hlym5cg2"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (home-page "https://metacpan.org/release/Data-Float")
+    (synopsis "Details of the floating point data type")
+    (description "@code{Data::Float} is about the native floating
+point numerical data type.  A floating point number is one of the
+types of datum that can appear in the numeric part of a Perl scalar.
+This module supplies constants describing the native floating point
+type, classification functions and functions to manipulate floating
+point values at a low level.")
+    (license perl-license)))
 
 (define-public perl-data-optlist
   (package
@@ -2239,14 +2565,14 @@ hours, minutes, seconds, and time zones.")
 (define-public perl-datetime
   (package
     (name "perl-datetime")
-    (version "1.51")
+    (version "1.52")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/D/DR/DROLSKY/"
                            "DateTime-" version ".tar.gz"))
        (sha256
-        (base32 "1ibfq6acz1ih28vl613yygbb3r2d8ykx6di669vajhvswl6xl8ny"))))
+        (base32 "1z1xpifh2kpyw7rlc8ivg9rl0qmabjq979gjp0s9agdjf9hqp0k7"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-cpan-meta-check" ,perl-cpan-meta-check)
@@ -2479,15 +2805,14 @@ parsing logic.")
 (define-public perl-datetime-format-strptime
   (package
     (name "perl-datetime-format-strptime")
-    (version "1.76")
+    (version "1.77")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/D/DR/DROLSKY/"
                            "DateTime-Format-Strptime-" version ".tar.gz"))
        (sha256
-        (base32
-         "03dmzi9n6jmnfjmf0ld5sdmi3ib6jrhz25cjzv7d58ypdr32cg2r"))))
+        (base32 "0jiy2yc9h9932ykb8x2l1j3ff8ms3p4426m947r5clygis1kr91g"))))
     (build-system perl-build-system)
     (propagated-inputs
      `(("perl-datetime" ,perl-datetime)
@@ -2657,6 +2982,39 @@ defined at https://www.w3.org/TR/NOTE-datetime.  This format is the native date
 format of RSS 1.0.  It can be used to parse these formats in order to create
 the appropriate objects.")
     (license (package-license perl))))
+
+(define-public perl-devel-callchecker
+  (package
+    (name "perl-devel-callchecker")
+    (version "0.008")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Devel-CallChecker-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "1p0ij2k2i81zhl7064h9ghld1w5xy2zsbghkpdzm2hjryl5lwn2x"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (propagated-inputs
+     `(("perl-b-hooks-op-check" ,perl-b-hooks-op-check)
+       ("perl-dynaloader-functions" ,perl-dynaloader-functions)))
+    (home-page "https://metacpan.org/release/Devel-CallChecker")
+    (synopsis "Custom op checking attached to subroutines")
+    (description "This module makes some new features of the Perl
+5.14.0 C API available to XS modules running on older versions of
+Perl.  The features are centred around the function
+@code{cv_set_call_checker}, which allows XS code to attach a magical
+annotation to a Perl subroutine, resulting in resolvable calls to that
+subroutine being mutated at compile time by arbitrary C code.  This
+module makes @code{cv_set_call_checker} and several supporting
+functions available.")
+    (license perl-license)))
 
 (define-public perl-devel-caller
   (package
@@ -3054,6 +3412,32 @@ SHA-1 message digest algorithm for use by Perl programs.")
     (description "This module allows you to specify conflicting versions of
 modules separately and deal with them after the module is done installing.")
     (license (package-license perl))))
+
+(define-public perl-dynaloader-functions
+  (package
+    (name "perl-dynaloader-functions")
+    (version "0.003")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/DynaLoader-Functions-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "10x13q920j9kid7vmbj6fiaz153042dy4mwdmpzrdrxw2ir39ciy"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (home-page "https://metacpan.org/release/DynaLoader-Functions")
+    (synopsis "Deconstructed dynamic C library loading")
+    (description "This module provides a function-based interface to
+dynamic loading as used by Perl.  Some details of dynamic loading are
+very platform-dependent, so correct use of these functions requires
+the programmer to be mindfulof the space of platform variations.")
+    (license perl-license)))
 
 (define-public perl-encode-detect
   (package
@@ -4614,15 +4998,15 @@ allowing data to be efficiently communicated between processes.")
 (define-public perl-ipc-system-simple
   (package
     (name "perl-ipc-system-simple")
-    (version "1.25")
+    (version "1.26")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "mirror://cpan/authors/id/P/PJ/PJF/IPC-System-Simple-"
+                    "mirror://cpan/authors/id/J/JK/JKEENAN/IPC-System-Simple-"
                     version ".tar.gz"))
               (sha256
                (base32
-                "0fsdb81shjj4hifyyzvj7vpkhq5jrfhlcpw2xbjfi1mqz8fsmdpi"))))
+                "1zb5ni8ikaq6s60amwdsq69nz8gxl484yiga6ax5nqp8v0hpy5sp"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/IPC-System-Simple")
     (synopsis "Run commands simply, with detailed diagnostics")
@@ -5117,6 +5501,29 @@ Build a Mail::Internet object, and then send it out using Mail::Mailer.
 @end table")
     (license perl-license)))
 
+(define-public perl-mail-sendmail
+  (package
+    (name "perl-mail-sendmail")
+    (version "0.80")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/N/NE/NEILB/Mail-Sendmail-"
+            version
+            ".tar.gz"))
+      (sha256
+       (base32
+        "1r38qbkj7jwj8cqy1rnqzkk81psxi08b1aiq392817f3bk5ri2jv"))))
+    (build-system perl-build-system)
+    (arguments `(#:tests? #f))      ;socket not available during build
+    (home-page "https://metacpan.org/release/Mail-Sendmail")
+    (synopsis "Simple platform independent mailer")
+    (description "Mail::Sendmail is a pure perl module that provides a
+simple means to send email from a perl script.  The module only
+requires Perl5 and a network connection.")
+    (license perl-license)))
+
 (define-public perl-math-bezier
   (package
     (name "perl-math-bezier")
@@ -5155,6 +5562,26 @@ Bezier Curve Drawing\".")
     (description "@code{Math::Round} provides functions to round numbers,
 both positive and negative, in various ways.")
     (license perl-license)))
+
+(define-public perl-math-vecstat
+  (package
+    (name "perl-math-vecstat")
+    (version "0.08")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://cpan/authors/id/A/AS/ASPINELLI/Math-VecStat-"
+                    version ".tar.gz"))
+              (sha256
+               (base32
+                "03bdcl9pn2bc9b50c50nhnr7m9wafylnb3v21zlch98h9c78x6j0"))))
+    (build-system perl-build-system)
+    (home-page "http://search.cpan.org/dist/Math-VecStat")
+    (synopsis "Basic numeric stats on vectors")
+    (description "This package provides some basic statistics on numerical
+vectors.  All the subroutines can take a reference to the vector to be
+operated on.")
+    (license (package-license perl))))
 
 (define-public perl-memoize
   (package
@@ -7051,6 +7478,40 @@ operations that can be done in parallel where the number of
 processes to be forked off should be limited.")
     (license (package-license perl))))
 
+(define-public perl-params-classify
+  (package
+    (name "perl-params-classify")
+    (version "0.015")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Params-Classify-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "052r198xyrsv8wz21gijdigz2cgnidsa37nvyfzdiz4rv1fc33ir"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (propagated-inputs
+     `(("perl-devel-callchecker" ,perl-devel-callchecker)))
+    (home-page "https://metacpan.org/release/Params-Classify")
+    (synopsis "Argument type classification")
+    (description "This module provides various type-testing functions.
+These are intended for functions that care what type of data they are
+operating on.  There are two flavours of function.  Functions of the
+first flavour provide type classification only.  Functions of the
+second flavour also check that an argument is of an expected type.
+The type enforcement functions handle only the simplest requirements
+for arguments of the types handled by the classification functions.
+Enforcement of more complex types may be built using the
+classification functions, or it may be more convenient to use a module
+designed for the more complex job, such as @code{Params::Validate}")
+    (license perl-license)))
+
 (define-public perl-params-util
   (package
     (name "perl-params-util")
@@ -7112,8 +7573,8 @@ function call parameters to an arbitrary level of specificity.")
     (native-inputs
      ;; For tests.
      `(("perl-test-without-module" ,perl-test-without-module)
-       ("perl-test2-bundle-extended" ,perl-test2-bundle-extended)
        ("perl-test2-plugin-nowarnings" ,perl-test2-plugin-nowarnings)
+       ("perl-test2-suite" ,perl-test2-suite)
        ("perl-type-tiny" ,perl-type-tiny)))
     (propagated-inputs
      `(("perl-eval-closure" ,perl-eval-closure)
@@ -7225,6 +7686,30 @@ file names.")
     (description "This module provides a small, fast utility for working
 with file paths.")
     (license asl2.0)))
+
+(define-public perl-pdf-api2
+  (package
+    (name "perl-pdf-api2")
+    (version "2.036")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://cpan/authors/id/S/SS/SSIMMS/PDF-API2-"
+                    version ".tar.gz"))
+              (sha256
+               (base32
+                "0x0pa75wpb87pcshl92y5nh8pzikjp46ljlr2pqvdgpqzvll8107"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-test-exception" ,perl-test-exception)
+       ("perl-test-memory-cycle" ,perl-test-memory-cycle)))
+    (propagated-inputs
+     `(("perl-font-ttf" ,perl-font-ttf)))
+    (home-page "https://metacpan.org/release/PDF-API2")
+    (synopsis "Facilitates the creation and modification of PDF files")
+    (description "This Perl module facilitates the creation and modification
+of PDF files.")
+    (license lgpl2.1)))
 
 (define-public perl-perlio-utf8_strict
   (package
@@ -8474,7 +8959,7 @@ done, how much is left to do, and estimate how long it will take.")
 (define-public perl-term-readkey
   (package
     (name "perl-term-readkey")
-    (version "2.37")
+    (version "2.38")
     (source
      (origin
        (method url-fetch)
@@ -8482,7 +8967,7 @@ done, how much is left to do, and estimate how long it will take.")
                            "TermReadKey-" version ".tar.gz"))
        (sha256
         (base32
-         "0hdj5mldpj3pyprd4hbbalfx9yjgi5p59gg2ixk9808f5v7q74sa"))))
+         "143jlibah1g14bym7sj3gphvqkpj1w4vn7sqc4vc62jpviw5hr2s"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/TermReadKey")
     (synopsis "Simple terminal control")
@@ -8513,12 +8998,16 @@ screen size, and retrieval/modification of the control characters.")
      `(#:tests? #f ; Tests fail without other Term::ReadLine interfaces present
        #:phases (modify-phases %standard-phases
                   (add-before 'configure 'patch-search-lib
-                    (lambda _
+                    (lambda* (#:key inputs #:allow-other-keys)
                       (substitute* "Makefile.PL"
-                        ;; The configuration provides no way to pass
-                        ;; additional directories to search for the ncurses
-                        ;; library, so just skip the search.
-                        (("&search_lib\\('-lncurses'\\)") "'-lncurses'")))))))
+                        ;; The configuration provides no way easy was to pass
+                        ;; additional directories to search for libraries, so
+                        ;; just patch in the flags.
+                        (("-lreadline" &)
+                         (format #f "-L~a/lib ~a" (assoc-ref inputs "readline") &))
+                        (("&search_lib\\('-lncurses'\\)")
+                         (string-append "'-L" (assoc-ref inputs "ncurses") "/lib"
+                                        " -lncurses'"))))))))
     (home-page "https://metacpan.org/release/Term-ReadLine-Gnu")
     (synopsis "GNU Readline/History Library interface for Perl")
     (description "This module implements an interface to the GNU Readline
@@ -9133,15 +9622,14 @@ still work as expected.")
 (define-public perl-timedate
   (package
     (name "perl-timedate")
-    (version "2.31")
+    (version "2.32")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/A/AT/ATOOMIC/"
                            "TimeDate-" version ".tar.gz"))
        (sha256
-        (base32
-         "10ad6l4ii2iahdpw8h0xqwasc1jblan31h597q3js4j5nbnhywjw"))))
+        (base32 "1mmk9dy4a26a4d4c5rswqqhxr0295j93bjbcx91d3qkmwfcs1v1l"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/TimeDate")
     (synopsis "Date parsing/formatting subroutines")
@@ -9585,14 +10073,14 @@ attribute names.")
 (define-public perl-xs-object-magic
   (package
     (name "perl-xs-object-magic")
-    (version "0.04")
+    (version "0.05")
     (source (origin
               (method url-fetch)
-              (uri (string-append "mirror://cpan/authors/id/F/FL/FLORA/"
+              (uri (string-append "mirror://cpan/authors/id/E/ET/ETHER/"
                                   "XS-Object-Magic-" version ".tar.gz"))
               (sha256
                (base32
-                "03fghj7hq0fiicmfdxhmzfm4mzv7s097pgkd32ji7jnljvhm9six"))))
+                "0njyy4y0zax4zz55y82dlm9cly1pld1lcxb281s12bp9rrhf9j9x"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-extutils-depends" ,perl-extutils-depends)

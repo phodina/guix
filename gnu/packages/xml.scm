@@ -1311,7 +1311,7 @@ spreadsheet.")
            '(#:configure-flags '("--disable-sse2")))))
     (native-inputs
      `(("perl" ,perl)))
-    (home-page "http://xerces.apache.org/xerces-c/")
+    (home-page "https://xerces.apache.org/xerces-c/")
     (synopsis "Validating XML parser library for C++")
     (description "Xerces-C++ is a validating XML parser written in a portable
 subset of C++.  Xerces-C++ makes it easy to give your application the ability
@@ -1683,7 +1683,7 @@ that strives for correctness and simplicity.")
     (version "2013.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://central.maven.org/maven2/com/sun/msv/"
+              (uri (string-append "https://repo1.maven.org/maven2/com/sun/msv/"
                                   "datatype/xsd/xsdlib/" version "/xsdlib-"
                                   version "-sources.jar"))
               (sha256
@@ -1696,7 +1696,8 @@ that strives for correctness and simplicity.")
        #:jdk ,icedtea-8))
     (inputs
      `(("java-xerces" ,java-xerces)))
-    (home-page "http://central.maven.org/maven2/com/sun/msv/datatype/xsd/xsdlib/")
+    (home-page (string-append "https://web.archive.org/web/20161127144537/"
+                              "https://msv.java.net//"))
     (synopsis "Sun Multi-Schema Validator")
     (description "Xsdlib contains an implementation of sun.com.msv, an XML
 validator.")
@@ -2054,14 +2055,14 @@ modular implementation of XML-RPC for C and C++.")
 (define-public python-elementpath
   (package
     (name "python-elementpath")
-    (version "1.3.3")
+    (version "1.4.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "elementpath" version))
        (sha256
         (base32
-         "1rb8892zli74wk1c4hyg77ja9wglq9hplgxwak1rmj3s9p6xnf0p"))))
+         "15h7d41v48q31hzjay7qzixdv531hnga3h35hksk7x52pgqcrkz7"))))
     (build-system python-build-system)
     (home-page
      "https://github.com/sissaschool/elementpath")
@@ -2108,13 +2109,17 @@ libxml2 and libxslt.")
 (define-public python-xmlschema
   (package
     (name "python-xmlschema")
-    (version "1.0.18")
+    (version "1.1.1")
     (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "xmlschema" version))
+              ;; Unit tests are not distributed with the PyPI archive.
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/sissaschool/xmlschema")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1inwqwr7d3qah9xf9rfzkpva433jpr4n7n43zybf2gdpz4q1g0ry"))))
+                "0nqhqbvp0kpd1bz11b6gpkc0mkg068mqs56ww4k5ang1cl9d8gd6"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -2126,7 +2131,7 @@ libxml2 and libxslt.")
                    (setenv "PYTHONPATH"
                            (string-append "./build/lib:"
                                           (getenv "PYTHONPATH")))
-                   (invoke "python" "xmlschema/tests/test_all.py"))
+                   (invoke "python" "-m" "unittest" "-v"))
                  (format #t "test suite not run~%"))
              #t)))))
     (native-inputs

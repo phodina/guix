@@ -14,6 +14,8 @@
 ;;; Copyright © 2019 Jovany Leandro G.C <bit4bit@riseup.net>
 ;;; Copyright © 2019 Steve Sprang <scs@stevesprang.com>
 ;;; Copyright © 2019 John Soo <jsoo1@asu.edu>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -44,6 +46,7 @@
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
+  #:use-module (guix build-system qt)
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages autotools)
@@ -176,7 +179,7 @@
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("which" ,which)))
-    (home-page "http://librecad.org/")
+    (home-page "https://librecad.org/")
     (synopsis "Computer-aided design (CAD) application")
     (description
      "LibreCAD is a 2D Computer-aided design (CAD) application for creating
@@ -225,13 +228,13 @@ plans and designs.")
        ("glib" ,glib)
        ("gtk" ,gtk+-2)
        ("guile" ,guile-2.0)
-       ("desktop-file-utils" ,desktop-file-utils)
        ("shared-mime-info" ,shared-mime-info)
        ("m4" ,m4)
        ("pcb" ,pcb)
        ("python" ,python-2))) ; for xorn
     (native-inputs
      `(("pkg-config" ,pkg-config)
+       ("desktop-file-utils" ,desktop-file-utils)
        ("perl" ,perl))) ; for tests
     (home-page "http://geda-project.org/")
     (synopsis "Schematic capture, netlister, symbols, symbol checker, and utils")
@@ -264,8 +267,9 @@ utilities.")
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
+       ("desktop-file-utils" ,desktop-file-utils)
        ("libtool" ,libtool)
-       ("gettext" ,gnu-gettext)
+       ("gettext" ,gettext-minimal)
        ("texinfo" ,texinfo)
        ("groff" ,groff)
        ("which" ,which)
@@ -274,7 +278,6 @@ utilities.")
      `(("glib" ,glib)
        ("gtk" ,gtk+-2)
        ("guile" ,guile-2.2)
-       ("desktop-file-utils" ,desktop-file-utils)
        ("shared-mime-info" ,shared-mime-info)
        ("m4" ,m4)
        ("pcb" ,pcb)))
@@ -383,13 +386,13 @@ features.")))
        ("gd" ,gd)
        ("gtk" ,gtk+-2)
        ("gtkglext" ,gtkglext)
-       ("desktop-file-utils" ,desktop-file-utils)
        ("shared-mime-info" ,shared-mime-info)
        ("tk" ,tk)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("intltool" ,intltool)
        ("bison" ,bison)
+       ("desktop-file-utils" ,desktop-file-utils)
        ("flex" ,flex)
        ;; For tests
        ("imagemagick" ,imagemagick)
@@ -646,7 +649,7 @@ multipole-accelerated algorithm.")
            (sha256
             (base32
              "1d2v8k7p176j0lczx4vx9n9gbg3vw09n2c4b6w0wj5wqmifywhc1"))))))
-    (home-page "http://fritzing.org")
+    (home-page "https://fritzing.org")
     (synopsis "Electronic circuit design")
     (description
      "The Fritzing application is @dfn{Electronic Design Automation} (EDA)
@@ -673,11 +676,11 @@ ready for production.")
     (build-system gnu-build-system)
     (native-inputs
      `(("glib:bin" ,glib "bin")         ; for glib-compile-schemas, etc.
+       ("desktop-file-utils" ,desktop-file-utils)
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("cairo" ,cairo)
-       ("gtk" ,gtk+-2)
-       ("desktop-file-utils" ,desktop-file-utils)))
+       ("gtk" ,gtk+-2)))
     (home-page "http://gerbv.geda-project.org/")
     (synopsis "Gerber file viewer")
     (description
@@ -789,141 +792,123 @@ language.")
       (license (list license:mpl2.0               ;library
                      license:gpl2+)))))           ;Guile bindings and GUI
 
-(define-public ao
-  (deprecated-package "ao-cad" libfive))
-
+;; TODO Add doc https://gitlab.com/kicad/services/kicad-doc/-/tree/master
 (define-public kicad
-    (package
-      (name "kicad")
-      (version "5.1.5")
-      (source
-       (origin
-         (method url-fetch)
-         (file-name (string-append name "-" version ".tar.xz"))
-         (uri (string-append
-                "https://launchpad.net/kicad/" (version-major version)
-                ".0/" version "/+download/kicad-" version ".tar.xz"))
-         (sha256
-          (base32 "0x3417f2pa7p65s9f7l49rqbnrzy8gz6i0n07mlbxqbnm0fmlql0"))))
-      (build-system cmake-build-system)
-      (arguments
-       `(#:out-of-source? #t
-         #:tests? #f ; no tests
-         #:build-type "Release"
-         #:configure-flags
-         (list "-DKICAD_SCRIPTING_PYTHON3=ON"
-               "-DKICAD_SCRIPTING_WXPYTHON_PHOENIX=ON"
-               "-DCMAKE_BUILD_WITH_INSTALL_RPATH=TRUE")
-         #:phases
-         (modify-phases %standard-phases
-           (add-after 'install 'wrap-program
-             ;; Ensure correct Python at runtime.
-             (lambda* (#:key inputs outputs #:allow-other-keys)
-               (let* ((out (assoc-ref outputs "out"))
-                      (python (assoc-ref inputs "python"))
-                      (file (string-append out "/bin/kicad"))
-                      (path (string-append
-                             out
-                             "/lib/python"
-                             ,(version-major+minor
-                                (package-version python))
-                             "/site-packages:"
-                             (getenv "PYTHONPATH"))))
-                 (wrap-program file
-                   `("PYTHONPATH" ":" prefix (,path))
-                   `("PATH" ":" prefix
-                     (,(string-append python "/bin:")))))
-               #t)))))
-      (native-inputs
-       `(("boost" ,boost)
-         ("gettext" ,gnu-gettext)
-         ("pkg-config" ,pkg-config)
-         ("swig" ,swig)
-         ("zlib" ,zlib)))
-      (inputs
-       `(("cairo" ,cairo)
-         ("curl" ,curl)
-         ("desktop-file-utils" ,desktop-file-utils)
-         ("glew" ,glew)
-         ("glm" ,glm)
-         ("hicolor-icon-theme" ,hicolor-icon-theme)
-         ("libngspice" ,libngspice)
-         ("libsm" ,libsm)
-         ("mesa" ,mesa)
-         ("opencascade-oce" ,opencascade-oce)
-         ("openssl" ,openssl)
-         ("python" ,python)
-         ("wxwidgets" ,wxwidgets)
-         ("wxpython" ,python-wxpython)))
-      (home-page "https://kicad-pcb.org/")
-      (synopsis "Electronics Design Automation Suite")
-      (description "Kicad is a program for the formation of printed circuit
+  (package
+    (name "kicad")
+    (version "5.1.5")
+    (source
+     (origin
+       (method url-fetch)
+       (file-name (string-append name "-" version ".tar.xz"))
+       (uri (string-append
+             "https://launchpad.net/kicad/" (version-major version)
+             ".0/" version "/+download/kicad-" version ".tar.xz"))
+       (sha256
+        (base32 "0x3417f2pa7p65s9f7l49rqbnrzy8gz6i0n07mlbxqbnm0fmlql0"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:out-of-source? #t
+       #:tests? #f                      ; no tests
+       #:build-type "Release"
+       #:configure-flags
+       (list "-DKICAD_SCRIPTING_PYTHON3=ON"
+             "-DKICAD_SCRIPTING_WXPYTHON_PHOENIX=ON"
+             "-DCMAKE_BUILD_WITH_INSTALL_RPATH=TRUE")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-translations
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (copy-recursively (assoc-ref inputs "kicad-i18l")
+                               (assoc-ref outputs "out"))
+             #t))
+         (add-after 'install 'wrap-program
+           ;; Ensure correct Python at runtime.
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (python (assoc-ref inputs "python"))
+                    (file (string-append out "/bin/kicad"))
+                    (path (string-append
+                           out
+                           "/lib/python"
+                           ,(version-major+minor
+                             (package-version python))
+                           "/site-packages:"
+                           (getenv "PYTHONPATH"))))
+               (wrap-program file
+                 `("PYTHONPATH" ":" prefix (,path))
+                 `("PATH" ":" prefix
+                   (,(string-append python "/bin:")))))
+             #t)))))
+    (native-search-paths
+     (list (search-path-specification
+            (variable "KICAD_TEMPLATE_DIR")
+            (files '("share/kicad/template")))
+           (search-path-specification
+            (variable "KICAD_SYMBOL_DIR") ; symbol path
+            (files '("share/kicad/library")))
+           (search-path-specification
+            (variable "KISYSMOD")       ; footprint path
+            (files '("share/kicad/modules")))
+           (search-path-specification
+            (variable "KISYS3DMOD")     ; 3D model path
+            (files '("share/kicad/modules/packages3d")))))
+    (native-inputs
+     `(("boost" ,boost)
+       ("desktop-file-utils" ,desktop-file-utils)
+       ("gettext" ,gettext-minimal)
+       ("kicad-i18l" ,kicad-i18l)
+       ("pkg-config" ,pkg-config)
+       ("swig" ,swig)
+       ("zlib" ,zlib)))
+    (inputs
+     `(("cairo" ,cairo)
+       ("curl" ,curl)
+       ("glew" ,glew)
+       ("glm" ,glm)
+       ("hicolor-icon-theme" ,hicolor-icon-theme)
+       ("libngspice" ,libngspice)
+       ("libsm" ,libsm)
+       ("mesa" ,mesa)
+       ("opencascade-oce" ,opencascade-oce)
+       ("openssl" ,openssl)
+       ("python" ,python-wrapper)
+       ("wxwidgets" ,wxwidgets)
+       ("wxpython" ,python-wxpython)))
+    (home-page "https://kicad-pcb.org/")
+    (synopsis "Electronics Design Automation Suite")
+    (description "Kicad is a program for the formation of printed circuit
 boards and electrical circuits.  The software has a number of programs that
 perform specific functions, for example, pcbnew (Editing PCB), eeschema (editing
 electrical diagrams), gerbview (viewing Gerber files) and others.")
-      (license license:gpl3+)))
+    (license license:gpl3+)))
 
-(define-public kicad-library
-  (let ((version "4.0.7"))
-    (package
-      (name "kicad-library")
-      (version version)
-      (source
-       (origin
-         (method url-fetch)
-         (uri (string-append
-               "https://kicad-downloads.s3.cern.ch/libraries/kicad-library-"
-               version ".tar.gz"))
-         (sha256
-          (base32 "1azb7v1y3l6j329r9gg7f4zlg0wz8nh4s4i5i0l9s4yh9r6i9zmv"))))
-      (build-system cmake-build-system)
-      (arguments
-       `(#:out-of-source? #t
-         #:tests? #f                    ; no tests
-         #:phases
-         (modify-phases %standard-phases
-           (add-after 'install 'install-footprints ; from footprints tarball
-             (lambda* (#:key inputs outputs #:allow-other-keys)
-               (invoke "tar" "xvf"
-                       (assoc-ref inputs "kicad-footprints")
-                       "-C" (string-append (assoc-ref outputs "out")
-                                           "/share/kicad/modules")
-                       "--strip-components=1")))
-           ;; We change the default global footprint file, which is generated if
-           ;; it doesn't exist in user's home directory, from the one using the
-           ;; github plugin, to the one using the KISYSMOD environment path.
-           (add-after 'install-footprints 'use-pretty-footprint-table
-             (lambda* (#:key outputs #:allow-other-keys)
-               (let* ((out (assoc-ref outputs "out"))
-                      (template-dir (string-append out "/share/kicad/template"))
-                      (fp-lib-table (string-append template-dir "/fp-lib-table")))
-                 (delete-file fp-lib-table)
-                 (copy-file (string-append fp-lib-table ".for-pretty")
-                            fp-lib-table))
-               #t)))))
-      (native-search-paths
-       (list (search-path-specification
-              (variable "KISYSMOD")     ; footprint path
-              (files '("share/kicad/modules")))
-             (search-path-specification
-              (variable "KISYS3DMOD")   ; 3D model path
-              (files '("share/kicad/modules/packages3d")))))
-      ;; Kicad distributes footprints in a separate tarball.
-      (native-inputs
-       `(("kicad-footprints"
-          ,(origin
-             (method url-fetch)
-             (uri (string-append
-                   "http://downloads.kicad-pcb.org/libraries/kicad-footprints-"
-                   version ".tar.gz"))
-             (sha256
-              (base32
-               "08qrz5zzsb5127jlnv24j0sgiryd5nqwg3lfnwi8j9a25agqk13j"))))))
-      (home-page "https://kicad-pcb.org/")
-      (synopsis "Libraries for kicad")
-      (description "This package provides Kicad component, footprint and 3D
-render model libraries.")
-      (license license:lgpl2.0+))))
+(define kicad-i18l
+  (package
+    (name "kicad-i18l")
+    (version "5.1.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/kicad/code/kicad-i18n.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1rfpifl8vky1gba2angizlb2n7mwmsiai3r6ip6qma60wdj8sbd3"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (delete 'build)
+         (delete 'check))))
+    (native-inputs
+     `(("gettext" ,gettext-minimal)))
+    (home-page "https://kicad-pcb.org/")
+    (synopsis "KiCad GUI translations")
+    (description "This package contains the po files that are used for the GUI
+translations for KiCad.")
+    (license license:gpl3+)))
 
 (define-public kicad-symbols
   (package
@@ -942,9 +927,9 @@ render model libraries.")
     (arguments
      `(#:tests? #f))                    ; no tests exist
     (home-page "https://kicad-pcb.org/")
-    (synopsis "Official KiCad schematic symbol libraries for KiCad 5")
+    (synopsis "Official KiCad schematic symbol libraries")
     (description "This package contains the official KiCad schematic symbol
-libraries for KiCad 5.")
+libraries.")
     ;; TODO: Exception: "To the extent that the creation of electronic designs
     ;; that use 'Licensed Material' can be considered to be 'Adapted Material',
     ;; then the copyright holder waives article 3 of the license with respect to
@@ -952,6 +937,58 @@ libraries for KiCad 5.")
     ;; the 'Licensed Material'."
     ;; See <https://github.com/KiCad/kicad-symbols/blob/master/LICENSE.md>.
     (license license:cc-by-sa4.0)))
+
+(define-public kicad-footprints
+  (package
+    (inherit kicad-symbols)
+    (name "kicad-footprints")
+    (version "5.1.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/KiCad/kicad-footprints.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1c4whgn14qhz4yqkl46w13p6rpv1k0hsc9s9h9368fxfcz9knb2j"))))
+    (synopsis "Official KiCad footprint libraries")
+    (description "This package contains the official KiCad footprint libraries.")))
+
+(define-public kicad-packages3d
+  (package
+    (inherit kicad-symbols)
+    (name "kicad-packages3d")
+    (version "5.1.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/KiCad/kicad-packages3d.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0cff2ms1bsw530kqb1fr1m2pjixyxzwa81mxgac3qpbcf8fnpvaz"))))
+    (synopsis "Official KiCad 3D model libraries")
+    (description "This package contains the official KiCad 3D model libraries.")))
+
+(define-public kicad-templates
+  (package
+    (inherit kicad-symbols)
+    (name "kicad-templates")
+    (version "5.1.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/KiCad/kicad-templates.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0cs3bm3zb5ngw5ldn0lzw5bvqm4kvcidyrn76438alffwiz2b15g"))))
+    (synopsis "Official KiCad project and worksheet templates")
+    (description "This package contains the official KiCad project and
+worksheet templates.")))
 
 (define-public linsmith
   (package
@@ -1270,14 +1307,16 @@ bindings for Python, Java, OCaml and more.")
 (define-public radare2
   (package
     (name "radare2")
-    (version "3.5.1")
+    (version "4.2.1")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://radare.mikelloc.com/get/" version "/"
-                                  "radare2-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/radareorg/radare2")
+                    (commit version)))
               (sha256
                (base32
-                "174x5545fw2nyf000gd46hi7rx2bn3bw5bsnvizn9yi99pn7m4mw"))
+                "14b9433cgc2nabhz836zfgvgh2dwailcmvy05krsa0inmzbvx9fg"))
+              (file-name (git-file-name name version))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -1310,12 +1349,20 @@ bindings for Python, Java, OCaml and more.")
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (home-page "https://radare.org/")
-    (synopsis "Portable reversing framework")
+    (synopsis "Reverse engineering framework")
     (description
-      "Radare project started as a forensics tool, a scriptable commandline
-hexadecimal editor able to open disk files, but later support for analyzing
-binaries, disassembling code, debugging programs, attaching to remote gdb
-servers, ...")
+     "Radare2 is a complete framework for reverse-engineering, debugging, and
+analyzing binaries.  It is composed of a set of small utilities that can be
+used together or independently from the command line.
+
+Radare2 is built around a scriptable disassembler and hexadecimal editor that
+support a variety of executable formats for different processors and operating
+systems, through multiple back ends for local and remote files and disk
+images.
+
+It can also compare (@dfn{diff}) binaries with graphs and extract information
+like relocation symbols.  It is able to deal with malformed binaries, making
+it suitable for security research and analysis.")
     (license license:lgpl3)))
 
 (define-public asco
@@ -1699,6 +1746,7 @@ parallel computing platforms.  It also supports serial execution.")
        ("libtool" ,libtool)))
     (native-inputs
      `(("pkg-config-native" ,pkg-config)
+       ("gcc" ,gcc-5)
        ("libtool-native" ,libtool)))
     (home-page "http://www.freehdl.seul.org/")
     (synopsis "VHDL simulator")
@@ -2088,7 +2136,7 @@ simulation.")
 (define-public cutter
   (package
     (name "cutter")
-    (version "1.8.3")
+    (version "1.10.1")
     (source
      (origin
        (method git-fetch)
@@ -2098,7 +2146,7 @@ simulation.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "03f3cdckh51anx9gd1b0ndb2fg7061hqngvygf32ky29mm2m2lyv"))))
+         "1gvsrcskcdd1hxrjpkpc657anmfs25f174vxk4wzvn385rnmrxd3"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -2247,7 +2295,7 @@ full programmatic control over your models.")
        (sha256
         (base32
          "170hk1kgrvsddrwykp24wyj0cha78zzmzbf50gn98x7ngqqs395s"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
        ("graphviz" ,graphviz)
@@ -2384,7 +2432,7 @@ interpolation toolkit.")
       (inputs `(("boost" ,boost)
                 ("python-wrapper" ,python-wrapper)))
       (native-inputs
-       `(("cmake" ,cmake)))
+       `(("cmake" ,cmake-minimal)))
       (arguments
        `(#:tests? #f
          #:phases

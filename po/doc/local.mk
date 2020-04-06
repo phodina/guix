@@ -23,7 +23,8 @@ DOC_PO_FILES=					\
   %D%/guix-manual.ru.po				\
   %D%/guix-manual.zh_CN.po
 
-DOC_COOKBOOK_PO_FILES=
+DOC_COOKBOOK_PO_FILES=					\
+  %D%/guix-cookbook.de.po
 
 EXTRA_DIST = \
   %D%/guix-manual.pot \
@@ -57,7 +58,7 @@ doc-po-update-%:
 	fi
 
 doc-po-update-cookbook-%:
-	@lang=`echo "$@" | sed -e's/^doc-po-update-//'` ; \
+	@lang=`echo "$@" | sed -e's/^doc-po-update-cookbook-//'` ; \
 	output="$(srcdir)/po/doc/guix-cookbook.$$lang.po" ; \
 	input="$(srcdir)/po/doc/guix-cookbook.pot" ; \
 	if test -f "$$output"; then \

@@ -5,7 +5,7 @@
 ;;; Copyright © 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2017 Dave Love <fx@gnu.org>
 ;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Paul Garlick <pgarlick@tourbillion-technology.com>
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;;
@@ -26,14 +26,15 @@
 
 (define-module (gnu packages mpi)
   #:use-module (guix packages)
-  #:use-module ((guix licenses)
-                #:hide (expat))
+  #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix download)
   #:use-module (guix utils)
   #:use-module (guix deprecation)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
   #:use-module (gnu packages)
+  #:use-module (gnu packages base)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages fabric-management)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages java)
@@ -128,13 +129,13 @@ exploit it accordingly and efficiently.
 hwloc may display the topology in multiple convenient formats.  It also offers
 a powerful programming interface to gather information about the hardware,
 bind processes, and much more.")
-    (license bsd-3)))
+    (license license:bsd-3)))
 
 (define-public hwloc-2
   ;; Note: 2.0 isn't the default yet, see above.
   (package
     (inherit hwloc-1)
-    (version "2.1.0")
+    (version "2.2.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.open-mpi.org/software/hwloc/v"
@@ -142,7 +143,7 @@ bind processes, and much more.")
                                   "/downloads/hwloc-" version ".tar.bz2"))
               (sha256
                (base32
-                "0qh8s7pphz0m5cwb7liqmc17xzfs23xhz5wn24r6ikvjyx99fhhr"))))
+                "0li27a3lnmb77qxpijj0kpblz32wmqd3b386sypq8ar7vy9vhw5f"))))
 
     ;; libnuma is no longer needed.
     (inputs (alist-delete "numactl" (package-inputs hwloc-1)))
@@ -157,6 +158,14 @@ bind processes, and much more.")
                (substitute* "tests/hwloc/linux-libnuma.c"
                  (("numa_available\\(\\)")
                   "-1"))
+               #t))
+           (add-before 'check 'skip-test-that-fails-on-qemu
+             (lambda _
+               ;; Skip test that fails on emulated hardware due to QEMU bug:
+               ;; <https://bugs.gnu.org/40342>.
+               (substitute* "tests/hwloc/hwloc_get_last_cpu_location.c"
+                 (("hwloc_topology_init" all)
+                  (string-append "exit (77);\n" all)))
                #t))))))))
 
 (define-deprecated hwloc-2.0 hwloc-2)
@@ -168,7 +177,7 @@ bind processes, and much more.")
 (define-public openmpi
   (package
     (name "openmpi")
-    (version "4.0.2")
+    (version "4.0.3")
     (source
      (origin
       (method url-fetch)
@@ -176,7 +185,7 @@ bind processes, and much more.")
                           (version-major+minor version)
                           "/downloads/openmpi-" version ".tar.bz2"))
       (sha256
-       (base32 "0ms0zvyxyy3pnx9qwib6zaljyp2b3ixny64xvq3czv3jpr8zf2wh"))
+       (base32 "00zxcw99gr5n693cmcmn4f6a47vx1ywna895p0x7p163v37gw0hl"))
       (patches (search-patches "openmpi-mtl-priorities.patch"))))
     (build-system gnu-build-system)
     (inputs
@@ -263,7 +272,7 @@ bind processes, and much more.")
                       (let ((out (assoc-ref outputs "out")))
                         (for-each delete-file (find-files out "config.log"))
                         #t))))))
-    (home-page "http://www.open-mpi.org")
+    (home-page "https://www.open-mpi.org")
     (synopsis "MPI-3 implementation")
     (description
      "The Open MPI Project is an MPI-3 implementation that is developed and
@@ -273,7 +282,7 @@ from all across the High Performance Computing community in order to build the
 best MPI library available.  Open MPI offers advantages for system and
 software vendors, application developers and computer science researchers.")
     ;; See file://LICENSE
-    (license bsd-2)))
+    (license license:bsd-2)))
 
 ;; TODO: javadoc files contain timestamps.
 (define-public java-openmpi
@@ -392,4 +401,81 @@ object oriented interface which closely follows MPI-2 C++ bindings.  It
 supports point-to-point and collective communications of any picklable Python
 object as well as optimized communications of Python objects (such as NumPy
 arrays) that expose a buffer interface.")
-    (license bsd-3)))
+    (license license:bsd-3)))
+
+(define-public mpich
+  (package
+    (name "mpich")
+    (version "3.3.2")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://www.mpich.org/static/downloads/"
+                                  version "/mpich-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1farz5zfx4cd0c3a0wb9pgfypzw0xxql1j1294z1sxslga1ziyjb"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("zlib" ,zlib)
+       ("hwloc" ,hwloc-2 "lib")
+       ("slurm" ,slurm)
+       ,@(if (and (not (%current-target-system))
+                  (member (%current-system) (package-supported-systems ucx)))
+             `(("ucx" ,ucx))
+             '())))
+    (native-inputs
+     `(("perl" ,perl)
+       ("which" ,which)
+       ("gfortran" ,gfortran)))
+    (outputs '("out" "debug"))
+    (arguments
+     `(#:configure-flags
+       (list "--disable-silent-rules"             ;let's see what's happening
+             "--enable-debuginfo"
+             ;; "--with-device=ch4:ucx" ; --with-device=ch4:ofi segfaults in tests
+             (string-append "--with-hwloc-prefix="
+                            (assoc-ref %build-inputs "hwloc"))
+
+             ,@(if (assoc "ucx" (package-inputs this-package))
+                   `((string-append "--with-ucx="
+                                    (assoc-ref %build-inputs "ucx")))
+                   '()))
+
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'patch-sources
+                    (lambda _
+                      (substitute* "./maint/gen_subcfg_m4"
+                        (("/usr/bin/env") (which "env")))
+                      (substitute* "src/glue/romio/all_romio_symbols"
+                        (("/usr/bin/env") (which "env")))
+                      (substitute* (find-files "." "buildiface")
+                        (("/usr/bin/env") (which "env")))
+                      (substitute* "maint/extracterrmsgs"
+                        (("/usr/bin/env") (which "env")))
+                      (substitute* (find-files "." "f77tof90")
+                        (("/usr/bin/env") (which "env")))
+                      (substitute* (find-files "." "\\.sh$")
+                        (("/bin/sh") (which "sh")))
+                      #t))
+                  (add-before 'configure 'fix-makefile
+                    (lambda _
+                      ;; Remove "@hwloclib@" from 'pmpi_convenience_libs'.
+                      ;; This fixes "No rule to make target '-lhwloc', needed
+                      ;; by 'lib/libmpi.la'".
+                      (substitute* "Makefile.in"
+                        (("^pmpi_convenience_libs = (.*) @hwloclib@ (.*)$" _
+                          before after)
+                         (string-append "pmpi_convenience_libs = "
+                                        before " " after)))
+                      #t)))))
+    (home-page "https://www.mpich.org/")
+    (synopsis "Implementation of the Message Passing Interface (MPI)")
+    (description
+     "MPICH is a high-performance and portable implementation of the Message
+Passing Interface (MPI) standard (MPI-1, MPI-2 and MPI-3).  MPICH provides an
+MPI implementation that efficiently supports different computation and
+communication platforms including commodity clusters, high-speed networks (10
+Gigabit Ethernet, InfiniBand, Myrinet, Quadrics), and proprietary high-end
+computing systems (Blue Gene, Cray).  It enables research in MPI through a
+modular framework for other derived implementations.")
+    (license license:bsd-2)))

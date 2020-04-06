@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Kei Kebreau <kkebreau@posteo.net>
@@ -73,12 +73,12 @@
   #:use-module (gnu packages python-science)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages rpc)
   #:use-module (gnu packages serialization)
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages statistics)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages swig)
-  #:use-module (gnu packages tls)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
@@ -144,7 +144,7 @@ sparsely connected networks.")
                                    "svm-predict"
                                    "svm-scale")))
                      #t)))))
-    (home-page "http://www.csie.ntu.edu.tw/~cjlin/libsvm/")
+    (home-page "https://www.csie.ntu.edu.tw/~cjlin/libsvm/")
     (synopsis "Library for Support Vector Machines")
     (description
      "LIBSVM is a machine learning library for support vector
@@ -206,6 +206,8 @@ classification.")
       (arguments
        `(#:imported-modules (,@%gnu-build-system-modules
                              (guix build python-build-system))
+         #:modules          ((guix build python-build-system)
+                             ,@%gnu-build-system-modules)
          #:phases
          (modify-phases %standard-phases
            (add-after 'unpack 'enter-dir
@@ -564,7 +566,7 @@ optimizing, and searching weighted finite-state transducers (FSTs).")
     ;; Non-portable SSE instructions are used so building fails on platforms
     ;; other than x86_64.
     (supported-systems '("x86_64-linux"))
-    (home-page "http://shogun-toolbox.org/")
+    (home-page "https://shogun-toolbox.org/")
     (synopsis "Machine learning toolbox")
     (description
      "The Shogun Machine learning toolbox provides a wide range of unified and
@@ -796,7 +798,7 @@ computing environments.")
 (define-public python-scikit-learn
   (package
     (name "python-scikit-learn")
-    (version "0.20.4")
+    (version "0.22.1")
     (source
      (origin
        (method git-fetch)
@@ -806,7 +808,7 @@ computing environments.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "08zbzi8yx5wdlxfx9jap61vg1malc9ajf576w7a0liv6jvvrxlpj"))))
+         "1xqxv210gsmjw094vc5ghq2y9lmm74qkk22pq6flcjzj51b86jxf"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -833,21 +835,37 @@ computing environments.")
     (inputs
      `(("openblas" ,openblas)))
     (native-inputs
-     `(("python-pytest" ,python-pytest)
+     `(("python-joblib" ,python-joblib)
+       ("python-pytest" ,python-pytest)
        ("python-pandas" ,python-pandas) ;for tests
        ("python-cython" ,python-cython)))
     (propagated-inputs
      `(("python-numpy" ,python-numpy)
        ("python-scipy" ,python-scipy)))
-    (home-page "http://scikit-learn.org/")
+    (home-page "https://scikit-learn.org/")
     (synopsis "Machine Learning in Python")
     (description
      "Scikit-learn provides simple and efficient tools for data mining and
 data analysis.")
+    (properties `((python2-variant . ,(delay python2-scikit-learn))))
     (license license:bsd-3)))
 
+;; scikit-learn 0.22 and later only supports Python 3, so we stick with
+;; an older version here.
 (define-public python2-scikit-learn
-  (package-with-python2 python-scikit-learn))
+  (let ((base (package-with-python2 (strip-python2-variant python-scikit-learn))))
+    (package
+      (inherit base)
+      (version "0.20.4")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/scikit-learn/scikit-learn.git")
+                      (commit version)))
+                (file-name (git-file-name "python-scikit-learn" version))
+                (sha256
+                 (base32
+                  "08zbzi8yx5wdlxfx9jap61vg1malc9ajf576w7a0liv6jvvrxlpj")))))))
 
 (define-public python-autograd
   (let* ((commit "442205dfefe407beffb33550846434baa90c4de7")
@@ -944,21 +962,26 @@ the following advantages:
     (name "vowpal-wabbit")
     (version "8.5.0")
     (source (origin
-              (method url-fetch)
-              (uri (string-append
-                    "https://github.com/JohnLangford/vowpal_wabbit/archive/"
-                    version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/JohnLangford/vowpal_wabbit")
+                     (commit version)))
               (sha256
                (base32
-                "0clp2kb7rk5sckhllxjr5a651awf4s8dgzg4659yh4hf5cqnf0gr"))
-              (file-name (string-append name "-" version ".tar.gz"))))
+                "04bwzk6ifgnz3fmzid8b7avxf9n5pnx9xcjm61nkjng1vv0bpj8x"))
+              (file-name (git-file-name name version))))
     (inputs
      `(("boost" ,boost)
        ("zlib" ,zlib)))
     (arguments
      `(#:configure-flags
        (list (string-append "--with-boost="
-                            (assoc-ref %build-inputs "boost")))))
+                            (assoc-ref %build-inputs "boost")))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'make-files-writable
+           (lambda _
+             (for-each make-file-writable (find-files "." ".*")) #t)))))
     (build-system gnu-build-system)
     (home-page "https://github.com/JohnLangford/vowpal_wabbit")
     (synopsis "Fast machine learning library for online learning")
@@ -1277,44 +1300,6 @@ exec ~a ~a/~a \"$@\"~%"
 based on the Kaldi toolkit and the GStreamer framework and implemented in
 Python.")
       (license license:bsd-2))))
-
-(define-public grpc
-  (package
-    (name "grpc")
-    (version "1.16.1")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/grpc/grpc.git")
-                    (commit (string-append "v" version))))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "1jimqz3115f9pli5w6ik9wi7mjc7ix6y7yrq4a1ab9fc3dalj7p2"))))
-    (build-system cmake-build-system)
-    (arguments
-     `(#:tests? #f ; no test target
-       #:configure-flags
-       (list "-DgRPC_ZLIB_PROVIDER=package"
-             "-DgRPC_CARES_PROVIDER=package"
-             "-DgRPC_SSL_PROVIDER=package"
-             "-DgRPC_PROTOBUF_PROVIDER=package")))
-    (inputs
-     `(("c-ares" ,c-ares/cmake)
-       ("openssl" ,openssl)
-       ("zlib" ,zlib)))
-    (native-inputs
-     `(("protobuf" ,protobuf)
-       ("python" ,python-wrapper)))
-    (home-page "https://grpc.io")
-    (synopsis "High performance universal RPC framework")
-    (description "gRPC is a modern high performance @dfn{Remote Procedure Call}
-(RPC) framework that can run in any environment.  It can efficiently connect
-services in and across data centers with pluggable support for load balancing,
-tracing, health checking and authentication.  It is also applicable in last
-mile of distributed computing to connect devices, mobile applications and
-browsers to backend services.")
-    (license license:asl2.0)))
 
 ;; Note that Tensorflow includes a "third_party" directory, which seems to not
 ;; only contain modified subsets of upstream library source code, but also
@@ -1749,7 +1734,8 @@ INSTALL_RPATH " (assoc-ref outputs "out") "/lib)\n")))
        ("libjpeg" ,libjpeg)
        ("libpng" ,libpng)
        ("giflib" ,giflib)
-       ("grpc" ,grpc)
+       ("grpc" ,grpc-1.16.1 "static")
+       ("grpc:bin" ,grpc-1.16.1)
        ("jsoncpp" ,jsoncpp-for-tensorflow)
        ("snappy" ,snappy)
        ("sqlite" ,sqlite)
@@ -2103,7 +2089,8 @@ These include a barrier, broadcast, and allreduce.")
          "02ada2yy6km6zgk2836kg1c97yrcpalvan34p8c57446finnpki1"))))
     (build-system python-build-system)
     (native-inputs
-     `(("python-nose" ,python-nose)))
+     `(("python-joblib" ,python-joblib)
+       ("python-nose" ,python-nose)))
     (propagated-inputs
      `(("python-numba" ,python-numba)
        ("python-numpy" ,python-numpy)

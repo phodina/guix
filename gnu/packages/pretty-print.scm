@@ -5,6 +5,8 @@
 ;;; Copyright © 2017 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Meiyo Peng <meiyo@riseup.net>
+;;; Copyright © 2020 Paul Garlick <pgarlick@tourbillion-technology.com>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -24,6 +26,7 @@
 (define-module (gnu packages pretty-print)
   #:use-module (guix packages)
   #:use-module (guix licenses)
+  #:use-module (guix git-download)
   #:use-module (guix download)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
@@ -40,7 +43,8 @@
   #:use-module (gnu packages lua)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
-  #:use-module (gnu packages compression))
+  #:use-module (gnu packages compression)
+  #:use-module (gnu packages swig))
 
 (define-public a2ps
   (package
@@ -68,11 +72,11 @@
     (build-system gnu-build-system)
     (inputs
      `(("psutils" ,psutils)
-       ("groff" ,groff)
        ("gv" ,gv)
        ("imagemagick" ,imagemagick)))
     (native-inputs
      `(("gperf" ,gperf)
+       ("groff" ,groff)
        ("perl" ,perl)))
     (arguments
      '(#:phases
@@ -164,21 +168,20 @@ different programming languages.")
 (define-public fmt
   (package
     (name "fmt")
-    (version "6.0.0")
+    (version "6.1.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append
-                    "https://github.com/fmtlib/fmt/releases/download/"
-                    version "/fmt-" version ".zip"))
+              (uri (string-append "https://github.com/fmtlib/fmt/releases/download/"
+                                  version "/fmt-" version ".zip"))
               (sha256
                (base32
-                "0h148anbaqgch6n69pxsvs1c9wmykgd052wmzgdia7qpz8w6p8dl"))))
+                "1s1hxaby5byb07rgmrk4a0q11fxhz7b42khch7sp2qx974y0yrb3"))))
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags '("-DBUILD_SHARED_LIBS=ON")))
     (native-inputs
      `(("unzip" ,unzip)))
-    (home-page "http://fmtlib.net/")
+    (home-page "https://fmt.dev")
     (synopsis "Small and fast C++ formatting library")
     (description
      "@code{fmt} (formerly @code{cppformat}) is a formatting library for C++.
@@ -190,7 +193,7 @@ to @code{IOStreams}.")
 (define-public source-highlight
   (package
     (name "source-highlight")
-    (version "3.1.8")
+    (version "3.1.9")
     (source
      (origin
       (method url-fetch)
@@ -198,7 +201,7 @@ to @code{IOStreams}.")
                           version ".tar.gz"))
       (sha256
        (base32
-        "18xdalxg7yzrxc1njzgw7aryq2jdm7zq2yqz41sc7k6il5z6lcq1"))))
+        "148w47k3zswbxvhg83z38ifi85f9dqcpg7icvvw1cm6bg21x4zrs"))))
     (build-system gnu-build-system)
     ;; The ctags that comes with emacs does not support the --excmd options,
     ;; so can't be used
@@ -270,12 +273,29 @@ seen in a terminal.")
                 (string-append assignment "lua-" ,(version-major+minor
                                                    (package-version lua))
                                "\n")))
-             #t)))))
+             (substitute* "extras/swig/makefile"
+               (("lua") (string-append "lua-" ,(version-major+minor
+                                                (package-version lua)))))
+             #t))
+         (add-after 'install 'install-perl-bindings
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((perldir (string-append (assoc-ref outputs "out")
+                                            "/lib/perl5/site_perl/"
+                                            ,(package-version perl)))
+                    (autodir (string-append perldir "/auto/highlight")))
+               (with-directory-excursion "extras/swig"
+                 (invoke "make" "perl")
+                 (invoke "perl" "-I" "." "testmod.pl")
+                 (install-file "highlight.pm" perldir)
+                 (install-file "highlight.so" autodir))
+               #t))))))
     (inputs
      `(("lua" ,lua)
-       ("boost" ,boost)))
+       ("boost" ,boost)
+       ("perl" ,perl)))
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("pkg-config" ,pkg-config)
+       ("swig" ,swig)))
     (home-page "http://www.andre-simon.de/doku/highlight/en/highlight.php")
     (synopsis "Convert code to documents with syntax highlighting")
     (description "Highlight converts source code to HTML, XHTML, RTF, LaTeX,

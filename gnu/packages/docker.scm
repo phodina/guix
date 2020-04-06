@@ -3,6 +3,7 @@
 ;;; Copyright © 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -46,7 +47,7 @@
   #:use-module (gnu packages version-control)
   #:use-module (gnu packages virtualization))
 
-(define %docker-version "18.09.5")
+(define %docker-version "19.03.7")
 
 (define-public python-docker-py
   (package
@@ -98,19 +99,17 @@ pseudo-terminal (PTY) allocated to a Docker container using the Python
 client.")
     (license license:asl2.0)))
 
-;; When updating, check whether python-jsonschema-2.6 can be removed from Guix
-;; entirely.
 (define-public docker-compose
   (package
     (name "docker-compose")
-    (version "1.24.1")
+    (version "1.25.4")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "docker-compose" version))
        (sha256
         (base32
-         "0lx7bx6jvhydbab8vwry0bclhdf0dfj6jrns1m5y45yp9ybqxmd5"))))
+         "1ww8ckpj3n5jdg63qvmiqx3gk0fsrnynnnqj17fppymbwjzf5fps"))))
     (build-system python-build-system)
     ;; TODO: Tests require running Docker daemon.
     (arguments '(#:tests? #f))
@@ -120,9 +119,9 @@ client.")
        ("python-docker-py" ,python-docker-py)
        ("python-dockerpty" ,python-dockerpty)
        ("python-docopt" ,python-docopt)
-       ("python-jsonschema" ,python-jsonschema-2.6)
+       ("python-jsonschema" ,python-jsonschema)
        ("python-pyyaml" ,python-pyyaml)
-       ("python-requests" ,python-requests-2.20)
+       ("python-requests" ,python-requests)
        ("python-six" ,python-six)
        ("python-texttable" ,python-texttable)
        ("python-websocket-client" ,python-websocket-client)))
@@ -183,7 +182,9 @@ Python without keeping their credentials in a Docker configuration file.")
             (commit (string-append "v" version))))
       (file-name (git-file-name name version))
       (sha256
-       (base32 "0npbzixf3c0jvzm159vygvkydrr8h36c9sq50yv0mdinrys2bvg0"))))
+       (base32 "0npbzixf3c0jvzm159vygvkydrr8h36c9sq50yv0mdinrys2bvg0"))
+      (patches
+        (search-patches "containerd-test-with-go1.13.patch"))))
     (build-system go-build-system)
     (arguments
      `(#:import-path "github.com/containerd/containerd"
@@ -236,7 +237,7 @@ Python without keeping their credentials in a Docker configuration file.")
     (description "This package provides the container daemon for Docker.
 It includes image transfer and storage, container execution and supervision,
 network attachments.")
-    (home-page "http://containerd.io/")
+    (home-page "https://containerd.io/")
     (license license:asl2.0)))
 
 ;;; Private package that shouldn't be used directly; its purposes is to be
@@ -313,12 +314,9 @@ built-in registry server of Docker.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0cirpd9l2qazp2jyanwzvrkx2m98nksjdvn43ff38p89w6133ipb"))
+        (base32 "1sik109lxmiwgrsnvfip1nnal1xkh8z1mlvys6aknjyh29ll1iq8"))
        (patches
-        (search-patches "docker-engine-test-noinstall.patch"
-                        "docker-fix-tests.patch"
-                        "docker-use-fewer-modprobes.patch"
-                        "docker-adjust-tests-for-changes-in-go.patch"))))
+        (search-patches "docker-fix-tests.patch"))))
     (build-system gnu-build-system)
     (arguments
      `(#:modules
@@ -419,6 +417,7 @@ built-in registry server of Docker.")
                                                   "/" relative-path
                                                   "\"")) ...)))))
                  (substitute-LookPath*
+                  ("containerd" "containerd" "bin/containerd")
                   ("ps" "procps" "bin/ps")
                   ("mkfs.xfs" "xfsprogs" "bin/mkfs.xfs")
                   ("lvmdiskscan" "lvm2" "sbin/lvmdiskscan")
@@ -492,10 +491,19 @@ built-in registry server of Docker.")
              (delete-file "daemon/graphdriver/btrfs/btrfs_test.go")
              (delete-file "daemon/graphdriver/overlay/overlay_test.go")
              (delete-file "daemon/graphdriver/overlay2/overlay_test.go")
+             (delete-file "pkg/chrootarchive/archive_unix_test.go")
+             (delete-file "daemon/container_unix_test.go")
+             ;; This file uses cgroups and /proc.
+             (delete-file "pkg/sysinfo/sysinfo_linux_test.go")
+             ;; This file uses cgroups.
+             (delete-file "runconfig/config_test.go")
+             ;; This file uses /var.
+             (delete-file "daemon/oci_linux_test.go")
              #t))
          (replace 'configure
            (lambda _
              (setenv "DOCKER_GITCOMMIT" (string-append "v" ,%docker-version))
+             (setenv "VERSION" (string-append ,%docker-version "-ce"))
              ;; Automatically use bundled dependencies.
              ;; TODO: Unbundle - see file "vendor.conf".
              (setenv "AUTO_GOPATH" "1")
@@ -533,7 +541,9 @@ built-in registry server of Docker.")
              (let* ((out (assoc-ref outputs "out"))
                     (out-bin (string-append out "/bin")))
                (install-file "bundles/dynbinary-daemon/dockerd" out-bin)
-               (install-file "bundles/dynbinary-daemon/dockerd-dev" out-bin)
+               (install-file (string-append "bundles/dynbinary-daemon/dockerd-"
+                                            (getenv "VERSION"))
+                             out-bin)
                #t))))))
     (inputs
      `(("btrfs-progs" ,btrfs-progs)
@@ -558,6 +568,7 @@ built-in registry server of Docker.")
     (native-inputs
      `(("eudev" ,eudev)      ; TODO: Should be propagated by lvm2 (.pc -> .pc)
        ("go" ,go)
+       ("gotestsum" ,gotestsum)
        ("pkg-config" ,pkg-config)))
     (synopsis "Docker container component library, and daemon")
     (description "This package provides a framework to assemble specialized
@@ -579,7 +590,7 @@ provisioning etc.")
             (commit (string-append "v" version))))
       (file-name (git-file-name name version))
       (sha256
-       (base32 "0mxxjzkwdny8p2dmyjich7x1gn7hdlfppzjy2skk2k5bwv7nxpmi"))))
+       (base32 "164l33npy8acdbbrz8vcyiwx18vi55wwwikkasg0w43b5bdhz8sx"))))
     (build-system go-build-system)
     (arguments
      `(#:import-path "github.com/docker/cli"

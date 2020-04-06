@@ -2,7 +2,7 @@
 ;;; Copyright © 2014, 2015 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2018, 2019, 202 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2018 Thorsten Wilms <t_w_@freenet.de>
 ;;;
@@ -89,7 +89,7 @@ provided, as well as a framework to add new color models and data types.")
 (define-public gegl
   (package
     (name "gegl")
-    (version "0.4.20")
+    (version "0.4.22")
     (source (origin
               (method url-fetch)
               (uri (list (string-append "https://download.gimp.org/pub/gegl/"
@@ -103,7 +103,7 @@ provided, as well as a framework to add new color models and data types.")
                                         "/gegl-" version ".tar.xz")))
               (sha256
                (base32
-                "1zrxnxlhn0jmshg4n2m2xlgi886w059ynkiiihm7rpi05fs8pg93"))))
+                "0q9cckf90fb82qc5d496fjz459f1xw4j4p3rff1f57yivx0yr20q"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags
@@ -134,7 +134,7 @@ buffers.")
 (define-public gimp
   (package
     (name "gimp")
-    (version "2.10.14")
+    (version "2.10.18")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://download.gimp.org/pub/gimp/v"
@@ -142,7 +142,7 @@ buffers.")
                                   "/gimp-" version ".tar.bz2"))
               (sha256
                (base32
-                "0m6wdnfvsxyhimdd4v3351g4r1fklllnbipbwcfym3h7q88hz6yz"))))
+                "05np26g61fyr72s7qjfrcck8v57r0yswq5ihvqyzvgzfx08y3gv5"))))
     (build-system gnu-build-system)
     (outputs '("out"
                "doc"))                            ; 9 MiB of gtk-doc HTML
@@ -151,6 +151,9 @@ buffers.")
        (list (string-append "--with-html-dir="
                             (assoc-ref %outputs "doc")
                             "/share/gtk-doc/html")
+             ;; Disable automatic network request on startup to check for
+             ;; version updates.
+             "--disable-check-update"
              ;; ./configure requests not to annoy upstream with packaging bugs.
              "--with-bug-report-url=https://bugs.gnu.org/guix")
        #:phases
@@ -174,6 +177,7 @@ buffers.")
        ("glib" ,glib)
        ("glib-networking" ,glib-networking)
        ("libtiff" ,libtiff)
+       ("libwebp" ,libwebp)
        ("libjpeg" ,libjpeg)
        ("atk" ,atk)
        ("gexiv2" ,gexiv2)
@@ -254,7 +258,7 @@ that is extensible via a plugin system.")
        ("gtk+" ,gtk+-2)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
-    (home-page "http://registry.gimp.org/node/19596")
+    (home-page "https://www.lprp.fr/gimp_plugin_en/#fourier")
     (synopsis "GIMP plug-in to edit image in fourier space")
     (description
      "This package provides a simple plug-in to apply the fourier transform on

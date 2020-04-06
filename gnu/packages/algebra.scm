@@ -1,13 +1,15 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2013, 2015, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2016, 2017, 2018, 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2014, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2019 Eric Bavier <bavier@member.fsf.org>
+;;; Copyright © 2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -91,7 +93,7 @@ implement the floating point approach to complex multiplication are
 implemented.  On the other hand, these comprise asymptotically fast
 multiplication routines such as Toom–Cook and the FFT.")
    (license license:lgpl3+)
-   (home-page "http://mpfrcx.multiprecision.org/")))
+   (home-page "http://www.multiprecision.org/mpfrcx/")))
 
 (define-public gf2x
   (package
@@ -140,7 +142,7 @@ multiplication via floating point approximations.  It consists of libraries
 that can be called from within a C program and of executable command
 line applications.")
    (license license:gpl3+)
-   (home-page "http://cm.multiprecision.org/")))
+   (home-page "http://www.multiprecision.org/cm/")))
 
 (define-public fplll
   (package
@@ -345,19 +347,19 @@ precision.")
 (define-public giac
   (package
     (name "giac")
-    (version "1.5.0-85")
-    (source (origin
-              (method url-fetch)
-              ;; "~parisse/giac" is not used because the maintainer regularly
-              ;; overwrites the release tarball there, introducing a checksum
-              ;; mismatch every time.  See
-              ;; <https://www-fourier.ujf-grenoble.fr/~parisse/debian/dists/stable/main/source/README>
-              (uri (string-append "https://www-fourier.ujf-grenoble.fr/"
-                                  "~parisse/debian/dists/stable/main/"
-                                  "source/giac_" version ".tar.gz"))
-              (sha256
-               (base32
-                "03icgrfhb1xiy95cqmfgmcb1lw3775mr2ybnzandmyn44iycs6rh"))))
+    (version "1.5.0-87")
+    (source
+     (origin
+       (method url-fetch)
+       ;; "~parisse/giac" is not used because the maintainer regularly
+       ;; overwrites the release tarball there, introducing a checksum
+       ;; mismatch every time.  See
+       ;; <https://www-fourier.ujf-grenoble.fr/~parisse/debian/dists/stable/main/source/README>
+       (uri (string-append "https://www-fourier.ujf-grenoble.fr/"
+                           "~parisse/debian/dists/stable/main/source/"
+                           "giac_" version ".tar.gz"))
+       (sha256
+        (base32 "1d0h1yb7qvh9x7wwv9yrzmcp712f49w1iljkxp4y6g9pzsmg1mmv"))))
     (build-system gnu-build-system)
     (arguments
      `(#:modules ((ice-9 ftw)
@@ -430,9 +432,6 @@ precision.")
 maple, mupad and the TI89.  It is available as a standalone program (graphic
 or text interfaces) or as a C++ library.")
     (license license:gpl3+)))
-
-(define-public giac-xcas
-  (deprecated-package "giac-xcas" giac))
 
 (define-public flint
   (package
@@ -560,42 +559,50 @@ these types and other mathematical functions.")
 (define-public ntl
   (package
    (name "ntl")
-   (version "9.7.0")
+   (version "11.4.3")
    (source (origin
             (method url-fetch)
-            (uri (string-append "http://shoup.net/ntl/ntl-"
+            (uri (string-append "https://shoup.net/ntl/ntl-"
                                 version ".tar.gz"))
-            (sha256 (base32
-                     "115frp5flyvw9wghz4zph1b3llmr5nbxk1skgsggckr81fh3gmxq"))))
+            (sha256
+             (base32
+              "1lisp3064rch3jaa2wrhy1s9kll7i3ka3d0y6lj6l3l4ckfcrhdp"))
+            (modules '((guix build utils)))
+            (snippet
+             '(begin
+                (delete-file-recursively "src/libtool-origin")
+                #t))))
    (build-system gnu-build-system)
    (native-inputs
     `(("libtool" ,libtool)
       ("perl" ,perl))) ; for configuration
-   ;; FIXME: Add optional input gf2x once available; then also add
-   ;; configure flag "NTL_GF2X_LIB=on".
    (inputs
-    `(("gmp" ,gmp)))
+    `(("gmp" ,gmp)
+      ("gf2x" ,gf2x)))
    (arguments
     `(#:phases
       (modify-phases %standard-phases
         (replace 'configure
-         (lambda* (#:key outputs #:allow-other-keys)
+         (lambda* (#:key inputs outputs #:allow-other-keys)
            (chdir "src")
-           (system* "./configure"
+           (invoke "./configure"
                     (string-append "PREFIX=" (assoc-ref outputs "out"))
+                    (string-append "LIBTOOL=" (assoc-ref inputs "libtool") "/bin/libtool")
+                    ;; set the library prefixes explicitly so that they get
+                    ;; embedded in the .la file
+                    (string-append "GMP_PREFIX=" (assoc-ref inputs "gmp"))
+                    (string-append "GF2X_PREFIX=" (assoc-ref inputs "gf2x"))
                     ;; Do not build especially for the build machine.
                     "NATIVE=off"
-                    ;; Also do not tune to the build machine.
-                    "WIZARD=off"
-                    "SHARED=on")
-           #t)))))
+                    "NTL_GF2X_LIB=on"
+                    "SHARED=on"))))))
    (synopsis "C++ library for number theory")
    (description
     "NTL is a C++ library providing data structures and algorithms
 for manipulating signed, arbitrary length integers, and for vectors,
 matrices, and polynomials over the integers and over finite fields.")
    (license license:gpl2+)
-   (home-page "http://shoup.net/ntl/")))
+   (home-page "https://shoup.net/ntl/")))
 
 (define-public singular
   (package
@@ -857,8 +864,8 @@ the la4j library are:
     (version "1.6")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://search.maven.org/remotecontent?"
-                                  "filepath=pl/edu/icm/JLargeArrays/"
+              (uri (string-append "https://repo1.maven.org/maven2/"
+                                  "pl/edu/icm/JLargeArrays/"
                                   version "/JLargeArrays-" version
                                   "-sources.jar"))
               (file-name (string-append name "-" version ".jar"))
@@ -884,8 +891,8 @@ that can store up to 263 elements.")
     (version "3.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://search.maven.org/remotecontent?"
-                                  "filepath=com/github/wendykierp/JTransforms/"
+              (uri (string-append "https://repo1.maven.org/maven2/"
+                                  "com/github/wendykierp/JTransforms/"
                                   version "/JTransforms-" version "-sources.jar"))
               (sha256
                (base32
@@ -909,15 +916,16 @@ Sine Transform} (DST) and @dfn{Discrete Hartley Transform} (DHT).")
 (define-public eigen
   (package
     (name "eigen")
-    (version "3.3.5")
+    (version "3.3.7")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://bitbucket.org/eigen/eigen/get/"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1qh3yrwn78ms5yhwbpl5wvblk4gbz02cacdygxylr7i9xbrvylkk"))
+                "1km3fyfzyqfdvmnl79drps3fjwnz3zbh0c7l34mfbqyvvs8cy4wz"))
               (file-name (string-append name "-" version ".tar.bz2"))
+              (patches (search-patches "eigen-stabilise-sparseqr-test.patch"))
               (modules '((guix build utils)))
               (snippet
                ;; There are 3 test failures in the "unsupported" directory,
@@ -1452,8 +1460,7 @@ of M4RI from F_2 to F_{2^e}.")
        ("automake" ,automake)
        ("libtool" ,libtool)))
     (inputs
-     `(("gmp" ,gmp)
-       ("ntl" ,ntl)
+     `(("ntl" ,ntl)
        ("pari-gp" ,pari-gp)))
     (synopsis "Ranks of elliptic curves and modular symbols")
     (description "The eclib package includes mwrank (for 2-descent on
@@ -1498,7 +1505,7 @@ cohomology ring of a Grassmann variety.  The software package also includes
 a program that performs fast computation of the more general multiplicative
 structure constants of Schubert polynomials.")
     (license license:gpl2+)
-    (home-page "http://sites.math.rutgers.edu/~asbuch/lrcalc/")))
+    (home-page "https://sites.math.rutgers.edu/~asbuch/lrcalc/")))
 
 (define-public iml
   (package

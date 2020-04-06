@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2015, 2016 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
@@ -11,6 +11,7 @@
 ;;; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 John Soo <jsoo1@asu.edu>
 ;;; Copyright © 2019 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020 Florian Pelz <pelzflorian@pelzflorian.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -816,13 +817,13 @@ tty/font pairs.  The font can be the name of a font provided by the @code{kbd}
 package or any valid argument to @command{setfont}, as in this example:
 
 @example
-'((\"tty1\" . \"LatGrkCyr-8x16\")
-  (\"tty2\" . (file-append
-                font-tamzen
-                \"/share/kbd/consolefonts/TamzenForPowerline10x20.psf\"))
-  (\"tty3\" . (file-append
-                font-terminus
-                \"/share/consolefonts/ter-132n\"))) ; for HDPI
+`((\"tty1\" . \"LatGrkCyr-8x16\")
+  (\"tty2\" . ,(file-append
+                 font-tamzen
+                 \"/share/kbd/consolefonts/TamzenForPowerline10x20.psf\"))
+  (\"tty3\" . ,(file-append
+                 font-terminus
+                 \"/share/consolefonts/ter-132n\"))) ; for HDPI
 @end example\n")))
 
 (define* (console-font-service tty #:optional (font "LatGrkCyr-8x16"))
@@ -1917,7 +1918,7 @@ archive}).  If that is not the case, the service will fail to start."
   udev-configuration make-udev-configuration
   udev-configuration?
   (udev   udev-configuration-udev                 ;<package>
-          (default eudev))
+          (default eudev/btrfs-fix))
   (rules  udev-configuration-rules                ;list of <package>
           (default '())))
 
@@ -2037,11 +2038,6 @@ item of @var{packages}."
                 (setenv "LINUX_MODULE_DIRECTORY"
                         "/run/booted-system/kernel/lib/modules")
 
-                ;; The first one is for udev, the second one for eudev.
-                (setenv "UDEV_CONFIG_FILE" #$udev.conf)
-                (setenv "EUDEV_RULES_DIRECTORY"
-                        #$(file-append rules "/lib/udev/rules.d"))
-
                 (let* ((kernel-release
                         (utsname:release (uname)))
                        (linux-module-directory
@@ -2058,7 +2054,18 @@ item of @var{packages}."
                     (make-static-device-nodes directory))
                   (umask old-umask))
 
-                (let ((pid (fork+exec-command (list udevd))))
+                (let ((pid (fork+exec-command (list udevd)
+                            #:environment-variables
+                            (cons*
+                             ;; The first one is for udev, the second one for
+                             ;; eudev.
+                             (string-append "UDEV_CONFIG_FILE=" #$udev.conf)
+                             (string-append "EUDEV_RULES_DIRECTORY="
+                                            #$(file-append
+                                               rules "/lib/udev/rules.d"))
+                             (string-append "LINUX_MODULE_DIRECTORY="
+                                            (getenv "LINUX_MODULE_DIRECTORY"))
+                             (default-environment-variables)))))
                   ;; Wait until udevd is up and running.  This appears to
                   ;; be needed so that the events triggered below are
                   ;; actually handled.
@@ -2109,7 +2116,7 @@ the udev rules in use.")
 directory dynamically.  Get extra rules from the packages listed in the
 @code{rules} field of its value, @code{udev-configuration} object.")))
 
-(define* (udev-service #:key (udev eudev) (rules '()))
+(define* (udev-service #:key (udev eudev/btrfs-fix) (rules '()))
   "Run @var{udev}, which populates the @file{/dev} directory dynamically.  Get
 extra rules from the packages listed in @var{rules}."
   (service udev-service-type
@@ -2436,6 +2443,8 @@ to handle."
         (service urandom-seed-service-type)
         (service guix-service-type)
         (service nscd-service-type)
+
+        (service rottlog-service-type)
 
         ;; The LVM2 rules are needed as soon as LVM2 or the device-mapper is
         ;; used, so enable them by default.  The FUSE and ALSA rules are

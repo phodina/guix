@@ -8,7 +8,7 @@
 ;;; Copyright © 2015 Mathieu Lirzin <mthl@openmailbox.org>
 ;;; Copyright © 2015, 2017 Andy Wingo <wingo@igalia.com>
 ;;; Copyright © 2015 David Hashe <david.hashe@dhashe.com>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015, 2016, 2017, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015 David Thompson <davet@gnu.org>
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
@@ -39,13 +39,17 @@
 ;;; Copyright © 2019 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;; Copyright © 2019 Jelle Licht <jlicht@fsfe.org>
 ;;; Copyright © 2019 Jonathan Frederickson <jonathan@terracrypt.net>
-;;; Copyright © 2019 Maxim Cournoyer <maxim.cournoyer@gmail.com>
-;;; Copyright © 2019 Martin Becze <mjbecze@riseup.net>
+;;; Copyright © 2019, 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2019, 2020 Martin Becze <mjbecze@riseup.net>
 ;;; Copyright © 2019 David Wilson <david@daviwil.com>
-;;; Copyright © 2019 Raghav Gururajan <raghavgururajan@disroot.org>
+;;; Copyright © 2019, 2020 Raghav Gururajan <raghavgururajan@disroot.org>
 ;;; Copyright © 2019 Jonathan Brielmaier <jonathan.brielmaier@web.de>
-;;; Copyright © 2019 Leo Prikler <leo.prikler@student.tugraz.at>
+;;; Copyright © 2019, 2020 Leo Prikler <leo.prikler@student.tugraz.at>
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2020 Pierre Neidhardt <mail@ambrevar.xyz>
+;;; Copyright © 2020 raingloom <raingloom@riseup.net>
+;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2020 Naga Malleswari <nagamalli@riseup.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -117,6 +121,7 @@
   #:use-module (gnu packages kerberos)
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages libunistring)
+  #:use-module (gnu packages libunwind)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages lirc)
@@ -245,6 +250,78 @@ Desktop.  It is designed to be as simple as possible and has some unique
 features to enable users to create their discs easily and quickly.")
     (license license:gpl2+)))
 
+(define-public mm-common
+  (package
+    (name "mm-common")
+    (version "1.0.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://gnome/sources/" name "/"
+                                  (version-major+minor version) "/"
+                                  name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1m4w33da9f4rx2d6kdj3ix3kl0gn16ml82v2mdn4hljr3q29nzdr"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "util/mm-common-prepare.in"
+              (("ln") (string-append (assoc-ref inputs "coreutils")
+                                     "/bin/ln"))
+              (("cp") (string-append (assoc-ref inputs "coreutils")
+                                     "/bin/cp"))
+              (("sed") (string-append (assoc-ref inputs "sed")
+                                      "/bin/sed"))
+              (("cat") (string-append (assoc-ref inputs "coreutils")
+                                      "/bin/cat")))
+             #t)))))
+    (native-inputs
+     `(("coreutils" ,coreutils)
+       ("gettext" ,gettext-minimal)
+       ("pkg-config" ,pkg-config)
+       ("sed" ,sed)))
+    (inputs
+     `(("python" ,python)))
+    (synopsis "Module of GNOME C++ bindings")
+    (description "The mm-common module provides the build infrastructure
+and utilities shared among the GNOME C++ binding libraries.  Release
+archives of mm-common include the Doxygen tag file for the GNU C++
+Library reference documentation.")
+    (home-page "https://gitlab.gnome.org/GNOME/mm-common")
+    (license license:gpl2+)))
+
+(define-public phodav
+  (package
+   (name "phodav")
+   (version "2.4")
+   (source (origin
+            (method url-fetch)
+            (uri (string-append "mirror://gnome/sources/" name "/"
+                                (version-major+minor version) "/"
+                                name "-" version ".tar.xz"))
+            (sha256
+             (base32
+              "1hxq8c5qfah3w7mxcyy3yhzdgswplll31a69p5mqdl04bsvw5pbx"))))
+   (build-system meson-build-system)
+   (native-inputs
+    `(("gettext" ,gettext-minimal)
+      ("glib:bin" ,glib "bin")
+      ("gtk-doc" ,gtk-doc)
+      ("pkg-config" ,pkg-config)))
+   (inputs
+    `(("avahi" ,avahi)
+      ("libgudev" ,libgudev)
+      ("libsoup" ,libsoup)))
+   (synopsis "WebDav server implementation using libsoup")
+   (description "PhoDav was initially developed as a file-sharing mechanism for Spice,
+but it is generic enough to be reused in other projects,
+in particular in the GNOME desktop.")
+   (home-page "https://wiki.gnome.org/phodav")
+   (license license:lgpl2.1+)))
+
 (define-public gnome-color-manager
   (package
    (name "gnome-color-manager")
@@ -301,7 +378,7 @@ in the GNOME desktop.")
 (define-public gnome-online-miners
   (package
     (name "gnome-online-miners")
-    (version "3.30.0")
+    (version "3.34.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/" name "/"
@@ -309,7 +386,7 @@ in the GNOME desktop.")
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "0pjamwwzn5wqgihyss357dyl2q70r0bngnqmwsqawchx5f9aja9c"))))
+                "1n2jz9i8a42zwxx5h8j2gdy6q1vyydh4vl00r0al7w8jzdh24p44"))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
      `(("gettext" ,gettext-minimal)
@@ -503,7 +580,18 @@ extraction, and lookup for applications on the desktop.")
    (arguments
     '(#:configure-flags '(;; Enable camera support for user selfie.
                           "-Dcheese=auto"
-                          "-Dsystemd=false")))
+                          "-Dsystemd=false")
+      #:phases (modify-phases %standard-phases
+                 (add-after 'unpack 'set-gkbd-file-name
+                   (lambda* (#:key inputs #:allow-other-keys)
+                     ;; Allow the "Preview" button in the keyboard layout
+                     ;; selection dialog to display the layout.
+                     (let ((libgnomekbd (assoc-ref inputs "libgnomekbd")))
+                       (substitute* "gnome-initial-setup/pages/keyboard/cc-input-chooser.c"
+                         (("\"gkbd-keyboard-display")
+                          (string-append "\"" libgnomekbd
+                                         "/bin/gkbd-keyboard-display")))
+                       #t))))))
    (native-inputs
     `(("gettext" ,gettext-minimal)
       ("glib:bin" ,glib "bin")
@@ -532,7 +620,8 @@ extraction, and lookup for applications on the desktop.")
       ("pwquality" ,libpwquality)
       ("rest" ,rest)
       ("upower" ,upower)
-      ("webkitgtk" ,webkitgtk)))
+      ("webkitgtk" ,webkitgtk)
+      ("libgnomekbd" ,libgnomekbd)))
    (synopsis "Initial setup wizard for GNOME desktop")
    (description "This package provides a set-up wizard when a
 user logs into GNOME for the first time.  It typically provides a
@@ -1575,15 +1664,17 @@ on the GNOME Desktop with a single simple application.")
     (build-system meson-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases
-                  (add-after 'unpack 'set-adwaita-theme-file-name
+                  (add-after 'unpack 'patch-schemas
                     (lambda* (#:key inputs #:allow-other-keys)
-                      ;; Provide the correct file name of the default GNOME
-                      ;; background, 'adwaita-timed.xml'.
                       (let ((theme (assoc-ref inputs "gnome-backgrounds")))
                         (substitute* (find-files "schemas"
                                                  "\\.gschema\\.xml\\.in$")
+                          ;; Provide the correct file name of the default GNOME
+                          ;; background, 'adwaita-timed.xml'.
                           (("@datadir@/backgrounds/gnome")
-                           (string-append theme "/share/backgrounds/gnome")))
+                           (string-append theme "/share/backgrounds/gnome"))
+                          ;; Do not reference fonts, that may not exist.
+                          (("'Source Code Pro 10'") "'Monospace 11'"))
                         #t))))))
     (inputs
      `(("glib" ,glib)
@@ -2074,6 +2165,7 @@ dealing with different structured file formats.")
 
 (define-public librsvg
   (package
+    (replacement librsvg/fixed)
     (name "librsvg")
     (version "2.40.20")
     (source (origin
@@ -2138,232 +2230,98 @@ dealing with different structured file formats.")
 library.")
     (license license:lgpl2.0+)))
 
-(define* (computed-origin-method gexp-promise hash-algo hash
-                                 #:optional (name "source")
-                                 #:key (system (%current-system))
-                                 (guile (default-guile)))
-  "Return a derivation that executes the G-expression that results
-from forcing GEXP-PROMISE."
-  (mlet %store-monad ((guile (package->derivation guile system)))
-    (gexp->derivation (or name "computed-origin")
-                      (force gexp-promise)
-                      #:graft? #f       ;nothing to graft
-                      #:system system
-                      #:guile-for-build guile)))
-
-(define librsvg-next-source
-  (let* ((version         "2.46.3")
-         (upstream-source (origin
-                           (method url-fetch)
-                           (uri (string-append "mirror://gnome/sources/librsvg/"
-                                               (version-major+minor version)  "/"
-                                               "librsvg-" version ".tar.xz"))
-                           (sha256
-                            (base32
-                             "1s3a96i7f4pynjwxxvhysp4b6r7kyi8nasdxfyi62hc7gm34d3kn")))))
-    (origin
-      (method computed-origin-method)
-      (file-name (string-append "librsvg-" version ".tar.xz"))
-      (sha256 #f)
-      (uri
-       (delay
-        (with-imported-modules '((guix build utils))
-          #~(begin
-              (use-modules (guix build utils))
-              (set-path-environment-variable
-               "PATH" '("bin")
-               (list "/tmp"
-                     #+(canonical-package xz)
-                     #+(canonical-package gzip)
-                     #+(canonical-package tar)))
-              (invoke "tar" "xvf" #+upstream-source)
-              (with-directory-excursion (string-append "librsvg-" #$version)
-                (for-each
-                  (lambda (crate)
-                    (delete-file-recursively (string-append "vendor/" (car crate)))
-                    (invoke "tar" "xvf" (cdr crate) "-C" "vendor"))
-                  '(("aho-corasick" . #+(package-source rust-aho-corasick-0.7))
-;; alga 0.9
-                    ("approx" . #+(package-source rust-approx-0.3))
-                    ("arrayvec" . #+(package-source rust-arrayvec-0.4))
-                    ("atty" . #+(package-source rust-atty-0.2))
-                    ("autocfg" . #+(package-source rust-autocfg-0.1))
-                    ("bitflags" . #+(package-source rust-bitflags-1))
-;; block 0.1
-                    ("bstr" . #+(package-source rust-bstr-0.2))
-                    ("byteorder" . #+(package-source rust-byteorder-1.3))
-;; cairo-rs 0.7
-;; cairo-sys-rs 0.9
-                    ("cast" . #+(package-source rust-cast-0.2))
-                    ("cfg-if" . #+(package-source rust-cfg-if-0.1))
-                    ("clap" . #+(package-source rust-clap-2))
-                    ("cloudabi" . #+(package-source rust-cloudabi-0.0))
-                    ("criterion" . #+(package-source rust-criterion-0.2))
-                    ("criterion-plot" . #+(package-source rust-criterion-plot-0.3))
-                    ("crossbeam-deque" . #+(package-source rust-crossbeam-deque-0.7))
-                    ("crossbeam-epoch" . #+(package-source rust-crossbeam-epoch-0.8))
-                    ("crossbeam-queue" . #+(package-source rust-crossbeam-queue-0.2))
-                    ("crossbeam-utils" . #+(package-source rust-crossbeam-utils-0.7))
-;; cssparser 0.25
-;; cssparser-macros 0.3
-                    ("csv" . #+(package-source rust-csv-1.1))
-                    ("csv-core" . #+(package-source rust-csv-core-0.1))
-;; data-url 0.1
-;; downcast-rs 1.0
-                    ("dtoa" . #+(package-source rust-dtoa-0.4))
-;; dtoa-short 0.3
-                    ("either" . #+(package-source rust-either-1.5))
-                    ("encoding" . #+(package-source rust-encoding-0.2))
-                    ("encoding-index-japanese" . #+(package-source rust-encoding-index-japanese-1.20141219))
-                    ("encoding-index-korean" . #+(package-source rust-encoding-index-korean-1.20141219))
-                    ("encoding-index-simpchinese" . #+(package-source rust-encoding-index-simpchinese-1.20141219))
-                    ("encoding-index-singlebyte" . #+(package-source rust-encoding-index-singlebyte-1.20141219))
-                    ("encoding-index-tradchinese" . #+(package-source rust-encoding-index-tradchinese-1.20141219))
-                    ("encoding_index_tests" . #+(package-source rust-encoding-index-tests-0.1))
-;; float-cmp 0.5
-;; fragile 0.3
-                    ("fuchsia-cprng" . #+(package-source rust-fuchsia-cprng-0.1))
-                    ("futf" . #+(package-source rust-futf-0.1))
-;; gdk-pixbuf 0.7
-;; gdk-pixbuf-sys 0.9
-                    ("generic-array" . #+(package-source rust-generic-array-0.12))
-;; gio 0.7
-;; gio-sys 0.9
-;; glib 0.8
-;; glib-sys 0.9
-;; gobject-sys 0.9
-                    ("idna" . #+(package-source rust-idna-0.2))
-                    ("itertools" . #+(package-source rust-itertools-0.8))
-                    ("itoa" . #+(package-source rust-itoa-0.4))
-                    ("language-tags" . #+(package-source rust-language-tags-0.2))
-                    ("lazy_static" . #+(package-source rust-lazy-static-1.3))
-                    ("libc" . #+(package-source rust-libc-0.2))
-;; libm 0.1
-;; locale_config 0.3
-                    ("log" . #+(package-source rust-log-0.4))
-                    ("mac" . #+(package-source rust-mac-0.1))
-;; malloc_buf 0.0
-;; markup5ever 0.9
-                    ("matches" . #+(package-source rust-matches-0.1))
-;; matrixmultiply 0.2
-                    ("memchr" . #+(package-source rust-memchr-2.2))
-                    ("memoffset" . #+(package-source rust-memoffset-0.5))
-;; nalgebra 0.18
-                    ("new_debug_unreachable" . #+(package-source rust-new-debug-unreachable-1.0))
-                    ("nodrop" . #+(package-source rust-nodrop-0.1))
-                    ("num-complex" . #+(package-source rust-num-complex-0.2))
-                    ("num-integer" . #+(package-source rust-num-integer-0.1))
-;; num-rational 0.2
-                    ("num-traits" . #+(package-source rust-num-traits-0.2))
-                    ("num_cpus" . #+(package-source rust-num-cpus-1.10))
-;; objc 0.2
-;; objc-foundation 0.1
-;; objc_id 0.1
-;; pango 0.7
-;; pango-sys 0.9
-;; pangocairo 0.8
-;; pangocairo-sys 0.10
-                    ("percent-encoding" . #+(package-source rust-percent-encoding-2.1))
-                    ("phf" . #+(package-source rust-phf-0.7))
-                    ("phf_codegen" . #+(package-source rust-phf-codegen-0.7))
-                    ("phf_generator" . #+(package-source rust-phf-generator-0.7))
-                    ("phf_shared" . #+(package-source rust-phf-shared-0.7))
-                    ("pkg-config" . #+(package-source rust-pkg-config-0.3))
-                    ("precomputed-hash" . #+(package-source rust-precomputed-hash-0.1))
-                    ("proc-macro2" . #+(package-source rust-proc-macro2-1.0))
-;; procedural-masquerade 0.1
-                    ("quote" . #+(package-source rust-quote-1.0))
-                    ("rand" . #+(package-source rust-rand-0.6))
-                    ("rand_chacha" . #+(package-source rust-rand-chacha-0.1))
-                    ("rand_core-0.3.1" . #+(package-source rust-rand-core-0.3))
-                    ("rand_core" . #+(package-source rust-rand-core-0.4))
-                    ("rand_hc" . #+(package-source rust-rand-hc-0.1))
-                    ("rand_isaac" . #+(package-source rust-rand-isaac-0.1))
-                    ("rand_jitter" . #+(package-source rust-rand-jitter-0.1))
-                    ("rand_os" . #+(package-source rust-rand-os-0.1))
-                    ("rand_pcg" . #+(package-source rust-rand-pcg-0.1))
-                    ("rand_xorshift" . #+(package-source rust-rand-xorshift-0.1))
-                    ("rand_xoshiro" . #+(package-source rust-rand-xoshiro-0.1))
-;; rawpointer 0.2
-                    ("rayon" . #+(package-source rust-rayon-1.3))
-                    ("rayon-core" . #+(package-source rust-rayon-core-1.7))
-;; rctree 0.3
-                    ("rdrand" . #+(package-source rust-rdrand-0.4))
-                    ("regex" . #+(package-source rust-regex-1.3))
-                    ("regex-automata" . #+(package-source rust-regex-automata-0.1))
-                    ("regex-syntax" . #+(package-source rust-regex-syntax-0.6))
-                    ("rustc_version" . #+(package-source rust-rustc-version-0.2))
-                    ("ryu" . #+(package-source rust-ryu-1.0))
-                    ("same-file" . #+(package-source rust-same-file-1.0))
-                    ("scopeguard" . #+(package-source rust-scopeguard-1.0))
-                    ("semver" . #+(package-source rust-semver-0.9))
-                    ("semver-parser" . #+(package-source rust-semver-parser-0.7))
-                    ("serde" . #+(package-source rust-serde-1.0))
-                    ("serde_derive" . #+(package-source rust-serde-derive-1.0))
-                    ("serde_json" . #+(package-source rust-serde-json-1.0))
-                    ("siphasher" . #+(package-source rust-siphasher-0.2))
-                    ("smallvec" . #+(package-source rust-smallvec-0.6))
-                    ("string_cache" . #+(package-source rust-string-cache-0.7))
-                    ;("string_cache_codegen" . #+(package-source rust-string-cache-codegen-0.4))
-                    ("string_cache_shared" . #+(package-source rust-string-cache-shared-0.3))
-                    ("syn" . #+(package-source rust-syn-1.0))
-                    ("tendril" . #+(package-source rust-tendril-0.4))
-                    ("textwrap" . #+(package-source rust-textwrap-0.11))
-                    ("thread_local" . #+(package-source rust-thread-local-1.0))
-                    ("tinytemplate" . #+(package-source rust-tinytemplate-1.0))
-                    ("typenum" . #+(package-source rust-typenum-1.10))
-                    ("unicode-bidi" . #+(package-source rust-unicode-bidi-0.3))
-                    ("unicode-normalization" . #+(package-source rust-unicode-normalization-0.1))
-                    ("unicode-width" . #+(package-source rust-unicode-width-0.1))
-                    ("unicode-xid" . #+(package-source rust-unicode-xid-0.2))
-                    ("url" . #+(package-source rust-url-2.1))
-                    ("utf-8" . #+(package-source rust-utf-8-0.7))
-                    ("walkdir" . #+(package-source rust-walkdir-2.2))
-                    ("winapi" . #+(package-source rust-winapi-0.3))
-                    ("winapi-i686-pc-windows-gnu" . #+(package-source rust-winapi-i686-pc-windows-gnu-0.4))
-                    ("winapi-util" . #+(package-source rust-winapi-util-0.1))
-                    ("winapi-x86_64-pc-windows-gnu" . #+(package-source rust-winapi-x86-64-pc-windows-gnu-0.4))
-;; xml-rs 0.8
-                    )))
-              (format #t "Replacing vendored crates in the tarball and repacking ...~%")
-              (force-output)
-              (invoke "tar" "cfa" #$output
-                      ;; Avoid non-determinism in the archive.  We set the
-                      ;; mtime of files in the archive to early 1980 because
-                      ;; the build process fails if the mtime of source
-                      ;; files is pre-1980, due to the creation of zip
-                      ;; archives.
-                      "--mtime=@315619200" ; 1980-01-02 UTC
-                      "--owner=root:0"
-                      "--group=root:0"
-                      "--sort=name"
-                      (string-append "librsvg-" #$version))
-              #t)))))))
+(define librsvg/fixed
+  (package
+    (inherit librsvg)
+    (name "librsvg")
+    (version "2.40.21")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://gnome/sources/" name "/"
+                                  (version-major+minor version)  "/"
+                                  name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1fljkag2gr7c4k5mn798lgf9903xslz8h51bgvl89nnay42qjqpp"))))))
 
 (define-public librsvg-next
   (package
+    (inherit librsvg)
     (name "librsvg")
-    (version "2.46.3")
-    (source librsvg-next-source)
-    (build-system gnu-build-system)
+    (version "2.46.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://gnome/sources/librsvg/"
+                                  (version-major+minor version)  "/"
+                                  "librsvg-" version ".tar.xz"))
+              (sha256
+               (base32
+                "0afc82nsxc6kw136xid4vcq9kmq4rmgzzk8bh2pvln2cnvirwnxl"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin (delete-file-recursively "vendor")
+                       ;; Don't demand an exact version for string_cache
+                       (substitute* "rsvg_internals/Cargo.toml"
+                         (("\"=") "\""))
+                       #t))))
+    (build-system cargo-build-system)
     (arguments
-     `(#:configure-flags
-       (list "--disable-static"
-             "--enable-vala") ; needed for e.g. gnome-mines
-       #:make-flags '("CC=gcc")
-       #:imported-modules ,%cargo-utils-modules ;for `generate-all-checksums'
+     `(#:modules ((guix build cargo-build-system)
+                  (guix build utils)
+                  ((guix build gnu-build-system) #:prefix gnu:))
+       #:vendor-dir "vendor"
+       #:cargo-inputs
+       (("rust-bitflags" ,rust-bitflags-1)
+        ("rust-cairo-rs" ,rust-cairo-rs-0.7)
+        ("rust-cairo-sys-rs" ,rust-cairo-sys-rs-0.9)
+        ("rust-cssparser" ,rust-cssparser-0.25)
+        ("rust-data-url" ,rust-data-url-0.1)
+        ("rust-downcast-rs" ,rust-downcast-rs-1.1)
+        ("rust-encoding" ,rust-encoding-0.2)
+        ("rust-float-cmp" ,rust-float-cmp-0.5)
+        ("rust-gdk-pixbuf" ,rust-gdk-pixbuf-0.7)
+        ("rust-gdk-pixbuf-sys" ,rust-gdk-pixbuf-sys-0.9)
+        ("rust-gio" ,rust-gio-0.7)
+        ("rust-gio-sys" ,rust-gio-sys-0.9)
+        ("rust-glib" ,rust-glib-0.8)
+        ("rust-glib-sys" ,rust-glib-sys-0.9)
+        ("rust-gobject-sys" ,rust-gobject-sys-0.9)
+        ("rust-itertools" ,rust-itertools-0.8)
+        ("rust-language-tags" ,rust-language-tags-0.2)
+        ("rust-lazy-static" ,rust-lazy-static-1)
+        ("rust-libc" ,rust-libc-0.2)
+        ("rust-locale-config" ,rust-locale-config-0.3)
+        ("rust-markup5ever" ,rust-markup5ever-0.9)
+        ("rust-nalgebra" ,rust-nalgebra-0.18)
+        ("rust-num-traits" ,rust-num-traits-0.2)
+        ("rust-pkg-config" ,rust-pkg-config-0.3)
+        ("rust-pango" ,rust-pango-0.7)
+        ("rust-pango-sys" ,rust-pango-sys-0.9)
+        ("rust-pangocairo" ,rust-pangocairo-0.8)
+        ("rust-phf" ,rust-phf-0.7)
+        ("rust-rayon" ,rust-rayon-1.3)
+        ("rust-rctree" ,rust-rctree-0.3)
+        ("rust-string-cache" ,rust-string-cache-0.7)
+        ("rust-regex" ,rust-regex-1.3)
+        ("rust-url" ,rust-url-2.1)
+        ("rust-xml-rs" ,rust-xml-rs-0.8))
+       #:cargo-development-inputs
+       (("rust-cairo-rs" ,rust-cairo-rs-0.7)
+        ("rust-criterion" ,rust-criterion-0.2))
        #:phases
        (modify-phases %standard-phases
-         (add-after 'configure 'patch-cargo-checksums
+         (add-after 'unpack 'prepare-for-build
            (lambda _
-             (use-modules (guix build cargo-utils))
-             (substitute* "librsvg/Cargo.toml"
-               (("bitflags .*") "bitflags = \"1\"\n")) ; 1.2 is vendored
-             (generate-all-checksums "vendor")
-             (delete-file "Cargo.lock")
-             (invoke "cargo" "generate-lockfile")))
+             ;; In lieu of #:make-flags
+             (setenv "CC" "gcc")
+             ;; Something about the build environment resists building
+             ;; successfully with the '--locked' flag.
+             (substitute* '("Makefile.am"
+                            "Makefile.in")
+               (("--locked") ""))
+             #t))
          (add-before 'configure 'pre-configure
-           (lambda* (#:key inputs #:allow-other-keys)
+           (lambda _
              (substitute* "gdk-pixbuf-loader/Makefile.in"
                ;; By default the gdk-pixbuf loader is installed under
                ;; gdk-pixbuf's prefix.  Work around that.
@@ -2375,6 +2333,27 @@ from forcing GEXP-PROMISE."
                (("gdk_pixbuf_cache_file = .*$")
                 "gdk_pixbuf_cache_file = $(TMPDIR)/loaders.cache\n"))
              #t))
+         (add-after 'configure 'gnu-configure
+           (assoc-ref gnu:%standard-phases 'configure))
+           ;(lambda* (#:key outputs #:allow-other-keys)
+           ;  ((assoc-ref gnu:%standard-phases 'configure)
+           ;   #:outputs outputs
+           ;   #:configure-flags ("--disable-static"
+           ;                      "--enable-vala"))))
+         (add-after 'configure 'dont-vendor-self
+           (lambda* (#:key vendor-dir #:allow-other-keys)
+             ;; Don't keep the whole tarball in the vendor directory
+             (delete-file-recursively
+               (string-append vendor-dir "/" ,name "-" ,version ".tar.xz"))
+             #t))
+         (replace 'build
+           (assoc-ref gnu:%standard-phases 'build))
+         (replace 'check
+           (lambda* args
+             ((assoc-ref gnu:%standard-phases 'check)
+              #:test-target "check")))
+         (replace 'install
+           (assoc-ref gnu:%standard-phases 'install))
          (add-before 'check 'remove-failing-tests
            (lambda _
              (with-directory-excursion "tests/fixtures/reftests"
@@ -2396,30 +2375,6 @@ from forcing GEXP-PROMISE."
                            ;; This test fails on aarch64:
                            "bugs/777834-empty-text-children.svg")))
              #t)))))
-    (native-inputs
-     `(("pkg-config" ,pkg-config)
-       ;; This is the minimum supported Rust version in Librsvg 2.46.
-       ("rust" ,rust-1.34)
-       ("cargo" ,rust-1.34 "cargo")
-       ("vala" ,vala)
-       ("glib" ,glib "bin")                               ; glib-mkenums, etc.
-       ("gobject-introspection" ,gobject-introspection))) ; g-ir-compiler, etc.
-    (inputs
-     `(("pango" ,pango)
-       ("libcroco" ,libcroco)
-       ("bzip2" ,bzip2)
-       ("libgsf" ,libgsf)
-       ("libxml2" ,libxml2)))
-    (propagated-inputs
-     ;; librsvg-2.0.pc refers to all of that.
-     `(("cairo" ,cairo)
-       ("gdk-pixbuf" ,gdk-pixbuf)
-       ("glib" ,glib)))
-    (home-page "https://wiki.gnome.org/LibRsvg")
-    (synopsis "Render SVG files using Cairo")
-    (description
-     "Librsvg is a C library to render SVG files using the Cairo 2D graphics
-library.")
     (license license:lgpl2.1+)))
 
 (define-public libidl
@@ -3643,7 +3598,7 @@ libxml to ease remote use of the RESTful API.")
 (define-public libsoup
   (package
     (name "libsoup")
-    (version "2.68.3")
+    (version "2.70.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/libsoup/"
@@ -3651,7 +3606,7 @@ libxml to ease remote use of the RESTful API.")
                                   "libsoup-" version ".tar.xz"))
               (sha256
                (base32
-                "1yxs0ax4rq3g0lgkbv7mz497rqj16iyyizddyc13gzxh6n7b0jsk"))))
+                "0hjk9lgppc5435my0lyywbpmj7ib5vvcylwfin8ki97g9bvj1c2l"))))
     (build-system meson-build-system)
     (outputs '("out" "doc"))
     (arguments
@@ -3766,7 +3721,7 @@ and the GLib main loop, to integrate well with GNOME applications.")
 (define-public libsecret
   (package
     (name "libsecret")
-    (version "0.19.1")
+    (version "0.20.2")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -3775,7 +3730,7 @@ and the GLib main loop, to integrate well with GNOME applications.")
                     "libsecret-" version ".tar.xz"))
               (sha256
                (base32
-                "0fhflcsr70b1pps2pcvqcbdhip2ny5am9nbm634f4sj5g40y30w5"))))
+                "1hzz34gmsxxf1jm1b7qin390rkwbg8sx198xdkwxqp3q6cw19sc1"))))
     (build-system gnu-build-system)
     (outputs '("out" "doc"))
     (arguments
@@ -3814,16 +3769,15 @@ and other secrets.  It communicates with the \"Secret Service\" using DBus.")
 (define-public five-or-more
   (package
     (name "five-or-more")
-    (version "3.32.0")
+    (version "3.32.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://gnome/sources/" name "/"
+       (uri (string-append "mirror://gnome/sources/five-or-more/"
                            (version-major+minor version) "/"
-                           name "-" version ".tar.xz"))
+                           "five-or-more-" version ".tar.xz"))
        (sha256
-        (base32
-         "0v52i22ygv6y4zqs8nyb1qmacmj9whhqrw7qss6vn7by4nsikhrn"))))
+        (base32 "0xw05dd2dwi9vsph9h158b4n89s5k07xrh6bjz1icm0pdmjwhpgk"))))
     (build-system meson-build-system)
     (arguments
      '(#:glib-or-gtk? #t
@@ -4074,43 +4028,34 @@ output devices.")
 (define-public geoclue
   (package
     (name "geoclue")
-    (version "2.4.8")
+    (version "2.5.5")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://www.freedesktop.org/software/" name
-                           "/releases/" (version-major+minor version) "/"
-                           name "-" version ".tar.xz"))
+       (uri
+        (string-append "https://gitlab.freedesktop.org/geoclue/geoclue/-/archive/"
+                       version "/geoclue-" version ".tar.bz2"))
        (sha256
         (base32
-         "08yg1r7m0n9hwyvcy769qkmkf8lslqwv69cjfffwnc3zm5km25qj"))
+         "1b7jqrsn4x7mxjxj8hvb2dl2cmhrpb9vibs4rvkkanky5nsx3sai"))
        (patches (search-patches "geoclue-config.patch"))))
-    (build-system glib-or-gtk-build-system)
+    (build-system meson-build-system)
     (arguments
-     '(;; The tests want to run the system bus.
-       #:tests? #f
-       #:configure-flags (list ;; Disable bits requiring ModemManager.
-                               "--disable-3g-source"
-                               "--disable-cdma-source"
-                               "--disable-modem-gps-source"
-                               "--with-dbus-service-user=geoclue")
-       #:phases
-       (modify-phases %standard-phases
-         (add-before 'configure 'patch-/bin/true
-                     (lambda _
-                       (substitute* "configure"
-                         (("/bin/true") (which "true")))
-                       #t)))))
+     '(#:configure-flags (list "-Dbus-srv-user=geoclue")))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("gobject-introspection" ,gobject-introspection)
+       ("modem-manager" ,modem-manager)
+       ("libnotify" ,libnotify)
+       ("gtk-doc", gtk-doc)
        ("intltool" ,intltool)))
     (inputs
      `(("avahi" ,avahi)
-       ("glib" ,glib)
+       ("glib:bin" ,glib "bin")
+       ("glib-networking" ,glib-networking)
        ("json-glib" ,json-glib)
        ("libsoup" ,libsoup)))
-    (home-page "https://www.freedesktop.org/wiki/Software/GeoClue/")
+    (home-page "https://gitlab.freedesktop.org/geoclue/geoclue/-/wikis/home")
     (synopsis "Geolocation service")
     (description "Geoclue is a D-Bus service that provides location
 information.  The primary goal of the Geoclue project is to make creating
@@ -4408,7 +4353,7 @@ which are easy to play with the aid of a mouse.")
 (define-public amtk
   (package
     (name "amtk")
-    (version "5.0.1")
+    (version "5.0.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/amtk/"
@@ -4416,7 +4361,7 @@ which are easy to play with the aid of a mouse.")
                                   "amtk-" version ".tar.xz"))
               (sha256
                (base32
-                "09yy95w1s83c43mh9vha1jbb780yighf5pd2j0ygjmc68sjg871d"))))
+                "11jgz2i9wjzv4alrxl1qyxiapb52w7vs5ygfgsw0qgdap8gqkk3i"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--enable-gtk-doc")))
@@ -4537,7 +4482,7 @@ throughout GNOME for API documentation).")
                                        (assoc-ref inputs "xorg-server")))
                        (setenv "DISPLAY" ":1")
                        #t)))))
-    (home-page "http://www.cogl3d.org")
+    (home-page "https://www.cogl3d.org")
     (synopsis "Object oriented GL/GLES Abstraction/Utility Layer")
     (description
      "Cogl is a small library for using 3D graphics hardware to draw pretty
@@ -5011,15 +4956,15 @@ which can read a large number of file formats.")
 (define-public rhythmbox
  (package
    (name "rhythmbox")
-   (version "3.4.3")
+   (version "3.4.4")
    (source (origin
             (method url-fetch)
-            (uri (string-append "mirror://gnome/sources/" name "/"
+            (uri (string-append "mirror://gnome/sources/rhythmbox/"
                                 (version-major+minor version) "/"
-                                name "-" version ".tar.xz"))
+                                "rhythmbox-" version ".tar.xz"))
             (sha256
              (base32
-              "1yx3n7p9vmv23jsv98fxwq95n78awdxqm8idhyhxx2d6vk4w1hgx"))))
+              "142xcvw4l19jyr5i72nbnrihs953pvrrzcbijjn9dxmxszbv03pf"))))
    (build-system glib-or-gtk-build-system)
    (arguments
     `(#:configure-flags
@@ -5176,7 +5121,7 @@ supports image conversion, rotation, and slideshows.")
     (synopsis "Extensions for the Eye of GNOME image viewer")
     (native-inputs
      `(("pkg-config" ,pkg-config)
-       ("gettext" ,gnu-gettext)))
+       ("gettext" ,gettext-minimal)))
     (inputs
      `(("eog" ,eog)
        ("glib" ,glib)
@@ -5335,7 +5280,7 @@ USB transfers with your high-level application or system daemon.")
 (define-public simple-scan
   (package
     (name "simple-scan")
-    (version "3.34.2")
+    (version "3.36.0")
     (source
      (origin
        (method url-fetch)
@@ -5343,7 +5288,7 @@ USB transfers with your high-level application or system daemon.")
                            (version-major+minor version) "/"
                            "simple-scan-" version ".tar.xz"))
        (sha256
-        (base32 "1fk3g4f9slckqfwm576jrjq1d1qihw0dlgzdf00ns7qbhzb0kxsp"))))
+        (base32 "198l3yhqhb2wzfdcgi8fzbwycr0njn44583dazz6wy1gqbiqnzgm"))))
     (build-system meson-build-system)
     ;; TODO: Fix icons in home screen, About dialogue, and scan menu.
     (arguments
@@ -5375,15 +5320,14 @@ almost all of them.")
 (define-public eolie
   (package
     (name "eolie")
-    (version "0.9.63")
+    (version "0.9.98.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://gitlab.gnome.org/World/eolie/"
-                                  "uploads/d42b466752729a0d3fa828a721e25043/"
-                                  "eolie-" version ".tar.xz"))
+              (uri (string-append "https://adishatz.org/eolie/eolie-"
+                                  version ".tar.xz"))
               (sha256
                (base32
-                "11pp8g0w22h1q0bbj9517l5838gcymvvp8fp9kh6h2dmgir2ssih"))))
+                "1d844zva5w4p9pnp9c2g7zyb4vayr2g2drf78spxsdlc5lbd7lqr"))))
     (build-system meson-build-system)
     (arguments
      `(#:glib-or-gtk? #t
@@ -5669,7 +5613,7 @@ wraps things up in a developer-friendly way.")
 (define-public libgee
   (package
     (name "libgee")
-    (version "0.20.2")
+    (version "0.20.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/libgee/"
@@ -5677,7 +5621,7 @@ wraps things up in a developer-friendly way.")
                                   "libgee-" version ".tar.xz"))
               (sha256
                (base32
-                "0g1mhl7nidg82v4cikkk8dakzc18hg7wv0dsf2pbyijzfm5mq0wy"))))
+                "1pm525wm11dhwz24m8bpcln9547lmrigl6cxf3qsbg4cr3pyvdfh"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -5738,7 +5682,7 @@ metadata in photo and video files of various formats.")
 (define-public shotwell
   (package
     (name "shotwell")
-    (version "0.30.7")
+    (version "0.30.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/shotwell/"
@@ -5746,7 +5690,7 @@ metadata in photo and video files of various formats.")
                                   "shotwell-" version ".tar.xz"))
               (sha256
                (base32
-                "1m9i8r4gyd2hzlxjjwfyck4kz7gdg2vz2k6l6d0ga9hdfq2l4p9l"))))
+                "1f7m007g6w1sz8s60w6x81ghp2rrjmik8phd958b2hy8zz92wbbj"))))
     (build-system meson-build-system)
     (arguments
      '(#:glib-or-gtk? #t
@@ -6193,7 +6137,7 @@ window manager.")
 (define-public gnome-online-accounts
   (package
     (name "gnome-online-accounts")
-    (version "3.32.1")
+    (version "3.36.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/" name "/"
@@ -6201,7 +6145,7 @@ window manager.")
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "08g9kdj8fzcgp76z2zsj9m7wfjks9z6xfrfrbfmcr69k40mapfx8"))))
+                "0bigfi225g1prnxpb9lcc1i7mdcrkplwb05vilc43jik12cn53qw"))))
     (outputs '("out" "lib"))
     (build-system glib-or-gtk-build-system)
     (arguments
@@ -6256,7 +6200,8 @@ Exchange, Last.fm, IMAP/SMTP, Jabber, SIP and Kerberos.")
               (uri (string-append "mirror://gnome/sources/" name "/"
                                   (version-major+minor version) "/"
                                   name "-" version ".tar.xz"))
-              (patches (search-patches "evolution-data-server-locales.patch"))
+              (patches (search-patches "evolution-data-server-locales.patch"
+                                       "evolution-data-server-libical-compat.patch"))
               (sha256
                (base32
                 "0zsc9xwy6ixk3x0dx69ax5isrdw8qxjdxg2i5fr95s40nss7rxl3"))))
@@ -7405,7 +7350,7 @@ easy, safe, and automatic.")
 (define-public tracker
   (package
     (name "tracker")
-    (version "2.2.2")
+    (version "2.3.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/tracker/"
@@ -7413,7 +7358,7 @@ easy, safe, and automatic.")
                                   "tracker-" version ".tar.xz"))
               (sha256
                (base32
-                "1rp2c6k7ajcm553p9kpni87zgi9aplm3s01rl7pk575az5i399y6"))))
+                "0vai0qz9jn3z5dlzysynwhbbmslp84ygdql81f5wfxxr98j54yap"))))
     (build-system meson-build-system)
     (arguments
      `(#:glib-or-gtk? #t
@@ -7424,64 +7369,58 @@ easy, safe, and automatic.")
                             (assoc-ref %outputs "out") "/lib/tracker-2.0"))
        #:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'disable-broken-tests
-           (lambda _
-             ;; These fail because the SPARQL backend could not be loaded.
-             ;; That's because /etc/machine-id is missing, but
-             ;; DBUS_FATAL_WARNINGS does not help here.
-             (substitute* "tests/libtracker-sparql/meson.build"
-               (("'sparql',") ""))
-             (substitute* "tests/tracker-steroids/meson.build"
-               (("test\\(.*") ""))
-             #t))
-         ;; Two tests fail if LANG is not set.
          (add-before 'check 'pre-check
            (lambda _
-             (setenv "LANG" "en_US.UTF-8")
-             ;; For the missing /etc/machine-id.
-             (setenv "DBUS_FATAL_WARNINGS" "0")
+             ;; Some tests expect to write to $HOME.
+             (setenv "HOME" "/tmp")
              #t)))))
     (native-inputs
      `(("glib:bin" ,glib "bin")
-       ("gnome-common" ,gnome-common)
        ("gobject-introspection" ,gobject-introspection)
        ("python-pygobject" ,python-pygobject)
        ("intltool" ,intltool)
        ("pkg-config" ,pkg-config)
        ("vala" ,vala)))
     (inputs
-     `(("gtk+" ,gtk+)
-       ("dbus" ,dbus)
+     `(("dbus" ,dbus)
        ("sqlite" ,sqlite)
-       ("python" ,python)
-       ("poppler" ,poppler)
-       ("libpng" ,libpng)
-       ("libtiff" ,libtiff)
-       ("zlib" ,zlib)
        ("libxml2" ,libxml2)
-       ("libunistring" ,libunistring)
+       ("icu4c" ,icu4c)                 ; libunistring gets miner-miner-fs test to fail.
        ("json-glib" ,json-glib)
-       ("openjpeg" ,openjpeg-1)
-       ("libseccomp" ,libseccomp)
-       ("libsoup" ,libsoup)
-       ("libuuid" ,util-linux)
-       ("network-manager" ,network-manager)))
+       ("libsoup" ,libsoup)))
     (synopsis "Metadata database, indexer and search tool")
     (home-page "https://wiki.gnome.org/Projects/Tracker")
     (description
-     "Tracker is an advanced framework for first class objects with associated
-metadata and tags.  It provides a one stop solution for all metadata, tags,
-shared object databases, search tools and indexing.")
+     "Tracker is a search engine and triplestore for desktop, embedded and mobile.
+
+It is a middleware component aimed at desktop application developers who want
+their apps to browse and search user content.  It's not designed to be used
+directly by desktop users, but it provides a commandline tool named
+@command{tracker} for the adventurous.
+
+Tracker allows your application to instantly perform full-text searches across
+all documents.  This feature is used by the @{emph{search} bar in GNOME Files, for
+example.  This is achieved by indexing the user's home directory in the
+background.
+
+Tracker also allows your application to query and list content that the user
+has stored.  For example, GNOME Music displays all the music files that are
+found by Tracker.  This means that GNOME Music doesn't need to maintain a
+database of its own.
+
+If you need to go beyond simple searches, Tracker is also a linked data
+endpoint and it understands SPARQL. ")
+    ;; https://gitlab.gnome.org/GNOME/tracker/-/blob/master/COPYING:
     ;; src/libtracker-*/* and src/tracker-extract/* are covered by lgpl2.1+,
-    ;; src/gvdb/* are covered by lgpl2.0+, and the rest is gpl2+.
+    ;; libstemmer is bsd-3 and the rest is gpl2+.
     (license (list license:gpl2+
-                   license:lgpl2.1+
-                   license:lgpl2.0+))))
+                   license:bsd-3
+                   license:lgpl2.1+))))
 
 (define-public tracker-miners
   (package
     (name "tracker-miners")
-    (version "2.2.2")
+    (version "2.3.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/tracker-miners/"
@@ -7489,7 +7428,7 @@ shared object databases, search tools and indexing.")
                                   "/tracker-miners-" version ".tar.xz"))
               (sha256
                (base32
-                "0kk5xaajamb8jlm6cfdbc2m3axzr6bnph84m7697xmb0pkg8hdiw"))))
+                "06abxrnrz7xayykrabn135rpsm6z0fqw7gibrb9j09l6swlalwkl"))))
     (build-system meson-build-system)
     (arguments
      `(#:glib-or-gtk? #t
@@ -7760,7 +7699,7 @@ software that do not provide their own configuration interface.")
          (let* ((out (assoc-ref %outputs "out"))
                 (apps (string-append out "/share/applications")))
            (mkdir-p apps)
-           (call-with-output-file (string-append apps "/defaults.list")
+           (call-with-output-file (string-append apps "/gnome-mimeapps.list")
              (lambda (port)
                (format port "[Default Applications]\n")
                (format port "inode/directory=org.gnome.Nautilus.desktop\n")
@@ -7832,6 +7771,17 @@ associations for GNOME.")
       ("gjs" ,gjs)
       ("gnome-desktop" ,gnome-desktop)
       ("libgweather" ,libgweather)))
+   (arguments
+    `(#:phases
+      (modify-phases %standard-phases
+        (add-after 'install 'fix-desktop-file
+          ;; FIXME: "gapplication launch org.gnome.Weather" fails for some reason.
+          ;; See https://issues.guix.gnu.org/issue/39324.
+          (lambda* (#:key outputs #:allow-other-keys)
+            (let* ((out (assoc-ref outputs "out"))
+                   (applications (string-append out "/share/applications")))
+              (substitute* (string-append applications "/org.gnome.Weather.desktop")
+                (("Exec=.*") "Exec=gnome-weather\n"))))))))
    (synopsis "Weather monitoring for GNOME desktop")
    (description "GNOME Weather is a small application that allows you to
 monitor the current weather conditions for your city, or anywhere in the
@@ -7861,9 +7811,11 @@ world.")
        ("glib-networking" ,glib-networking)
        ("gnome-backgrounds" ,gnome-backgrounds)
        ("gnome-bluetooth" ,gnome-bluetooth)
+       ("gnome-color-manager" ,gnome-color-manager)
        ("gnome-control-center" ,gnome-control-center)
        ("gnome-desktop" ,gnome-desktop)
        ("gnome-getting-started-docs" ,gnome-getting-started-docs)
+       ("gnome-initial-setup" ,gnome-initial-setup)
        ("gnome-keyring" ,gnome-keyring)
        ("gnome-menus" ,gnome-menus)
        ("gnome-session" ,gnome-session)
@@ -7872,10 +7824,13 @@ world.")
        ("gnome-shell" ,gnome-shell)
        ("gnome-themes-extra" ,gnome-themes-extra)
        ("gnome-user-docs" ,gnome-user-docs)
+       ("gnome-user-share" ,gnome-user-share)
        ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
        ("gvfs" ,gvfs)
        ("mutter" ,mutter)
        ("orca" ,orca)
+       ("rygel" ,rygel)
+       ("sushi" ,sushi)
      ;; GNOME-Core-Utilities
        ("baobab" ,baobab)
        ("cheese" ,cheese)
@@ -7884,6 +7839,7 @@ world.")
        ("evince" ,evince)
        ("file-roller" ,file-roller)
        ("gedit" ,gedit)
+       ; TODO: ("gnome-boxes" ,gnome-boxes)
        ("gnome-calculator" ,gnome-calculator)
        ("gnome-calendar" ,gnome-calendar)
        ("gnome-characters" ,gnome-characters)
@@ -7892,16 +7848,41 @@ world.")
        ("gnome-disk-utility" ,gnome-disk-utility)
        ("gnome-font-viewer" ,gnome-font-viewer)
        ("gnome-maps" ,gnome-maps)
+       ; TODO: ("gnome-music" ,gnome-music)
+       ; TODO: ("gnome-photos" ,gnome-photos)
        ("gnome-screenshot" ,gnome-screenshot)
        ("gnome-system-monitor" ,gnome-system-monitor)
        ("gnome-terminal" ,gnome-terminal)
+       ("gnome-weather" ,gnome-weather)
        ("nautilus" ,nautilus)
        ("simple-scan" ,simple-scan)
        ("totem" ,totem)
        ("yelp" ,yelp)
      ;; Others
        ("hicolor-icon-theme" ,hicolor-icon-theme)
-       ("gnome-online-accounts" ,gnome-online-accounts)))
+       ("gnome-online-accounts" ,gnome-online-accounts)
+
+       ;; Packages not part of GNOME proper but that are needed for a good
+       ;; experience.  See <https://bugs.gnu.org/39646>.
+       ;; XXX: Find out exactly which ones are needed and why.
+       ("font-cantarell"            ,font-cantarell)
+       ("font-dejavu"               ,font-dejavu)
+       ("at-spi2-core"              ,at-spi2-core)
+       ("dbus"                      ,dbus)
+       ("dconf"                     ,dconf)
+       ("desktop-file-utils"        ,desktop-file-utils)
+       ("gnome-default-applications" ,gnome-default-applications)
+       ("gnome-themes-standard"     ,gnome-themes-standard)
+       ("gst-plugins-base"          ,gst-plugins-base)
+       ("gst-plugins-good"          ,gst-plugins-good)
+       ("gucharmap"                 ,gucharmap)
+       ("pinentry-gnome3"           ,pinentry-gnome3)
+       ("pulseaudio"                ,pulseaudio)
+       ("shared-mime-info"          ,shared-mime-info)
+       ("system-config-printer"     ,system-config-printer)
+       ("xdg-user-dirs"             ,xdg-user-dirs)
+       ("yelp"                      ,yelp)
+       ("zenity"                    ,zenity)))
     (synopsis "The GNU desktop environment")
     (home-page "https://www.gnome.org/")
     (description
@@ -8243,10 +8224,6 @@ alternative user interface themes, changes in window management behavior,
 GNOME Shell appearance and extension, etc.")
     (license license:gpl3+)))
 
-;; This package has been renamed by upstream.
-(define-public gnome-tweak-tool
-  (deprecated-package "gnome-tweak-tool" gnome-tweaks))
-
 (define-public gnome-shell-extensions
   (package
     (name "gnome-shell-extensions")
@@ -8293,7 +8270,11 @@ functionality and behavior.")
        (modify-phases %standard-phases
          ;; autogen.sh calls configure at the end of the script.
          (replace 'bootstrap
-           (lambda _ (invoke "autoreconf" "-vfi"))))))
+           (lambda _ (invoke "autoreconf" "-vfi")))
+         (add-before 'build 'set-home   ;placate Inkscape
+           (lambda _
+             (setenv "HOME" (getcwd))
+             #t)))))
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
@@ -8684,15 +8665,14 @@ only know by its Unicode name or code point.")
 (define-public bluefish
   (package
     (name "bluefish")
-    (version "2.2.10")
+    (version "2.2.11")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://www.bennewitz.com/bluefish/stable/source/"
-                           name "-" version ".tar.gz"))
+                           "bluefish-" version ".tar.gz"))
        (sha256
-        (base32
-         "1jw4has7lbp77lqmzvnnjmqcf0lacjfnka873lkkwdyrpzc4c1q4"))))
+        (base32 "0a7kf78q4cj2ap4igjks9kbmmr74brsrl4y2f9wbxpl0b0v2ck2x"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("desktop-file-utils" ,desktop-file-utils)
@@ -8701,7 +8681,7 @@ only know by its Unicode name or code point.")
     (inputs
      `(("enchant" ,enchant)
        ("gtk+" ,gtk+)
-       ("python" ,python-2)
+       ("python" ,python-wrapper)
        ("xmllint" ,libxml2)
        ("gucharmap" ,gucharmap)))
     (home-page "http://bluefish.openoffice.nl")
@@ -8870,7 +8850,8 @@ that support the Assistive Technology Service Provider Interface (AT-SPI).")
               (patches (search-patches "gspell-dash-test.patch"))))
     (build-system glib-or-gtk-build-system)
     (arguments
-     '(#:phases
+     '(#:configure-flags (list "--enable-vala")
+       #:phases
        (modify-phases %standard-phases
          (add-before 'check 'pre-check
            (lambda* (#:key inputs #:allow-other-keys)
@@ -8895,6 +8876,7 @@ that support the Assistive Technology Service Provider Interface (AT-SPI).")
      `(("glib" ,glib "bin")
        ("gobject-introspection" ,gobject-introspection)
        ("pkg-config" ,pkg-config)
+       ("vala" ,vala)                             ;for VAPI, needed by Geary
        ("xmllint" ,libxml2)
 
        ;; For tests.
@@ -8962,21 +8944,25 @@ views can be printed as PDF or PostScript files, or exported to HTML.")
 (define-public lollypop
   (package
     (name "lollypop")
-    (version "1.2.7")
+    (version "1.2.32")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://gitlab.gnome.org/World/lollypop/uploads/"
-                           "08f973788c7ca46d9285eec2ac818edb/"
+       (uri (string-append "https://adishatz.org/lollypop/"
                            "lollypop-" version ".tar.xz"))
        (sha256
-        (base32 "0hvq6m4i62i0m63bg4gzpfb9rv1fk6vq5jl2g3ppcgm4srmfm77j"))))
+        (base32 "1ng9492k8754vlqggbfsyzbmfdx4w17fzc4ad21fr92710na0w5a"))))
     (build-system meson-build-system)
     (arguments
-     `(#:imported-modules ((guix build python-build-system)
-                           ,@%meson-build-system-modules)
+     `(#:imported-modules
+       (,@%meson-build-system-modules
+        (guix build python-build-system))
+       #:modules
+       ((guix build meson-build-system)
+        ((guix build python-build-system) #:prefix python:)
+        (guix build utils))
        #:glib-or-gtk? #t
-       #:tests? #f ; no test suite
+       #:tests? #f                      ; no test suite
        #:phases
        (modify-phases %standard-phases
          (add-after 'install 'wrap-program
@@ -8987,9 +8973,7 @@ views can be printed as PDF or PostScript files, or exported to HTML.")
                  `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))))
              #t))
          (add-after 'install 'wrap-python
-           (@@ (guix build python-build-system) wrap))
-         (add-after 'install 'wrap-glib-or-gtk
-           (@@ (guix build glib-or-gtk-build-system) wrap-all-programs)))))
+           (assoc-ref python:%standard-phases 'wrap)))))
     (native-inputs
      `(("intltool" ,intltool)
        ("itstool" ,itstool)
@@ -9205,7 +9189,7 @@ mp3, Ogg Vorbis and FLAC")
        ("python-pygobject" ,python-pygobject)
        ("gstreamer" ,gstreamer)
        ("gst-plugins-base" ,gst-plugins-base)))
-    (home-page "http://soundconverter.org/")
+    (home-page "https://soundconverter.org/")
     (synopsis "Convert between audio formats with a graphical interface")
     (description
      "SoundConverter supports converting between many audio formats including
@@ -9216,7 +9200,7 @@ configurable file renaming. ")
 (define-public workrave
   (package
     (name "workrave")
-    (version "1.10.34")
+    (version "1.10.37")
     (source
      (origin
        (method git-fetch)
@@ -9227,8 +9211,11 @@ configurable file renaming. ")
                                          version)))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0czwhr7nw523753ajcjjfwrf91mq8pmzr19gp0srqsvb1dsn1zcf"))))
+        (base32 "01cxy7606hx9wgxl550l4p2xa9hsy0rk7swsp58hyi842z2z0y13"))))
     (build-system glib-or-gtk-build-system)
+    (arguments
+     ;; The only tests are maintainer tests (in po/), which fail.
+     `(#:tests? #f))
     (inputs `(("glib" ,glib)
               ("gtk+" ,gtk+)
               ("gdk-pixbuf" ,gdk-pixbuf)
@@ -9242,7 +9229,7 @@ configurable file renaming. ")
               ("libxscrnsaver" ,libxscrnsaver)))
     (native-inputs `(("boost" ,boost)
                      ("pkg-config" ,pkg-config)
-                     ("gettext" ,gnu-gettext)
+                     ("gettext" ,gettext-minimal)
                      ("autoconf" ,autoconf)
                      ("autoconf-archive" , autoconf-archive)
                      ("automake" ,automake)
@@ -9561,7 +9548,7 @@ for usage on small and big screens.")
 (define-public libgit2-glib
   (package
     (name "libgit2-glib")
-    (version "0.28.0.1")
+    (version "0.99.0.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/" name "/"
@@ -9569,19 +9556,20 @@ for usage on small and big screens.")
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "0a0g7aw66rfgnqr4z7fgbk5zzcjq66m4rp8v4val3a212941h0g7"))))
+                "1pmrcnsa7qdda73c3dxf47733mwprmj5ljpw3acxbj6r8k27anp0"))))
     (build-system meson-build-system)
     (native-inputs
      `(("glib:bin" ,glib "bin") ;; For glib-mkenums
        ("gobject-introspection" ,gobject-introspection)
-       ("intltool" ,intltool)
-       ("libssh2" ,libssh2)
        ("pkg-config" ,pkg-config)
        ("python-pygobject" ,python-pygobject)
        ("python-wrapper" ,python-wrapper)
        ("vala" ,vala)))
     (inputs
      `(("glib" ,glib)
+       ("libssh2" ,libssh2)))
+    (propagated-inputs
+     `(;; In Requires of libgit2-glib.pc.
        ("libgit2" ,libgit2)))
     (synopsis "GLib wrapper around the libgit2 Git access library")
     (description "libgit2-glib is a GLib wrapper library around the libgit2 Git
@@ -9635,7 +9623,6 @@ higher level porcelain stuff.")
        ("json-glib" ,json-glib)
        ("libdazzle" ,libdazzle)
        ("libgee" ,libgee)
-       ("libgit2" ,libgit2) ; propagated by libgit2-glib
        ("libgit2-glib" ,libgit2-glib)
        ("libpeas" ,libpeas)
        ("libsecret" ,libsecret)
@@ -9823,3 +9810,235 @@ index files needed for Adwaita to be used outside of GNOME.")
 integrate seamlessly with the GNOME desktop.")
     (home-page "https://wiki.gnome.org/Apps/Polari")
     (license license:gpl2+)))
+
+(define-public gnome-boxes
+  (package
+    (name "gnome-boxes")
+    (version "3.35.91")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://gnome/sources/gnome-boxes/"
+                           (version-major+minor version) "/"
+                           "gnome-boxes-" version ".tar.xz"))
+       (sha256
+        (base32
+         "0l96spz6pc8q4l5p9a58cc0kgvdr7pbc89hy6ixn72k5pl3s7fxj"))))
+    (build-system meson-build-system)
+    (arguments
+     '(#:glib-or-gtk? #t
+       #:configure-flags (list "-Drdp=false"
+                               (string-append "-Dc_link_args=-Wl,-rpath="
+                                              (assoc-ref %outputs "out")
+                                              "/lib/gnome-boxes"))))
+    (native-inputs
+     `(("glib:bin" ,glib "bin")             ; for glib-compile-resources
+       ("gtk+:bin" ,gtk+ "bin")             ; for gtk-update-icon-cache
+       ("desktop-file-utils" ,desktop-file-utils) ; for update-desktop-database
+       ("itstool" ,itstool)
+       ("intltool" ,intltool)
+       ("vala" ,vala)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libarchive" ,libarchive)
+       ("gtk" ,gtk+)
+       ("gtk-vnc" ,gtk-vnc)
+       ("libosinfo" ,libosinfo)
+       ("libsecret" ,libsecret)
+       ("libsoup" ,libsoup)
+       ("libusb" ,libusb)
+       ("libvirt" ,libvirt)
+       ("libvirt-glib" ,libvirt-glib)
+       ("libxml" ,libxml2)
+       ("spice-gtk" ,spice-gtk)
+       ("sparql-query" ,sparql-query)
+       ("vte" ,vte)
+       ("webkitgtk" ,webkitgtk)
+       ("tracker" ,tracker)
+       ("libgudev" ,libgudev)))
+    (home-page "https://wiki.gnome.org/Apps/Boxes")
+    (synopsis "View, access, and manage remote and virtual systems")
+    (description "GNOME Boxes is a simple application to view, access, and
+manage remote and virtual systems.")
+    (license (list
+              ;; For data/icons/empty-boxes.png.
+              license:cc-by2.0
+              ;; For all others.
+              license:lgpl2.0+))))
+
+(define-public geary
+  (package
+    (name "geary")
+    (version "3.34.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.gnome.org/GNOME/geary")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "01cc921kyh3zxz07biqbdzkjgmdcc36kwjyajm4y382a75cl5zg7"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:glib-or-gtk? #t
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'disable-failing-tests
+                    (lambda _
+                      (substitute* "test/meson.build"
+                        (("test\\('client-tests', geary_test_client_bin\\)")
+                         ""))
+                      #t))
+                  (add-after 'unpack 'disable-postinstall-script
+                    (lambda _
+                      (substitute* "meson.build"
+                        (("meson.add_install_script\\(\
+join_paths\\('build-aux', 'post_install.py'\\)\\)")
+                         ""))
+                      #t))
+                  (add-before 'check 'setup-xvfb
+                    (lambda _
+                      (system "Xvfb :1 &")
+                      (setenv "DISPLAY" ":1")
+                      #t)))))
+    (inputs
+     `(("enchant" ,enchant)
+       ("folks" ,folks)
+       ("gcr" ,gcr)
+       ("glib" ,glib)
+       ("gmime" ,gmime-2.6)
+       ("gnome-online-accounts:lib"
+        ,gnome-online-accounts "lib")
+       ("gspell" ,gspell)
+       ("gtk+" ,gtk+)
+       ("iso-codes" ,iso-codes)
+       ("json-glib" ,json-glib)
+       ("libcanberra" ,libcanberra)
+       ("libgee" ,libgee)
+       ("libhandy" ,libhandy)
+       ("libpeas" ,libpeas)
+       ("libsecret" ,libsecret)
+       ("libunwind" ,libunwind)
+       ("sqlite" ,sqlite)
+       ("webkitgtk" ,webkitgtk)
+       ("ytnef" ,ytnef)))
+    (native-inputs
+     `(("appstream-glib" ,appstream-glib)
+       ("cmake-minimal" ,cmake-minimal)
+       ("desktop-file-utils" ,desktop-file-utils)
+       ("gettext" ,gettext-minimal)
+       ("glib:bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("itstool" ,itstool)
+       ("libarchive" ,libarchive)
+       ("libxml2" ,libxml2)
+       ("pkg-config" ,pkg-config)
+       ("vala" ,vala)
+       ("xvfb" ,xorg-server-for-tests)))
+    (synopsis "GNOME email application built around conversations")
+    (description
+     "Geary collects related messages together into conversations,
+making it easy to find and follow your discussions.  Full-text and keyword
+search makes it easy to find the email you are looking for.  Geary's
+full-featured composer lets you send rich, styled text with images, links, and
+lists, but also send lightweight, easy to read text messages.  Geary
+automatically picks up your existing GNOME Online Accounts, and adding more is
+easy.  Geary has a clean, fast, modern interface that works like you want it
+to.")
+    (home-page "https://wiki.gnome.org/Apps/Geary")
+    (license (list
+              ;; geary
+              license:lgpl2.1+
+              ;; icons
+              license:cc-by3.0
+              license:cc-by-sa3.0
+              license:public-domain
+              ;; snowball
+              license:bsd-2))))
+
+(define-public parlatype
+  ;; This is one commit away from 2.0, because the latter introduced
+  ;; a regression in ASR.
+  (let ((commit "7d22ead13ef7578f99d24146663cc1bdb7d8c2a9")
+        (revision "0"))
+    (package
+      (name "parlatype")
+      (version (git-version "2.0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/gkarsay/parlatype.git")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0r3k3qczbzi7bs5s1rddhpsnadyr805df40bqkx0srlxgh5mfghf"))))
+      (build-system meson-build-system)
+      (arguments
+       `(#:glib-or-gtk? #t
+         #:tests? #f                    ;require internet access
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'install 'wrap-parlatype
+             ;; Add gstreamer plugin provided in this package to system's
+             ;; plugins.
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((out (assoc-ref outputs "out"))
+                      (gst-plugin-path (string-append
+                                        out "/lib/gstreamer-1.0/"
+                                        ":"
+                                        (getenv "GST_PLUGIN_SYSTEM_PATH"))))
+                 (wrap-program (string-append out "/bin/parlatype")
+                   `("GST_PLUGIN_SYSTEM_PATH" ":" = (,gst-plugin-path))))
+               #t)))))
+      (native-inputs
+       `(("appstream-glib" ,appstream-glib)
+         ("desktop-file-utils" ,desktop-file-utils) ;for desktop-file-validate
+         ("gettext" ,gettext-minimal)
+         ("glib" ,glib "bin")           ;for glib-compile-resources
+         ("pkg-config" ,pkg-config)
+         ("yelp-tools" ,yelp-tools)))
+      (inputs
+       `(("gst-plugins-base" ,gst-plugins-base)
+         ("gst-plugins-good" ,gst-plugins-good)
+         ("gstreamer" ,gstreamer)
+         ("gtk+" ,gtk+)
+         ("pocketsphinx" ,pocketsphinx)
+         ("pulseaudio" ,pulseaudio)
+         ("sphinxbase" ,sphinxbase)))
+      (home-page "http://gkarsay.github.io/parlatype/")
+      (synopsis "GNOME audio player for transcription")
+      (description "Parlatype is an audio player for the GNOME desktop
+environment.  Its main purpose is the manual transcription of spoken
+audio files.")
+      (license license:gpl3+))))
+
+(define-public jsonrpc-glib
+  (package
+    (name "jsonrpc-glib")
+    (version "3.34.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://gnome/sources/" name "/"
+                                  (version-major+minor version) "/"
+                                   name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "0j05x4xv2cp3cbmp30m68z8g4rdw7b030ip4wszyfj9ya15v5kni"))))
+    (build-system meson-build-system)
+    (inputs
+     `(("json-glib" ,json-glib)
+       ("glib" ,glib)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("glib:bin" ,glib "bin") ; for glib-genmarshal, etc.
+       ("gobject-introspection" ,gobject-introspection)
+       ("vala" ,vala)))
+    (home-page "https://gitlab.gnome.org/GNOME/jsonrpc-glib")
+    (synopsis "JSON-RPC library for GLib")
+    (description "Jsonrpc-GLib is a library to communicate with JSON-RPC based
+peers in either a synchronous or asynchronous fashion.  It also allows
+communicating using the GVariant serialization format instead of JSON when
+both peers support it.  You might want that when communicating on a single
+host to avoid parser overhead and memory-allocator fragmentation.")
+    (license license:lgpl2.1+)))

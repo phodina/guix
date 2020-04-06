@@ -7,14 +7,14 @@
 ;;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2015 Amirouche Boubekki <amirouche@hypermove.net>
 ;;; Copyright © 2014, 2017 John Darrington <jmd@gnu.org>
-;;; Copyright © 2016, 2017, 2018 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2016, 2017, 2018, 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2016, 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2016, 2017 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2017 ng0 <ng0@n0.is>
-;;; Copyright © 2017,2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
+;;; Copyright © 2017,2019,2020 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2017 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2018 Joshua Sierles, Nextjournal <joshua@nextjournal.com>
 ;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
@@ -23,6 +23,8 @@
 ;;; Copyright © 2018 Pierre-Antoine Rouby <contact@parouby.fr>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2018 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2020 R Veera Kumar <vkor@vkten.in>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -44,6 +46,7 @@
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages assembly)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
   #:use-module (gnu packages curl)
@@ -68,10 +71,12 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages qt)
   #:use-module (gnu packages sphinx)
+  #:use-module (gnu packages video)
+  #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
-  #:use-module (gnu packages qt)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix download)
@@ -234,10 +239,6 @@ APNG patch provides APNG support to libpng.")
    (description "Pngcrush optimizes @acronym{PNG, Portable Network Graphics}
 images.  It can further losslessly compress them by as much as 40%.")
    (license license:zlib)))
-
-(define-public pngcrunch
-  ;; This package used to be wrongfully name "pngcrunch".
-  (deprecated-package "pngcrunch" pngcrush))
 
 (define-public pnglite
   (let ((commit "11695c56f7d7db806920bd9229b69f230e6ffb38")
@@ -901,6 +902,10 @@ more modular, simple, and flexible.")
                        "http://linuxbrit.co.uk/downloads/giblib-"
                        version ".tar.gz")
                      (string-append
+                       "https://src.fedoraproject.org/repo/pkgs/giblib/giblib-"
+                       version ".tar.gz/c810ef5389baf24882a1caca2954385e/giblib-"
+                       version ".tar.gz")
+                     (string-append
                        "https://sourceforge.net/projects/slackbuildsdirectlinks/"
                        "files/giblib/giblib-" version ".tar.gz")))
               (sha256
@@ -910,7 +915,11 @@ more modular, simple, and flexible.")
     (inputs
      `(("libx11" ,libx11)
        ("imlib2" ,imlib2)))
-    (home-page "http://linuxbrit.co.uk/software/") ; no real home-page
+    (home-page
+     ;; This vanished page is universally accepted as giblib's home despite not
+     ;; mentioning the package once.
+     (string-append "https://web.archive.org/web/20140907071208"
+                    "https://linuxbrit.co.uk/software/"))
     (synopsis "Wrapper library for imlib2")
     (description
      "Giblib is a simple library which wraps imlib2's context API, avoiding
@@ -1102,7 +1111,7 @@ language bindings to VIGRA.")
 (define-public libwebp
   (package
     (name "libwebp")
-    (version "1.0.3")
+    (version "1.1.0")
     (source
      (origin
        ;; No tarballs are provided for >0.6.1.
@@ -1113,7 +1122,7 @@ language bindings to VIGRA.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "1l8h9d3z3kla567ilmymrgg8vc2n763g8qss1hah8dg832hbqkxf"))))
+         "0r2yy9if0ndvpzadk39bigvsygyqnlv0xjb9w2aj6rs534mncazz"))))
     (build-system gnu-build-system)
     (inputs
      `(("freeglut" ,freeglut)
@@ -1160,7 +1169,7 @@ channels.")
      `(("lcms" ,lcms)
        ("libjpeg" ,libjpeg)
        ("zlib" ,zlib)))
-    (home-page "http://www.libmng.com/")
+    (home-page "https://www.libmng.com/")
     (synopsis "Library for handling MNG files")
     (description
      "Libmng is the MNG (Multiple-image Network Graphics) reference library.")
@@ -1285,7 +1294,7 @@ ISO/IEC 15444-1).")
 (define-public zimg
   (package
     (name "zimg")
-    (version "2.9.2")
+    (version "2.9.3")
     (source
       (origin
         (method git-fetch)
@@ -1294,7 +1303,7 @@ ISO/IEC 15444-1).")
               (commit (string-append "release-" version))))
         (file-name (git-file-name name version))
         (sha256
-         (base32 "0jlgrlfs9maixd8mx7gk2kfawz8ixnihkxi7vhyzfy1gq49vmxm2"))))
+         (base32 "1dqyrq3p8bkgvj4ci50ac342hjnhyz6xxvhiwp7wpi3v3nbj7s02"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -1592,7 +1601,7 @@ medical image data, e.g. magnetic resonance image (MRI) and functional MRI
     (build-system scons-build-system)
     (native-inputs
      `(("boost" ,boost)
-       ("gettext" ,gnu-gettext)
+       ("gettext" ,gettext-minimal)
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("expat" ,expat)
@@ -1765,10 +1774,10 @@ identical visual appearance.")
      (sha256
       (base32 "0brljl4zfbn5mh9hkfrfkvd27c5y9vdkgap9r1hrfy9r1x20sskn"))))
    (build-system meson-build-system)
-   (native-inputs `(("pkg-config" ,pkg-config)))
+   (native-inputs `(("pkg-config" ,pkg-config)
+                    ("scdoc" ,scdoc)))
    (inputs `(("cairo" ,cairo)
              ("libjpeg-turbo" ,libjpeg-turbo)
-             ("scdoc" ,scdoc)
              ("wayland" ,wayland)
              ("wayland-protocols" ,wayland-protocols)))
    (home-page "https://github.com/emersion/grim")
@@ -1841,3 +1850,187 @@ using only text tools.
 SNG is implemented by a compiler/decompiler called sng that
 losslessly translates between SNG and PNG.")
     (license license:zlib)))
+
+(define-public lodepng
+  ;; There are no tags in the repository, so we take the version as defined in
+  ;; lodepng.cpp.
+  (let ((commit "48e5364ef48ec2408f44c727657ac1b6703185f8")
+        (revision "1")
+        (version "20200215"))
+    (package
+      (name "lodepng")
+      (version (git-version version revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/lvandeve/lodepng")
+                      (commit commit)))
+                (sha256
+                 (base32
+                  "1a1x8ag2scanzb2066jm9hg2y9kaa3wmpgmz10l1x9bkpik612lw"))
+                (file-name (git-file-name name version))))
+      (build-system gnu-build-system)
+      (arguments
+       '(#:phases
+         (modify-phases %standard-phases
+           (delete 'configure)
+           (replace 'build
+             (lambda _
+               (setenv "CXXFLAGS" "-fPIC")
+               (invoke "make" "lodepng.o")
+               (invoke "make" "lodepng_util.o")
+               (invoke "g++" "-fPIC" "-O3"
+                       "-o" "liblodepng.so"
+                       "-shared" "lodepng.o" "lodepng_util.o")
+               #t))
+           (replace 'check
+             (lambda _
+               (invoke "make" "unittest")
+               (invoke "./unittest")
+               #t))
+           (replace 'install
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((out (assoc-ref outputs "out"))
+                      (doc (string-append out "/share/doc"))
+                      (lib (string-append out "/lib"))
+                      (include (string-append out "/include")))
+                 (install-file "lodepng.h" include)
+                 (install-file "lodepng_util.h" include)
+                 (install-file "liblodepng.so" lib)
+                 (install-file "README.md" doc)
+                 #t))))))
+      (home-page "https://lodev.org/lodepng/")
+      (synopsis "PNG encoder and decoder in C and C++, without dependencies")
+      (description "LodePNG is a PNG image decoder and encoder, all in one,
+no dependency or linkage required.  It's made for C (ISO C90), and has a C++
+wrapper with a more convenient interface on top.")
+      (license license:zlib))))
+
+(define-public icoutils
+  (package
+    (name "icoutils")
+    (version "0.32.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "mirror://savannah/icoutils/icoutils-" version ".tar.bz2"))
+       (sha256
+        (base32 "1q66cksms4l62y0wizb8vfavhmf7kyfgcfkynil3n99s0hny1aqp"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("libpng" ,libpng)
+       ("perl" ,perl)))
+    (propagated-inputs
+     `(("perl-libwww" ,perl-libwww)))
+    (home-page "https://www.nongnu.org/icoutils/")
+    (synopsis "Extract and convert bitmaps from Windows icon and cursor files")
+    (description "Icoutils are a set of program for extracting and converting
+bitmaps from Microsoft Windows icon and cursor files.  These files usually
+have the extension @code{.ico} or @code{.cur}, but they can also be embedded
+in executables and libraries (@code{.dll}-files).  (Such embedded files are
+referred to as resources.)
+
+Conversion of these files to and from PNG images is done @command{icotool}.
+@command{extresso} automates these tasks with the help of special resource
+scripts.  Resources such can be extracted from MS Windows executable and
+library files with @command{wrestool}.
+
+This package can be used to create @code{favicon.ico} files for web sites.")
+     (license license:gpl3+)))
+
+(define-public libavif
+  (package
+    (name "libavif")
+    (version "0.6.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/AOMediaCodec/libavif")
+                     (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0fn2mcpvzw6h9sv8h0icbz10i8ihzzf5d5mx3fc4pvhicyz4syq8"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags '("-DAVIF_CODEC_AOM=ON" "-DAVIF_CODEC_DAV1D=ON"
+                           "-DAVIF_CODEC_RAV1E=OFF" ; not packaged yet
+                           "-DAVIF_BUILD_TESTS=ON")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-readme
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (string-append out "/share/doc/libavif-"
+                                        ,version)))
+               (install-file "../source/README.md" doc)))))
+;; The test suite runs tests for all supported codecs and fails because we don't
+;; have rav1e yet.
+;;         (replace 'check
+;;           (lambda _
+;;             (invoke "./aviftest" "../source/tests/data"))))
+       #:tests? #f))
+    (inputs
+     `(("libaom" ,libaom)
+       ("dav1d" ,dav1d)))
+    (synopsis "Encode and decode AVIF files")
+    (description "Libavif is a C implementation of the AV1 Image File Format
+(AVIF).  It can encode and decode all YUV formats and bit depths supported by
+AOM, including with alpha.")
+    (home-page "https://github.com/AOMediaCodec/libavif")
+    (license (list license:bsd-2    ; libavif itself
+                   license:expat)))) ; cJSON in the test suite
+
+(define-public mtpaint
+  (let ((commit "03b1b0938067b88d86d9f1b1088730f1934d411e")
+        (revision "1"))
+    (package
+      (name "mtpaint")
+      ;; The author neither releases tarballs nor uses git version tags.
+      ;; Instead, author puts version in git commit title.
+      (version (git-version "3.49.25" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/wjaguar/mtPaint/")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0izm2wvj26566fd8mqvypr7bmv7jnq8qhp4760m7z2wrc4y8pjn1"))))
+      (build-system gnu-build-system)
+      (native-inputs
+       `(("gettext" ,gettext-minimal)
+         ("pkg-config" ,pkg-config)
+         ("which" ,which)))
+      (inputs
+       `(("imlib2" ,imlib2)
+         ("libtiff" ,libtiff)
+         ("libpng" ,libpng)
+         ("libungif", libungif)
+         ("libjpeg", libjpeg)
+         ("libwebp" ,libwebp)
+         ("openjpeg" ,openjpeg)
+         ("lcms" ,lcms)
+         ("zlib", zlib)
+         ("glib" ,glib)
+         ;; support for gtk3 is in testing stage
+         ("gtk+" ,gtk+-2)))
+      (arguments
+       `(#:configure-flags
+         (list
+          ;; internationalized version
+          "intl"
+          ;; install man page
+          "man")
+         ;; no check target
+         #:tests? #f))
+      (home-page "http://mtpaint.sourceforge.net/")
+      (synopsis "Create pixel art and manipulate digital images")
+      (description
+       "Mtpaint is a graphic editing program which uses the GTK+ toolkit.
+It can create and edit indexed palette or 24bit RGB images, offers basic
+painting and palette manipulation tools.  It also handles JPEG, JPEG2000,
+GIF, TIFF, WEBP, BMP, PNG, XPM formats.")
+      (license license:gpl3+))))

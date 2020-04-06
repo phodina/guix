@@ -28,14 +28,14 @@
 (define-public musl
   (package
     (name "musl")
-    (version "1.1.24")
+    (version "1.2.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.musl-libc.org/releases/"
                                   "musl-" version ".tar.gz"))
               (sha256
                (base32
-                "18r2a00k82hz0mqdvgm7crzc7305l36109c0j9yjmkxj2alcjw0k"))))
+                "1s6lix02k1ijm4nmhzpmwzk5w6xfkhn70nvvk8zjs51r24cpppn6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; musl has no tests
@@ -44,7 +44,7 @@
     (synopsis "Small C standard library")
     (description "musl is a simple and lightweight C standard library.  It
 strives to be correct in the sense of standards-conformance and safety.")
-    (home-page "https://www.musl-libc.org")
+    (home-page "https://musl.libc.org")
     ;; Musl as a whole is released under the Expat license.  Parts of it are
     ;; derived from various third-party projects that are released under
     ;; non-copyleft licenses.  See the COPYRIGHT file for details.

@@ -17,9 +17,9 @@
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2016 Andy Patterson <ajpatter@uwaterloo.ca>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym+a@scratchpost.org>
-;;; Copyright © 2016, 2017, 2018, 2019 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2018 Julien Lepiller <julien@lepiller.eu>
-;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
+;;; Copyright © 2017, 2020 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Jelle Licht <jlicht@fsfe.org>
 ;;; Copyright © 2017 Adriano Peluso <catonano@gmail.com>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
@@ -39,6 +39,9 @@
 ;;; Copyright © 2019 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2020 Pierre Neidhardt <mail@ambrevar.xyz>
+;;; Copyright © 2020 Nicolò Balzarotti <nicolo@nixo.xyz>
+;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
+;;; Copyright © 2020 Lars-Dominik Braun <ldb@leibniz-psychology.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -216,7 +219,7 @@ either single machines or networked clusters.")
      "@code{mgo} (pronounced as mango) is a MongoDB driver for the Go language.
 It implements a rich selection of features under a simple API following
 standard Go idioms.")
-    (home-page "http://labix.org/mgo")
+    (home-page "https://labix.org/mgo")
     (license license:bsd-2)))
 
 (define-public ephemeralpg
@@ -337,14 +340,14 @@ mapping from string keys to string values.")
 (define-public memcached
   (package
     (name "memcached")
-    (version "1.5.16")
+    (version "1.5.20")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
              "https://memcached.org/files/memcached-" version ".tar.gz"))
        (sha256
-        (base32 "0nnccb697jhdn5gqrh3phibzs6xr4nf4ryv7nmyv5vf11n4jr8j5"))))
+        (base32 "1r511qr95q0ywdaql3pdjiwzkfqxhhfzb13ilvl7mznfm4iv1myg"))))
     (build-system gnu-build-system)
     (inputs
      `(("libevent" ,libevent)
@@ -370,7 +373,9 @@ applications.")
               (file-name (string-append name "-" version "-checkout"))
               (sha256
                (base32
-                "1842s4dxdh21gdr46q4dgxigidcs6dkqnbnqjwb9l8r0bqx5nb10"))))
+                "1842s4dxdh21gdr46q4dgxigidcs6dkqnbnqjwb9l8r0bqx5nb10"))
+              (patches
+               (search-patches "libmemcached-build-with-gcc7.patch"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("memcached" ,memcached)
@@ -687,7 +692,7 @@ Language.")
 (define-public mariadb
   (package
     (name "mariadb")
-    (version "10.1.43")
+    (version "10.1.44")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://downloads.mariadb.com/MariaDB"
@@ -695,7 +700,7 @@ Language.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1pxyq37q4p7515by7k8hs3l3css68f3bm3akx99vw4m1rxwwbm63"))
+                "0fah6d50hldq0farxwr8mj3jnniwdz0d1wsha07nx37fc79h7wi1"))
               (patches (search-patches "mariadb-client-test-32bit.patch"))
               (modules '((guix build utils)))
               (snippet
@@ -787,6 +792,7 @@ Language.")
                       ;; See <https://jira.mariadb.org/browse/MDEV-7761>.
                       "main.join_cache"
                       "main.explain_non_select"
+                      "main.stat_tables"
                       "main.stat_tables_innodb"
                       "roles.acl_statistics"
 
@@ -821,6 +827,10 @@ Language.")
                (substitute* "mysql-test/r/gis_notembedded.result"
                  (("latin1_swedish_ci") "utf8_general_ci")
                  (("\tlatin1") "\tutf8"))
+
+               (substitute* "mysql-test/suite/binlog/t/binlog_mysqlbinlog_stop_never.test"
+                 (("/bin/bash")
+                  (which "bash")))
 
                (substitute* "mysql-test/mysql-test-run.pl"
                  (("/bin/ls") (which "ls"))
@@ -879,6 +889,11 @@ Language.")
               (rename-file (string-append out "/bin/mysql_config")
                            (string-append dev "/bin/mysql_config"))
 
+
+              (substitute*  (string-append out "/bin/mysql_install_db")
+                (("\\$basedir/share/mysql")
+                 (string-append lib "/share/mysql")))
+
               ;; Embed an absolute reference to OpenSSL in mysql_config
               ;; and the pkg-config file to avoid propagation.
               (substitute* (list (string-append dev "/bin/mysql_config")
@@ -914,33 +929,6 @@ Language.")
 as a drop-in replacement of MySQL.")
     (license license:gpl2)))
 
-;; TODO: mysql_install_db is broken in MariaDB.  This package is here as
-;; a workaround for packages that need it.  Merge with 'mariadb' in the next
-;; rebuild cycle.
-(define-public mariadb/fixed-install-db
-  (hidden-package
-   (package/inherit
-    mariadb
-    (name "mariadb-fixed")
-    (native-inputs '())
-    (inputs
-     `(("mariadb" ,mariadb)
-       ("mariadb:lib" ,mariadb "lib")))
-    (outputs '("out"))
-    (build-system trivial-build-system)
-    (arguments
-     `(#:modules ((guix build utils))
-       #:builder
-       (begin
-         (use-modules ((guix build utils)))
-         (let ((out (assoc-ref %outputs "out")))
-           (copy-recursively (assoc-ref %build-inputs "mariadb") out)
-           (substitute*  (string-append out "/bin/mysql_install_db")
-             (("\\$basedir/share/mysql")
-              (string-append (assoc-ref %build-inputs "mariadb:lib")
-                             "/share/mysql")))
-           #t)))))))
-
 (define-public mariadb-connector-c
   (package
     (name "mariadb-connector-c")
@@ -970,14 +958,14 @@ developed in C/C++ to MariaDB and MySQL databases.")
 (define-public postgresql
   (package
     (name "postgresql")
-    (version "10.11")
+    (version "10.12")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://ftp.postgresql.org/pub/source/v"
                                   version "/postgresql-" version ".tar.bz2"))
               (sha256
                (base32
-                "02fcmvbh0mhplj3s2jd24s642ysx7bggnf0h8bs5amh7dgzi8p8d"))
+                "1rsab4zf4rx7pvvhlwhb04kb95aiad9cwazc4ksbvg2gij47z3rq"))
               (patches (search-patches "postgresql-disable-resolve_symlinks.patch"))))
     (build-system gnu-build-system)
     (arguments
@@ -1080,10 +1068,11 @@ Most public APIs are compatible with @command{mysqlclient} and MySQLdb.")
          "0gmpvhn02pkq280ffmn4da1g4mdr1xxz7l80b7y4n7km1mrzwrml"))))
     (build-system gnu-build-system)
     (arguments
-     `( #:configure-flags (list (string-append "LDFLAGS=-Wl,-rpath="
-                                               (assoc-ref %outputs "out")
-                                               "/lib"))))
-    (home-page "http://fallabs.com/qdbm")
+     `(#:configure-flags (list (string-append "LDFLAGS=-Wl,-rpath="
+                                              (assoc-ref %outputs "out")
+                                              "/lib"))
+       #:make-flags (list "CFLAGS=-fPIC")))
+    (home-page "https://fallabs.com/qdbm/")
     (synopsis "Key-value database")
     (description "QDBM is a library of routines for managing a
 database.  The database is a simple data file containing key-value
@@ -1153,7 +1142,7 @@ including field and record folding.")))
 (define-public rocksdb
   (package
     (name "rocksdb")
-    (version "6.5.2")
+    (version "6.7.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1162,7 +1151,7 @@ including field and record folding.")))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "01f5lcrcr809jhkkvxhv743hwpcxszj4r30hy9qy1i0mvjky02vf"))
+                "19nacd7fb98i97ir07jjsk3l1vf7zzq04c4nqywizq8wakcx99s9"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -1238,7 +1227,7 @@ including field and record folding.")))
        ("lz4" ,lz4)
        ("snappy" ,snappy)
        ("zlib" ,zlib)))
-    (home-page "http://rocksdb.org/")
+    (home-page "https://rocksdb.org/")
     (synopsis "Persistent key-value store for fast storage")
     (description
      "RocksDB is a library that forms the core building block for a fast
@@ -1870,7 +1859,7 @@ Driver.")
                 "1sbpvhg15gadq0mpcy16q7k3rkg4b4dicpnn5xifpkpn02sqik3s"))))
     (build-system gnu-build-system)
     (arguments `(#:tests? #f))          ;No check target
-    (home-page "http://www.unqlite.org")
+    (home-page "https://www.unqlite.org")
     (synopsis "In-memory key/value and document store")
     (description
      "UnQLite is an in-process software library which implements a
@@ -1905,7 +1894,7 @@ similar to BerkeleyDB, LevelDB, etc.")
     (description "Redis is an advanced key-value cache and store.  Redis
 supports many data structures including strings, hashes, lists, sets, sorted
 sets, bitmaps and hyperloglogs.")
-    (home-page "http://redis.io/")
+    (home-page "https://redis.io/")
     (license license:bsd-3)))
 
 (define-public kyotocabinet
@@ -2125,6 +2114,35 @@ multiple cores.  The size of each database is limited only by the size of the
 virtual address space — not physical RAM.")
     (license license:openldap2.8)))
 
+(define-public lmdbxx
+  (package
+    (name "lmdbxx")
+    (version "0.9.14.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/drycpp/lmdbxx.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1jmb9wg2iqag6ps3z71bh72ymbcjrb6clwlkgrqf1sy80qwvlsn6"))))
+    (arguments
+     `(#:make-flags
+       (list (string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))))
+    (build-system gnu-build-system)
+    (inputs `(("lmdb" ,lmdb)))
+    (home-page "http://lmdbxx.sourceforge.net")
+    (synopsis "C++11 wrapper for the LMDB embedded B+ tree database library")
+    (description "@code{lmdbxx} is a comprehensive @code{C++} wrapper for the
+@code{LMDB} embedded database library, offering both an error-checked
+procedural interface and an object-oriented resource interface with RAII
+semantics.")
+    (license license:unlicense)))
+
 (define-public libpqxx
   (package
     (name "libpqxx")
@@ -2187,6 +2205,41 @@ can autogenerate peewee models using @code{pwiz}, a model generator.")
 
 (define-public python2-peewee
   (package-with-python2 python-peewee))
+
+(define-public python-tortoise-orm
+  (package
+    (name "python-tortoise-orm")
+    (version "0.16.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "tortoise-orm" version))
+       (sha256
+        (base32
+         "01hbvfyxs2qd1mjc96aipwsdxxhydw8ww686r4gsf87bl6f98dvz"))))
+    (build-system python-build-system)
+    ;; Disable tests for now. They pull in a lot of dependencies.
+    (arguments `(#:tests? #f))
+    (native-inputs
+     `(("python-ciso8601" ,python-ciso8601)
+       ("python-asynctest" ,python-asynctest)
+       ("python-nose2" ,python-nose2)))
+    (propagated-inputs
+     `(("python-aiosqlite" ,python-aiosqlite)
+       ("python-pypika" ,python-pypika)
+       ("python-typing-extensions"
+        ,python-typing-extensions)))
+    (home-page
+     "https://github.com/tortoise/tortoise-orm")
+    (synopsis
+     "Easy async ORM for python, built with relations in mind")
+    (description
+     "Tortoise ORM is an easy-to-use asyncio ORM (Object Relational Mapper)
+inspired by Django.  Tortoise ORM was build with relations in mind and
+admiration for the excellent and popular Django ORM.  It’s engraved in its
+design that you are working not with just tables, you work with relational
+data.")
+    (license license:asl2.0)))
 
 (define-public sqlcipher
   (package
@@ -2268,13 +2321,13 @@ for ODBC.")
 (define-public python-pyodbc
   (package
     (name "python-pyodbc")
-    (version "4.0.27")
+    (version "4.0.30")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pyodbc" version))
        (sha256
-        (base32 "1kd2i7hc1330cli72vawzby17c3039cqn1aba4i0zrjnpghjhmib"))
+        (base32 "0skjpraar6hcwsy82612bpj8nw016ncyvvq88j5syrikxgp5saw5"))
        (file-name (string-append name "-" version ".tar.gz"))))
     (build-system python-build-system)
     (inputs
@@ -2375,32 +2428,17 @@ Memory-Mapped Database} (LMDB), a high-performance key-value store.")
 (define-public python-orator
   (package
     (name "python-orator")
-    (version "0.9.7")
+    (version "0.9.9")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "orator" version))
               (sha256
                (base32
-                "14r58z64fdp76ixnvmi4lni762b405ynmsx6chr1qihs3yl9zn6c"))))
+                "0mbgybz63ryhr9p1f4glnls5c57jp6il3dw0kf97f3pj80687rvg"))))
     (build-system python-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'loosen-dependencies
-           ;; Tests are not actually run since they are not included with the
-           ;; distributed package, but dependencies are checked.
-           (lambda _
-             (substitute* "setup.py"
-               ((",<.*'") "'")
-               (("flexmock==0.9.7") "flexmock")
-               ;; The pytest-mock package is out of date, so we remove minimum
-               ;; version requirement.
-               (("pytest-mock.*'") "pytest-mock'"))
-             #t)))))
-    (native-inputs
-     `(("python-pytest-mock" ,python-pytest-mock)
-       ("python-pytest" ,python-pytest)
-       ("python-flexmock" ,python-flexmock)))
+    ;; FIXME: Tests are not distributed with PyPI, and the repository
+    ;; does not contain setup.py.  How to test?
+    (arguments '(#:tests? #f))
     (propagated-inputs
      `(("python-backpack" ,python-backpack)
        ("python-blinker" ,python-blinker)
@@ -2411,6 +2449,7 @@ Memory-Mapped Database} (LMDB), a high-performance key-value store.")
        ("python-pendulum" ,python-pendulum)
        ("python-pyaml" ,python-pyaml)
        ("python-pygments" ,python-pygments)
+       ("python-pyyaml" ,python-pyyaml)
        ("python-simplejson" ,python-simplejson)
        ("python-six" ,python-six)
        ("python-wrapt" ,python-wrapt)))
@@ -2514,13 +2553,13 @@ Database API 2.0T.")
 (define-public python-sqlalchemy
   (package
     (name "python-sqlalchemy")
-    (version "1.3.3")
+    (version "1.3.15")
     (source
      (origin
       (method url-fetch)
       (uri (pypi-uri "SQLAlchemy" version))
       (sha256
-       (base32 "06c3lcv7nijsgqsjaaa4djrwlzgh9f910zlqxkmgq22h6jl4rici"))))
+       (base32 "0iglkvymfp35zm5pxy5kzqvcv96kkas0chqdx7xpla86sspa9k64"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-cython" ,python-cython) ; for C extensions
@@ -2597,15 +2636,21 @@ You might also want to install the following optional dependencies:
 (define-public python-alembic
   (package
     (name "python-alembic")
-    (version "1.0.11")
+    (version "1.4.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "alembic" version))
+       (patches (search-patches "python-alembic-exceptions-cause.patch"))
        (sha256
         (base32
-         "1k5hag0vahd5vrf9abx8fdj2whrwaw2iq2yp736mmxnbsn5xkdyd"))))
+         "0a4hzn76csgbf1px4f5vfm256byvjrqkgi9869nkcjrwjn35c6kr"))))
     (build-system python-build-system)
+    (arguments
+     '(#:phases (modify-phases %standard-phases
+                  (replace 'check
+                    (lambda _
+                      (invoke "pytest" "-vv"))))))
     (native-inputs
      `(("python-mock" ,python-mock)
        ("python-pytest-cov" ,python-pytest-cov)))
@@ -2707,6 +2752,29 @@ translate the complete SQLite API into Python.")
 (define-public python2-apsw
   (package-with-python2 python-apsw))
 
+(define-public python-aiosqlite
+  (package
+    (name "python-aiosqlite")
+    (version "0.11.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "aiosqlite" version))
+       (sha256
+        (base32
+         "1f3zdldp9zgrw6qz5fsp3wa5zw73cjf139pj4vf24ryv895320jg"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-aiounittest" ,python-aiounittest)))
+    (home-page "https://github.com/jreese/aiosqlite")
+    (synopsis
+     "Asyncio bridge for sqlite3")
+    (description
+     "The package aiosqlite replicates the standard sqlite3 module, but with
+async versions of all the standard connection and cursor methods, and context
+managers for automatically closing connections.")
+    (license license:expat)))
+
 (define-public python2-neo4j-driver
   (package
     (name "python2-neo4j-driver")
@@ -2741,7 +2809,7 @@ being idiomatic to Python.")
     (build-system python-build-system)
     (arguments
      `(#:python ,python-2))
-    (home-page "http://py2neo.org")
+    (home-page "https://py2neo.org")
     (synopsis "Library and toolkit for working with Neo4j in Python")
     (description "This package provides a client library and toolkit for
 working with Neo4j from within Python applications and from the command
@@ -2752,13 +2820,13 @@ designed to be easy and intuitive to use.")
 (define-public python-psycopg2
   (package
     (name "python-psycopg2")
-    (version "2.7.7")
+    (version "2.8.4")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "psycopg2" version))
        (sha256
-        (base32 "0zjbabb4qjx9dm07imhf8y5a9rpa06d5zah80myiimgdi83nslpl"))))
+        (base32 "1djvh98pi4hjd8rxbq8qzc63bg8v78k33yg6pl99wak61b6fb67q"))))
     (build-system python-build-system)
     (arguments
      ;; Tests would require a postgresql database "psycopg2_test"
@@ -2865,18 +2933,20 @@ parsing code in hiredis.  It primarily speeds up parsing of multi bulk replies."
 (define-public python-fakeredis
   (package
     (name "python-fakeredis")
-    (version "0.8.2")
+    (version "1.2.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "fakeredis" version))
        (sha256
         (base32
-         "0zncahj3byyasyfx9i7k991ph0n0lq8v3a21pqri5qxn9564bk9r"))))
+         "1s12mn4q4hz7402139khn9fx56kibj7nn0d6w81hn0zs07b90wpc"))))
     (build-system python-build-system)
     (arguments
      ;; no tests
      `(#:tests? #f))
+    (propagated-inputs
+      `(("python-sortedcontainers" ,python-sortedcontainers)))
     (home-page "https://github.com/jamesls/fakeredis")
     (synopsis "Fake implementation of redis API for testing purposes")
     (description
@@ -2931,7 +3001,7 @@ reasonable substitute.")
     (propagated-inputs
      `(("python-click" ,python-click)
        ("python-redis" ,python-redis)))
-    (home-page "http://python-rq.org/")
+    (home-page "https://python-rq.org/")
     (synopsis "Simple job queues for Python")
     (description
      "RQ (Redis Queue) is a simple Python library for queueing jobs and
@@ -3012,6 +3082,27 @@ transforms idiomatic python function calls to well-formed SQL queries.")
 
 (define-public python2-sql
   (package-with-python2 python-sql))
+
+(define-public python-pypika
+  (package
+    (name "python-pypika")
+    (version "0.36.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "PyPika" version))
+       (sha256
+        (base32
+         "0qzn5vygirg52dlizm6ayzdc5llq8p2krrx0kymr236lrz89wqp8"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-parameterized" ,python-parameterized)))
+    (home-page "https://github.com/kayak/pypika")
+    (synopsis "SQL query builder API for Python")
+    (description
+     "PyPika is a python SQL query builder that exposes the full richness of
+the SQL language using a syntax that reflects the resulting query.")
+    (license license:asl2.0)))
 
 (define-public mongo-tools
   (package
@@ -3303,7 +3394,7 @@ simultaneous database connections by using this framework.")
      `(;; For tests.
        ("inetutils" ,inetutils)
        ("glibc-locales" ,glibc-locales)
-       ("mariadb" ,mariadb/fixed-install-db)))
+       ("mariadb" ,mariadb)))
     (inputs
      `(("libdbi" ,libdbi)
        ("mariadb:dev" ,mariadb "dev")
@@ -3357,3 +3448,38 @@ The drivers officially supported by @code{libdbi} are:
 @end itemize")
     (home-page "http://libdbi-drivers.sourceforge.net/")
     (license license:lgpl2.1+)))
+
+(define-public soci
+  (package
+    (name "soci")
+    (version "4.0.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/SOCI/soci/")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "06faswdxd2frqr9xnx6bxc7zwarlzsbdi3bqpz7kwdxsjvq41rnb"))))
+    (build-system cmake-build-system)
+    (inputs
+     `(("postgresql" ,postgresql)
+       ("sqlite" ,sqlite)
+       ("odbc" ,unixodbc)
+       ("boost" ,boost)
+       ("mysql" ,mysql)))
+    (arguments
+     `(#:tests? #f ; Tests may require running database management systems.
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-lib-path
+           (lambda _
+             (substitute* "CMakeLists.txt"
+               (("set\\(SOCI_LIBDIR \"lib64\"\\)") "")))))))
+    (synopsis "C++ Database Access Library")
+    (description
+     "SOCI is an abstraction layer for several database backends, including
+PostreSQL, SQLite, ODBC and MySQL.")
+    (home-page "http://soci.sourceforge.net/")
+    (license license:boost1.0)))

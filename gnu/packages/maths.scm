@@ -1,8 +1,8 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2019 Andreas Enge <andreas@enge.fr>
+;;; Copyright © 2013, 2014, 2015, 2016, 2019, 2020 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2013 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2014, 2016, 2017 John Darrington <jmd@gnu.org>
-;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019 Eric Bavier <bavier@member.fsf.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Eric Bavier <bavier@posteo.net>
 ;;; Copyright © 2014 Federico Beffa <beffa@fbengineering.ch>
 ;;; Copyright © 2014 Mathieu Lirzin <mathieu.lirzin@openmailbox.org>
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
@@ -11,7 +11,7 @@
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2015 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
-;;; Copyright © 2016, 2018 Kei Kebreau <kkebreau@posteo.net>
+;;; Copyright © 2016, 2018, 2020 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017 Thomas Danckaert <post@thomasdanckaert.be>
@@ -29,10 +29,14 @@
 ;;; Copyright © 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018 Eric Brown <brown@fastmail.com>
 ;;; Copyright © 2018 Julien Lepiller <julien@lepiller.eu>
-;;; Copyright © 2018 Amin Bandali <mab@gnu.org>
+;;; Copyright © 2018 Amin Bandali <bandali@gnu.org>
 ;;; Copyright © 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2019 Steve Sprang <scs@stevesprang.com>
 ;;; Copyright © 2019 Robert Smith <robertsmith@posteo.net>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Felix Gruber <felgru@posteo.net>
+;;; Copyright © 2020 R Veera Kumar <vkor@vkten.in>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -60,6 +64,7 @@
   #:use-module (guix utils)
   #:use-module ((guix build utils) #:select (alist-replace))
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
   #:use-module (guix build-system ruby)
@@ -74,8 +79,10 @@
   #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages cyrus-sasl)
+  #:use-module (gnu packages dbm)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages elf)
+  #:use-module (gnu packages file)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages fltk)
   #:use-module (gnu packages fontutils)
@@ -83,8 +90,10 @@
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gd)
   #:use-module (gnu packages ghostscript)
+  #:use-module (gnu packages glib)
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages icu4c)
   #:use-module (gnu packages image)
   #:use-module (gnu packages java)
   #:use-module (gnu packages less)
@@ -520,6 +529,51 @@ compatible with cddlib.  All computations are done exactly in either
 multiple precision or fixed integer arithmetic.  Output is not stored
 in memory, so even problems with very large output sizes can sometimes
 be solved.")
+    (license license:gpl2+)))
+
+(define-public vinci
+  (package
+    (name "vinci")
+    (version "1.0.5")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://www.math.u-bordeaux.fr/~aenge/software/"
+                           "vinci/vinci-" version ".tar.gz"))
+       (sha256
+        (base32
+         "1aq0qc1y27iw9grhgnyji3290wwfznsrk3sg6ynqpxwjdda53h4m"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("lrslib" ,lrslib)))
+    (arguments
+     `(#:tests? #f                      ; no check phase
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           ;; register the lrs location in the config file
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let* ((lrs (assoc-ref inputs "lrslib"))
+                    (lrsexec (string-append lrs "/bin/lrs")))
+               (substitute* "vinci.h"
+                 (("#define LRS_EXEC      \"lrs\"")
+                  (string-append "#define LRS_EXEC \"" lrsexec "\""))))
+             #t))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin")))
+               (install-file "vinci" bin))
+             #t)))))
+    (home-page
+     "https://www.math.u-bordeaux.fr/~aenge/?category=software&page=vinci")
+    (synopsis "Volume computation for polytopes")
+    (description
+     "Vinci implements a number of volume computation algorithms for convex
+polytopes in arbitrary dimension.  The polytopes can be given by their
+V-representation (as the convex hull of a finite number of vertices), by
+their H-representation (as the bounded intersection of a finite number of
+halfspaces) or by their double description with both representations.")
     (license license:gpl2+)))
 
 (define-public arpack-ng
@@ -1091,7 +1145,7 @@ implemented in C.")
      `( #:configure-flags '("--enable-install-include" "--enable-shared"
                             "CC=h4cc -Df2cFortran" "LIBS=-lgctp")
         #:parallel-tests? #f))
-    (home-page "http://hdfeos.org/software/library.php#HDF-EOS2")
+    (home-page "https://hdfeos.org/software/library.php#HDF-EOS2")
     (synopsis "HDF4-based data format for NASA's Earth Observing System")
     (description "HDF-EOS2 is a software library built on HDF4 which supports
 the construction of data structures used in NASA's Earth Observing
@@ -1492,7 +1546,7 @@ can solve two kinds of problems:
 (define-public octave-cli
   (package
     (name "octave-cli")
-    (version "5.1.0")
+    (version "5.2.0")
     (source
      (origin
       (method url-fetch)
@@ -1500,11 +1554,12 @@ can solve two kinds of problems:
                           version ".tar.lz"))
       (sha256
        (base32
-        "11wwxpy2q1bhxs2v41bqn05i2sb0905cj1xil6mg8l4k2kka4cq6"))))
+        "1848dq6nxzal8gwjrcp6xhi5gq96w89nss9d9rz75q408gb3mbl6"))))
     (build-system gnu-build-system)
     (inputs
      `(("alsa-lib" ,alsa-lib)
        ("arpack" ,arpack-ng)
+       ("bdb" ,bdb)
        ("curl" ,curl)
        ("fftw" ,fftw)
        ("fftwf" ,fftwf)
@@ -1599,9 +1654,6 @@ script files.")
                  (("qscintilla2-qt5")
                   "qscintilla2_qt5"))
                #t))))))))
-
-(define-public qtoctave
-  (deprecated-package "qtoctave" octave))
 
 (define-public opencascade-oce
   (package
@@ -2411,7 +2463,7 @@ easy-to-write markup language for mathematics.")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://crd-legacy.lbl.gov/~xiaoye/SuperLU/"
+       (uri (string-append "https://portal.nersc.gov/project/sparse/superlu/"
                            "superlu_" version ".tar.gz"))
        (sha256
         (base32 "0qzlb7cd608q62kyppd0a8c65l03vrwqql6gsm465rky23b6dyr8"))
@@ -2457,7 +2509,7 @@ void mc64ad_ (int *a, int *b, int *c, int *d, int *e, double *f, int *g,
      `(#:configure-flags '("-Denable_blaslib:BOOL=NO" ;do not use internal cblas
                            "-DTPL_BLAS_LIBRARIES=openblas"
                            "-DBUILD_SHARED_LIBS:BOOL=YES")))
-    (home-page "http://crd-legacy.lbl.gov/~xiaoye/SuperLU/")
+    (home-page "https://portal.nersc.gov/project/sparse/superlu/")
     (synopsis "Supernodal direct solver for sparse linear systems")
     (description
      "SuperLU is a general purpose library for the direct solution of large,
@@ -2473,14 +2525,14 @@ also provides threshold-based ILU factorization preconditioners.")
 (define-public superlu-dist
   (package
     (name "superlu-dist")
-    (version "6.1.0")
+    (version "6.2.0")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://crd-legacy.lbl.gov/~xiaoye/SuperLU/"
+       (uri (string-append "https://portal.nersc.gov/project/sparse/superlu/"
                            "superlu_dist_" version ".tar.gz"))
        (sha256
-        (base32 "0pqgcgh1yxhfzs99fas3mggajzd5wca3nbyp878rziy74gfk03dl"))
+        (base32 "1ynmwqajc9sc3my2hssa5k9s58ggvizqv9rdss0j7w99pbh5mnvw"))
        (modules '((guix build utils)))
        (snippet
         ;; Replace the non-free implementation of MC64 with a stub
@@ -2506,8 +2558,7 @@ void mc64ad_dist (int *a, int *b, int *c, int *d, int *e, double *f, int *g,
               "RowPerm = NOROWPERM;"))
            #t))
        (patches (search-patches "superlu-dist-scotchmetis.patch"
-                                "superlu-dist-awpm-grid.patch"
-                                "superlu-dist-fix-mpi-deprecations.patch"))))
+                                "superlu-dist-awpm-grid.patch"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("tcsh" ,tcsh)))
@@ -2575,8 +2626,9 @@ implemented in ANSI C, and MPI for communications.")
                                "scotch-integer-declarations.patch"))))
     (build-system gnu-build-system)
     (inputs
-     `(("zlib" ,zlib)
-       ("flex" ,flex)
+     `(("zlib" ,zlib)))
+    (native-inputs
+     `(("flex" ,flex)
        ("bison" ,bison)))
     (outputs '("out" "metis"))
     (arguments
@@ -2982,7 +3034,7 @@ point numbers.")
 (define-public wxmaxima
   (package
     (name "wxmaxima")
-    (version "19.11.1")
+    (version "20.03.1")
     (source
      (origin
        (method git-fetch)
@@ -2991,10 +3043,13 @@ point numbers.")
              (commit (string-append "Version-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "16xizaddb27432n1083y89ir5zdqvllsgbwrzzk4jc2rw1ldxfsv"))))
+        (base32 "09ciip0wkahps5jdsqqr72bwjrd15bacw38zp23v3hm71xfk8hky"))))
     (build-system cmake-build-system)
     (native-inputs
-     `(("gettext" ,gettext-minimal)))
+     `(("gettext" ,gettext-minimal)
+       ("xorg-server" ,xorg-server-for-tests)))
+    ;; TODO: Add libomp for multithreading support.
+    ;; As of right now, enabling libomp causes the imageCells.wxm test to fail.
     (inputs
      `(("wxwidgets" ,wxwidgets)
        ("maxima" ,maxima)
@@ -3003,9 +3058,16 @@ point numbers.")
        ("gtk+" ,gtk+)
        ("shared-mime-info" ,shared-mime-info)))
     (arguments
-     `(#:tests? #f ; no check target
+     `(#:test-target "test"
        #:phases
        (modify-phases %standard-phases
+         (add-before 'check 'pre-check
+           (lambda _
+             ;; Tests require a running X server.
+             (system "Xvfb :1 &")
+             (setenv "DISPLAY" ":1")
+             (setenv "HOME" (getcwd))
+             #t))
          (add-after 'install 'wrap-program
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (wrap-program (string-append (assoc-ref outputs "out")
@@ -3025,7 +3087,7 @@ point numbers.")
                   ,(string-append
                     (assoc-ref inputs "adwaita-icon-theme") "/share"))))
              #t)))))
-    (home-page "https://andrejv.github.io/wxmaxima/")
+    (home-page "https://wxmaxima-developers.github.io/wxmaxima/")
     (synopsis "Graphical user interface for the Maxima computer algebra system")
     (description
      "wxMaxima is a graphical user interface for the Maxima computer algebra
@@ -3067,7 +3129,7 @@ directly in C++, or quick conversion of research code into production
 environments.  It can be used for machine learning, pattern recognition,
 signal processing, bioinformatics, statistics, econometrics, etc.  The library
 provides efficient classes for vectors, matrices and cubes, as well as 150+
-associated functions (eg. contiguous and non-contiguous submatrix views).")
+associated functions (e.g., contiguous and non-contiguous submatrix views).")
     (license license:asl2.0)))
 
 (define-public muparser
@@ -3174,7 +3236,7 @@ parts of it.")
      `(("cunit" ,cunit)
        ("fortran" ,gfortran)
        ("perl" ,perl)))
-    (home-page "http://www.openblas.net/")
+    (home-page "https://www.openblas.net/")
     (synopsis "Optimized BLAS library based on GotoBLAS")
     (description
      "OpenBLAS is a BLAS library forked from the GotoBLAS2-1.13 BSD version.")
@@ -3299,7 +3361,7 @@ access to BLIS implementations via traditional BLAS routine calls.")
        ;; no configure script
        (modify-phases %standard-phases (delete 'configure))
        #:tests? #f)) ;the tests are part of the default target
-    (home-page "http://openlibm.org/")
+    (home-page "https://openlibm.org/")
     (synopsis "Portable C mathematical library (libm)")
     (description
      "OpenLibm is an effort to have a high quality, portable, standalone C
@@ -3358,16 +3420,18 @@ Fresnel integrals, and similar related functions as well.")
 (define-public suitesparse
   (package
     (name "suitesparse")
-    (version "4.5.5")
+    (version "5.7.1")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append
-             "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-"
-             version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/DrTimothyAldenDavis/SuiteSparse.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
         (base32
-         "1dnr6pmjzc2qmbkmb4shigx1l74ilf6abn7svyd6brxgvph8vadr"))
+         "174p3l78kv9gaa0i5hflyai2ydwnjzh34k9938sl4aa3li0543s8"))
+       (patches (search-patches "suitesparse-mongoose-cmake.patch"))
        (modules '((guix build utils)))
        (snippet
         ;; Remove bundled metis source
@@ -3382,6 +3446,14 @@ Fresnel integrals, and similar related functions as well.")
              "BLAS=-lblas"
              "TBB=-ltbb"
              "MY_METIS_LIB=-lmetis"
+             ;; Flags for cmake (required to build GraphBLAS and Mongoose)
+             (string-append "CMAKE_OPTIONS=-DCMAKE_INSTALL_PREFIX="
+                            (assoc-ref %outputs "out")
+                            " -DCMAKE_VERBOSE_MAKEFILE=ON"
+                            " -DCMAKE_C_FLAGS_RELEASE=\"$(CFLAGS) $(CPPFLAGS)\""
+                            " -DCMAKE_CXX_FLAGS_RELEASE=\"$(CXXFLAGS) $(CPPFLAGS)\""
+                            " -DCMAKE_SKIP_RPATH=TRUE"
+                            " -DCMAKE_BUILD_TYPE=Release")
              (string-append "INSTALL_LIB="
                             (assoc-ref %outputs "out") "/lib")
              (string-append "INSTALL_INCLUDE="
@@ -3394,6 +3466,9 @@ Fresnel integrals, and similar related functions as well.")
      `(("tbb" ,tbb)
        ("lapack" ,lapack)
        ("metis" ,metis)))
+    (native-inputs
+     `(("cmake" ,cmake-minimal)
+       ("m4" ,m4)))
     (home-page "http://faculty.cse.tamu.edu/davis/suitesparse.html")
     (synopsis "Suite of sparse matrix software")
     (description
@@ -4135,8 +4210,17 @@ as equations, scalars, vectors, and matrices.")
                 "0hprcdwhhyjigmhhk6514m71bnmvqci9r8gglrqilgx424r6ff7q"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:phases
+     `(#:imported-modules ((guix build python-build-system)
+                           ,@%gnu-build-system-modules)
+       #:modules (((guix build python-build-system) #:select (site-packages))
+                  (guix build gnu-build-system)
+                  (guix build utils))
+       #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'enable-bytecode-determinism
+           (lambda _
+             (setenv "PYTHONHASHSEED" "0")
+             #t))
          (add-after 'unpack 'fix-compatability
            ;; Versions after 4.8.3 have immintrin.h IFDEFed for Windows only.
            (lambda _
@@ -4152,7 +4236,9 @@ as equations, scalars, vectors, and matrices.")
          (replace 'configure
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (invoke "./configure"
-                     (string-append "--prefix=" (assoc-ref outputs "out")))))
+                     "--python"
+                     (string-append "--prefix=" (assoc-ref outputs "out"))
+                     (string-append "--pypkgdir=" (site-packages inputs outputs)))))
          (add-after 'configure 'change-directory
            (lambda _
              (chdir "build")
@@ -4514,41 +4600,10 @@ linear algebra primitives specifically targeting graph analytics.")
        (modify-phases %standard-phases
          (add-after 'build 'build-tests
            (lambda* (#:key make-flags #:allow-other-keys)
-             (apply invoke "make" "build_tests" make-flags)))
-         ;; These tests fail because they require a fully functional MPI
-         ;; environment.
-         (add-after 'unpack 'disable-failing-tests
-           (lambda _
-             (setenv "ARGS"
-                     (string-append "--exclude-regex '("
-                                    (string-join
-                                     (list
-                                      "remoteindicestest"
-                                      "remoteindicestest-mpi-2"
-                                      "syncertest"
-                                      "syncertest-mpi-2"
-                                      "variablesizecommunicatortest"
-                                      "variablesizecommunicatortest-mpi-2"
-                                      "arithmetictestsuitetest"
-                                      "assertandreturntest"
-                                      "assertandreturntest_ndebug"
-                                      "concept"
-                                      "debugaligntest"
-                                      "mpicollectivecommunication"
-                                      "mpicollectivecommunication-mpi-2"
-                                      "mpiguardtest"
-                                      "mpiguardtest-mpi-2"
-                                      "mpihelpertest"
-                                      "mpihelpertest-mpi-2"
-                                      "mpihelpertest2"
-                                      "mpihelpertest2-mpi-2")
-                                     "|")
-                                    ")'"))
-             #t)))))
+             (apply invoke "make" "build_tests" make-flags))))))
     (inputs
      `(("gmp" ,gmp)
        ("metis" ,metis)
-       ("openmpi" ,openmpi)
        ("openblas" ,openblas)
        ("python" ,python)
        ("superlu" ,superlu)))
@@ -4586,7 +4641,6 @@ Differences} (FD).")
              (apply invoke "make" "build_tests" make-flags))))))
     (inputs
      `(("dune-common" ,dune-common)
-       ("openmpi" ,openmpi)
        ;; Optional
        ("openblas" ,openblas)
        ("gmp" ,gmp)
@@ -4606,6 +4660,41 @@ This package contains the basic DUNE geometry classes.")
     ;; GPL version 2 with "runtime exception"
     (license license:gpl2)))
 
+(define-public dune-uggrid
+  (package
+    (name "dune-uggrid")
+    (version "2.6.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://dune-project.org/download/"
+                           version "/dune-uggrid-" version ".tar.gz"))
+       (sha256
+        (base32
+         "05l7a1gb78mny49anyxk6rjvn66rhgm30y72v5cjg0m5kfgr1a1f"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'build 'build-tests
+           (lambda* (#:key make-flags #:allow-other-keys)
+             (apply invoke "make" "build_tests" make-flags))))))
+    (inputs
+     `(("dune-common" ,dune-common)))
+    (native-inputs
+     `(("gfortran" ,gfortran)
+       ("pkg-config" ,pkg-config)))
+    (home-page "https://dune-project.org/")
+    (synopsis "Distributed and Unified Numerics Environment")
+    (description "DUNE, the Distributed and Unified Numerics Environment is a
+modular toolbox for solving @dfn{partial differential equations} (PDEs) with
+grid-based methods.  It supports the easy implementation of methods like
+@dfn{Finite Elements} (FE), @dfn{Finite Volumes} (FV), and also @dfn{Finite
+Differences} (FD).
+
+This package contains the DUNE UG grid classes.")
+    (license license:lgpl2.1)))
+
 (define-public dune-grid
   (package
     (name "dune-grid")
@@ -4624,63 +4713,16 @@ This package contains the basic DUNE geometry classes.")
        (modify-phases %standard-phases
          (add-after 'build 'build-tests
            (lambda* (#:key make-flags #:allow-other-keys)
-             (apply invoke "make" "build_tests" make-flags)))
-         ;; These tests fail because they require a fully functional MPI
-         ;; environment.
-         (add-after 'unpack 'disable-failing-tests
-           (lambda _
-             (setenv "ARGS"
-                     (string-append "--exclude-regex '("
-                                    (string-join
-                                     (list
-                                      "scsgmappertest"
-                                      "conformvolumevtktest"
-                                      "gnuplottest"
-                                      "nonconformboundaryvtktest"
-                                      "subsamplingvtktest"
-                                      "vtktest"
-                                      "vtktest-mpi-2"
-                                      "vtksequencetest"
-                                      "gmshtest-onedgrid"
-                                      "test-dgf-yasp"
-                                      "test-dgf-yasp-offset"
-                                      "test-dgf-oned"
-                                      "test-geogrid-yaspgrid"
-                                      "test-gridinfo"
-                                      "test-identitygrid"
-                                      "testiteratorranges"
-                                      "test-hierarchicsearch"
-                                      "test-parallel-ug-mpi-2"
-                                      "test-yaspgrid-backuprestore-equidistant"
-                                      "test-yaspgrid-backuprestore-equidistant-mpi-2"
-                                      "test-yaspgrid-backuprestore-equidistantoffset"
-                                      "test-yaspgrid-backuprestore-equidistantoffset-mpi-2"
-                                      "test-yaspgrid-backuprestore-tensor"
-                                      "test-yaspgrid-backuprestore-tensor-mpi-2"
-                                      "test-yaspgrid-tensorgridfactory"
-                                      "test-yaspgrid-tensorgridfactory-mpi-2"
-                                      "test-yaspgrid-yaspfactory-1d"
-                                      "test-yaspgrid-yaspfactory-1d-mpi-2"
-                                      "test-yaspgrid-yaspfactory-2d"
-                                      "test-yaspgrid-yaspfactory-2d-mpi-2"
-                                      "test-yaspgrid-yaspfactory-3d"
-                                      "test-yaspgrid-yaspfactory-3d-mpi-2"
-                                      "globalindexsettest"
-                                      "persistentcontainertest"
-                                      "structuredgridfactorytest"
-                                      "tensorgridfactorytest"
-                                      "vertexordertest")
-                                     "|")
-                                    ")'"))
-             #t)))))
+             (apply invoke "make" "build_tests" make-flags))))))
     (inputs
      `(("dune-common" ,dune-common)
        ("dune-geometry" ,dune-geometry)
        ("gmp" ,gmp)
        ("metis" ,metis)
        ("openblas" ,openblas)
-       ("openmpi" ,openmpi)
        ("python" ,python)))
+    (propagated-inputs
+     `(("dune-uggrid" ,dune-uggrid)))
     (native-inputs
      `(("gfortran" ,gfortran)
        ("pkg-config" ,pkg-config)))
@@ -4714,30 +4756,12 @@ This package contains the basic DUNE grid classes.")
        (modify-phases %standard-phases
          (add-after 'build 'build-tests
            (lambda* (#:key make-flags #:allow-other-keys)
-             (apply invoke "make" "build_tests" make-flags)))
-         ;; These tests fail because they require a fully functional MPI
-         ;; environment.
-         (add-after 'unpack 'disable-failing-tests
-           (lambda _
-             (setenv "ARGS"
-                     (string-append "--exclude-regex '("
-                                    (string-join
-                                     (list
-                                      "galerkintest"
-	                              "hierarchytest"
-	                              "pamgtest"
-	                              "pamg_comm_repart_test"
-	                              "matrixredisttest"
-	                              "vectorcommtest"
-	                              "matrixmarkettest")
-                                     "|")
-                                    ")'"))
-             #t)))))
+             (apply invoke "make" "build_tests" make-flags))))))
     (inputs
      `(("dune-common" ,dune-common)
-       ("openmpi" ,openmpi)
        ;; Optional
        ("metis" ,metis)
+       ("suitesparse" ,suitesparse)
        ("superlu" ,superlu)
        ("openblas" ,openblas)
        ("gmp" ,gmp)
@@ -4782,7 +4806,6 @@ aggregation-based algebraic multigrid.")
     (inputs
      `(("dune-common" ,dune-common)
        ("dune-geometry" ,dune-geometry)
-       ("openmpi" ,openmpi)
        ;; Optional
        ("metis" ,metis)
        ("superlu" ,superlu)
@@ -4818,9 +4841,7 @@ assemble global function spaces on finite-element grids.")
          "1l9adgyjpra8mvwm445s0lpjshnb63jag85fb2hisbjn6bm320yj"))))
     (build-system cmake-build-system)
     (arguments
-     `(#:tests? #f ; 7 of 8 tests fail because they need a full MPI
-                   ; environment
-       #:phases
+     `(#:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'patch-include
            (lambda _
@@ -4837,7 +4858,6 @@ assemble global function spaces on finite-element grids.")
      `(("dune-common" ,dune-common)
        ("dune-geometry" ,dune-geometry)
        ("dune-grid" ,dune-grid)
-       ("openmpi" ,openmpi)
        ;; Optional
        ("metis" ,metis)
        ("openblas" ,openblas)
@@ -4853,6 +4873,46 @@ assemble global function spaces on finite-element grids.")
     (description "ALUGrid is an adaptive, loadbalancing, unstructured
 implementation of the DUNE grid interface supporting either simplices or
 cubes.")
+    (license license:gpl2+)))
+
+(define-public dune-subgrid
+  (package
+    (name "dune-subgrid")
+    (version "2.6.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+         (url "https://git.imp.fu-berlin.de/agnumpde/dune-subgrid")
+         (commit "releases/2.6-1")))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+          "1gcv35rx3knqd54r4pp9rzd639db4j8w2r2ibq43w1mgwdcqhs64"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'build 'build-tests
+           (lambda* (#:key make-flags #:allow-other-keys)
+             (apply invoke "make" "build_tests" make-flags))))))
+    (inputs
+     `(("dune-common" ,dune-common)
+       ("dune-geometry" ,dune-geometry)
+       ("dune-grid" ,dune-grid)
+       ;; Optional
+       ("metis" ,metis)
+       ("openblas" ,openblas)
+       ("gmp" ,gmp)))
+    (native-inputs
+     `(("gfortran" ,gfortran)
+       ("pkg-config" ,pkg-config)))
+    (home-page "http://numerik.mi.fu-berlin.de/dune-subgrid/index.php")
+    (synopsis "Distributed and Unified Numerics Environment")
+    (description "The dune-subgrid module allows to mark elements of
+another hierarchical dune grid.  The set of marked elements can then be
+accessed as a hierarchical dune grid in its own right.  Dune-Subgrid
+provides the full grid interface including adaptive mesh refinement.")
     (license license:gpl2+)))
 
 (define-public dune-typetree
@@ -4878,7 +4938,6 @@ cubes.")
              (apply invoke "make" "build_tests" make-flags))))))
     (inputs
      `(("dune-common" ,dune-common)
-       ("openmpi" ,openmpi)
        ;; Optional
        ("openblas" ,openblas)
        ("python" ,python)
@@ -4910,7 +4969,18 @@ operating on statically typed trees of objects.")
         (base32
          "1an8gb477n8j0kzpbrv7nr1snh8pxip0gsxq6w63jc83gg3dj200"))))
     (build-system cmake-build-system)
-    (arguments `(#:tests? #f)) ; FIXME: tests require dune-uugrid
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'disable-failing-tests
+           (lambda _
+             (setenv "ARGS"
+                     ;; unable to load GMSH file in this test
+                     "--exclude-regex gridviewfunctionspacebasistest")
+            #t))
+         (add-after 'build 'build-tests
+           (lambda* (#:key make-flags #:allow-other-keys)
+             (apply invoke "make" "build_tests" make-flags))))))
     (inputs
      `(("dune-common" ,dune-common)
        ("dune-istl" ,dune-istl)
@@ -4918,7 +4988,6 @@ operating on statically typed trees of objects.")
        ("dune-grid" ,dune-grid)
        ("dune-geometry" ,dune-geometry)
        ("dune-typetree" ,dune-typetree)
-       ("openmpi" ,openmpi)
        ("openblas" ,openblas)
        ("metis" ,metis)
        ("python" ,python)
@@ -4959,7 +5028,6 @@ implemented as callable objects, and bases of finite element spaces.")
        ("dune-grid" ,dune-grid)
        ("dune-typetree" ,dune-typetree)
        ("dune-functions" ,dune-functions)
-       ("openmpi" ,openmpi)
        ;; Optional
        ("openblas" ,openblas)
        ("eigen" ,eigen)
@@ -4976,6 +5044,59 @@ implemented as callable objects, and bases of finite element spaces.")
 built on top of DUNE, the Distributed and Unified Numerics Environment.")
     ;; Either GPL version 2 with "runtime exception" or LGPLv3+.
     (license (list license:lgpl3+ license:gpl2))))
+
+(define add-openmpi-to-dune-package
+  (let ((dune-package?
+          (lambda (p) (string-prefix? "dune-" (package-name p)))))
+    (package-mapping
+      (lambda (p)
+        (if (dune-package? p)
+            (package (inherit p)
+              (name (string-append (package-name p) "-openmpi"))
+              (inputs `(,@(package-inputs p)
+                        ("openmpi" ,openmpi)))
+              (arguments
+               (substitute-keyword-arguments (package-arguments p)
+                 ((#:phases phases '%standard-phases)
+                  `(modify-phases ,phases
+                     (add-before 'check 'mpi-setup
+                       ,%openmpi-setup)))))
+              (synopsis (string-append (package-synopsis p) " (with MPI support)")))
+            p))
+      (negate dune-package?))))
+
+(define-public dune-common-openmpi
+  (add-openmpi-to-dune-package dune-common))
+
+(define-public dune-geometry-openmpi
+  (add-openmpi-to-dune-package dune-geometry))
+
+(define-public dune-istl-openmpi
+  (add-openmpi-to-dune-package dune-istl))
+
+(define-public dune-typetree-openmpi
+  (add-openmpi-to-dune-package dune-typetree))
+
+(define-public dune-uggrid-openmpi
+  (add-openmpi-to-dune-package dune-uggrid))
+
+(define-public dune-grid-openmpi
+  (add-openmpi-to-dune-package dune-grid))
+
+(define-public dune-alugrid-openmpi
+  (add-openmpi-to-dune-package dune-alugrid))
+
+(define-public dune-subgrid-openmpi
+  (add-openmpi-to-dune-package dune-subgrid))
+
+(define-public dune-localfunctions-openmpi
+  (add-openmpi-to-dune-package dune-localfunctions))
+
+(define-public dune-functions-openmpi
+  (add-openmpi-to-dune-package dune-functions))
+
+(define-public dune-pdelab-openmpi
+  (add-openmpi-to-dune-package dune-pdelab))
 
 (define-public mlucas
   (package
@@ -5164,7 +5285,7 @@ syntax-highlighted scrollable display and is designed to be fully used via
 keyboard.  Some distinctive features are auto-completion of functions and
 variables, a formula book, and quick insertion of constants from various
 fields of knowledge.")
-    (home-page "http://speedcrunch.org/")
+    (home-page "https://speedcrunch.org/")
     (license license:gpl2+)))
 
 (define-public minisat
@@ -5206,3 +5327,112 @@ researchers and developers alike to get started on SAT.")
       (home-page
        "http://minisat.se/MiniSat.html")
       (license license:expat))))
+
+(define-public libqalculate
+  (package
+    (name "libqalculate")
+    (version "3.8.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Qalculate/libqalculate/")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1vbaza9c7159xf2ym90l0xkyj2mp6c3hbghhsqn29yvz08fda9df"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("gettext" ,gettext-minimal)
+       ("intltool" ,intltool)
+       ("automake" ,automake)
+       ("autoconf" ,autoconf)
+       ("libtool" ,libtool)
+       ("doxygen" ,doxygen)
+       ("file" ,file)))
+    (inputs
+     `(("gmp" ,gmp)
+       ("mpfr" ,mpfr)
+       ("libxml2" ,libxml2)
+       ("curl" ,curl)
+       ("icu4c" ,icu4c)
+       ("gnuplot" ,gnuplot)
+       ("readline" ,readline)
+       ("libiconv" ,libiconv)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'bootstrap 'setenv
+           ;; Prevent the autogen.sh script to carry out the configure
+           ;; script, which has not yet been patched to replace /bin/sh.
+           (lambda _
+             (setenv "NOCONFIGURE" "TRUE")
+             #t)))))
+    (home-page "https://qalculate.github.io/")
+    (synopsis "Multi-purpose cli desktop calculator and library")
+    (description
+     "Libqalculate is a multi-purpose cli desktop calculator and library.
+It provides basic and advanced functionality.  Features include customizable
+functions, unit calculations, and conversions, physical constants, symbolic
+calculations (including integrals and equations), arbitrary precision,
+uncertainity propagation, interval arithmetic, plotting and a user-friendly
+cli.")
+    (license license:gpl2+)))
+
+(define-public qalculate-gtk
+  (package
+    (name "qalculate-gtk")
+    (version "3.8.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Qalculate/qalculate-gtk/")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0nsg6dzg5r7rzqr671nvrf1c50rjwpz7bxv5f20i4s7agizgv840"))))
+    (build-system glib-or-gtk-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("intltool" ,intltool)
+       ("automake" ,automake)
+       ("autoconf" ,autoconf)
+       ("libtool" ,libtool)
+       ("file" ,file)))
+    (inputs
+     `(("gmp" ,gmp)
+       ("mpfr" ,mpfr)
+       ("libqalculate" ,libqalculate)
+       ("libxml2" ,libxml2)
+       ("glib" ,glib)
+       ("gtk+" ,gtk+)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'bootstrap 'setenv
+           ;; Prevent the autogen.sh script to carry out the configure
+           ;; script, which has not yet been patched to replace /bin/sh.
+           (lambda _
+             (setenv "NOCONFIGURE" "TRUE")
+             #t))
+         (add-before 'check 'add-pot-file
+           ;; the file contains translations and are currently not in use
+           ;; left out on purpose so add it to POTFILES.skip
+           (lambda _
+             (with-output-to-file "po/POTFILES.skip"
+               (lambda _
+                 (format #t "data/shortcuts.ui~%")
+                 #t))
+             #t)))))
+    (home-page "https://qalculate.github.io/")
+    (synopsis "Multi-purpose graphical desktop calculator")
+    (description
+     "Qalculate-gtk is the GTK frontend for libqalculate.  It is a
+multi-purpose GUI desktop calculator.  It provides basic and advanced
+functionality.  Features include customizable functions, unit calculations,
+and conversions, physical constants, symbolic calculations (including
+integrals and equations), arbitrary precision, uncertainity propagation,
+interval arithmetic, plotting.")
+    (license license:gpl2+)))

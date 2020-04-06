@@ -16,7 +16,8 @@
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2019 Ben Sturmfels <ben@sturm.com.au>
-;;; Copyright © 2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
+;;; Copyright © 2019,2020 Hartmut Goebel <h.goebel@crazy-compilers.com>
+;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -45,6 +46,7 @@
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
   #:use-module (gnu packages)
+  #:use-module (gnu packages audio)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages backup)
   #:use-module (gnu packages base)
@@ -55,6 +57,7 @@
   #:use-module (gnu packages djvu)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages game-development)
+  #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages gl)
@@ -74,6 +77,7 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages photo)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-check)
   #:use-module (gnu packages python-web)
@@ -82,10 +86,84 @@
   #:use-module (gnu packages sdl)
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages sqlite)
+  #:use-module (gnu packages tex)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages xdisorg)
+  #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1))
+
+(define-public flyer-composer
+  (package
+    (name "flyer-composer")
+    (version "1.0rc2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "flyer-composer" version))
+       (sha256
+        (base32 "17igqb5dlcgcq4nimjw6cf9qgz6a728zdx1d0rr90r2z0llcchsv"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f ;; TODO
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'wrap-executable
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (qtbase (assoc-ref inputs "qtbase"))
+                    (qml "/lib/qt5/qml"))
+               (wrap-program (string-append out "/bin/flyer-composer-gui")
+                 `("QT_PLUGIN_PATH" ":" =
+                   (,(string-append qtbase "/lib/qt5/plugins")))
+                 `("QT_QPA_PLATFORM_PLUGIN_PATH" ":" =
+                   (,(string-append qtbase "/lib/qt5/plugins/platforms"))))
+               #t))))))
+    (inputs
+     `(("python-pypdf2" ,python-pypdf2)
+       ("python-pyqt" ,python-pyqt)
+       ("python-poppler-qt5" ,python-poppler-qt5)
+       ("qtbase" ,qtbase)))
+    (home-page "http://crazy-compilers.com/flyer-composer")
+    (synopsis "Rearrange PDF pages to print as flyers on one sheet")
+    (description "@command{flyer-composer} can be used to prepare one- or
+two-sided flyers for printing on one sheet of paper.
+
+Imagine you have designed a flyer in A6 format and want to print it using your
+A4 printer.  Of course, you want to print four flyers on each sheet.  This is
+where Flyer Composer steps in, creating a PDF which holds your flyer four
+times.  If you have a second page, Flyer Composer can arrange it the same way
+- even if the second page is in a separate PDF file.
+
+This package contains both the commnd line tool and the gui too.")
+    (license license:agpl3+)))
+
+(define-public flyer-composer-cli
+  (package/inherit flyer-composer
+    (name "flyer-composer-cli")
+    (arguments
+     `(#:tests? #f ;; TODO
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'remove-gui
+           (lambda _
+             (delete-file-recursively "flyer_composer/gui")
+             (substitute* "setup.cfg"
+               (("^\\s+flyer-composer-gui\\s*=.*") ""))
+             #t)))))
+    (inputs
+     `(("python-pypdf2" ,python-pypdf2)))
+    (description "@command{flyer-composer} can be used to prepare one- or
+two-sided flyers for printing on one sheet of paper.
+
+Imagine you have designed a flyer in A6 format and want to print it using your
+A4 printer.  Of course, you want to print four flyers on each sheet.  This is
+where Flyer Composer steps in, creating a PDF which holds your flyer four
+times.  If you have a second page, Flyer Composer can arrange it the same way
+- even if the second page is in a separate PDF file.
+
+This package contains only the commnd line tool.  If you like to use the gui,
+please install the @code{flyer-composer-gui} package.")))
 
 (define-public poppler
   (package
@@ -220,7 +298,7 @@ When present, Poppler is able to correctly render CJK and Cyrillic text.")
        ("python-pyqt" ,python-pyqt)
        ("poppler-qt5" ,poppler-qt5)
        ("qtbase" ,qtbase)))
-    (home-page "https://pypi.python.org/pypi/python-poppler-qt5")
+    (home-page "https://pypi.org/project/python-poppler-qt5/")
     (synopsis "Python bindings for Poppler-Qt5")
     (description
      "This package provides Python bindings for the Qt5 interface of the
@@ -266,13 +344,14 @@ reading and editing of existing PDF files.")
 (define-public xpdf
   (package
    (name "xpdf")
-   (version "3.04")
-   (source (origin
-            (method url-fetch)
-            (uri (string-append "ftp://ftp.foolabs.com/pub/xpdf/xpdf-"
-                                version ".tar.gz"))
-            (sha256 (base32
-                     "1rbp54mr3z2x3a3a1qmz8byzygzi223vckfam9ib5g1sfds0qf8i"))))
+   (version "4.02")
+   (source
+    (origin
+      (method url-fetch)
+      (uri (string-append "https://xpdfreader-dl.s3.amazonaws.com/xpdf-"
+                          version "4.02.tar.gz"))
+      (sha256
+       (base32 "1rbp54mr3z2x3a3a1qmz8byzygzi223vckfam9ib5g1sfds0qf8i"))))
    (build-system gnu-build-system)
    (inputs `(("freetype" ,freetype)
              ("gs-fonts" ,gs-fonts)
@@ -286,8 +365,8 @@ reading and editing of existing PDF files.")
              ("libpng" ,libpng)
              ("zlib" ,zlib)))
    (arguments
-    `(#:tests? #f ; there is no check target
-      #:parallel-build? #f ; build fails randomly on 8-way machines
+    `(#:tests? #f                     ; there is no check target
+      #:parallel-build? #f            ; build fails randomly on 8-way machines
       #:configure-flags
         (list (string-append "--with-freetype2-includes="
                              (assoc-ref %build-inputs "freetype")
@@ -309,8 +388,8 @@ reading and editing of existing PDF files.")
    (synopsis "Viewer for PDF files based on the Motif toolkit")
    (description
     "Xpdf is a viewer for Portable Document Format (PDF) files.")
-   (license license:gpl3) ; or gpl2, but not gpl2+
-   (home-page "http://www.foolabs.com/xpdf/")))
+   (license license:gpl3)             ; or gpl2, but not gpl2+
+   (home-page "https://www.xpdfreader.com/")))
 
 (define-public zathura-cb
   (package
@@ -385,7 +464,7 @@ using libspectre.")
 (define-public zathura-djvu
   (package
     (name "zathura-djvu")
-    (version "0.2.8")
+    (version "0.2.9")
     (source (origin
               (method url-fetch)
               (uri
@@ -393,7 +472,7 @@ using libspectre.")
                               version ".tar.xz"))
               (sha256
                (base32
-                "0axkv1crdxn0z44whaqp2ibkdqcykhjnxk7qzms0dp1b67an9rnh"))))
+                "0062n236414db7q7pnn3ccg5111ghxj3407pn9ri08skxskgirln"))))
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs
      `(("djvulibre" ,djvulibre)
@@ -465,7 +544,7 @@ by using the @code{mupdf} rendering library.")
 (define-public zathura-pdf-poppler
   (package
     (name "zathura-pdf-poppler")
-    (version "0.2.9")
+    (version "0.3.0")
     (source (origin
               (method url-fetch)
               (uri
@@ -473,7 +552,7 @@ by using the @code{mupdf} rendering library.")
                               version ".tar.xz"))
               (sha256
                (base32
-                "1p4jcny0jniygns78mcf0nlm298dszh49qpmjmackrm6dq8hc25y"))))
+                "1vfl4vkyy3rf39r1sqaa7y8113bgkh2bkfq3nn2inis9mrykmk6m"))))
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs
      `(("poppler" ,poppler)
@@ -501,7 +580,7 @@ by using the poppler rendering engine.")
 (define-public zathura
   (package
     (name "zathura")
-    (version "0.4.3")
+    (version "0.4.5")
     (source (origin
               (method url-fetch)
               (uri
@@ -509,7 +588,7 @@ by using the poppler rendering engine.")
                               version ".tar.xz"))
               (sha256
                (base32
-                "0hgx5x09i6d0z45llzdmh4l348fxh1y102sb1w76f2fp4r21j4ky"))))
+                "0b3nrcvykkpv2vm99kijnic2gpfzva520bsjlihaxandzfm9ff8c"))))
     (native-inputs `(("pkg-config" ,pkg-config)
                      ("gettext" ,gettext-minimal)
                      ("glib:bin" ,glib "bin")
@@ -670,26 +749,14 @@ line tools for batch rendering @command{pdfdraw}, rewriting files
 (define-public qpdf
   (package
    (name "qpdf")
-   (version "9.1.0")
+   (version "9.1.1")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://sourceforge/qpdf/qpdf/" version
                                 "/qpdf-" version ".tar.gz"))
             (sha256
              (base32
-              "0ygd80wxcmh613n04x2kmf8wlsl0drxyd5wwdcrm1rzj0xwvpfrs"))
-            (modules '((guix build utils)))
-            (snippet
-             ;; Replace shebang with the bi-lingual shell/Perl trick to remove
-             ;; dependency on Perl.
-             '(begin
-                (substitute* "qpdf/fix-qdf"
-                  (("#!/usr/bin/env perl")
-                   "\
-eval '(exit $?0)' && eval 'exec perl -wS \"$0\" ${1+\"$@\"}'
-  & eval 'exec perl -wS \"$0\" $argv:q'
-    if 0;\n"))
-                #t))))
+              "0dj27wb9xg6pg95phbflfvy9rwxn1gh3kc4n175g0pf41r0zrim2"))))
    (build-system gnu-build-system)
    (arguments
     `(#:disallowed-references (,perl)
@@ -750,6 +817,94 @@ program capable of converting PDF into other formats.")
     (description
      "Xournal is an application for notetaking, sketching, keeping a journal
 using a stylus.")
+    (license license:gpl2+)))
+
+(define-public xournalpp
+  (package
+    (name "xournalpp")
+    (version "1.0.17")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/xournalpp/xournalpp.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0xw2mcgnm4sa9hrhfgp669lfypw97drxjmz5w8i5whaprpvmkxzw"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags (list "-DENABLE_CPPUNIT=ON") ;enable tests
+       #:imported-modules ((guix build glib-or-gtk-build-system)
+                           ,@%cmake-build-system-modules)
+       #:modules (((guix build glib-or-gtk-build-system) #:prefix glib-or-gtk:)
+                  (guix build cmake-build-system)
+                  (guix build utils))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-permissions-on-po-files
+           (lambda _
+             ;; Always generate translations.  A recent upstream patch
+             ;; disabled it.
+             (substitute* "po/CMakeLists.txt"
+               (("gettext_create_translations \\(\"\\$\\{potfile\\}\"\\)")
+                "gettext_create_translations (\"${potfile}\" ALL)"))
+             ;; Make sure 'msgmerge' can modify the PO files.
+             (for-each (lambda (po) (chmod po #o666))
+                       (find-files "." "\\.po$"))
+             #t))
+         (add-after 'install 'glib-or-gtk-wrap
+           (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap)))))
+    (native-inputs
+     `(("cppunit" ,cppunit)
+       ("gcc" ,gcc-8)                   ;requires gcc 8+
+       ("gettext" ,gettext-minimal)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("alsa-lib" ,alsa-lib)
+       ("glib" ,glib)
+       ("gtk+" ,gtk+)
+       ("libsndfile" ,libsndfile)
+       ("libxml2" ,libxml2)
+       ("libzip" ,libzip)
+       ("lua" ,lua)                    ;FIXME: It cannot find the Lua library.
+       ("poppler" ,poppler)
+       ("portaudio" ,portaudio)
+       ("texlive-bin" ,texlive-bin)))
+    (home-page "https://github.com/xournalpp/xournalpp")
+    (synopsis "Handwriting notetaking software with PDF annotation support")
+    (description "Xournal++ is a hand note taking software written in
+C++ with the target of flexibility, functionality and speed.  Stroke
+recognizer and other parts are based on Xournal code.
+
+Xournal++ features:
+
+@itemize
+@item Support for Pen pressure, e.g., Wacom Tablet
+@item Support for annotating PDFs
+@item Fill shape functionality
+@item PDF Export (with and without paper style)
+@item PNG Export (with and without transparent background)
+@item Allow to map different tools / colors etc. to stylus buttons /
+mouse buttons
+@item Sidebar with Page Previews with advanced page sorting, PDF
+Bookmarks and Layers (can be individually hidden, editing layer can be
+selected)
+@item enhanced support for image insertion
+@item Eraser with multiple configurations
+@item LaTeX support
+@item bug reporting, autosave, and auto backup tools
+@item Customizeable toolbar, with multiple configurations, e.g., to
+optimize toolbar for portrait / landscape
+@item Page Template definitions
+@item Shape drawing (line, arrow, circle, rectangle)
+@item Shape resizing and rotation
+@item Rotation snapping every 45 degrees
+@item Rect snapping to grid
+@item Audio recording and playback alongside with handwritten notes
+@item Multi Language Support, Like English, German, Italian...
+@item Plugins using LUA Scripting
+@end itemize")
     (license license:gpl2+)))
 
 (define-public python-reportlab
@@ -1187,13 +1342,13 @@ manipulating PDF documents from the command line.  It supports
 (define-public weasyprint
   (package
     (name "weasyprint")
-    (version "50")
+    (version "51")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "WeasyPrint" version))
        (sha256
-        (base32 "0invs96zvmcr6wh5klj52jrcnr9qg150v9wpmbhcsf3vv1d1hbcw"))
+        (base32 "0skdzwq7cd715dnnds6abx0k0xmmnmsqp0vb1r1w20sg7abp3sdk"))
        (patches (search-patches "weasyprint-library-paths.patch"))))
     (build-system python-build-system)
     (arguments
@@ -1221,11 +1376,11 @@ manipulating PDF documents from the command line.  It supports
            (lambda _
              (substitute* "setup.cfg"
                ;; flake8 and isort syntax checks fail, which is not our
-               ;; business
+               ;; business.
                (("addopts = --flake8 --isort") ""))))
          (replace 'check
            (lambda _
-             ;; run pytest, excluding one failing test
+             ;; Run pytest, excluding one failing test.
              (invoke "pytest" "-k" "not test_flex_column_wrap_reverse"))))))
     (inputs
      `(("fontconfig" ,fontconfig)

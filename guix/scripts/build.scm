@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -34,6 +35,7 @@
 
   #:use-module (guix monads)
   #:use-module (guix gexp)
+  #:use-module (guix profiles)
   #:autoload   (guix http-client) (http-fetch http-get-error?)
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
@@ -680,6 +682,9 @@ Build the given PACKAGE-OR-DERIVATION and return their output paths.\n"))
   -f, --file=FILE        build the package or derivation that the code within
                          FILE evaluates to"))
   (display (G_ "
+  -m, --manifest=FILE    build the packages that the manifest given in FILE
+                         evaluates to"))
+  (display (G_ "
   -S, --source           build the packages' source derivations"))
   (display (G_ "
       --sources[=TYPE]   build source derivations; TYPE may optionally be one
@@ -768,9 +773,12 @@ must be one of 'package', 'all', or 'transitive'~%")
          (option '(#\f "file") #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'file arg result)))
+         (option '(#\m "manifest") #t #f
+                 (lambda (opt name arg result)
+                   (alist-cons 'manifest arg result)))
          (option '(#\n "dry-run") #f #f
                  (lambda (opt name arg result)
-                   (alist-cons 'dry-run? #t (alist-cons 'graft? #f result))))
+                   (alist-cons 'dry-run? #t result)))
          (option '(#\r "root") #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'gc-root arg result)))
@@ -809,7 +817,11 @@ build---packages, gexps, derivations, and so on."
                  (cond ((derivation-path? spec)
                         (catch 'system-error
                           (lambda ()
-                            (list (read-derivation-from-file spec)))
+                            ;; Ask for absolute file names so that .drv file
+                            ;; names passed from the user to 'read-derivation'
+                            ;; are absolute when it returns.
+                            (let ((spec (canonicalize-path spec)))
+                              (list (read-derivation-from-file spec))))
                           (lambda args
                             ;; Non-existent .drv files can be substituted down
                             ;; the road, so don't error out.
@@ -823,6 +835,11 @@ build---packages, gexps, derivations, and so on."
                         (list (specification->package spec)))))
                 (('file . file)
                  (ensure-list (load* file (make-user-module '()))))
+                (('manifest . manifest)
+                 (map manifest-entry-item
+                      (manifest-entries
+                       (load* manifest
+                              (make-user-module '((guix profiles) (gnu)))))))
                 (('expression . str)
                  (ensure-list (read/eval str)))
                 (('argument . (? derivation? drv))
@@ -903,8 +920,10 @@ build."
   (with-unbound-variable-handling
    (parameterize ((%graft? graft?))
      (append-map (lambda (system)
-                   (append-map (cut compute-derivation <> system)
-                               things-to-build))
+                   (concatenate
+                    (map/accumulate-builds store
+                                           (cut compute-derivation <> system)
+                                           things-to-build)))
                  systems))))
 
 (define (show-build-log store file urls)
@@ -926,16 +945,25 @@ needed."
     (parse-command-line args %options
                         (list %default-options)))
 
-  (with-error-handling
-    ;; Ask for absolute file names so that .drv file names passed from the
-    ;; user to 'read-derivation' are absolute when it returns.
-    (with-fluids ((%file-port-name-canonicalization 'absolute))
-      (with-status-verbosity (assoc-ref opts 'verbosity)
-        (with-store store
-          ;; Set the build options before we do anything else.
-          (set-build-options-from-command-line store opts)
+  (define graft?
+    (assoc-ref opts 'graft?))
 
-          (parameterize ((current-terminal-columns (terminal-columns)))
+  (with-error-handling
+    (with-status-verbosity (assoc-ref opts 'verbosity)
+      (with-store store
+        ;; Set the build options before we do anything else.
+        (set-build-options-from-command-line store opts)
+
+        (with-build-handler (build-notifier #:use-substitutes?
+                                            (assoc-ref opts 'substitutes?)
+                                            #:dry-run?
+                                            (assoc-ref opts 'dry-run?))
+          (parameterize ((current-terminal-columns (terminal-columns))
+
+                         ;; Set grafting upfront in case the user's input
+                         ;; depends on it (e.g., a manifest or code snippet that
+                         ;; calls 'gexp->derivation').
+                         (%graft?                  graft?))
             (let* ((mode  (assoc-ref opts 'build-mode))
                    (drv   (options->derivations store opts))
                    (urls  (map (cut string-append <> "/log")
@@ -960,14 +988,6 @@ needed."
                                         (_ #f))
                                       opts)))
 
-              (unless (or (assoc-ref opts 'log-file?)
-                          (assoc-ref opts 'derivations-only?))
-                (show-what-to-build store drv
-                                    #:use-substitutes?
-                                    (assoc-ref opts 'substitutes?)
-                                    #:dry-run? (assoc-ref opts 'dry-run?)
-                                    #:mode mode))
-
               (cond ((assoc-ref opts 'log-file?)
                      ;; Pass 'show-build-log' the output file names, not the
                      ;; derivation file names, because there can be several
@@ -981,7 +1001,7 @@ needed."
                      (for-each (cut register-root store <> <>)
                                (map (compose list derivation-file-name) drv)
                                roots))
-                    ((not (assoc-ref opts 'dry-run?))
+                    (else
                      (and (build-derivations store (append drv items)
                                              mode)
                           (for-each show-derivation-outputs drv)
