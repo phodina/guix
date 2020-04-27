@@ -9745,7 +9745,7 @@ Haskell library @code{regex-base}.")
     (build-system haskell-build-system)
     (inputs
      `(("ghc-regex-base" ,ghc-regex-base)))
-    (home-page "https://github.com/ChrisKuklewicz/regex-tdfa")
+    (home-page "https://github.com/haskell-hvr/regex-tdfa")
     (synopsis "POSIX extended regular expressions in Haskell.")
     (description
      "Regex-tdfa is a pure Haskell regular expression library implementing POSIX
@@ -10780,7 +10780,7 @@ provided.  Skylighting is intended to be the successor to highlighting-kate.")
     (home-page
      "https://github.com/feuerbach/smallcheck")
     (synopsis "Property-based testing library")
-    (description "SmallCheck is a testing library that allows to verify
+    (description "SmallCheck is a testing library that verifies
 properties for all test cases up to some depth.  The test cases are generated
 automatically by SmallCheck.")
     (license license:bsd-3)))

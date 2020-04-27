@@ -148,14 +148,14 @@ as well as the classic centralized workflow.")
 (define-public git
   (package
    (name "git")
-   (version "2.26.0")
+   (version "2.26.2")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://kernel.org/software/scm/git/git-"
                                 version ".tar.xz"))
             (sha256
              (base32
-              "1mlmwibfgcv42c28fxmbd3iim8fc06r17dljd8vdgq550z5hvkly"))))
+              "0j685w6pzkn926z5nf5r8fij4ziipvw4c9yb0wc577nzf4j16rbd"))))
    (build-system gnu-build-system)
    (native-inputs
     `(("native-perl" ,perl)
@@ -168,7 +168,7 @@ as well as the classic centralized workflow.")
                 version ".tar.xz"))
           (sha256
            (base32
-            "09ilv5gg7167mwc0qqw2fz3lmdm360crnxc0xzkqn53wnsh4cziq"))))
+            "0rb4f4jc31zrcg4gyjg4fi07dw7nggkjg2nqfiq5p1aayw2f2ga3"))))
       ;; For subtree documentation.
       ("asciidoc" ,asciidoc-py3)
       ("docbook-xsl" ,docbook-xsl)
@@ -601,46 +601,27 @@ on @command{git}, and use any regular Git hosting service.")
 (define-public libgit2
   (package
     (name "libgit2")
-    (version "0.99.0")
+    (version "1.0.0")
     (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/libgit2/libgit2.git")
-                    (commit (string-append "v" version))))
-              (file-name (git-file-name name version))
+              (method url-fetch)
+              (uri (string-append "https://github.com/libgit2/libgit2/"
+                                  "releases/download/v" version
+                                  "/libgit2-" version ".tar.gz"))
               (sha256
                (base32
-                "0qxzv49ip378g1n7hrbifb9c6pys2kj1hnxcafmbb94gj3pgd9kg"))
+                "1d09ni0v3vammk8zqmmwks92fh3wwnsxpyrh4s5wwdb3gxma27va"))
               (patches (search-patches "libgit2-mtime-0.patch"))
-
-              ;; Remove bundled software.  Keep "http-parser" because it
-              ;; contains patches that are not available in the system version.
               (snippet '(begin
-                          (with-directory-excursion "deps"
-                            (for-each (lambda (dir)
-                                        (delete-file-recursively dir))
-                                      (lset-difference equal?
-                                                       (scandir ".")
-                                                       '("." ".." "http-parser"))))
-                          #t))
-              (modules '((guix build utils)
-                         (srfi srfi-1)
-                         (ice-9 ftw)))))
+                          (delete-file-recursively "deps") #t))
+              (modules '((guix build utils)))))
     (build-system cmake-build-system)
     (outputs '("out" "debug"))
     (arguments
      `(#:configure-flags '("-DUSE_NTLMCLIENT=OFF" ;TODO: package this
-                           "-DREGEX_BACKEND=pcre2")
+                           "-DREGEX_BACKEND=pcre2"
+                           "-DUSE_HTTP_PARSER=system")
        #:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'fix-pcre2-reference
-           (lambda _
-             ;; Use PCRE2 with 8-bit character support, as there is no "libpcre2.pc".
-             ;; See <https://github.com/libgit2/libgit2/issues/5438>.
-             (substitute* "src/CMakeLists.txt"
-               (("\"libpcre2\"")
-                "\"libpcre2-8\""))
-             #t))
          (add-after 'unpack 'fix-hardcoded-paths
            (lambda _
              (substitute* "tests/repo/init.c"
@@ -649,15 +630,12 @@ on @command{git}, and use any regular Git hosting service.")
                (("/bin/cp") (which "cp"))
                (("/bin/rm") (which "rm")))
              #t))
-         (add-after 'unpack 'make-git-checkout-writable
-           (lambda _
-             (for-each make-file-writable (find-files "."))
-             #t))
          ;; Run checks more verbosely.
          (replace 'check
            (lambda _ (invoke "./libgit2_clar" "-v" "-Q"))))))
     (inputs
-     `(("libssh2" ,libssh2)))
+     `(("libssh2" ,libssh2)
+       ("http-parser" ,http-parser)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("python" ,python)))
@@ -666,7 +644,7 @@ on @command{git}, and use any regular Git hosting service.")
      `(("openssl" ,openssl)
        ("pcre2" ,pcre2)
        ("zlib" ,zlib)))
-    (home-page "https://libgit2.github.com/")
+    (home-page "https://libgit2.org/")
     (synopsis "Library providing Git core methods")
     (description
      "Libgit2 is a portable, pure C implementation of the Git core methods
@@ -674,6 +652,24 @@ provided as a re-entrant linkable library with a solid API, allowing you to
 write native speed custom Git applications in any language with bindings.")
     ;; GPLv2 with linking exception
     (license license:gpl2)))
+
+(define-public libgit2-0.28
+  (package
+    (inherit libgit2)
+    (version "0.28.5")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append "https://github.com/libgit2/libgit2/releases/"
+                            "download/v" version
+                            "/libgit2-" version ".tar.gz"))
+        (sha256
+         (base32
+          "0hjgpqjjmkciw1i8jqkx9q2vhdc4fc99qajhrj2bq8ziwsp6hyrb"))
+        (patches (search-patches "libgit2-mtime-0.patch"))
+        (modules '((guix build utils)))
+        (snippet '(begin
+                    (delete-file-recursively "deps") #t))))))
 
 (define-public git-crypt
   (package
@@ -865,9 +861,9 @@ collaboration using typical untrusted file hosts or services.")
            (method url-fetch)
            ;; cgit is tightly bound to git.  Use GIT_VER from the Makefile,
            ;; which may not match the current (package-version git).
-           (uri "mirror://kernel.org/software/scm/git/git-2.25.1.tar.xz")
+           (uri "mirror://kernel.org/software/scm/git/git-2.25.4.tar.xz")
            (sha256
-            (base32 "09lzwa183nblr6l8ib35g2xrjf9wm9yhk3szfvyzkwivdv69c9r2"))))
+            (base32 "11am6s46wmn1yll5614smjhzlghbqq6gysgcs64igjr9y5wzpdxq"))))
        ("openssl" ,openssl)
        ("groff" ,groff)
        ("python" ,python)
@@ -1956,7 +1952,7 @@ from Subversion to any supported Distributed Version Control System (DVCS).")
 (define-public tig
   (package
     (name "tig")
-    (version "2.5.0")
+    (version "2.5.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1964,7 +1960,7 @@ from Subversion to any supported Distributed Version Control System (DVCS).")
                     version "/tig-" version ".tar.gz"))
               (sha256
                (base32
-                "1x5famvvs93ih7sr11x7m33dksb1k7zs1s3c4zkyf0cjmxkpqlzz"))))
+                "0r4y9hyvpkplaxrzslws3asz652d83qh3bjwvmp8assga8s5s3ah"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("asciidoc" ,asciidoc)
@@ -1978,8 +1974,8 @@ from Subversion to any supported Distributed Version Control System (DVCS).")
          (add-after 'install 'install-doc
            (lambda _
              (invoke "make" "install-doc"))))
-       #:tests? #f)) ; tests require access to /dev/tty
-    ;; #:test-target "test"))
+       #:test-target "test"
+       #:tests? #f))                    ; tests require access to /dev/tty
     (home-page "https://jonas.github.io/tig/")
     (synopsis "Ncurses-based text user interface for Git")
     (description

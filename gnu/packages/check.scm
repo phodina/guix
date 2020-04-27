@@ -581,14 +581,14 @@ but it works for any C/C++ project.")
 (define-public python-parameterized
   (package
     (name "python-parameterized")
-    (version "0.7.1")
+    (version "0.7.3")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "parameterized" version))
        (sha256
         (base32
-         "1vapry9lyfb2mlpgk2wh9079hzxzq5120bsczncxxay663mdp53a"))))
+         "0g1q6n7fkanjv7i1djzw62f46xf573jvza7afabh3baqjqxy7rpd"))))
     (build-system python-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases
@@ -1008,17 +1008,26 @@ result back.")
 (define-public python-pytest-timeout
   (package
     (name "python-pytest-timeout")
-    (version "1.3.3")
+    (version "1.3.4")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pytest-timeout" version))
        (sha256
         (base32
-         "1cczcjhw4xx5sjkhxlhc5c1bkr7x6fcyx12wrnvwfckshdvblc2a"))))
+         "13n42azbvs5slvy2n1a9nw17r4qdq10dd68nln3jp925safa3yl0"))))
     (build-system python-build-system)
+    (arguments
+     '(#:phases (modify-phases %standard-phases
+                  (replace 'check
+                    (lambda* (#:key inputs outputs #:allow-other-keys)
+                      ;; Make the installed plugin discoverable by Pytest.
+                      (add-installed-pythonpath inputs outputs)
+                      (invoke "pytest" "-vv"))))))
     (propagated-inputs
      `(("python-pytest" ,python-pytest)))
+    (native-inputs
+     `(("python-pexpect" ,python-pexpect)))
     (home-page "http://bitbucket.org/pytest-dev/pytest-timeout/")
     (synopsis "Plugin for py.test to abort hanging tests")
     (description
@@ -1894,8 +1903,8 @@ possible to write plugins to add your own checks.")
     (synopsis
      "Simple extension to have parametrized unit tests")
     (description
-     "This package allows to create parametrized unit-tests that work with the standard
-unittest package.  A parametrized test case is automatically converted to multiple test
+     "This package creates parameterized unit-tests that work with the standard
+unittest package.  A parameterized test case is automatically converted to multiple test
 cases.  Since they are TestCase subclasses, they work with other test suites that
 recognize TestCases.")
     (license license:bsd-2)))

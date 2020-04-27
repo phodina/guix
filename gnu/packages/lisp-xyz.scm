@@ -10,7 +10,7 @@
 ;;; Copyright © 2017, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Benjamin Slade <slade@jnanam.net>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
-;;; Copyright © 2018 Pierre Neidhardt <mail@ambrevar.xyz>
+;;; Copyright © 2018, 2020 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2018, 2019 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2019, 2020 Katherine Cox-Buday <cox.katherine.e@gmail.com>
 ;;; Copyright © 2019 Jesse Gildersleve <jessejohngildersleve@protonmail.com>
@@ -53,6 +53,7 @@
   #:use-module (gnu packages c)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages databases)
+  #:use-module (gnu packages enchant)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages imagemagick)
@@ -1710,7 +1711,7 @@ also be supported.")
 (define-public sbcl-ironclad
   (package
     (name "sbcl-ironclad")
-    (version "0.48")
+    (version "0.49")
     (source
      (origin
        (method git-fetch)
@@ -1718,8 +1719,7 @@ also be supported.")
              (url "https://github.com/sharplispers/ironclad/")
              (commit (string-append "v" version))))
        (sha256
-        (base32
-         "1wzczpgvgjc5h8ghz75kxi7iykmqxqchdhgdhkif9j99kyqvbyam"))
+        (base32 "0kbzqg2aasrhjwy3nrzy2ddy809n1j045w4qkyc3r2syqd203d4q"))
        (file-name (git-file-name name version))))
     (build-system asdf-build-system/sbcl)
     (native-inputs
@@ -1727,7 +1727,8 @@ also be supported.")
      `(("rt" ,sbcl-rt)))
     (inputs
      `(("bordeaux-threads" ,sbcl-bordeaux-threads)
-       ("flexi-streams" ,sbcl-flexi-streams)))
+       ("flexi-streams" ,sbcl-flexi-streams)
+       ("trivial-garbage" ,sbcl-trivial-garbage)))
     (synopsis "Cryptographic toolkit written in Common Lisp")
     (description
      "Ironclad is a cryptography library written entirely in Common Lisp.
@@ -2785,8 +2786,8 @@ advantage of the library is the ability to concisely define command line
 options once and then use this definition for parsing and extraction of
 command line arguments, as well as printing description of command line
 options (you get --help for free).  This way you don't need to repeat
-yourself.  Also, @command{unix-opts} doesn't depend on anything and allows to
-precisely control behavior of the parser via Common Lisp restarts.")
+yourself.  Also, @command{unix-opts} doesn't depend on anything and
+precisely controls the behavior of the parser via Common Lisp restarts.")
     (license license:expat)))
 
 (define-public cl-unix-opts
@@ -3046,10 +3047,10 @@ is a library for creating graphical user interfaces.")
   (sbcl-package->cl-source-package sbcl-cl-cffi-gtk))
 
 (define-public sbcl-cl-webkit
-  (let ((commit "4832c99c31e0eb1fcce3779d119343ae8a423952"))
+  (let ((commit "d97115ca601838dfa60ea7afbb88641d7a526dba"))
     (package
       (name "sbcl-cl-webkit")
-      (version (git-version "2.4" "1" commit))
+      (version (git-version "2.4" "2" commit))
       (source
        (origin
          (method git-fetch)
@@ -3059,7 +3060,7 @@ is a library for creating graphical user interfaces.")
          (file-name (git-file-name "cl-webkit" version))
          (sha256
           (base32
-           "0sn7m181wfg1q49q45dlsry8c38x7pziqcs0frnymk6yvgndybxd"))))
+           "0sdb2l2h5xv5c1m2mfq31i9yl6zjf512fvwwzlvk9nvisyhc4xi3"))))
       (build-system asdf-build-system/sbcl)
       (inputs
        `(("cffi" ,sbcl-cffi)
@@ -5076,8 +5077,8 @@ high-level way.  This library provides such operators.")
   (sbcl-package->ecl-package sbcl-cl-quickcheck))
 
 (define-public sbcl-burgled-batteries3
-  (let ((commit "9c0f6667e1a71ddf77e21793a0bea524710fef6e")
-        (revision "1"))
+  (let ((commit "f65f454d13bb6c40e17e9ec62e41eb5069e09760")
+        (revision "2"))
     (package
       (name "sbcl-burgled-batteries3")
       (version (git-version "0.0.0" revision commit))
@@ -5090,33 +5091,33 @@ high-level way.  This library provides such operators.")
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "0b726kz2xxcg5l930gz035rsdvhxrzmp05iwfwympnb4z4ammicb"))))
+           "1nzn7jawrfajyzwfnzrg2cmn9xxadcqh4szbpg0jggkhdkdzz4wa"))))
       (build-system asdf-build-system/sbcl)
       (arguments
-       '(#:tests? #f
+       `(#:tests? #f
+         #:modules (((guix build python-build-system) #:select (python-version))
+                    ,@%asdf-build-system-modules)
+         #:imported-modules ((guix build python-build-system)
+                             ,@%asdf-build-system-modules)
          #:phases
-         (modify-phases %standard-phases
+         (modify-phases (@ (guix build asdf-build-system) %standard-phases)
            (add-after 'unpack 'set-*cpython-include-dir*-var
              (lambda* (#:key inputs #:allow-other-keys)
-               (substitute* "grovel-include-dir.lisp"
-                 (("\\(defparameter \\*cpython-include-dir\\* \\(detect-python\\)\\)")
-                  (string-append
-                   "(defparameter *cpython-include-dir* \""
-                   (assoc-ref inputs "python")
-                   "/include/python3.7m"
-                   "\")")))
-               (substitute* "ffi-interface.lisp"
-                 (("\\*cpython-lib\\*")
-                  (format #f "'(\"~a/lib/libpython3.so\")"
-                          (assoc-ref inputs "python"))))
-               #t)))))
+               (let ((python (assoc-ref inputs "python")))
+                 (setenv "BB_PYTHON3_INCLUDE_DIR"
+                         (string-append python "/include/python"
+                                        (python-version python)
+                                        "m"))
+                 (setenv "BB_PYTHON3_DYLIB"
+                         (string-append python "/lib/libpython3.so"))
+                 #t))))))
       (native-inputs
-       `(("python" ,python)
-         ("sbcl-cl-fad" ,sbcl-cl-fad)
+       `(("sbcl-cl-fad" ,sbcl-cl-fad)
          ("sbcl-lift" ,sbcl-lift)
          ("sbcl-cl-quickcheck" ,sbcl-cl-quickcheck)))
       (inputs
-       `(("sbcl-cffi" ,sbcl-cffi)
+       `(("python" ,python)
+         ("sbcl-cffi" ,sbcl-cffi)
          ("sbcl-cffi-grovel" ,sbcl-cffi-grovel)
          ("sbcl-alexandria" , sbcl-alexandria)
          ("sbcl-parse-declarations-1.0" ,sbcl-parse-declarations)
@@ -5126,7 +5127,6 @@ high-level way.  This library provides such operators.")
        "This package provides a shim between Python3 (specifically, the
 CPython implementation of Python) and Common Lisp.")
       (home-page "https://github.com/snmsts/burgled-batteries3")
-      ;; MIT
       (license license:expat))))
 
 (define-public cl-burgled-batteries3
@@ -5503,7 +5503,7 @@ and @code{kqueue(2)}), a pathname library and file-system utilities.")
       (native-inputs
        `(("fiveam" ,sbcl-fiveam)))
       (synopsis "IEEE 754 binary representation for floats in Common Lisp")
-      (description "This is a Common Lisp library that allows to convert
+      (description "This is a Common Lisp library that converts
 floating point values to IEEE 754 binary representation.")
       (license license:bsd-3))))
 
@@ -6315,10 +6315,10 @@ various string metrics in Common Lisp:
   (sbcl-package->cl-source-package sbcl-mk-string-metrics))
 
 (define-public sbcl-cl-str
-  (let ((commit "3d5ec86e3a0199e5973aacde951086dfd754b5e5"))
+  (let ((commit "eb480f283e28802d67b35bf916506701152f9a2a"))
     (package
       (name "sbcl-cl-str")
-      (version (git-version "0.8" "1" commit))
+      (version (git-version "0.17" "1" commit))
       (home-page "https://github.com/vindarel/cl-str")
       (source (origin
                 (method git-fetch)
@@ -6326,12 +6326,13 @@ various string metrics in Common Lisp:
                       (url home-page)
                       (commit commit)))
                 (sha256
-                 (base32 "0szzzbygw9h985yxz909vvqrp69pmpcpahn7hn350lnyjislk9ga"))
+                 (base32 "1hpq5m8zjjnzns370zy27z2vcm1p8n2ka5ij2x67gyc9amz9vla0"))
                 (file-name (git-file-name name version))))
       (build-system asdf-build-system/sbcl)
       (inputs
        `(("cl-ppcre" ,sbcl-cl-ppcre)
-         ("cl-ppcre-unicode" ,sbcl-cl-ppcre-unicode)))
+         ("cl-ppcre-unicode" ,sbcl-cl-ppcre-unicode)
+         ("cl-change-case" ,sbcl-cl-change-case)))
       (native-inputs
        `(("prove" ,sbcl-prove)
          ("prove-asdf" ,sbcl-prove-asdf)))
@@ -6417,7 +6418,7 @@ power of CXML is available when necessary.")
          ("cl-xmlspam" ,sbcl-cl-xmlspam)
          ("ironclad" ,sbcl-ironclad)))
       (synopsis "D-Bus client library for Common Lisp")
-      (description "This is a Common Lisp library that allows to publish D-Bus
+      (description "This is a Common Lisp library that publishes D-Bus
 objects as well as send and notify other objects connected to a bus.")
       (license license:bsd-2))))
 
@@ -11313,3 +11314,157 @@ in DEFPACKAGE.")
 
 (define-public cl-trivial-package-local-nicknames
   (sbcl-package->cl-source-package sbcl-trivial-package-local-nicknames))
+
+(define-public sbcl-enchant
+  (let ((commit "6af162a7bf10541cbcfcfa6513894900329713fa"))
+    (package
+      (name "sbcl-enchant")
+      (version (git-version "0.0.0" "1" commit))
+      (home-page "https://github.com/tlikonen/cl-enchant")
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url home-page)
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "19yh5ihirzi1d8xqy1cjqipzd6ly3245cfxa5s9xx496rryz0s01"))))
+      (build-system asdf-build-system/sbcl)
+      (inputs
+       `(("enchant" ,enchant)
+         ("cffi" ,sbcl-cffi)))
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'fix-paths
+             (lambda* (#:key inputs #:allow-other-keys)
+               (substitute* "load-enchant.lisp"
+                 (("libenchant")
+                  (string-append
+                   (assoc-ref inputs "enchant") "/lib/libenchant-2"))))))))
+      (synopsis "Common Lisp interface for the Enchant spell-checker library")
+      (description
+       "Enchant is a Common Lisp interface for the Enchant spell-checker
+library.  The Enchant library is a generic spell-checker library which uses
+other spell-checkers transparently as back-end.  The library supports the
+multiple checkers, including Aspell and Hunspell.")
+      (license license:public-domain))))
+
+(define-public cl-enchant
+  (sbcl-package->cl-source-package sbcl-enchant))
+
+(define-public sbcl-cl-change-case
+  (let ((commit "5ceff2a5f8bd845b6cb510c6364176b27a238fd3"))
+    (package
+      (name "sbcl-cl-change-case")
+      (version (git-version "0.1.0" "1" commit))
+      (home-page "https://github.com/rudolfochrist/cl-change-case")
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url home-page)
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "1afyglglk9z3yg8gylcl301bl2r8vq3sllyznzj9s5xi5gs6qyf2"))))
+      (build-system asdf-build-system/sbcl)
+      (inputs
+       `(("cl-ppcre" ,sbcl-cl-ppcre)
+         ("cl-ppcre-unicode" ,sbcl-cl-ppcre-unicode)))
+      (native-inputs
+       `(("fiveam" ,sbcl-fiveam)))
+      (arguments
+       '(;; FIXME: Test pass but phase fails with 'Component
+         ;; "cl-change-case-test" not found, required by'.
+         #:tests? #f
+         #:test-asd-file "cl-change-case-test.asd"))
+      (synopsis "Convert Common Lisp strings between camelCase, PascalCase and more")
+      (description
+       "@code{cl-change-case} is library to convert strings between camelCase,
+PascalCase, snake_case, param-case, CONSTANT_CASE and more.")
+      (license license:llgpl))))
+
+(define-public cl-change-case
+  (sbcl-package->cl-source-package sbcl-cl-change-case))
+
+(define-public sbcl-moptilities
+  (let ((commit "a436f16b357c96b82397ec018ea469574c10dd41"))
+    (package
+      (name "sbcl-moptilities")
+      (version (git-version "0.3.13" "1" commit))
+      (home-page "https://github.com/gwkkwg/moptilities/")
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url home-page)
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "1q12bqjbj47lx98yim1kfnnhgfhkl80102fkgp9pdqxg0fp6g5fc"))))
+      (build-system asdf-build-system/sbcl)
+      (inputs
+       `(("closer-mop" ,sbcl-closer-mop)))
+      (native-inputs
+       `(("lift" ,sbcl-lift)))
+      (synopsis "Compatibility layer for Common Lisp MOP implementation differences")
+      (description
+       "MOP utilities provide a common interface between Lisps and make the
+MOP easier to use.")
+      (license license:expat))))
+
+(define-public cl-moptilities
+  (sbcl-package->cl-source-package sbcl-moptilities))
+
+(define-public sbcl-osicat
+  (let ((commit "de0c18a367eedc857e1902a7319828af072a0d97"))
+    (package
+      (name "sbcl-osicat")
+      (version (git-version "0.7.0" "1" commit))
+      (home-page "http://www.common-lisp.net/project/osicat/")
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/osicat/osicat")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "15viw5pi5sa7qq9b4n2rr3dj2jkqr180rh9z1lh8w3rgl42i2adc"))))
+      (build-system asdf-build-system/sbcl)
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           (add-before 'validate-runpath 'cleanup-files
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((out (assoc-ref outputs "out"))
+                      (lib (string-append out "/lib/sbcl")))
+                 (for-each
+                  delete-file
+                  (filter (lambda (file)
+                            (not (member (basename file)
+                                         '("basic-unixint__grovel"
+                                           "libosicat.so"
+                                           "osicat--system.fasl"
+                                           "osicat.asd"
+                                           "unixint__grovel"))))
+                          (find-files lib ".*")))
+                 #t))))))
+      (inputs
+       `(("alexandria" ,sbcl-alexandria)
+         ("cffi" ,sbcl-cffi)
+         ("trivial-features" ,sbcl-trivial-features)))
+      (native-inputs
+       `(("cffi-grovel" ,sbcl-cffi-grovel)
+         ("rt" ,sbcl-rt)))
+      (synopsis "Operating system interface for Common Lisp")
+      (description
+       "Osicat is a lightweight operating system interface for Common Lisp on
+Unix-platforms.  It is not a POSIX-style API, but rather a simple lispy
+accompaniment to the standard ANSI facilities.")
+      (license license:expat))))
+
+(define-public cl-osicat
+  (sbcl-package->cl-source-package sbcl-osicat))

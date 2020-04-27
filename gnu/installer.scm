@@ -2,6 +2,7 @@
 ;;; Copyright © 2018, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2020 Florian Pelz <pelzflorian@pelzflorian.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -117,9 +118,8 @@ version of this file."
         ;; printed on the console.
         (parameterize ((shepherd-message-port
                         (%make-void-port "w")))
-          (lambda ()
-            (stop-service 'term-tty2)
-            (start-service 'term-tty2 (list locale)))))))
+          (stop-service 'term-tty2)
+          (start-service 'term-tty2 (list locale))))))
 
 (define* (compute-locale-step #:key
                               locales-name
@@ -170,9 +170,9 @@ been performed at build time."
 (define apply-keymap
   ;; Apply the specified keymap. Use the default keyboard model.
   #~(match-lambda
-      ((layout variant)
+      ((layout variant options)
        (kmscon-update-keymap (default-keyboard-model)
-                             layout variant))))
+                             layout variant options))))
 
 (define* (compute-keymap-step context)
   "Return a gexp that runs the keymap-page of INSTALLER and install the
@@ -198,11 +198,11 @@ selected keymap."
         (timezone-data #~(string-append #$tzdata
                                         "/share/zoneinfo/zone.tab")))
     #~(lambda (current-installer)
-        ((installer-help-menu current-installer)
+        ((installer-parameters-menu current-installer)
          (lambda ()
-           ((installer-help-page current-installer)
+           ((installer-parameters-page current-installer)
             (lambda _
-              (#$(compute-keymap-step 'help)
+              (#$(compute-keymap-step 'param)
                current-installer)))))
         (list
          ;; Ask the user to choose a locale among those supported by
@@ -235,12 +235,13 @@ selected keymap."
 
          ;; The installer runs in a kmscon virtual terminal where loadkeys
          ;; won't work. kmscon uses libxkbcommon as a backend for keyboard
-         ;; input. It is possible to update kmscon current keymap by sending it
-         ;; a keyboard model, layout and variant, in a somehow similar way as
-         ;; what is done with setxkbmap utility.
+         ;; input. It is possible to update kmscon current keymap by sending
+         ;; it a keyboard model, layout, variant and options, in a somehow
+         ;; similar way as what is done with setxkbmap utility.
          ;;
          ;; So ask for a keyboard model, layout and variant to update the
-         ;; current kmscon keymap.
+         ;; current kmscon keymap.  For non-Latin layouts, we add an
+         ;; appropriate second layout and toggle via Alt+Shift.
          (installer-step
           (id 'keymap)
           (description (G_ "Keyboard mapping selection"))
@@ -300,25 +301,6 @@ selected keymap."
              ((installer-final-page current-installer)
               result prev-steps))))))))
 
-(define guile-newt
-  ;; Guile-Newt with 'form-watch-fd'.
-  ;; TODO: Remove once a new release is out.
-  (let ((commit "c3cdeb0b53ac71aedabee669f57d44563c662446")
-        (revision "2"))
-    (package
-      (inherit (@ (gnu packages guile-xyz) guile-newt))
-      (name "guile-newt")
-      (version (git-version "0.0.1" revision commit))
-      (source  (origin
-                 (method git-fetch)
-                 (uri (git-reference
-                       (url "https://gitlab.com/mothacehe/guile-newt")
-                       (commit commit)))
-                 (file-name (git-file-name name version))
-                 (sha256
-                  (base32
-                   "1gksd1lzgjjh1p9vczghg8jw995d22hm34kbsiv8rcryirv2xy09")))))))
-
 (define (installer-program)
   "Return a file-like object that runs the given INSTALLER."
   (define init-gettext
@@ -376,6 +358,7 @@ selected keymap."
                          (gnu installer services)
                          (gnu installer timezone)
                          (gnu installer user)
+                         (gnu installer utils)
                          (gnu installer newt)
                          ((gnu installer newt keymap)
                           #:select (keyboard-layout->configuration))

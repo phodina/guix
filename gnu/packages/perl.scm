@@ -52,6 +52,7 @@
   #:use-module (guix build-system perl)
   #:use-module (gnu packages base)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages databases)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gd)
   #:use-module (gnu packages less)
@@ -352,7 +353,7 @@ sometimes even without using a single syscall.")
     (build-system perl-build-system)
     (home-page "https://metacpan.org/pod/Attribute::Util")
     (synopsis "Assorted general utility attributes")
-    (description "This packages provides various utility functions.  When used
+    (description "This package provides various utility functions.  When used
 without argument, this module provides four universally accessible attributes
 of general interest as follows:
 @itemize
@@ -363,6 +364,80 @@ of general interest as follows:
 @item SigHandler
 @end itemize")
     (license (package-license perl))))
+
+(define-public perl-authen-dechpwd
+  (package
+    (name "perl-authen-dechpwd")
+    (version "2.007")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Authen-DecHpwd-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "0xzind7zr2prjq3zbs2j18snfpshd4xrd7igv4kp67xl0axr6fpl"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (propagated-inputs
+     `(("perl-data-integer" ,perl-data-integer)
+       ("perl-digest-crc" ,perl-digest-crc)
+       ("perl-scalar-string" ,perl-scalar-string)))
+    (home-page "https://metacpan.org/release/Authen-DecHpwd")
+    (synopsis "DEC VMS password hashing")
+    (description "@code{Authen::DecHpwd} implements the
+SYS$HASH_PASSWORD password hashing function from VMS (also known as
+LGI$HPWD) and some associated VMS username and password handling
+functions.  The password hashing function is implemented in XS with a
+pure Perl backup version for systems that cannot handle XS.")
+    (license gpl2+)))
+
+(define-public perl-authen-passphrase
+  (package
+    (name "perl-authen-passphrase")
+    (version "0.008")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Authen-Passphrase-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "0qq4krap687rxf6xr31bg5nj5dqmm1frcm7fq249v1bxc4h4bnsm"))))
+  (build-system perl-build-system)
+  (native-inputs
+   `(("perl-module-build" ,perl-module-build)
+     ("perl-test-pod" ,perl-test-pod)
+     ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+  (propagated-inputs
+   `(("perl-authen-dechpwd" ,perl-authen-dechpwd)
+     ("perl-crypt-des" ,perl-crypt-des)
+     ("perl-crypt-eksblowfish" ,perl-crypt-eksblowfish)
+     ("perl-crypt-mysql" ,perl-crypt-mysql)
+     ("perl-crypt-passwdmd5" ,perl-crypt-passwdmd5)
+     ("perl-crypt-unixcrypt_xs" ,perl-crypt-unixcrypt_xs)
+     ("perl-data-entropy" ,perl-data-entropy)
+     ("perl-digest-md4" ,perl-digest-md4)
+     ("perl-module-runtime" ,perl-module-runtime)
+     ("perl-params-classify" ,perl-params-classify)))
+  (home-page "https://metacpan.org/release/Authen-Passphrase")
+  (synopsis "Hashed passwords/passphrases as objects")
+  (description "@code{Authen-Passphrase} is the base class for a
+system of objects that encapsulate passphrases.  An object of this
+type is a passphrase recogniser; its job is to recognise whether an
+offered passphrase is the right one.  For security such passphrase
+recognisers usually do not themselves know the passphrase they are
+looking for; they can merely recognise it when they see it.  There are
+many schemes in use to achieve this effect and the intent of this
+class is to provide a consistent interface to them all.  In addition
+to the base class, this module also contains implementations of
+several specific passphrase schemes.")
+  (license perl-license)))
 
 (define-public perl-autovivification
   (package
@@ -1827,6 +1902,55 @@ CPAN::Meta object are present.")
 versa.")
     (license (package-license perl))))
 
+(define-public perl-crypt-cbc
+  (package
+    (name "perl-crypt-cbc")
+    (version "2.33")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/L/LD/LDS/Crypt-CBC-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "0ig698lmpjz7fslnznxm0609lvlnvf4f3s370082nzycnqhxww3a"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-crypt-rijndael" ,perl-crypt-rijndael)))
+    (home-page "https://metacpan.org/release/Crypt-CBC")
+    (synopsis "Encrypt Data with Cipher Block Chaining Mode")
+    (description "@code{Crypt::CBC} is a Perl-only implementation of
+the cryptographic Cipher Block Chaining (CBC) mode.  In combination
+with a block cipher such as @code{Crypt::Rijndael} you can encrypt and
+decrypt messages of arbitrarily long length.  The encrypted messages
+are compatible with the encryption format used by SSLeay.")
+    (license perl-license)))
+
+(define-public perl-crypt-des
+  (package
+    (name "perl-crypt-des")
+    (version "2.07")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/D/DP/DPARIS/Crypt-DES-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "1rypxlhpd1jc0c327aghgl9y6ls47drmpvn0a40b4k3vhfsypc9d"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-crypt-cbc" ,perl-crypt-cbc)))
+    (home-page "https://metacpan.org/release/Crypt-DES")
+    (synopsis "DES encryption module")
+    (description "@code{Crypt::DES} is an XS-based implementation of
+the DES cryptography algorithm.  The module implements the
+@code{Crypt::CBC} interface which has blocksize, keysize, encrypt and
+decrypt functions.")
+    (license bsd-3)))
+
 (define-public perl-crypt-eksblowfish
   (package
     (name "perl-crypt-eksblowfish")
@@ -1859,6 +1983,57 @@ Cost and salt parameters together define a cipher family.  Within each
 family, the key determines the encryption function.  This distribution
 also includes an implementation of @code{bcrypt}, the Unix crypt()
 password hashing algorithm based on Eksblowfish.")
+    (license perl-license)))
+
+(define-public perl-crypt-mysql
+  (package
+    (name "perl-crypt-mysql")
+    (version "0.04")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/I/IK/IKEBE/Crypt-MySQL-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "1qyx6ha13r0rh80ldv5wy2bq2pa74igwh8817xlapsfgxymdzswk"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-dbd-mysql" ,perl-dbd-mysql)))
+    (propagated-inputs
+     `(("perl-digest-sha1" ,perl-digest-sha1)))
+    (home-page "https://metacpan.org/release/Crypt-MySQL")
+    (synopsis "Emulate the MySQL PASSWORD() function")
+    (description "@code{Crypt::MySQL} emulates the MySQL PASSWORD()
+function.  The module does not depend on an interface to the MySQL
+database server.  This enables the comparison of encrypted passwords
+without the need for a real MySQL environment.")
+    (license perl-license)))
+
+(define-public perl-crypt-passwdmd5
+  (package
+    (name "perl-crypt-passwdmd5")
+    (version "1.40")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/R/RS/RSAVAGE/Crypt-PasswdMD5-"
+            version ".tgz"))
+      (sha256
+       (base32
+        "0j0r74f18nk63phddzqbf7wqma2ci4p4bxvrwrxsy0aklbp6lzdp"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)))
+    (home-page "https://metacpan.org/release/Crypt-PasswdMD5")
+    (synopsis "Interoperable MD5-based crypt() functions")
+    (description "@code{Crypt::PasswdMD5} provides various
+crypt()-compatible interfaces to the MD5-based crypt() function found
+in various *nixes.  It is based on the implementation found on FreeBSD
+2.2.[56]-RELEASE.")
     (license perl-license)))
 
 (define-public perl-crypt-randpasswd
@@ -1934,6 +2109,29 @@ supported encryption modes are:
     (synopsis "Perl implementation of the RC4 encryption algorithm")
     (description "A pure Perl implementation of the RC4 algorithm.")
     (license (package-license perl))))
+
+(define-public perl-crypt-unixcrypt_xs
+  (package
+    (name "perl-crypt-unixcrypt_xs")
+    (version "0.11")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/B/BO/BORISZ/Crypt-UnixCrypt_XS-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "1ajg3x6kwxy4x9p3nw1j36qjxpjvdpi9wkca5gfd86y9q8939sv2"))))
+    (build-system perl-build-system)
+    (home-page "https://metacpan.org/release/Crypt-UnixCrypt_XS")
+    (synopsis "XS interface for a portable traditional crypt function")
+    (description "@code{Crypt::UnixCrypt_XS} implements the DES-based
+Unix @code{crypt} function.  For those who need to construct
+non-standard variants of @code{crypt}, the various building blocks
+used in @code{crypt} are also supplied separately.")
+    ;; Files in the 'fcrypt' directory are covered by a BSD licence.
+    (license (list perl-license bsd-3))))
 
 (define-public perl-cwd-guard
   (package
@@ -2085,6 +2283,33 @@ on the Internet, and cryptographic fake entropy.  The
 Data::Entropy::Algorithms module contains a collection of fundamental
 algorithms that use entropy.  There are random number generators and
 functions to shuffle arrays.")
+    (license perl-license)))
+
+(define-public perl-data-integer
+  (package
+    (name "perl-data-integer")
+    (version "0.006")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Data-Integer-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "0m53zxhx9sn49yqh7azlpyy9m65g54v8cd2ha98y77337gg7xdv3"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (home-page "https://metacpan.org/release/Data-Integer")
+    (synopsis "Details of the native integer data type")
+    (description "This module is about the native integer numerical
+data type.  A native integer is one of the types of datum that can
+appear in the numeric part of a Perl scalar.  This module supplies
+constants describing the native integer type.  Both signed and
+unsigned representations are handled.")
     (license perl-license)))
 
 (define-public perl-data-uniqid
@@ -3324,6 +3549,27 @@ each stack frame.")
     (description "Devel::Symdump provides access to the perl symbol table.")
     (license (package-license perl))))
 
+(define-public perl-digest-crc
+  (package
+    (name "perl-digest-crc")
+    (version "0.22")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/O/OL/OLIMAUL/Digest-CRC-"
+            version ".2.tar.gz"))
+      (sha256
+       (base32
+        "1jvqcyrbi11cj3vlfc9sq2g6rv9caizyjkjqsksvmxn6zgvm0aqi"))))
+    (build-system perl-build-system)
+    (home-page "https://metacpan.org/release/Digest-CRC")
+    (synopsis "Generic CRC functions")
+    (description "The @code{Digest::CRC} module calculates CRC sums of
+all sorts.  It contains wrapper functions with the correct parameters
+for CRC-CCITT, CRC-16 and CRC-32.")
+    (license public-domain)))
+
 (define-public perl-digest-hmac
   (package
     (name "perl-digest-hmac")
@@ -3342,6 +3588,29 @@ each stack frame.")
     (description "The Digest::HMAC module follows the common Digest::
 interface for the RFC 2104 HMAC mechanism.")
     (license (package-license perl))))
+
+(define-public perl-digest-md4
+  (package
+    (name "perl-digest-md4")
+    (version "1.9")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/M/MI/MIKEM/DigestMD4/Digest-MD4-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "19ma1hmvgiznq95ngzvm6v4dfxc9zmi69k8iyfcg6w14lfxi0lb6"))))
+    (build-system perl-build-system)
+    (home-page "https://metacpan.org/release/Digest-MD4")
+    (synopsis "Interface to the MD4 Algorithm")
+    (description "The @code{Digest::MD4} module allows you to use the
+RSA Data Security Inc.@: MD4 Message Digest algorithm from within Perl
+programs.  The algorithm takes as input a message of arbitrary length
+and produces as output a 128-bit \"fingerprint\" or \"message digest\"
+of the input.  MD4 is described in RFC 1320.")
+    (license perl-license)))
 
 (define-public perl-digest-md5
   (package
@@ -8012,6 +8281,37 @@ and @code{deserialize_regexp}.")
     (description "This module allows you to call isa, can, does, and DOES
 safely on things that may not be objects.")
     (license (package-license perl))))
+
+(define-public perl-scalar-string
+  (package
+    (name "perl-scalar-string")
+    (version "0.003")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append
+            "mirror://cpan/authors/id/Z/ZE/ZEFRAM/Scalar-String-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "0llbsqk7rsg9p7l1f4yk6iv7wij91gvavprsqhnb04w7nz4ifjpm"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (home-page "https://metacpan.org/release/Scalar-String")
+    (synopsis "String aspects of scalars")
+    (description "@code{Scalar::String} is about the string part of
+plain Perl scalars.  A scalar has a string value, which is notionally
+a sequence of Unicode codepoints but may be internally encoded in
+either ISO-8859-1 or UTF-8.  In places, more so in older versions of
+Perl, the internal encoding shows through.  To fully understand Perl
+strings it is necessary to understand these implementation details.
+This module provides functions to classify a string by encoding and to
+encode a string in a desired way.  The module is implemented in XS,
+with a pure Perl backup version for systems that cannot handle XS.")
+    (license perl-license)))
 
 (define-public perl-scope-guard
   (package

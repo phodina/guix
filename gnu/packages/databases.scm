@@ -225,38 +225,22 @@ standard Go idioms.")
 (define-public ephemeralpg
   (package
     (name "ephemeralpg")
-    (version "2.8")
+    (version "3.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
-             "http://eradman.com/ephemeralpg/code/ephemeralpg-"
+             "https://eradman.com/ephemeralpg/code/ephemeralpg-"
              version ".tar.gz"))
        (sha256
-        (base32 "1dpfxsd8a52psx3zlfbqkw53m35w28qwyb87a8anz143x6gnkkr4"))))
+        (base32 "1j0g7g114ma7y7sadbng5p1ss1zsm9zpicm77qspym6565733vvh"))))
     (build-system gnu-build-system)
     (arguments
      '(#:make-flags (list "CC=gcc"
                           (string-append "PREFIX=" %output))
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure)
-         (replace 'check
-           (lambda* (#:key inputs #:allow-other-keys)
-             ;; The intention for one test is to test without PostgreSQL on
-             ;; the $PATH, so replace the test $PATH with just the util-linux
-             ;; bin, which contains getopt. It will hopefully be possible to
-             ;; remove this for releases after 2.8.
-             (substitute* "test.rb"
-               (("/bin:/usr/bin")
-                (string-append (assoc-ref inputs "util-linux")
-                               "/bin")))
-             ;; Set the LC_ALL=C as some tests use sort, and the locale
-             ;; affects the order. It will hopefully be possible to remove
-             ;; this for releases after 2.8.
-             (setenv "LC_ALL" "C")
-             (invoke "ruby" "test.rb")
-             #t))
+         (delete 'configure)            ; no configure script
          (add-after 'install 'wrap
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
@@ -266,15 +250,18 @@ standard Go idioms.")
                                     "/bin")
                     ,(string-append (assoc-ref inputs "postgresql")
                                     "/bin")
-                    ;; For getsocket
+                    ;; For getsocket.
                     ,(string-append out "/bin")))))
-             #t)))))
+             #t)))
+       #:test-target "test"))
     (inputs
      `(("postgresql" ,postgresql)
        ("util-linux" ,util-linux)))
     (native-inputs
-     `(("ruby" ,ruby)))
-    (home-page "http://eradman.com/ephemeralpg/")
+     ;; For tests.
+     `(("ruby" ,ruby)
+       ("which" ,which)))
+    (home-page "https://eradman.com/ephemeralpg/")
     (synopsis "Run temporary PostgreSQL databases")
     (description
      "@code{pg_tmp} creates temporary PostgreSQL databases, suitable for tasks
@@ -521,7 +508,7 @@ replacement for the code@{python-memcached} library.")
        ("python" ,python-2)
        ("python2-pymongo" ,python2-pymongo)
        ("python2-pyyaml" ,python2-pyyaml)
-       ("tzdata" ,tzdata)))
+       ("tzdata" ,tzdata-for-tests)))
     (arguments
      `(#:scons ,scons-python2
        #:phases
@@ -1246,19 +1233,20 @@ data in a single database.  RocksDB is partially based on @code{LevelDB}.")
     (name "sparql-query")
     (version "1.1")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/tialaramex/"
-                                  name "/archive/" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/tialaramex/sparql-query")
+                     (commit version)))
               (sha256
-               (base32 "0yq3k20472rv8npcc420q9ab6idy584g5y0q501d360k5q0ggr8w"))
-              (file-name (string-append name "-" version ".tar.gz"))))
+               (base32 "0a84a89idpjhj9w2y3fmvzv7ldps1cva1kxvfmh897k02kaniwxk"))
+              (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (inputs
-     `(("readline" ,readline)
-       ("ncurses" ,ncurses)
+     `(("curl" ,curl)
        ("glib" ,glib)
        ("libxml2" ,libxml2)
-       ("curl" ,curl)))
+       ("ncurses" ,ncurses)
+       ("readline" ,readline)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (arguments

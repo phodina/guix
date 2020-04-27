@@ -26,6 +26,7 @@
 ;;; Copyright © 2019 David Wilson <david@daviwil.com>
 ;;; Copyright © 2019, 2020 Alexandros Theodotou <alex@zrythm.org>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
+;;; Copyright © 2020 Lars-Dominik Braun <lars@6xq.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -2671,7 +2672,7 @@ tune-in sender list from @url{http://opml.radiotime.com}.")
 (define-public pianobar
   (package
     (name "pianobar")
-    (version "2019.02.14")
+    (version "2020.04.05")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -2680,7 +2681,7 @@ tune-in sender list from @url{http://opml.radiotime.com}.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1bfabkj3m9kmhxl64w4azmi0xf7w52fmqfbw2ag28hbb5yy01k1m"))))
+                "1gq8kpks6nychqz4gf0rpy7mrhz5vjw48a60x56j6y9flmazmypw"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no tests
@@ -5380,3 +5381,125 @@ filtered, pitch shifted and ultimately disintegrated.  This is an unofficial
 port of the Regrader plugin created by Igorski.  It is available as an LV2
 plugin and a standalone JACK application.")
     (license license:expat)))
+
+(define-public tap-lv2
+  (let ((commit "cab6e0dfb2ce20e4ad34b067d1281ec0b193598a")
+        (revision "1"))
+    (package
+      (name "tap-lv2")
+      (version (git-version "0.0" revision commit))
+      (source
+        (origin
+          (method git-fetch)
+          (uri (git-reference
+                 (url "https://github.com/moddevices/tap-lv2.git")
+                 (commit commit)))
+          (file-name (git-file-name name version))
+          (sha256
+            (base32
+              "0q480djfqd9g8mzrggc4vl7yclrhdjqx563ghs8mvi2qq8liycw3"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f                      ; no check target
+         #:make-flags
+         (list "CC=gcc")
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'configure) ; no configure
+           (replace 'install
+             (lambda _
+               (invoke "make"
+               (string-append "INSTALL_PATH="
+                              (assoc-ref %outputs "out")
+                              "/lib/lv2")
+                       "install"))))))
+      (inputs
+        `(("lv2", lv2)))
+      (native-inputs
+        `(("pkg-config", pkg-config)))
+      (synopsis "Audio plugin collection")
+      (description "TAP (Tom's Audio Processing) plugins is a collection of
+  audio effect plugins originally released as LADSPA plugins.  This package
+  offers an LV2 version ported by moddevices.")
+      (home-page "http://tap-plugins.sourceforge.net/")
+      (license license:gpl2))))
+
+(define-public wolf-shaper
+  (package
+    (name "wolf-shaper")
+    (version "0.1.7")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/pdesaulniers/wolf-shaper.git")
+               (commit (string-append "v" version))
+               ;; Bundles a specific commit of the DISTRHO plugin framework.
+               (recursive? #t)))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32
+            "0lllgcbnnh1m95bp29hh17x170hl7170zizjrvy892qfkn36830d"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ; no check target
+       #:make-flags (list "CC=gcc")
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)            ;no configure target
+         (replace 'install              ;no install target
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin"))
+                    (lv2 (string-append out "/lib/lv2")))
+               ;; Install LV2.
+               (for-each
+                (lambda (file)
+                  (copy-recursively file
+                                    (string-append lv2 "/" (basename file))))
+                (find-files "bin" "\\.lv2$" #:directories? #t))
+               ;; Install executables.
+               (for-each
+                 (lambda (file)
+                   (install-file file bin))
+                 (find-files "bin"
+                             (lambda (name stat)
+                               (and
+                                 (equal? (dirname name) "bin")
+                                 (not (string-suffix? ".so" name))
+                                 (not (string-suffix? ".lv2" name))))))
+               #t))))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+      `(("jack", jack-1)
+        ("lv2", lv2)
+        ("mesa", mesa)))
+    (synopsis "Waveshaper plugin")
+    (description "Wolf Shaper is a waveshaper plugin with a graph editor.
+It is provided as an LV2 plugin and as a standalone Jack application.")
+    (home-page "https://pdesaulniers.github.io/wolf-shaper/")
+    (license license:gpl3)))
+
+(define-public wolf-spectrum
+  (package
+    (inherit wolf-shaper)
+    (name "wolf-spectrum")
+    (version "1.0.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/pdesaulniers/wolf-spectrum")
+               (commit (string-append "v" version))
+               ;; Bundles a specific commit of the DISTRHO plugin framework.
+               (recursive? #t)))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32
+            "17db1jlj7vb1xyvkdhhrsvdbwb7jqw6i4168cdvlj3yvn2ra8gpm"))))
+    (synopsis "2D spectrogram plugin")
+    (description "Wolf Spectrum is a real-time 2D spectrogram plugin.
+It is provided as an LV2 plugin and as a standalone Jack application.")
+    (home-page "https://github.com/pdesaulniers/wolf-spectrum")
+    (license license:gpl3)))

@@ -23,6 +23,7 @@
              (guix packages)
              (guix profiles)
              ((gnu ci) #:select (%cross-targets))
+             ((gnu services xorg) #:select (%default-xorg-modules))
              (guix utils)
              (srfi srfi-1)
              (srfi srfi-26))
@@ -49,24 +50,27 @@ TARGET."
 
 (define %system-packages
   ;; Key packages proposed by the Guix System installer.
-  (map specification->package
-       '("xorg-server" "xfce" "gnome" "mate" "enlightenment"
-         "openbox" "awesome" "i3-wm" "ratpoison"
-         "xlockmore" "slock" "libreoffice"
-         "connman" "network-manager" "network-manager-applet"
-         "openssh" "ntp" "tor"
-         "linux-libre" "grub-hybrid"
-         ;; FIXME: Add IceCat when Rust is available on i686.
-         ;;"icecat"
-         )))
+  (append (map specification->package
+               '("xorg-server" "xfce" "gnome" "mate" "enlightenment"
+                 "openbox" "awesome" "i3-wm" "ratpoison"
+                 "xlockmore" "slock" "libreoffice"
+                 "connman" "network-manager" "network-manager-applet"
+                 "openssh" "ntp" "tor"
+                 "linux-libre" "grub-hybrid"
+                 ;; FIXME: Add IceCat when Rust is available on i686.
+                 ;;"icecat"
+                 ))
+          %default-xorg-modules))
 
 (define %packages-to-cross-build
   ;; Packages that must be cross-buildable from x86_64-linux.
-  (cons (@ (gnu packages gcc) gcc)
-        (map specification->package
-             '("coreutils" "grep" "sed" "findutils" "diffutils" "patch"
-               "gawk" "gettext" "gzip" "xz"
-               "hello" "guile@2.2" "zlib"))))
+  ;; FIXME: Add (@ (gnu packages gcc) gcc) when <https://bugs.gnu.org/40463>
+  ;; is fixed.
+  (append (list (@ (gnu packages guile) guile-2.2/fixed))
+          (map specification->package
+               '("coreutils" "grep" "sed" "findutils" "diffutils" "patch"
+                 "gawk" "gettext" "gzip" "xz"
+                 "hello" "zlib"))))
 
 (define %packages-to-cross-build-for-mingw
   ;; Many things don't build for MinGW.  Restrict to what's known to work.
@@ -91,6 +95,13 @@ TARGET."
                       %base-packages))
                %hydra-supported-systems)))
 
+(define %system-manifest
+  (manifest
+   (append-map (lambda (system)
+                 (map (cut package->manifest-entry* <> system)
+                      %system-packages))
+               '("x86_64-linux" "i686-linux"))))  ;Guix System
+
 (define %cross-manifest
   (manifest
    (append-map (lambda (target)
@@ -113,5 +124,6 @@ TARGET."
 
 ;; Return the union of all three manifests.
 (concatenate-manifests (list %base-manifest
+                             %system-manifest
                              %cross-manifest
                              %cross-bootstrap-manifest))

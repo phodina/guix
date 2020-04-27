@@ -11,7 +11,8 @@
 ;;; Copyright © 2019 nee <nee@cock.li>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
-;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2018, 2019, 2020 Vagrant Cascadian <vagrant@debian.org>
+;;; Copyright © 2020 Pierre Langlois <pierre.langlois@gmx.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -69,8 +70,7 @@
   #:use-module (guix utils)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
-  #:use-module (ice-9 regex)
-  #:export (make-u-boot-package))
+  #:use-module (ice-9 regex))
 
 (define unifont
   ;; GNU Unifont, <http://gnu.org/s/unifont>.
@@ -401,7 +401,7 @@ tree binary files.  These are board description files used by Linux and BSD.")
 (define u-boot
   (package
     (name "u-boot")
-    (version "2020.01")
+    (version "2020.04")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -409,7 +409,7 @@ tree binary files.  These are board description files used by Linux and BSD.")
                     "u-boot-" version ".tar.bz2"))
               (sha256
                (base32
-                "1w9ml4jl15q6ixpdqzspxjnl7d3rgxd7f99ms1xv5c8869h3qida"))))
+                "0wjkasnz87q86hx93inspdjfjsinmxi87bcvj30c773x0fpjlwzy"))))
     (native-inputs
      `(("bc" ,bc)
        ("bison" ,bison)
@@ -420,7 +420,7 @@ tree binary files.  These are board description files used by Linux and BSD.")
        ("python" ,python)
        ("python-coverage" ,python-coverage)
        ("python-pytest" ,python-pytest)
-       ("sdl" ,sdl)
+       ("sdl2" ,sdl2)
        ("swig" ,swig)))
     (build-system  gnu-build-system)
     (home-page "https://www.denx.de/wiki/U-Boot/")
@@ -528,7 +528,7 @@ def test_ctrl_c"))
 also initializes the boards (RAM etc).  This package provides its
 board-independent tools.")))
 
-(define* (make-u-boot-package board triplet #:key (u-boot u-boot))
+(define-public (make-u-boot-package board triplet)
   "Returns a u-boot package for BOARD cross-compiled for TRIPLET."
   (let ((same-arch? (lambda ()
                       (string=? (%current-system)
@@ -836,35 +836,25 @@ to Novena upstream, does not load u-boot.img from the first partition.")
        `(("firmware" ,arm-trusted-firmware-rk3399)
          ,@(package-native-inputs base))))))
 
-(define u-boot-pbp
-  (let ((commit "365495a329c8e92ca4c134562d091df71b75845e"))
-    (package
-      (inherit u-boot)
-      (name "u-boot")
-      (version (git-version (package-version u-boot) "pinebook-pro-1" commit))
-      (source (origin
-                ;; XXX: Snapshots are available but changes timestamps every download.
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://git.eno.space/pbp-uboot.git")
-                      (commit commit)))
-                (file-name (string-append name "-" version "-checkout"))
-                (sha256
-                 (base32
-                  "092dxcvsk40fclks0lrg2caigzjhw9axjg936w5fs6aj7c0qxzjy")))))))
-
 (define-public u-boot-pinebook-pro-rk3399
-  (let ((base (make-u-boot-package "pinebook_pro-rk3399" "aarch64-linux-gnu"
-                                   #:u-boot u-boot-pbp)))
+  (let ((base (make-u-boot-package "pinebook-pro-rk3399" "aarch64-linux-gnu")))
     (package
-      (inherit base)
+     (inherit base)
+     (source (origin
+              (inherit (package-source u-boot))
+              (patches
+               (search-patches "u-boot-add-boe-nv140fhmn49-display.patch"
+                               "u-boot-gpio-keys-binding-cons.patch"
+                               "u-boot-leds-common-binding-con.patch"
+                               "u-boot-DT-for-Pinebook-Pro.patch"
+                               "u-boot-support-Pinebook-Pro-laptop.patch"
+                               "u-boot-video-rockchip-fix-build.patch"))))
       (arguments
         (substitute-keyword-arguments (package-arguments base)
           ((#:phases phases)
            `(modify-phases ,phases
               (add-after 'unpack 'set-environment
                 (lambda* (#:key inputs #:allow-other-keys)
-                  (setenv "CPATH" (string-join (cdr (string-split (getenv "CPATH") #\:)) ":"))
                   (setenv "BL31" (string-append (assoc-ref inputs "firmware")
                                                 "/bl31.elf"))
                   #t))

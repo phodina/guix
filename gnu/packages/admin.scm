@@ -52,6 +52,7 @@
 (define-module (gnu packages admin)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system emacs)
+  #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system perl)
@@ -64,6 +65,7 @@
   #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
+  #:use-module (gnu packages autogen)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
@@ -127,6 +129,50 @@
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg))
+
+(define-public ktsuss
+  (package
+    (name "ktsuss")
+    (version "2.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/nomius/ktsuss.git")
+         (commit version)))
+       (sha256
+        (base32 "0q9931f9hp47v1n8scli4bdg2rkjpf5jf8v7jj2gdn83aia1r2hz"))
+       (file-name (git-file-name name version))))
+    (build-system glib-or-gtk-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "--enable-sudo=yes")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-file-names
+           (lambda _
+             (substitute* "configure.ac"
+               (("supath=`which su 2>/dev/null`")
+                "supath=/run/setuid-programs/su")
+               (("sudopath=`which sudo 2>/dev/null`")
+                "sudopath=/run/setuid-programs/sudo"))
+             #t)))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("glib" ,glib)
+       ("gtk+" ,gtk+-2)))
+    (synopsis "Graphical front end for @command{su}")
+    (description
+     "Ktsuss stands for ``Keep the @command{su} simple, stupid''.
+It is a graphical version of @command{su} written in C and GTK+ 2, with
+simplicity in mind.")
+    (home-page "https://github.com/nomius/ktsuss")
+    (license license:bsd-3)))
 
 (define-public aide
   (package
@@ -199,14 +245,14 @@ and provides a \"top-like\" mode (monitoring).")
 (define-public shepherd
   (package
     (name "shepherd")
-    (version "0.7.0")
+    (version "0.8.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/shepherd/shepherd-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "07j3vd0y8zab2nwbrwj0ahrfif1ldm5sjssn7m3dw4s307fsrfzx"))))
+                "02lbc8z5gd8v8wfi4yh1zww8mk03w0zcwnmk4l4p3vpjlvlb63ll"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--localstatedir=/var")))
@@ -240,6 +286,16 @@ interface and is based on GNU Guile.")
        ("guile" ,guile-next)))
     (inputs
      `(("guile" ,guile-next)))))
+
+(define-public guile2.0-shepherd
+  (package
+    (inherit shepherd)
+    (name "guile2.0-shepherd")
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("guile" ,guile-2.0)))
+    (inputs
+     `(("guile" ,guile-2.0)))))
 
 (define-public cloud-utils
   (package
@@ -768,7 +824,7 @@ connection alive.")
 (define-public isc-dhcp
   (let* ((bind-major-version "9")
          (bind-minor-version "11")
-         (bind-patch-version "14")
+         (bind-patch-version "18")
          (bind-release-type "")         ; for patch release, use "-P"
          (bind-release-version "")      ; for patch release, e.g. "6"
          (bind-version (string-append bind-major-version
@@ -904,7 +960,7 @@ connection alive.")
                                         "/bind-" bind-version ".tar.gz"))
                     (sha256
                      (base32
-                      "1pv3bvm9dzyz2kqjkw15sgh0hd5fzsv274v5z6jp9c4nb5130fyr"))))
+                      "0vws0zzb39mkphj4hhjrgfj9dzw951lc4pfa6pqg5ll5ma51mbsr"))))
 
                 ;; When cross-compiling, we need the cross Coreutils and sed.
                 ;; Otherwise just use those from %FINAL-INPUTS.

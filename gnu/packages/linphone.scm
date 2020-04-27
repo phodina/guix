@@ -49,6 +49,7 @@
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu))
 
 (define-public bcunit
@@ -99,7 +100,7 @@ framework for writing, administering, and running unit tests in C.")
        ("mbedtls" ,mbedtls-apache)))
     (synopsis "Belledonne Communications Tool Box")
     (description "BcToolBox is an utilities library used by Belledonne
-Communications softwares like belle-sip, mediastreamer2 and linphone.")
+Communications software like belle-sip, mediastreamer2 and linphone.")
     (home-page "https://gitlab.linphone.org/BC/public/bctoolbox")
     (license license:gpl2+)))
 
@@ -415,6 +416,7 @@ decoding, and rendering.")
                        "/linphone-" version ".tar.gz"))
        (sha256
         (base32 "0phhkx55xdyg28d4wn8l8q4yvsmdgzmjiw584d4s190sq1azm91x"))))
+    (outputs '("out" "doc" "tester"))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f                      ; No test target
@@ -428,6 +430,11 @@ decoding, and rendering.")
                                       "/lib/glib-2.0/include"))
         "-DENABLE_STATIC=NO"            ; Not required
         "-DENABLE_GTK_UI=YES")          ; For Legacy UI
+       #:imported-modules (,@%cmake-build-system-modules
+                           (guix build glib-or-gtk-build-system))
+       #:modules ((guix build cmake-build-system)
+                  ((guix build glib-or-gtk-build-system) #:prefix glib-or-gtk:)
+                  (guix build utils))
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'patch
@@ -435,31 +442,55 @@ decoding, and rendering.")
              (substitute* "gtk/main.c"
                (("#include \"liblinphone_gitversion.h\"")
                 ""))
-             #t)))))
+             #t))
+         (add-after 'install 'separate-outputs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (assoc-ref outputs "doc"))
+                    (tester (assoc-ref outputs "tester"))
+                    (tester-name (string-append ,name "_tester")))
+               ;; Copy the tester executable.
+               (mkdir-p (string-append tester "/bin"))
+               (rename-file (string-append out "/bin/" tester-name)
+                            (string-append tester "/bin/" tester-name))
+               ;; Copy the tester data files.
+               (mkdir-p (string-append tester "/share/"))
+               (rename-file (string-append out "/share/" tester-name)
+                            (string-append tester "/share/" tester-name))
+               ;; Copy the HTML and XML documentation.
+               (copy-recursively
+                (string-append out "/share/doc/linphone-" ,version)
+                (string-append doc "/share/doc/" ,name "-" ,version))
+               (delete-file-recursively
+                (string-append out "/share/doc/linphone-" ,version))
+               #t)))
+         (add-after 'separate-outputs 'glib-or-gtk-compile-schemas
+           (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-compile-schemas))
+         (add-after 'glib-or-gtk-compile-schemas 'glib-or-gtk-wrap
+           (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap)))))
     (native-inputs
-     `(("dot" ,graphviz)
+     `(("gettext" ,gettext-minimal)
+       ("udev" ,eudev)                  ;for libudev.h
+       ;; For generating the C++ wrappers.
+       ("dot" ,graphviz)
        ("doxygen" ,doxygen)
-       ("gettext" ,gettext-minimal)
-       ("iconv" ,libiconv)
        ("python" ,python)
-       ("xml2" ,libxml2)
-       ("zlib" ,zlib)))
+       ("pystache" ,python-pystache)
+       ("six" ,python-six)))
     (inputs
      `(("bctoolbox" ,bctoolbox)
        ("belcard" ,belcard)
        ("bellesip" ,belle-sip)
        ("bzrtp", bzrtp)
+       ("iconv" ,libiconv)
        ("glib" ,glib)
        ("gtk2" ,gtk+-2)
        ("mediastreamer2" ,mediastreamer2)
        ("notify" ,libnotify)
        ("ortp" ,ortp)
-       ("pystache" ,python-pystache)
-       ("six" ,python-six)
        ("sqlite" ,sqlite)
-       ("udev" ,eudev)))
-    (propagated-inputs
-     `(("murrine" ,murrine)))           ; Required for GTK UI
+       ("xml2" ,libxml2)
+       ("zlib" ,zlib)))
     (synopsis "Belledonne Communications Softphone Library")
     (description "Liblinphone is a high-level SIP library integrating
 all calling and instant messaging features into an unified
