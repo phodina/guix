@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017, 2018, 2019 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2019 Christopher Howard <christopher@librehacker.com>
+;;; Copyright © 2019, 2020 Christopher Howard <christopher@librehacker.com>
 ;;; Copyright © 2019, 2020 Evan Straw <evan.straw99@gmail.com>
 ;;; Copyright © 2020 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2020 Danny Milosavljevic <dannym@scratchpost.org>
@@ -26,6 +26,7 @@
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
+  #:use-module (guix utils)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages audio)
   #:use-module (gnu packages autotools)
@@ -49,6 +50,7 @@
   #:use-module (gnu packages lua)
   #:use-module (gnu packages maths)
   #:use-module (gnu packages multiprecision)
+  #:use-module (gnu packages ncurses)
   #:use-module (gnu packages networking)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pulseaudio)
@@ -122,13 +124,45 @@ mathematical operations, and much more.")
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (arguments
-     `(#:configure-flags '("-DDETACH_KERNEL_DRIVER=ON")
-       #:tests? #f)) ; No tests
+     `(#:configure-flags '("-DDETACH_KERNEL_DRIVER=ON"
+                           "-DINSTALL_UDEV_RULES=ON")
+       #:tests? #f ; No tests
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-paths
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* "CMakeLists.txt"
+               (("DESTINATION \"/etc/udev/")
+                (string-append "DESTINATION \""
+                               (assoc-ref outputs "out")
+                               "/lib/udev/")))
+             #t)))))
     (home-page "https://osmocom.org/projects/sdr/wiki/rtl-sdr")
     (synopsis "Software defined radio driver for Realtek RTL2832U")
     (description "DVB-T dongles based on the Realtek RTL2832U can be used as a
 cheap software defined radio, since the chip allows transferring the raw I/Q
-samples to the host.  @code{rtl-sdr} provides drivers for this purpose.")
+samples to the host.  @code{rtl-sdr} provides drivers for this purpose.
+
+The default Linux driver managing DVB-T dongles as TV devices doesn't work for
+SDR purposes and clashes with this package.  Therefore you must prevent the
+kernel from loading it automatically by adding the following line to your
+system configuration:
+
+@lisp
+(kernel-arguments '(\"modprobe.blacklist=dvb_usb_rtl28xxu\"))
+@end lisp
+
+To install the rtl-sdr udev rules, you must add this package in the
+configuration of the udev system service. E.g.:
+
+@lisp
+(services
+ (modify-services %desktop-services
+  (udev-service-type config =>
+   (udev-configuration (inherit config)
+    (rules (cons rtl-sdr
+            (udev-configuration-rules config)))))))
+@end lisp")
     (license license:gpl2+)))
 
 (define-public chirp
@@ -266,7 +300,6 @@ used by RDS Spy, and audio files containing @dfn{multiplex} signals (MPX).")
        ("ghostscript" ,ghostscript)
        ("orc" ,orc)
        ("pkg-config" ,pkg-config)
-       ("python" ,python)
        ("python-cheetah" ,python-cheetah)
        ("python-mako" ,python-mako)
        ("python-pyzmq" ,python-pyzmq)
@@ -293,6 +326,7 @@ used by RDS Spy, and audio files containing @dfn{multiplex} signals (MPX).")
        ("log4cpp" ,log4cpp)
        ("pango" ,pango)
        ("portaudio" ,portaudio)
+       ("python" ,python)
        ("python-click" ,python-click)
        ("python-click-plugins" ,python-click-plugins)
        ("python-lxml" ,python-lxml)
@@ -363,6 +397,17 @@ used by RDS Spy, and audio files containing @dfn{multiplex} signals (MPX).")
                (wrap-program (string-append out "/bin/gnuradio-companion")
                  `("GI_TYPELIB_PATH" ":" prefix ,(filter identity paths))))
              #t)))))
+    (native-search-paths
+     ;; Variables required to find third-party plugins at runtime.
+     (list (search-path-specification
+            (variable "GRC_BLOCKS_PATH")
+            (files '("share/gnuradio/grc/blocks")))
+           (search-path-specification
+            (variable "PYTHONPATH")
+            (files (list (string-append "lib/python"
+                                        (version-major+minor
+                                         (package-version python))
+                                        "/site-packages"))))))
     (synopsis "Toolkit for software-defined radios")
     (description
      "GNU Radio is a development toolkit that provides signal processing blocks
@@ -399,8 +444,8 @@ environment.")
        ("fftwf" ,fftwf)
        ("gmp" ,gmp)
        ("gnuradio" ,gnuradio)
+       ("hackrf" ,hackrf)
        ("log4cpp" ,log4cpp)
-       ;; TODO: Add more drivers.
        ("rtl-sdr" ,rtl-sdr)
        ("volk" ,volk)))
     (synopsis "GNU Radio block for interfacing with various radio hardware")
@@ -654,6 +699,73 @@ for correctness.")
     (home-page "http://www.w1hkj.com/")
     (license license:gpl3+)))
 
+(define-public hackrf
+  ;; Using a git commit because there have been many many commits
+  ;; since the relase two years ago, but no sign of a promised
+  ;; release for many months now.
+  (let ((commit "43e6f99fe8543094d18ff3a6550ed2066c398862")
+        (revision "0"))
+    (package
+     (name "hackrf")
+     (version (git-version "2018.01.1" revision commit))
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/mossmann/hackrf.git")
+             (commit commit)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0avnv693xi0zsnrvkbfn0ln1r3s1iyj0bz7sc3gxay909av0pvbc"))))
+     (build-system cmake-build-system)
+     (arguments
+      '(#:configure-flags
+        (list "-DUDEV_RULES_GROUP=dialout"
+              (string-append "-DUDEV_RULES_PATH="
+                             (assoc-ref %outputs "out")
+                             "/lib/udev/rules.d"))
+        #:phases
+        (modify-phases %standard-phases
+          (add-before 'configure 'enter-source-directory
+            (lambda _
+              (chdir "host")
+              #t))
+          (add-after 'install 'delete-static-library
+            (lambda* (#:key outputs #:allow-other-keys)
+              (delete-file (string-append (assoc-ref outputs "out")
+                                          "/lib/libhackrf.a"))
+              #t))
+          (add-before 'install-license-files 'leave-source-directory
+            (lambda _
+              (chdir "..")
+              #t)))
+        #:tests? #f)) ; no test suite
+     (native-inputs
+      `(("pkg-config" ,pkg-config)))
+     (inputs
+      `(("fftw" ,fftw)
+        ("fftwf" ,fftwf)
+        ("libusb" ,libusb)))
+     (home-page "https://greatscottgadgets.com/hackrf/")
+     (synopsis "User-space library and utilities for HackRF SDR")
+     (description
+      "Command line utilities and a C library for controlling the HackRF
+Software Defined Radio (SDR) over USB.  Installing this package installs
+the userspace hackrf utilities and C library.  To install the hackrf
+udev rules, you must add this package as a system service via
+modify-services.  E.g.:
+
+@lisp
+(services
+ (modify-services
+  %desktop-services
+  (udev-service-type config =>
+   (udev-configuration (inherit config)
+    (rules (cons hackrf
+            (udev-configuration-rules config)))))))
+@end lisp")
+     (license license:gpl2))))
+
 (define-public hamlib
   (package
     (name "hamlib")
@@ -762,3 +874,160 @@ modes were all designed for making reliable, confirmed QSOs under extreme
 weak-signal conditions.")
     (home-page "https://www.physics.princeton.edu/pulsar/k1jt/wsjtx.html")
     (license license:gpl3)))
+
+(define-public js8call
+  (package
+    (inherit wsjtx)
+    (name "js8call")
+    (version "2.1.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://files.js8call.com/" version
+                           "/js8call-" version ".tgz"))
+       (sha256
+        (base32 "034jnv6h172znn9ijl6wpmzx0rqibb69ppg52ndvkxhqlgrbsvyc"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           ;; Delete bundled boost to use the shared one.
+           (delete-file-recursively "boost")
+           #t))))
+    (build-system qt-build-system)
+    (native-inputs
+     `(("asciidoc" ,asciidoc)
+       ("gfortran" ,gfortran)
+       ("pkg-config" ,pkg-config)
+       ("qttools" ,qttools)
+       ("ruby-asciidoctor" ,ruby-asciidoctor)))
+    (inputs
+     `(("boost" ,boost)
+       ("fftw" ,fftw)
+       ("fftwf" ,fftwf)
+       ("hamlib" ,wsjtx-hamlib)
+       ("libusb" ,libusb)
+       ("qtbase" ,qtbase)
+       ("qtmultimedia" ,qtmultimedia)
+       ("qtserialport" ,qtserialport)))
+    (arguments
+     `(#:tests? #f ; No test suite
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-paths
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* "CMakeLists.txt"
+               (("DESTINATION /usr/share")
+                (string-append "DESTINATION "
+                               (assoc-ref outputs "out")
+                               "/share")))
+             #t))
+         (add-after 'unpack 'fix-hamlib
+           (lambda _
+             (substitute* "CMake/Modules/Findhamlib.cmake"
+               (("set \\(ENV\\{PKG_CONFIG_PATH\\}.*\\)")
+                "set (__pc_path $ENV{PKG_CONFIG_PATH})
+  list (APPEND __pc_path \"${__hamlib_pc_path}\")
+  set (ENV{PKG_CONFIG_PATH} \"${__pc_path}\")"))
+             (substitute* "HamlibTransceiver.hpp"
+               (("#ifdef JS8_USE_LEGACY_HAMLIB")
+                "#if 1"))
+             #t)))))
+    (synopsis "Weak-signal ham radio communication program")
+    (description
+     "JS8Call is a software using the JS8 digital mode (a derivative of the FT8
+mode) providing weak signal keyboard to keyboard messaging to amateur radio
+operators.")
+    (home-page "http://js8call.com/")
+    (license license:gpl3)))
+
+(define-public xnec2c
+  (package
+    (name "xnec2c")
+    (version "4.1.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://www.5b4az.org/pkg/nec2/xnec2c/xnec2c-"
+                           version ".tar.bz2"))
+       (sha256
+        (base32 "1myvlkfybb2ha8l0h96ca3iz206zzy9z5iizm0sbab2zzp78n1r9"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("gtk+" ,gtk+)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-makefile
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* '("Makefile.am" "Makefile.in")
+               ;; The DESTDIR variable does not get replaced the prefix
+               ;; in the final Makefile, so let's do here.
+               (("\\$\\(DESTDIR\\)/usr")
+                (assoc-ref outputs "out")))
+             #t))
+         (add-after 'fix-makefile 'fix-paths
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; Increase the max length of the path to the glade file,
+             ;; so that the '/gnu/store/...' path can fit in.
+             (substitute* '("src/shared.c" "src/shared.h")
+               (("char xnec2c_glade\\[64\\];")
+                "char xnec2c_glade[256];"))
+             ;; Fix hard coded references to '/usr/...'.
+             (substitute* '("src/geom_edit.c" "src/main.c")
+               (("\"/usr")
+                (string-append "\"" (assoc-ref outputs "out"))))
+             #t)))))
+    (synopsis "Antenna modeling software")
+    (description
+     "Xnec2c is a GTK3-based graphical version of nec2c, a translation to the
+C language of NEC2, the FORTRAN Numerical Electromagnetics Code commonly used
+for antenna simulation and analysis.  It can be used to define the geometry of
+an antenna, and then plot the radiation pattern or frequency-related data like
+gain and standing wave ratio.")
+    (home-page "http://www.5b4az.org/")
+    (license license:gpl3+)))
+
+(define-public dump1090
+  (package
+    (name "dump1090")
+    (version "3.8.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/flightaware/dump1090.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0xg8rzrxqklx1m9ncxsd96dlkbjcsxfi2mrb859v50f07xysdyd8"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libusb" ,libusb)
+       ("ncurses" ,ncurses)
+       ("rtl-sdr" ,rtl-sdr)))
+    (arguments
+     `(#:test-target "test"
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda _
+             (setenv "CC" "gcc")
+             (setenv "BLADERF" "no")
+             #t))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((bin (string-append (assoc-ref outputs "out") "/bin/")))
+               (install-file "dump1090" bin)
+               (install-file "view1090" bin)
+               #t))))))
+    (synopsis "Mode S decoder for rtl-sdr devices")
+    (description
+     "Dump1090 is a Mode S decoder specifically designed for rtl-sdr devices.
+It can be used to decode the ADS-B signals that planes emit to indicate
+their position, altitude, speed, etc.")
+    (home-page "https://github.com/flightaware/dump1090")
+    (license license:bsd-3)))

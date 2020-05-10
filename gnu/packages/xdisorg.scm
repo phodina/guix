@@ -35,6 +35,8 @@
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Damien Cassou <damien@cassou.me>
 ;;; Copyright © 2020 John Soo <jsoo1@asu.edu>
+;;; Copyright © 2020 Boris A. Dekshteyn <boris.dekshteyn@gmail.com>
+;;; Copyright © 2020 Alex McGrath <amk@amk.ie>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -463,6 +465,8 @@ following the mouse.")
                 "1ryxzdf048x7wsx4dlvrr1p00gzwfs7lybnhgc7ygbj0dvyxcrns"))
               (patches (search-patches "pixman-CVE-2016-5296.patch"))))
     (build-system gnu-build-system)
+    (arguments
+     '(#:configure-flags '("--disable-static")))
     (inputs
      `(("libpng" ,libpng)
        ("zlib" ,zlib)))
@@ -645,7 +649,7 @@ of the screen selected by mouse.")
 (define-public slop
   (package
     (name "slop")
-    (version "7.4")
+    (version "7.5")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -654,7 +658,7 @@ of the screen selected by mouse.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0fgd8a2dqkg64all0f96sca92sdss9r3pzmv5kck46b99z2325z6"))))
+                "1k8xxb4rj2fylr4vj16yvsf73cyywliz9cy78pl4ibmi03jhg837"))))
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f)) ; no "check" target
@@ -678,7 +682,7 @@ selection's dimensions to stdout.")
 (define-public maim
   (package
     (name "maim")
-    (version "5.5.3")
+    (version "5.6.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -687,7 +691,7 @@ selection's dimensions to stdout.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1kbxsz8whfxl5blwsvpva2q95zwy72argwhi1cfqh5lrhzq5zrpp"))))
+                "181mjjrjb9fs1ficcv9miqbk94v95j1yli7fjp2dj514g7nj9l3x"))))
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f))            ; no "check" target
@@ -1251,7 +1255,7 @@ protocol.")
        ("libglade" ,libglade)
        ("libxml2" ,libxml2)
        ("libsm" ,libsm)
-       ("libjpeg" ,libjpeg)
+       ("libjpeg" ,libjpeg-turbo)
        ("linux-pam" ,linux-pam)
        ("pango" ,pango)
        ("gtk+" ,gtk+)
@@ -2127,7 +2131,7 @@ Xwrits hides itself until you should take another break.")
                 "env = Environment(
                          ENV = {
                            'PATH': os.environ['PATH'],
-                           'CPATH': os.environ['CPATH'],
+                           'CPATH': os.environ['C_INCLUDE_PATH'],
                            'LIBRARY_PATH': os.environ['LIBRARY_PATH'],
                            'PKG_CONFIG_PATH': os.environ['PKG_CONFIG_PATH']
                          },")
@@ -2286,3 +2290,71 @@ to find all available clips and launches @command{dmenu} (or @command{rofi},
 depending on the value of @code{CM_LAUNCHER}) to let the user select a clip.
 After selection, the clip is put onto the PRIMARY and CLIPBOARD X selections.")
       (license license:public-domain))))
+
+(define-public kbdd
+  (package
+    (name "kbdd")
+    (version "0.7.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/qnikst/kbdd.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0qkq75grbd4wkx4nlvswgavpijk9ad0pzqyj89a0ayjsbsn36pqy"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("glib" ,glib "bin")
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("dbus-glib", dbus-glib)
+       ("glib" ,glib)
+       ("libx11" ,libx11)))
+    (home-page "https://github.com/qnikst/kbdd")
+    (synopsis "Per-window keyboard layout switching daemon for X")
+    (description "@command{kbdd} is a simple keyboard layout switching
+program, which is designed to run in an X11 session and remember
+keyboard layouts on a per-window basis.  That can be very handy for a
+user of a non-US keyboard who does not want to jump through layouts back
+and forth while typing in terminals (mostly in a latin alphabet) and
+some kind of chat (in native language).
+
+@command{kbdd} also supports D-Bus signals, which makes it possible to
+create layout indicator widgets.")
+    (license license:bsd-2)))
+
+(define-public j4-dmenu-desktop
+  (package
+    (name "j4-dmenu-desktop")
+    (version "2.17")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/enkore/j4-dmenu-desktop.git")
+                    (commit (string-append "r" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0v23fimkn83dcm5p53y2ymhklff3kwppxhf75sm8xmswrzkixpgc"))))
+    (build-system cmake-build-system)
+    (native-inputs
+     `(("catch2" ,catch-framework2)))
+    (arguments
+     `(#:configure-flags '("-DWITH_GIT_CATCH=off")
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             (invoke "./j4-dmenu-tests" "exclude:SearchPath/XDG_DATA_HOME"))))))
+    (synopsis "Fast desktop menu")
+    (description
+     "j4-dmenu-desktop is a replacement for i3-dmenu-desktop.  Its purpose
+is to find @file{.desktop} files and offer you a menu to start an application
+using @command{dmenu}.")
+    (home-page "https://github.com/enkore/j4-dmenu-desktop")
+    (license license:gpl3+)))

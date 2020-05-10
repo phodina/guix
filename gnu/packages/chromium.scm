@@ -248,8 +248,8 @@ from forcing GEXP-PROMISE."
                       #:system system
                       #:guile-for-build guile)))
 
-(define %chromium-version "81.0.4044.122")
-(define %ungoogled-revision "31d6e60c96481599b42072b4489e4468280198e3")
+(define %chromium-version "81.0.4044.138")
+(define %ungoogled-revision "c2a89fb6b5b559c826796c811741fa8ed3e11de8")
 (define %debian-revision "debian/81.0.4044.92-1")
 (define package-revision "0")
 (define %package-version (string-append %chromium-version "-"
@@ -264,7 +264,7 @@ from forcing GEXP-PROMISE."
                         %chromium-version ".tar.xz"))
     (sha256
      (base32
-      "0ahqh3vmzbpai4xwn7qybgw9phc8ssjdvfc7384mxqk9swqgv7qg"))))
+      "19kpzmqmld0m0nflx13w9flxfal19msnxhzl3lip1jqih65z4y7l"))))
 
 (define %ungoogled-origin
   (origin
@@ -275,7 +275,7 @@ from forcing GEXP-PROMISE."
                               (string-take %ungoogled-revision 7)))
     (sha256
      (base32
-      "1pj2vmzb2fagvypjsjn2kqf5n5k8vnhbisyb0snr6wqvpv09x0vv"))))
+      "0bbr4a2gkgm3ykdgpj8x58sd3dwam6qkifhzfs2997681g7b2v2q"))))
 
 (define %debian-origin
   (origin
@@ -426,18 +426,6 @@ from forcing GEXP-PROMISE."
         ;; sizes.  Chromium requires that this is enabled.
         `(cons "--enable-custom-modes"
                ,flags))))))
-
-;; Add a custom ld wrapper that supports quoted strings in response files.
-;; To be merged with 'ld-wrapper' in a future rebuild cycle.
-(define-public ld-wrapper-next
-  (let ((orig (car (assoc-ref (%final-inputs) "ld-wrapper"))))
-    (package
-      (inherit orig)
-      (name "ld-wrapper-next")
-      (inputs
-       `(("wrapper" ,(search-path %load-path
-                                  "gnu/packages/ld-wrapper-next.in"))
-         ,@(alist-delete "wrapper" (package-inputs orig)))))))
 
 (define-public ungoogled-chromium
   (package
@@ -770,7 +758,6 @@ from forcing GEXP-PROMISE."
        ("clang" ,clang-9)
        ("gn" ,gn)
        ("gperf" ,gperf)
-       ("ld-wrapper" ,ld-wrapper-next)
        ("ninja" ,ninja)
        ("node" ,node)
        ("pkg-config" ,pkg-config)
@@ -799,7 +786,7 @@ from forcing GEXP-PROMISE."
        ("glib" ,glib)
        ("gtk+" ,gtk+)
        ("harfbuzz" ,harfbuzz)
-       ("icu4c" ,icu4c-66.1)
+       ("icu4c" ,icu4c)
        ("jsoncpp" ,jsoncpp)
        ("lcms" ,lcms)
        ("libevent" ,libevent)

@@ -35,10 +35,13 @@
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2019 Jakob L. Kreuze <zerodaysfordays@sdf.org>
+;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2019 Pierre-Moana Levesque <pierre.moana.levesque@gmail.com>
 ;;; Copyright © 2019, 2020 Florian Pelz <pelzflorian@pelzflorian.de>
 ;;; Copyright © 2020 Timotej Lazar <timotej.lazar@araneo.si>
 ;;; Copyright © 2020 Alexandros Theodotou <alex@zrythm.org>
 ;;; Copyright © 2020 Pierre Neidhardt <mail@ambrevar.xyz>
+;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2018, 2019, 2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
 ;;; Copyright © 2020 Paul Garlick <pgarlick@tourbillion-technology.com>
 ;;;
@@ -108,6 +111,7 @@
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages guile-xyz)
+  #:use-module (gnu packages hurd)
   #:use-module (gnu packages java)
   #:use-module (gnu packages jemalloc)
   #:use-module (gnu packages image)
@@ -4810,16 +4814,23 @@ NetSurf project.")
 (define-public ikiwiki
   (package
     (name "ikiwiki")
-    (version "3.20190228")
+    (version "3.20200202.3")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "http://snapshot.debian.org/archive/debian/"
-                           "20190301T035241Z/pool/main/i/ikiwiki/ikiwiki_"
-                           version ".orig.tar.xz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "git://git.ikiwiki.info/")
+             (commit version)))
+       (file-name (git-file-name name version))
        (sha256
         (base32
-         "17pyblaqhkb61lxl63bzndiffism8k859p54k3k4sghclq6lsynh"))))
+         "0fphyqzlk9y8v9s89ypsmrnbhyymzrpc2w0liy0n4knc7kk2pabq"))
+       (snippet
+        '(begin
+           ;; The POT file requires write permission during the build
+           ;; phase.
+           (chmod "po/ikiwiki.pot" #o644)
+           #t))))
     (build-system perl-build-system)
     (arguments
      `(#:phases
@@ -4833,10 +4844,21 @@ NetSurf project.")
                  "        addenv(\"PERL5LIB\", \""
                  (getenv "PERL5LIB")
                  "\");")))))
-         (add-after 'patch-source-shebangs 'patch-Makefile
+         (add-after 'patch-source-shebangs 'patch-Makefiles
            (lambda _
              (substitute* "Makefile.PL"
-               (("SYSCONFDIR\\?=") "SYSCONFDIR?=$(PREFIX)"))
+                          (("SYSCONFDIR\\?=") "SYSCONFDIR?=$(PREFIX)"))
+             (with-directory-excursion "po"
+               (substitute* "Makefile"
+                            (("PERL5LIB=") "PERL5LIB=${PERL5LIB}:")))
+             #t))
+         (add-before 'build 'set-modification-times
+           ;; The wiki '--refresh' steps, which are executed during
+           ;; the check phase, require recent timestamps on files in
+           ;; the 'doc' and 'underlays' directories.
+           (lambda _
+             (invoke "find"  "doc" "underlays" "-type" "f" "-exec"
+                     "touch" "{}" "+")
              #t))
          (add-after 'install 'wrap-programs
            (lambda* (#:key outputs #:allow-other-keys)
@@ -4850,10 +4872,6 @@ NetSurf project.")
                #t))))))
     (native-inputs
      `(("which" ,which)
-       ("perl-html-tagset" ,perl-html-tagset)
-       ("perl-timedate" ,perl-timedate)
-       ("perl-xml-sax" ,perl-xml-sax)
-       ("perl-xml-simple" ,perl-xml-simple)
        ("gettext" ,gettext-minimal)
        ("subversion" ,subversion)
        ("git" ,git)
@@ -4862,14 +4880,24 @@ NetSurf project.")
        ("mercurial" ,mercurial)))
     (inputs
      `(("python" ,python-wrapper)
+       ("perl-authen-passphrase" ,perl-authen-passphrase)
        ("perl-cgi-formbuilder" ,perl-cgi-formbuilder)
        ("perl-cgi-session" ,perl-cgi-session)
        ("perl-cgi-simple" ,perl-cgi-simple)
        ("perl-db-file" ,perl-db-file)
-       ("perl-html-parser" ,perl-html-parser)
+       ("perl-file-mimeinfo" ,perl-file-mimeinfo)
+       ("perl-html-tagset" ,perl-html-tagset)
+       ("perl-image-magick" ,perl-image-magick)
+       ("perl-mail-sendmail" ,perl-mail-sendmail)
+       ("perl-timedate" ,perl-timedate)
+       ("perl-xml-sax" ,perl-xml-sax)
+       ("perl-xml-simple" ,perl-xml-simple)
+       ("perl-xml-twig" ,perl-xml-twig)
+       ("po4a" ,po4a)))
+    (propagated-inputs
+     `(("perl-html-parser" ,perl-html-parser)
        ("perl-html-scrubber" ,perl-html-scrubber)
        ("perl-html-template" ,perl-html-template)
-       ("perl-image-magick" ,perl-image-magick)
        ("perl-json" ,perl-json)
        ("perl-text-markdown-discount" ,perl-text-markdown-discount)
        ("perl-uri" ,perl-uri)
@@ -5223,7 +5251,7 @@ w3c webidl files and a binding configuration file.")
        ("openssl" ,openssl)
        ("utf8proc" ,utf8proc)
        ("libpng" ,libpng)
-       ("libjpeg" ,libjpeg)
+       ("libjpeg" ,libjpeg-turbo)
        ("libcss" ,libcss)
        ("libdom" ,libdom)
        ("libnsbmp" ,libnsbmp)
@@ -5841,10 +5869,22 @@ into your tests.  It automatically starts up a HTTP server in a separate thread 
        #:make-flags
        (list (string-append "PREFIX="
                             (assoc-ref %outputs "out"))
-             "CC=gcc" "library")
+             "library"
+             ,@(if (%current-target-system)
+                   '()
+                   '("CC=gcc")))
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure))))
+         ,@(if (%current-target-system)
+               '((replace 'configure
+                    (lambda* (#:key target #:allow-other-keys)
+                      (substitute* (find-files "." "Makefile")
+                        (("CC\\?=.*$")
+                         (string-append "CC=" target "-gcc\n"))
+                        (("AR\\?=.*$")
+                         (string-append "AR=" target "-ar\n")))
+                      #t)))
+               '((delete 'configure))))))
     (synopsis "HTTP request/response parser for C")
     (description "This is a parser for HTTP messages written in C.  It parses
 both requests and responses.  The parser is designed to be used in
@@ -7046,8 +7086,7 @@ derivation by David Revoy from the original MonsterID by Andreas Gohr.")
 (define-public nghttp2
   (package
     (name "nghttp2")
-    (version "1.39.1")
-    (replacement nghttp2-1.39.2)
+    (version "1.40.0")
     (source
      (origin
        (method url-fetch)
@@ -7056,7 +7095,7 @@ derivation by David Revoy from the original MonsterID by Andreas Gohr.")
                            "nghttp2-" version ".tar.xz"))
        (sha256
         (base32
-         "0j0lk37k8k3f61r9nw647hg4b22z1753l36n3xrp9x01civ614b7"))))
+         "0wwhwv7cvi1vxpdjwvg0kpa4jzhszclpnwrwfcw728zz53a47z09"))))
     (build-system gnu-build-system)
     (outputs (list "out"
                    "lib"))              ; only libnghttp2
@@ -7070,7 +7109,8 @@ derivation by David Revoy from the original MonsterID by Andreas Gohr.")
      ;; Required to build the tools (i.e. without ‘--enable-lib-only’).
      `(("c-ares" ,c-ares)
        ("jansson" ,jansson)             ; for HPACK tools
-       ("jemalloc" ,jemalloc)           ; fight nghttpd{,x} heap fragmentation
+       ,@(if (hurd-target?) '()
+             `(("jemalloc" ,jemalloc))) ; fight nghttpd{,x} heap fragmentation
        ("libev" ,libev)
        ("libxml2" ,libxml2)             ; for ‘nghttp -a’
        ("openssl" ,openssl)))
@@ -7094,9 +7134,10 @@ derivation by David Revoy from the original MonsterID by Andreas Gohr.")
                 (assoc-ref outputs "lib")))
              #t))
          (add-before 'check 'set-timezone-directory
-           (lambda* (#:key inputs #:allow-other-keys)
-             (setenv "TZDIR" (string-append (assoc-ref inputs "tzdata")
-                                            "/share/zoneinfo"))
+           (lambda* (#:key inputs native-inputs #:allow-other-keys)
+             (setenv "TZDIR" (string-append
+                               (assoc-ref (or native-inputs inputs) "tzdata")
+                               "/share/zoneinfo"))
              #t)))))
     (home-page "https://nghttp2.org/")
     (synopsis "HTTP/2 protocol client, proxy, server, and library")
@@ -7125,36 +7166,9 @@ compressed JSON header blocks.
 @end itemize\n")
     (license license:expat)))
 
-(define nghttp2-1.39.2
-  (package
-    (inherit nghttp2)
-    (version "1.39.2")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/nghttp2/nghttp2/"
-                                  "releases/download/v" version "/"
-                                  "nghttp2-" version ".tar.xz"))
-              (sha256
-               (base32
-                "12yfsjghbaypp4w964d45ih9vs38g6anih80wbsflaxx192idlm2"))))))
-
-;; 'Node' requires this newer version, to be removed on the next rebuild cycle.
-(define-public nghttp2-1.40
-  (package
-   (inherit nghttp2)
-   (version "1.40.0")
-   (source (origin
-             (method url-fetch)
-             (uri (string-append "https://github.com/nghttp2/nghttp2/"
-                                 "releases/download/v" version "/"
-                                 "nghttp2-" version ".tar.xz"))
-             (sha256
-              (base32
-               "0wwhwv7cvi1vxpdjwvg0kpa4jzhszclpnwrwfcw728zz53a47z09"))))))
-
 (define-public hpcguix-web
-  (let ((commit "f39c90b35e99e4122b0866ec4337020d61c81508")
-        (revision "4"))
+  (let ((commit "9de63562b06b4aef3a3afe5ecb18d3c91e57ee74")
+        (revision "5"))
     (package
       (name "hpcguix-web")
       (version (git-version "0.0.1" revision commit))
@@ -7166,7 +7180,7 @@ compressed JSON header blocks.
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "0idzzlwnaymk6hm5q9nh146h5m6vd8acp32vlmzp6qq08mimfkq7"))))
+                  "0wjgj2s7v2cyz6dx24c111rxs99i84sfvxl4ch8brnh02j2606jz"))))
       (build-system gnu-build-system)
       (arguments
        `(#:modules ((guix build gnu-build-system)
@@ -7224,7 +7238,7 @@ compressed JSON header blocks.
       (inputs
        `(("guix" ,guix)))
       (propagated-inputs
-       `(("guile" ,guile-2.2)
+       `(("guile" ,guile-3.0)
          ("guile-commonmark" ,guile-commonmark)
          ("guile-json" ,guile-json-3)))
       (home-page "https://github.com/UMCUGenetics/hpcguix-web")

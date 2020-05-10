@@ -3,7 +3,7 @@
 ;;; Copyright © 2017 Gábor Boskovits <boskovits@gmail.com>
 ;;; Copyright © 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2018 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -48,6 +48,7 @@
   #:use-module (gnu packages linux)
   #:use-module (gnu packages nfs)
   #:use-module (gnu packages onc-rpc)
+  #:use-module (gnu packages photo)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages readline)
@@ -55,6 +56,33 @@
   #:use-module (gnu packages tls)
   #:use-module (gnu packages valgrind)
   #:use-module (gnu packages xml))
+
+(define-public gphotofs
+  (package
+    (name "gphotofs")
+    (version "0.5.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "mirror://sourceforge/gphoto/gphotofs/" version
+                       "/gphotofs-0.5.tar.gz"))
+       (sha256
+        (base32
+         "04slwhr6ap9xcc27wphk22ad8yn79ngyy5z10lxams3k5liahvc2"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("fuse" ,fuse)
+       ("glib" ,glib)
+       ("libgphoto2" ,libgphoto2)))
+    (synopsis "Virtual filesystem for libgphoto2 using FUSE")
+    (description "GPhotoFS is a FUSE filesystem module to mount your camera as
+a filesystem on Linux.  This allow using your camera with any tool able to read
+from a mounted filesystem.")
+    (home-page "http://www.gphoto.org/proj/gphotofs/")
+    (license license:gpl2+)))
 
 (define-public bcachefs-tools
   (let ((commit "ab2f1ec24f5307b0cf1e3c4ad19bf350d9f54d9f")
@@ -94,7 +122,7 @@
          ("libscrypt" ,libscrypt)
          ("libsodium" ,libsodium)
          ("liburcu" ,liburcu)
-         ("util-linux" ,util-linux)     ; lib{blkid,uuid}
+         ("util-linux" ,util-linux "lib") ; lib{blkid,uuid}
          ("lz4" ,lz4)
          ("zlib" ,zlib)
          ("zstd:lib" ,zstd "lib")))
@@ -186,7 +214,7 @@ single file can be mounted.")
                                 "jfsutils-include-systypes.patch"))))
     (build-system gnu-build-system)
     (inputs
-     `(("util-linux" ,util-linux)))
+     `(("util-linux" ,util-linux "lib")))
     (home-page "http://jfs.sourceforge.net/home.html")
     (synopsis "Utilities for managing JFS file systems")
     (description
@@ -330,7 +358,7 @@ non-determinism in the build process.")
        ("fuse", fuse)
        ("openssl" ,openssl)
        ("liburcu" ,liburcu)
-       ("libuuid" ,util-linux)
+       ("libuuid" ,util-linux "lib")
        ("libxml2" ,libxml2)
        ("readline" ,readline)
        ("zlib" ,zlib)
@@ -553,6 +581,7 @@ APFS.")
                #t))))))
     (native-inputs
      `(("attr" ,attr)
+       ("kmod" ,kmod)
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("eudev" ,eudev)
@@ -562,7 +591,7 @@ APFS.")
        ("openssl" ,openssl)
        ("python" ,python)
        ("python-cffi" ,python-cffi)
-       ("util-linux" ,util-linux)
+       ("util-linux" ,util-linux "lib")
        ("zlib" ,zlib)))
     (home-page "https://zfsonlinux.org/")
     (synopsis "Native ZFS on Linux")

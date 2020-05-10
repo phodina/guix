@@ -23,7 +23,7 @@
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Kyle Meyer <kyle@kyleam.com>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2017, 2018 Rene Saavedra <pacoon@protonmail.com>
+;;; Copyright © 2017, 2018, 2020 Rene Saavedra <pacoon@protonmail.com>
 ;;; Copyright © 2018, 2019, 2020 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2018 Gábor Boskovits <boskovits@gmail.com>
@@ -228,7 +228,7 @@
        ("dejagnu" ,dejagnu)))
     (inputs
      `(("m4" ,m4)
-       ("guile" ,guile-2.2)
+       ("guile" ,guile-3.0)
        ("gsasl" ,gsasl)
        ("gnutls" ,gnutls)
        ("ncurses" ,ncurses)
@@ -252,13 +252,16 @@ software.")
      ;; Libraries are under LGPLv3+, and programs under GPLv3+.
      (list gpl3+ lgpl3+))))
 
-(define-public guile3.0-mailutils
+(define-public guile2.2-mailutils
   (package
     (inherit mailutils)
-    (name "guile3.0-mailutils")
+    (name "guile2.2-mailutils")
     (inputs
-     `(("guile" ,guile-3.0)
+     `(("guile" ,guile-2.2)
        ,@(alist-delete "guile" (package-inputs mailutils))))))
+
+(define-public guile3.0-mailutils
+  (deprecated-package "guile3.0-mailutils" mailutils))
 
 (define-public nullmailer
   (package
@@ -715,22 +718,21 @@ security functionality including PGP, S/MIME, SSH, and SSL.")
 (define-public mu
   (package
     (name "mu")
-    (version "1.4")
+    (version "1.4.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/djcb/mu/releases/"
-                                  "download/" (version-major+minor version) "/"
+                                  "download/"  version "/"
                                   "mu-" version ".tar.xz"))
               (sha256
                (base32
-                "1ay68rhlngnp2zm6wdmzgr1fsal3spz61swcxlaz5y215qvgjfpy"))))
+                "0pmx8zh5fsfhkdl0cr7ydcv6cywhxbgavnjrfr5p2ibz9gx3q3vf"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("glib" ,glib "bin")             ; for gtester
        ("emacs" ,emacs-minimal)
        ("tzdata" ,tzdata-for-tests)))   ; for mu/test/test-mu-query.c
-    ;; TODO: Add webkit and gtk to build the mug GUI.
     (inputs
      `(("xapian" ,xapian)
        ("guile" ,guile-2.2)
@@ -1117,13 +1119,7 @@ useful features.")
        ("expat" ,expat)
        ("zlib" ,zlib)))
     (arguments
-      '(#:phases
-        (modify-phases %standard-phases
-          (replace 'bootstrap
-            (lambda _
-              (setenv "NOCONFIGURE" "true")
-              (invoke "sh" "autogen.sh"))))
-        #:configure-flags
+      '(#:configure-flags
         '("--disable-static" "--disable-db")))
     (home-page "https://www.etpan.org/libetpan.html")
     (synopsis "Portable middleware for email access")
@@ -1220,14 +1216,14 @@ which can add many functionalities to the base client.")
 (define-public msmtp
   (package
     (name "msmtp")
-    (version "1.8.7")
+    (version "1.8.10")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://marlam.de/msmtp/releases/"
                            "/msmtp-" version ".tar.xz"))
        (sha256
-        (base32 "1waiiksa57byb7gvx1zmh6srvl6r8rvwqklk0slb3iaf4kfbqlws"))))
+        (base32 "041g921rdjiv8bapp61gp4rylq8cckfkcwzyh8bs7xwxs4wpzfna"))))
     (build-system gnu-build-system)
     (inputs
      `(("libsecret" ,libsecret)
@@ -2755,14 +2751,14 @@ tools and applications:
 (define-public balsa
   (package
     (name "balsa")
-    (version "2.5.7")
+    (version "2.6.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://pawsa.fedorapeople.org/balsa/"
                            name "-" version ".tar.bz2"))
        (sha256
-        (base32 "0yfqhfpwm1qnwmbpr6dfn2f5w8a8xxq51pn8ypgg0fw973l1c1nx"))))
+        (base32 "0ycidvgy9npd6avxk88sf2ca609m7zb0hzrk1yajrgwb1rfqx68a"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -2780,7 +2776,7 @@ tools and applications:
      `(("cyrus-sasl" ,cyrus-sasl)
        ("enchant" ,enchant)
        ("gdk-pixbuf" ,gdk-pixbuf)
-       ("gmime" ,gmime-2.6)
+       ("gmime" ,gmime)
        ("gnutls" ,gnutls)
        ("gpgme" ,gpgme)
        ("gtk+" ,gtk+)
@@ -2788,7 +2784,9 @@ tools and applications:
        ("gtkspell3" ,gtkspell3)
        ("libcanberra" ,libcanberra)
        ("libesmtp" ,libesmtp)
+       ("libical" ,libical)
        ("libnotify" ,libnotify)
+       ("libsecret" ,libsecret)
        ("openldap" ,openldap)
        ("sqlite" ,sqlite)
        ("webkitgtk" ,webkitgtk)))

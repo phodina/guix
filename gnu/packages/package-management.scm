@@ -11,6 +11,9 @@
 ;;; Copyright © 2018, 2019 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Jonathan Brielmaier <jonathan.brielmaier@web.de>
+;;; Copyright © 2020 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -35,8 +38,10 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages backup)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages bdw-gc)
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages boost)
   #:use-module (gnu packages bootstrap)          ;for 'bootstrap-guile-origin'
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
@@ -54,6 +59,8 @@
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages guile-xyz)
+  #:use-module (gnu packages hurd)
+  #:use-module (gnu packages libedit)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages lisp)
   #:use-module (gnu packages man)
@@ -110,8 +117,8 @@
   ;; Note: the 'update-guix-package.scm' script expects this definition to
   ;; start precisely like this.
   (let ((version "1.1.0")
-        (commit "7dd05396ef4539165f955d9ab57225091f801ce9")
-        (revision 1))
+        (commit "52b01cb7007b793c5b21456ac8cdd9f9df5b8b16")
+        (revision 3))
     (package
       (name "guix")
 
@@ -127,7 +134,7 @@
                       (commit commit)))
                 (sha256
                  (base32
-                  "110fz4qay4iywpynw1cbv6if8ac0pxp21zhzwvnp2jn1f6vbwf64"))
+                  "0rz5vnqvcrccbnrirhrsx3iw4jj75znh3ma9g7szjn313ii3hl1d"))
                 (file-name (string-append "guix-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
@@ -147,7 +154,8 @@
                             ;; To avoid problems with the length of shebangs,
                             ;; choose a fixed-width and short directory name
                             ;; for tests.
-                            "ac_cv_guix_test_root=/tmp/guix-tests")
+                            "ac_cv_guix_test_root=/tmp/guix-tests"
+                            ,@(if (hurd-target?) '("--with-courage") '()))
          #:parallel-tests? #f         ;work around <http://bugs.gnu.org/21097>
 
          #:modules ((guix build gnu-build-system)
@@ -178,10 +186,25 @@
 $(prefix)/etc/init.d\n")))
 
                         (invoke "sh" "bootstrap")))
+                    (add-before 'build 'use-host-compressors
+                      (lambda* (#:key inputs target #:allow-other-keys)
+                        (when target
+                          ;; Use host compressors.
+                          (let ((bzip2 (assoc-ref inputs "bzip2"))
+                                (gzip (assoc-ref inputs "gzip"))
+                                (xz (assoc-ref inputs "xz")))
+                            (substitute* "guix/config.scm"
+                              (("\"[^\"]*/bin/bzip2")
+                               (string-append "\"" bzip2 "/bin/bzip2"))
+                              (("\"[^\"]*/bin/gzip") gzip
+                               (string-append "\"" gzip "/bin/gzip"))
+                              (("\"[^\"]*/bin//xz")
+                               (string-append "\"" xz "/bin/xz")))))
+                        #t))
                     (add-before 'check 'copy-bootstrap-guile
-                      (lambda* (#:key system inputs #:allow-other-keys)
-                        ;; Copy the bootstrap guile tarball in the store used
-                        ;; by the test suite.
+                      (lambda* (#:key system target inputs #:allow-other-keys)
+                        ;; Copy the bootstrap guile tarball in the store
+                        ;; used by the test suite.
                         (define (intern file recursive?)
                           ;; Note: don't use 'guix download' here because we
                           ;; need to set the 'recursive?' argument.
@@ -205,20 +228,21 @@ $(prefix)/etc/init.d\n")))
                           (invoke "./test-env" "guile" "-c"
                                   (object->string code)))
 
-                        (intern (assoc-ref inputs "boot-guile") #f)
+                        (unless target
+                          (intern (assoc-ref inputs "boot-guile") #f)
 
-                        ;; On x86_64 some tests need the i686 Guile.
-                        ,@(if (and (not (%current-target-system))
-                                   (string=? (%current-system)
-                                             "x86_64-linux"))
-                              '((intern (assoc-ref inputs "boot-guile/i686") #f))
-                              '())
+                          ;; On x86_64 some tests need the i686 Guile.
+                          ,@(if (and (not (%current-target-system))
+                                     (string=? (%current-system)
+                                               "x86_64-linux"))
+                                '((intern (assoc-ref inputs "boot-guile/i686") #f))
+                                '())
 
-                        ;; Copy the bootstrap executables.
-                        (for-each (lambda (input)
-                                    (intern (assoc-ref inputs input) #t))
-                                  '("bootstrap/bash" "bootstrap/mkdir"
-                                    "bootstrap/tar" "bootstrap/xz"))
+                          ;; Copy the bootstrap executables.
+                          (for-each (lambda (input)
+                                      (intern (assoc-ref inputs input) #t))
+                                    '("bootstrap/bash" "bootstrap/mkdir"
+                                      "bootstrap/tar" "bootstrap/xz")))
                         #t))
                     (add-after 'unpack 'disable-failing-tests
                       ;; XXX FIXME: These tests fail within the build container.
@@ -241,11 +265,14 @@ $(prefix)/etc/init.d\n")))
                         (setenv "SHELL" (which "sh"))
                         #t))
                     (add-after 'install 'wrap-program
-                      (lambda* (#:key inputs outputs #:allow-other-keys)
+                      (lambda* (#:key inputs native-inputs outputs target
+                                #:allow-other-keys)
                         ;; Make sure the 'guix' command finds GnuTLS,
                         ;; Guile-JSON, and Guile-Git automatically.
                         (let* ((out    (assoc-ref outputs "out"))
-                               (guile  (assoc-ref inputs "guile"))
+                               (guile  ,@(if (%current-target-system)
+                                             '((assoc-ref native-inputs "guile"))
+                                             '((assoc-ref inputs "guile"))))
                                (gcrypt (assoc-ref inputs "guile-gcrypt"))
                                (json   (assoc-ref inputs "guile-json"))
                                (sqlite (assoc-ref inputs "guile-sqlite3"))
@@ -281,8 +308,23 @@ $(prefix)/etc/init.d\n")))
                             `("GUILE_LOAD_COMPILED_PATH" ":" prefix (,gopath))
                             `("GUIX_LOCPATH" ":" suffix (,locpath)))
 
+                          (when target
+                            ;; XXX Touching wrap-program rebuilds world
+                            (let ((bash (assoc-ref inputs "bash")))
+                              (substitute* (string-append out "/bin/guix")
+                                (("^#!.*/bash") (string-append "#! " bash "/bin/bash")))))
                           #t))))))
       (native-inputs `(("pkg-config" ,pkg-config)
+
+                       ;; Guile libraries are needed here for
+                       ;; cross-compilation.
+                       ("guile" ,guile-3.0)
+                       ("gnutls" ,gnutls)
+                       ("guile-gcrypt" ,guile-gcrypt)
+                       ("guile-json" ,guile-json-3)
+                       ("guile-sqlite3" ,guile-sqlite3)
+                       ("guile-ssh" ,guile-ssh)
+                       ("guile-git" ,guile-git)
 
                        ;; XXX: Keep the development inputs here even though
                        ;; they're unnecessary, just so that 'guix environment
@@ -303,7 +345,7 @@ $(prefix)/etc/init.d\n")))
          ("sqlite" ,sqlite)
          ("libgcrypt" ,libgcrypt)
 
-         ("guile" ,guile-2.2)
+         ("guile" ,guile-3.0)
 
          ;; Some of the tests use "unshare" when it is available.
          ("util-linux" ,util-linux)
@@ -315,6 +357,10 @@ $(prefix)/etc/init.d\n")))
                     (string=? (%current-system) "x86_64-linux"))
                `(("boot-guile/i686" ,(bootstrap-guile-origin "i686-linux")))
                '())
+         ,@(if (%current-target-system)
+               `(("bash" ,bash-minimal)
+                 ("xz" ,xz))
+               '())
 
          ;; Tests also rely on these bootstrap executables.
          ("bootstrap/bash" ,(bootstrap-executable "bash" (%current-system)))
@@ -324,7 +370,7 @@ $(prefix)/etc/init.d\n")))
 
          ("glibc-utf8-locales" ,glibc-utf8-locales)))
       (propagated-inputs
-       `(("gnutls" ,gnutls)
+       `(("gnutls" ,(if (%current-target-system) gnutls-3.6.13 guile3.0-gnutls))
          ("guile-gcrypt" ,guile-gcrypt)
          ("guile-json" ,guile-json-3)
          ("guile-sqlite3" ,guile-sqlite3)
@@ -356,7 +402,7 @@ the Nix package manager.")
      (fold alist-delete (package-native-inputs guix)
            '("po4a" "graphviz" "help2man")))
     (inputs
-     `(("gnutls" ,gnutls)
+     `(("gnutls" ,guile3.0-gnutls)
        ("guile-git" ,guile-git)
        ("guile-json" ,guile-json-3)
        ("guile-gcrypt" ,guile-gcrypt)
@@ -401,20 +447,35 @@ the Nix package manager.")
                (invoke "make" "install-binPROGRAMS")))
            (delete 'wrap-program)))))))
 
-(define-public guile3.0-guix
+
+(define-public guile2.2-guix
   (package
     (inherit guix)
-    (name "guile3.0-guix")
+    (name "guile2.2-guix")
+    (native-inputs
+     `(("guile" ,guile-2.2)
+       ("gnutls" ,guile2.2-gnutls)
+       ("guile-gcrypt" ,guile2.2-gcrypt)
+       ("guile-json" ,guile2.2-json)
+       ("guile-sqlite3" ,guile2.2-sqlite3)
+       ("guile-ssh" ,guile2.2-ssh)
+       ("guile-git" ,guile2.2-git)
+       ,@(fold alist-delete (package-native-inputs guix)
+               '("guile" "gnutls" "guile-gcrypt" "guile-json"
+                 "guile-sqlite3" "guile-ssh" "guile-git"))))
     (inputs
-     `(("guile" ,guile-3.0)
+     `(("guile" ,guile-2.2)
        ,@(alist-delete "guile" (package-inputs guix))))
     (propagated-inputs
-     `(("gnutls" ,guile3.0-gnutls)
-       ("guile-gcrypt" ,guile3.0-gcrypt)
-       ("guile-json" ,guile3.0-json)
-       ("guile-sqlite3" ,guile3.0-sqlite3)
-       ("guile-ssh" ,guile3.0-ssh)
-       ("guile-git" ,guile3.0-git)))))
+     `(("gnutls" ,gnutls)
+       ("guile-gcrypt" ,guile2.2-gcrypt)
+       ("guile-json" ,guile2.2-json)
+       ("guile-sqlite3" ,guile2.2-sqlite3)
+       ("guile-ssh" ,guile2.2-ssh)
+       ("guile-git" ,guile2.2-git)))))
+
+(define-public guile3.0-guix
+  (deprecated-package "guile3.0-guix" guix))
 
 (define-public guix-minimal
   ;; A version of Guix which is built with the minimal set of dependencies, as
@@ -480,18 +541,21 @@ out) and returning a package that uses that as its 'source'."
 (define-public nix
   (package
     (name "nix")
-    (version "2.0.4")
+    (version "2.3.4")
     (source (origin
              (method url-fetch)
              (uri (string-append "http://nixos.org/releases/nix/nix-"
                                  version "/nix-" version ".tar.xz"))
              (sha256
               (base32
-               "0ss9svxlh1pvrdmnqjvjyqjmbqmrdbyfarvbb14i9d4bggzl0r8n"))))
+               "03fhbb8088sgz3709zd9n9rydavar79w87l9n4q9iimcw06nlqhw"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
-    (inputs `(("curl" ,curl)
+    (inputs `(("boost" ,boost)
+              ("brotli" ,brotli)
               ("bzip2" ,bzip2)
+              ("curl" ,curl)
+              ("editline" ,editline)
               ("libgc" ,libgc)
               ("libseccomp" ,libseccomp)
               ("libsodium" ,libsodium)
@@ -819,12 +883,12 @@ written entirely in Python.")))
     (inputs
      `(("guile" ,guile-3.0)))
     (propagated-inputs
-     `(("guix" ,guile3.0-guix)
-       ("guile-commonmark" ,guile3.0-commonmark)
-       ("guile-gcrypt" ,guile3.0-gcrypt)
-       ("guile-pfds" ,guile3.0-pfds)
-       ("guile-syntax-highlight" ,guile3.0-syntax-highlight)
-       ("guile-wisp" ,guile3.0-wisp)))
+     `(("guix" ,guix)
+       ("guile-commonmark" ,guile-commonmark)
+       ("guile-gcrypt" ,guile-gcrypt)
+       ("guile-pfds" ,guile-pfds)
+       ("guile-syntax-highlight" ,guile-syntax-highlight)
+       ("guile-wisp" ,guile-wisp)))
     (home-page "https://workflows.guix.info")
     (synopsis "Workflow management extension for GNU Guix")
     (description "The @dfn{Guix Workflow Language} (GWL) provides an
@@ -849,6 +913,14 @@ environments.")
               (sha256
                (base32
                 "01z7jjkc7r7lj6637rcgpz40v8xqqyfp6871h94yvcnwm7zy9h1n"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Allow builds with Guile 3.0.
+                  (substitute* "configure.ac"
+                    (("^GUILE_PKG.*")
+                     "GUILE_PKG([3.0 2.2])\n"))
+                  #t))
               (file-name (string-append "guix-jupyter-" version "-checkout"))))
     (build-system gnu-build-system)
     (arguments
@@ -907,7 +979,7 @@ environments.")
        ("python-ipykernel" ,python-ipykernel)))
     (inputs
      `(("guix" ,guix)
-       ("guile" ,guile-2.2)))
+       ("guile" ,guile-3.0)))
     (propagated-inputs
      `(("guile-json" ,guile-json-3)
        ("guile-simple-zmq" ,guile-simple-zmq)
@@ -975,7 +1047,7 @@ Microsoft cabinet (.@dfn{CAB}) files.")
        ("glib" ,glib)
        ("libgsf" ,libgsf)
        ("libxml2" ,libxml2)
-       ("uuid" ,util-linux)))
+       ("uuid" ,util-linux "lib")))
     (home-page "https://wiki.gnome.org/msitools")
     (synopsis "Windows Installer file manipulation tool")
     (description

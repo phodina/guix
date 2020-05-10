@@ -5,14 +5,14 @@
 ;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Eric Bavier <bavier@posteo.net>
 ;;; Copyright © 2014 Federico Beffa <beffa@fbengineering.ch>
 ;;; Copyright © 2014 Mathieu Lirzin <mathieu.lirzin@openmailbox.org>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2015, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2015 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016, 2018, 2020 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017, 2018, 2019, 2020 Paul Garlick <pgarlick@tourbillion-technology.com>
@@ -26,7 +26,7 @@
 ;;; Copyright © 2018 Joshua Sierles, Nextjournal <joshua@nextjournal.com>
 ;;; Copyright © 2018 Nadya Voronova <voronovank@gmail.com>
 ;;; Copyright © 2018 Adam Massmann <massmannak@gmail.com>
-;;; Copyright © 2018 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2018, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018 Eric Brown <brown@fastmail.com>
 ;;; Copyright © 2018 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2018 Amin Bandali <bandali@gnu.org>
@@ -460,23 +460,45 @@ precision floating point numbers.")
 (define-public gsl
   (package
     (name "gsl")
-    (version "2.5")
+    (version "2.6")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/gsl/gsl-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1395y9hlhqadn5g9j8q22224fds5sd92jxi9czfavjj24myasq04"))
-              (patches (search-patches "gsl-test-i686.patch"))))
+                "1a460zj9xmbgvcymkdhqh313c4l29mn9cffbi5vf33x3qygk70mp"))))
     (build-system gnu-build-system)
     (arguments
-     `(;; Currently there are numerous tests that fail on "exotic"
-       ;; architectures such as aarch64 and ppc64le.
-       ,@(if (string-prefix? "aarch64-linux"
-                             (or (%current-target-system) (%current-system)))
-           '(#:tests? #f)
-           '())))
+     (let ((system (%current-system)))
+       (cond
+        ((string-prefix? "aarch64" system)
+         ;; Some sparse matrix tests are failing on AArch64:
+         ;; https://lists.gnu.org/archive/html/bug-gsl/2020-04/msg00001.html
+         '(#:phases (modify-phases %standard-phases
+                      (add-before 'check 'disable-failing-tests
+                        (lambda _
+                          (substitute* "spmatrix/test.c"
+                            ((".*test_complex.*") "\n"))
+                          #t)))))
+        ((string-prefix? "i686" system)
+         ;; There are rounding issues with these tests on i686:
+         ;; https://lists.gnu.org/archive/html/bug-gsl/2016-10/msg00000.html
+         ;; https://lists.gnu.org/archive/html/bug-gsl/2020-04/msg00000.html
+         '(#:phases (modify-phases %standard-phases
+                      (add-before 'check 'disable-failing-tests
+                        (lambda _
+                          (substitute* "linalg/test.c"
+                            ((".*gsl_test\\(test_LU_decomp.*") "\n")
+                            ((".*gsl_test\\(test_LUc_decomp.*") "\n")
+                            ((".*gsl_test\\(test_cholesky_decomp.*") "\n")
+                            ((".*gsl_test\\(test_COD_lssolve2.*") "\n"))
+                          (substitute* "spmatrix/test.c"
+                            ((".*test_all.*") "\n")
+                            ((".*test_float.*") "\n")
+                            ((".*test_complex.*") "\n"))
+                          #t)))))
+        (else '()))))
     (home-page "https://www.gnu.org/software/gsl/")
     (synopsis "Numerical library for C and C++")
     (description
@@ -856,7 +878,7 @@ computations.")
        ("flex" ,flex)))
     (inputs
      `(("zlib" ,zlib)
-       ("libjpeg" ,libjpeg)
+       ("libjpeg" ,libjpeg-turbo)
        ("libtirpc" ,libtirpc)))
     (arguments
      `(#:parallel-tests? #f
@@ -1096,7 +1118,7 @@ extremely large and complex data collections.")
      `(("hdf4" ,hdf4)
        ("hdf5" ,hdf5)
        ("zlib" ,zlib)
-       ("libjpeg" ,libjpeg)
+       ("libjpeg" ,libjpeg-turbo)
        ("slf4j-api" ,java-slf4j-api)))
     (arguments
      `(#:configure-flags
@@ -1213,7 +1235,7 @@ implemented in C.")
      `(("hdf4" ,hdf4-alt) ; assume most HDF-EOS2 users won't use the HDF4 netCDF API
        ;; XXX: These inputs are really dependencies of hdf4.
        ("zlib" ,zlib)
-       ("libjpeg" ,libjpeg)
+       ("libjpeg" ,libjpeg-turbo)
        ("libtirpc" ,libtirpc)
 
        ("gctp" ,gctp)))
@@ -1298,6 +1320,45 @@ Swath).")
                #t))))))
     (synopsis "Management suite for data with parallel IO support")))
 
+(define-public hdf5-blosc
+  (package
+    (name "hdf5-blosc")
+    (version "1.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Blosc/hdf5-blosc.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1nj2bm1v6ymm3fmyvhbn6ih5fgdiapavlfghh1pvbmhw71cysyqs"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags
+       (list (string-append "-DBLOSC_INSTALL_DIR="
+                            (assoc-ref %build-inputs "c-blosc"))
+             (string-append "-DPLUGIN_INSTALL_PATH="
+                            (assoc-ref %outputs "out")
+                            "/hdf5/lib/plugin"))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'do-not-build-blosc
+           (lambda _
+             (substitute* "CMakeLists.txt"
+               (("set\\(BLOSC_INSTALL_DIR.*") "")
+               (("ExternalProject_Add\\(project_blosc") "message("))
+             #t)))))
+    (inputs
+     `(("c-blosc" ,c-blosc)
+       ("hdf5" ,hdf5-1.10)))
+    (home-page "https://github.com/Blosc/hdf5-blosc")
+    (synopsis "Filter for HDF5 using the Blosc compressor")
+    (description "This is a filter for HDF5 that uses the Blosc compressor; by
+installing this filter, you can read and write HDF5 files with
+Blosc-compressed datasets.")
+    (license license:expat)))
+
 (define-public h5check
   (package
     (name "h5check")
@@ -1373,7 +1434,7 @@ similar to MATLAB, GNU Octave or SciPy.")
      `(("hdf4" ,hdf4-alt)
        ("hdf5" ,hdf5)
        ("zlib" ,zlib)
-       ("libjpeg" ,libjpeg)))
+       ("libjpeg" ,libjpeg-turbo)))
     (arguments
      `(#:configure-flags '("--enable-doxygen" "--enable-dot" "--enable-hdf4")
 
@@ -1646,6 +1707,12 @@ can solve two kinds of problems:
        ("glpk" ,glpk)
        ("glu" ,glu)
        ("graphicsmagick" ,graphicsmagick)
+
+       ;; TODO: libjpeg-turbo is indirectly required through libtiff.  In
+       ;; the next rebuild cycle, add an absolute reference for -ljpeg in
+       ;; libtiff.la instead of having to provide it here.
+       ("libjpeg" ,libjpeg-turbo)
+
        ("hdf5" ,hdf5)
        ("lapack" ,lapack)
        ("libsndfile" ,libsndfile)
@@ -1684,7 +1751,12 @@ can solve two kinds of problems:
      `(#:configure-flags
        (list (string-append "--with-shell="
                             (assoc-ref %build-inputs "bash")
-                            "/bin/sh"))
+                            "/bin/sh")
+
+             ;; XXX: Without this flag, linking octave-cli fails with
+             ;; undefined references to 'logf@GLIBCXX_3.4' et.al. due to
+             ;; not pulling in liboctinterp.la for -lstdc++.
+             "--enable-link-all-dependencies")
        #:phases
        (modify-phases %standard-phases
          (add-after 'configure 'configure-makeinfo
@@ -3243,7 +3315,7 @@ parts of it.")
 (define-public openblas
   (package
     (name "openblas")
-    (version "0.3.7")
+    (version "0.3.9")
     (source
      (origin
        (method url-fetch)
@@ -3252,7 +3324,7 @@ parts of it.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0jbdjsi0qsxahdcm42agnn1y7xpmg0hrhwjsxg0zbhs9wwy3p568"))))
+         "14iz9xnrb9xiwgj84j94mc74gg0zn2vsy9fmsijxxma1n7dck4w3"))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
@@ -3854,26 +3926,28 @@ in finite element programs.")
 (define-public flann
   (package
     (name "flann")
-    (version "1.8.4")
+    (version "1.9.1")
+    (home-page "https://github.com/mariusmuja/flann/")
     (source
       (origin
-        (method url-fetch)
-        (uri
-          (string-append
-            "http://www.cs.ubc.ca/research/flann/uploads/FLANN/flann-"
-            version "-src.zip"))
+        (method git-fetch)
+        (uri (git-reference (url home-page) (commit version)))
+        (file-name (git-file-name name version))
         (sha256
           (base32
-            "022w8hph7bli5zbpnk3z1qh1c2sl5hm8fw2ccim651ynn0hr7fyz"))
+           "0p56fl2yx1r86ds1mgjq40926jdcgq3hka7p3l1hv2acv9jxp15x"))
         (patches (search-patches "flann-cmake-3.11.patch"))))
     (build-system cmake-build-system)
-    (outputs '("out"
-               "octave"))                  ;46 MiB .mex file that pulls Octave
+    (outputs '("out"))
     (native-inputs
      `(("unzip" ,unzip)))
     (inputs
      `(("hdf5" ,hdf5)
-       ("octave" ,octave-cli)
+       ;; FIXME: 'mkoctfile' fails with a linker error:
+       ;;  ld: cannot find -loctinterp
+       ;;  ld: cannot find -loctave
+       ;; Disable it for now.
+       ;;("octave" ,octave-cli)
        ("python" ,python-2) ; print syntax
        ;; ("python2-numpy" ,python2-numpy) ; only required for the tests
        ("zlib" ,zlib)))
@@ -3886,14 +3960,6 @@ in finite element programs.")
        ;; Save 12 MiB by not installing .a files.  Passing
        ;; '-DBUILD_STATIC_LIBS=OFF' has no effect.
        #:phases (modify-phases %standard-phases
-                  (add-before 'configure 'set-octave-directory
-                    (lambda* (#:key outputs #:allow-other-keys)
-                      ;; Install the .mex file in the "octave" output.
-                      (let ((out (assoc-ref outputs "octave")))
-                        (substitute* "src/matlab/CMakeLists.txt"
-                          (("share/flann/octave")
-                           (string-append out "/share/flann/octave")))
-                        #t)))
                   (add-after 'install 'remove-static-libraries
                     (lambda* (#:key outputs #:allow-other-keys)
                       (let* ((out (assoc-ref outputs "out"))
@@ -3903,7 +3969,6 @@ in finite element programs.")
                         #t))))
 
        #:tests? #f)) ; The test data are downloaded from the Internet.
-    (home-page "http://www.cs.ubc.ca/research/flann/")
     (synopsis "Library for approximate nearest neighbors computation")
     (description "FLANN is a library for performing fast approximate
 nearest neighbor searches in high dimensional spaces.  It implements a
@@ -4833,6 +4898,18 @@ This package contains the basic DUNE grid classes.")
     (arguments
      `(#:phases
        (modify-phases %standard-phases
+         ;; XXX: istl/test/matrixtest.cc includes <fenv.h> and fails to find
+         ;; the stdlib types when the gfortran header is used.  Remove gfortran
+         ;; from CPLUS_INCLUDE_PATH as a workaround.
+         (add-after 'set-paths 'hide-gfortran
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((gfortran (assoc-ref inputs "gfortran")))
+               (setenv "CPLUS_INCLUDE_PATH"
+                       (string-join
+                        (delete (string-append gfortran "/include/c++")
+                                (string-split (getenv "CPLUS_INCLUDE_PATH") #\:))
+                        ":"))
+               #t)))
          (add-after 'build 'build-tests
            (lambda* (#:key make-flags #:allow-other-keys)
              (apply invoke "make" "build_tests" make-flags))))))
@@ -4879,6 +4956,18 @@ aggregation-based algebraic multigrid.")
     (arguments
      `(#:phases
        (modify-phases %standard-phases
+         ;; XXX: localfunctions/test/lagrangeshapefunctiontest.cc includes <fenv.h>
+         ;; and fails to find the stdlib types when the gfortran header is used.
+         ;; Hide gfortran from CPLUS_INCLUDE_PATH to ensure we get the GCC header.
+         (add-after 'set-paths 'hide-gfortran
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((gfortran (assoc-ref inputs "gfortran")))
+               (setenv "CPLUS_INCLUDE_PATH"
+                       (string-join
+                        (delete (string-append gfortran "/include/c++")
+                                (string-split (getenv "CPLUS_INCLUDE_PATH") #\:))
+                        ":"))
+               #t)))
          (add-after 'build 'build-tests
            (lambda* (#:key make-flags #:allow-other-keys)
              (apply invoke "make" "build_tests" make-flags))))))

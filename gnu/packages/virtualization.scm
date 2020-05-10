@@ -13,6 +13,8 @@
 ;;; Copyright © 2019 Guy Fleury Iteriteka <hoonandon@gmail.com>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -114,19 +116,14 @@
 (define-public qemu
   (package
     (name "qemu")
-    (version "4.2.0")
+    (version "5.0.0")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://download.qemu.org/qemu-"
                                  version ".tar.xz"))
-             (patches (search-patches "qemu-CVE-2020-1711.patch"
-                                      "qemu-CVE-2020-7039.patch"
-                                      "qemu-CVE-2020-7211.patch"
-                                      "qemu-CVE-2020-8608.patch"
-                                      "qemu-fix-documentation-build-failure.patch"))
              (sha256
               (base32
-               "1w38hzlw7xp05gcq1nhga7hxvndxy6dfcnzi7q2il8ff110isj6k"))))
+               "1dlcwyshdp94fwd30pddxf9bn2q8dfw5jsvry2gvdj551wmaj4rg"))))
     (build-system gnu-build-system)
     (arguments
      `(;; Running tests in parallel can occasionally lead to failures, like:
@@ -146,8 +143,36 @@
                                "--audio-drv-list=alsa,pa,sdl")
        ;; Make build and test output verbose to facilitate investigation upon failure.
        #:make-flags '("V=1")
+       #:modules ((srfi srfi-1)
+                  (ice-9 match)
+                  ,@%gnu-build-system-modules)
        #:phases
        (modify-phases %standard-phases
+         (add-after 'set-paths 'hide-glibc
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; Work around https://issues.guix.info/issue/36882.  We need to
+             ;; remove glibc from C_INCLUDE_PATH so that the one hardcoded in GCC,
+             ;; at the bottom of GCC include search-path is used.
+             (let* ((filters '("libc"))
+                    (input-directories
+                     (filter-map (lambda (input)
+                                   (match input
+                                     ((name . dir)
+                                      (and (not (member name filters))
+                                           dir))))
+                                 inputs)))
+               (set-path-environment-variable "C_INCLUDE_PATH"
+                                              '("include")
+                                              input-directories)
+               #t)))
+         (add-after 'patch-source-shebangs 'patch-/bin/sh-references
+           (lambda _
+             ;; Ensure the executables created by these source files reference
+             ;; /bin/sh from the store so they work inside the build container.
+             (substitute* '("block/cloop.c" "migration/exec.c"
+                            "net/tap.c" "tests/qtest/libqtest.c")
+               (("/bin/sh") (which "sh")))
+             #t))
          (replace 'configure
            (lambda* (#:key inputs outputs (configure-flags '())
                            #:allow-other-keys)
@@ -157,8 +182,16 @@
                (setenv "SHELL" (which "bash"))
 
                ;; While we're at it, patch for tests.
-               (substitute* "tests/libqtest.c"
-                 (("/bin/sh") (which "sh")))
+               (substitute* "tests/qemu-iotests/check"
+                 (("#!/usr/bin/env python3")
+                  (string-append "#!" (which "python3"))))
+
+               ;; Ensure config.status gets the correct shebang off the bat.
+               ;; The build system gets confused if we change it later and
+               ;; attempts to re-run the whole configury, and fails.
+               (substitute* "configure"
+                 (("#!/bin/sh")
+                  (string-append "#!" (which "sh"))))
 
                ;; The binaries need to be linked against -lrt.
                (setenv "LDFLAGS" "-lrt")
@@ -197,12 +230,6 @@ exec smbd $@")))
                (chmod "samba-wrapper" #o755)
                (install-file "samba-wrapper" libexec))
              #t))
-         (add-before 'configure 'prevent-network-configuration
-           (lambda _
-             ;; Prevent the build from trying to use git to fetch from the net.
-             (substitute* "Makefile"
-               (("@./config.status")
-                "")) #t))
          (add-before 'check 'disable-unusable-tests
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (substitute* "tests/Makefile.include"
@@ -223,7 +250,8 @@ exec smbd $@")))
        ("gtk+" ,gtk+)
        ("libaio" ,libaio)
        ("libattr" ,attr)
-       ("libcap" ,libcap)           ; virtfs support requires libcap & libattr
+       ("libcacard" ,libcacard)     ; smartcard support
+       ("libcap-ng" ,libcap-ng)     ; virtfs support requires libcap-ng & libattr
        ("libdrm" ,libdrm)
        ("libepoxy" ,libepoxy)
        ("libjpeg" ,libjpeg-turbo)
@@ -270,7 +298,8 @@ server and embedded PowerPC, and S390 guests.")
     (license license:gpl2)
 
     ;; Several tests fail on MIPS; see <http://hydra.gnu.org/build/117914>.
-    (supported-systems (delete "mips64el-linux" %supported-systems))))
+    (supported-systems (fold delete %supported-systems
+                             '("mips64el-linux" "i586-gnu")))))
 
 (define-public qemu-minimal
   ;; QEMU without GUI support.
@@ -288,7 +317,8 @@ server and embedded PowerPC, and S390 guests.")
                   '("gettext")))
     (inputs (fold alist-delete (package-inputs qemu)
                   '("libusb" "mesa" "sdl2" "spice" "virglrenderer" "gtk+"
-                    "usbredir" "libdrm" "libepoxy" "pulseaudio" "vde2")))))
+                    "usbredir" "libdrm" "libepoxy" "pulseaudio" "vde2"
+                    "libcacard")))))
 
 (define-public libosinfo
   (package
@@ -383,12 +413,6 @@ all common programming languages.  Vala bindings are also provided.")
                             "/share/doc/" ,name "-" ,version)
              "--sysconfdir=/etc"
              "--localstatedir=/var")
-       #:make-flags
-       ;; Treat the kernel headers as system headers to silence
-       ;; compiler warnings from those.
-       (list (string-append "C_INCLUDE_PATH="
-                            (assoc-ref %build-inputs "kernel-headers")
-                            "/include"))
        #:phases
        (modify-phases %standard-phases
          (replace 'install
@@ -480,7 +504,7 @@ manage system or application containers.")
        ("libpcap" ,libpcap)
        ("libnl" ,libnl)
        ("libtirpc" ,libtirpc)           ;for <rpc/rpc.h>
-       ("libuuid" ,util-linux)
+       ("libuuid" ,util-linux "lib")
        ("lvm2" ,lvm2)                   ;for libdevmapper
        ("curl" ,curl)
        ("openssl" ,openssl)
@@ -720,13 +744,7 @@ domains, their live performance and resource utilization statistics.")
              (setenv "C_INCLUDE_PATH"
                      (string-append (assoc-ref inputs "libnl")
                                     "/include/libnl3:"
-                                    ;; Also add the kernel headers here so that GCC
-                                    ;; treats them as "system headers".  Otherwise
-                                    ;; the build fails with -Werror because parasite.c
-                                    ;; includes both <linux/fs.h> and <sys/mount.h>,
-                                    ;; which define some of the same constants.
-                                    (assoc-ref inputs "kernel-headers")
-                                    "/include"))
+                                    (or (getenv "C_INCLUDE_PATH") "")))
              #t))
          (add-after 'configure 'fix-documentation
            (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -1332,7 +1350,7 @@ override CC = " (assoc-ref inputs "cross-gcc") "/bin/i686-linux-gnu-gcc"))
        ("pixman" ,pixman)
        ("qemu" ,qemu-minimal)
        ("seabios" ,seabios)
-       ("util-linux" ,util-linux) ; uuid
+       ("util-linux" ,util-linux "lib") ; uuid
        ; TODO: ocaml-findlib, ocaml-nox.
        ("xz" ,xz) ; for liblzma
        ("zlib" ,zlib)))

@@ -79,6 +79,7 @@
   #:use-module (gnu packages golang)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages graph)
+  #:use-module (gnu packages graphviz)
   #:use-module (gnu packages groff)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages guile)
@@ -4942,14 +4943,24 @@ files and writing bioinformatics applications.")
          "1agfz6zqa8nc6cw47yh0s3y14gkpa9wqazwcj7mwwj3ffnw39p3j"))))
     (build-system python-build-system)
     (arguments
-     `(#:python ,python-2))  ; requires Python 2.7
+     `(#:python ,python-2  ; requires Python 2.7
+       #:tests? #f ; test data are not included
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'use-weave
+           (lambda _
+             (substitute* "warpedlmm/util/linalg.py"
+               (("from scipy import linalg, weave")
+                "from scipy import linalg\nimport weave"))
+             #t)))))
     (propagated-inputs
      `(("python-scipy" ,python2-scipy)
        ("python-numpy" ,python2-numpy)
        ("python-matplotlib" ,python2-matplotlib)
        ("python-fastlmm" ,python2-fastlmm)
        ("python-pandas" ,python2-pandas)
-       ("python-pysnptools" ,python2-pysnptools)))
+       ("python-pysnptools" ,python2-pysnptools)
+       ("python-weave" ,python2-weave)))
     (native-inputs
      `(("python-mock" ,python2-mock)
        ("python-nose" ,python2-nose)
@@ -9158,6 +9169,46 @@ samples into a single report.  It contains modules for a large number of
 common bioinformatics tools.")
     (license license:gpl3+)))
 
+(define-public variant-tools
+  (package
+    (name "variant-tools")
+    (version "3.1.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/vatlab/varianttools.git")
+             ;; There is no tag corresponding to version 3.1.2
+             (commit "813ae4a90d25b69abc8a40f4f70441fe09015249")))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "12ibdmksj7icyqhks4xyvd61bygk4pjmxn618kp6vgk1af01y34g"))))
+    (build-system python-build-system)
+    (inputs
+     `(("boost" ,boost)
+       ("c-blosc" ,c-blosc)
+       ("gsl" ,gsl)
+       ("hdf5" ,hdf5)
+       ("hdf5-blosc" ,hdf5-blosc)
+       ("python-cython" ,python-cython)
+       ("zlib" ,zlib)))
+    (propagated-inputs
+     `(("python-numpy" ,python-numpy)
+       ("python-pycurl" ,python-pycurl)
+       ("python-pyzmq" ,python-pyzmq)
+       ("python-scipy" ,python-scipy)
+       ("python-tables" ,python-tables)))
+    (home-page "https://vatlab.github.io/vat-docs/")
+    (synopsis "Analyze genetic variants from Next-Gen sequencing studies")
+    (description
+     "Variant tools is a tool for the manipulation, annotation,
+selection, simulation, and analysis of variants in the context of next-gen
+sequencing analysis.  Unlike some other tools used for next-gen sequencing
+analysis, variant tools is project based and provides a whole set of tools to
+manipulate and analyze genetic variants.")
+    (license license:gpl3+)))
+
 (define-public r-chipseq
   (package
     (name "r-chipseq")
@@ -9716,13 +9767,13 @@ and irregular enzymatic cleavages, mass measurement accuracy, etc.")
 (define-public r-seurat
   (package
     (name "r-seurat")
-    (version "3.1.4")
+    (version "3.1.5")
     (source (origin
               (method url-fetch)
               (uri (cran-uri "Seurat" version))
               (sha256
                (base32
-                "0lhjbjhv1hnx5i3gkx41k68i8ykay3f24708h30wx9xywww9lsvi"))))
+                "1lbq2pqhb6ih6iqawlnzdh05zff71pwbw1cpfv2sld3pd7kz0zkm"))))
     (properties `((upstream-name . "Seurat")))
     (build-system r-build-system)
     (propagated-inputs
@@ -9744,7 +9795,6 @@ and irregular enzymatic cleavages, mass measurement accuracy, etc.")
        ("r-lmtest" ,r-lmtest)
        ("r-mass" ,r-mass)
        ("r-matrix" ,r-matrix)
-       ("r-metap" ,r-metap)
        ("r-patchwork" ,r-patchwork)
        ("r-pbapply" ,r-pbapply)
        ("r-plotly" ,r-plotly)
@@ -10690,14 +10740,14 @@ provided.")
 (define-public r-hdf5array
   (package
     (name "r-hdf5array")
-    (version "1.14.3")
+    (version "1.14.4")
     (source
      (origin
        (method url-fetch)
        (uri (bioconductor-uri "HDF5Array" version))
        (sha256
         (base32
-         "1z153a7nxmlml72pl1saasj2il9g5ahpynkpv3mkhhsvl5kbwbh6"))))
+         "0ib0grhd9zbrn0dkrm4aa7qj7h0y6z1dvyx1ab3w6vczw7xghsfb"))))
     (properties `((upstream-name . "HDF5Array")))
     (build-system r-build-system)
     (inputs
@@ -11945,7 +11995,8 @@ dependency like SeqAn.")
              ;; Ensure that Eigen headers can be found
              (setenv "CPLUS_INCLUDE_PATH"
                      (string-append (assoc-ref inputs "eigen")
-                                    "/include/eigen3"))
+                                    "/include/eigen3:"
+                                    (or (getenv "CPLUS_INCLUDE_PATH") "")))
              #t)))))
     (inputs
      `(("boost" ,boost)
@@ -12123,8 +12174,8 @@ The following file formats are supported:
                (("lib/libdivsufsort.a") "/lib/libdivsufsort.so"))
 
              ;; Ensure that all headers can be found
-             (setenv "CPATH"
-                     (string-append (getenv "CPATH")
+             (setenv "CPLUS_INCLUDE_PATH"
+                     (string-append (or (getenv "CPLUS_INCLUDE_PATH") "")
                                     ":"
                                     (assoc-ref inputs "eigen")
                                     "/include/eigen3"))
@@ -13262,6 +13313,42 @@ cases include:
   divergence below ~15%.
 @end enumerate\n")
     (license license:expat)))
+
+(define-public miniasm
+  (package
+   (name "miniasm")
+   (version "0.3")
+   (source (origin
+            (method url-fetch)
+            (uri (string-append
+                  "https://github.com/lh3/miniasm/archive/v"
+                  version ".tar.gz"))
+            (file-name (string-append name "-" version ".tar.gz"))
+            (sha256
+               (base32
+                "0g89pa98dvh34idv7w1zv12bsbyr3a11c4qb1cdcz68gyda88s4v"))))
+   (build-system gnu-build-system)
+   (inputs
+    `(("zlib" ,zlib)))
+   (arguments
+    `(#:tests? #f ; There are no tests.
+      #:phases
+      (modify-phases %standard-phases
+        (delete 'configure)
+        (replace 'install
+          (lambda* (#:key inputs outputs #:allow-other-keys)
+            (let ((bin (string-append (assoc-ref outputs "out") "/bin")))
+              (install-file "miniasm" bin)
+              (install-file "minidot" bin)))))))
+   (home-page "https://github.com/lh3/miniasm")
+   (synopsis "Ultrafast de novo assembly for long noisy reads")
+   (description "Miniasm is a very fast OLC-based de novo assembler for noisy
+long reads.  It takes all-vs-all read self-mappings (typically by minimap) as
+input and outputs an assembly graph in the GFA format.  Different from
+mainstream assemblers, miniasm does not have a consensus step.  It simply
+concatenates pieces of read sequences to generate the final unitig sequences.
+Thus the per-base error rate is similar to the raw input reads.")
+   (license license:expat)))
 
 (define-public r-circus
   (package
@@ -15768,3 +15855,44 @@ biological processes.  SBML is useful for models of metabolism, cell
 signaling, and more.  It continues to be evolved and expanded by an
 international community.")
     (license license:lgpl2.1+)))
+
+(define-public grocsvs
+  ;; The last release is out of date and new features have been added.
+  (let ((commit "ecd956a65093a0b2c41849050e4512d46fecea5d")
+        (revision "1"))
+    (package
+      (name "grocsvs")
+      (version (git-version "0.2.6.1" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                       (url "https://github.com/grocsvs/grocsvs")
+                       (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32 "14505725gr7qxc17cxxf0k6lzcwmgi64pija4mwf29aw70qn35cc"))
+                (patches (search-patches "grocsvs-dont-use-admiral.patch"))))
+      (build-system python-build-system)
+      (arguments
+       `(#:tests? #f            ; No test suite.
+         #:python ,python-2))   ; Only python-2 supported.
+      (inputs
+       `(("python2-h5py" ,python2-h5py)
+         ("python2-ipython-cluster-helper" ,python2-ipython-cluster-helper)
+         ("python2-networkx" ,python2-networkx)
+         ("python2-psutil" ,python2-psutil)
+         ("python2-pandas" ,python2-pandas)
+         ("python2-pybedtools" ,python2-pybedtools)
+         ("python2-pyfaidx" ,python2-pyfaidx)
+         ("python2-pygraphviz" ,python2-pygraphviz)
+         ("python2-pysam" ,python2-pysam)
+         ("python2-scipy" ,python2-scipy)))
+      (home-page "https://github.com/grocsvs/grocsvs")
+      (synopsis "Genome-wide reconstruction of complex structural variants")
+      (description
+       "@dfn{Genome-wide Reconstruction of Complex Structural Variants}
+(GROC-SVs) is a software pipeline for identifying large-scale structural
+variants, performing sequence assembly at the breakpoints, and reconstructing
+the complex structural variants using the long-fragment information from the
+10x Genomics platform.")
+       (license license:expat))))

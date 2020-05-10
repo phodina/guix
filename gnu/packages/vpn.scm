@@ -1,10 +1,10 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2013, 2016, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2016, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015 Jeff Mickey <j@codemac.net>
 ;;; Copyright © 2016, 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2018 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2018 Meiyo Peng <meiyo.peng@gmail.com>
@@ -138,7 +138,7 @@ Only \"Universal TUN/TAP device driver support\" is needed in the kernel.")
                  (base32
                   "1g41yarz2bl0f73kbjqnywr485ghanbp7nmspklfb0n07yp0z6ak"))))
       (build-system gnu-build-system)
-      (inputs `(("guile" ,guile-2.2) ; for the wrapper scripts
+      (inputs `(("guile" ,guile-3.0) ; for the wrapper scripts
                 ("coreutils" ,coreutils)
                 ("grep" ,grep)
                 ("iproute2" ,iproute)    ; for ‘ip’
@@ -154,7 +154,7 @@ Only \"Universal TUN/TAP device driver support\" is needed in the kernel.")
                (for-each (lambda (script)
                            (substitute* script
                              (("^PATH=.*") "")
-                             (("(/usr|)/s?bin/") "")
+                             (("/usr/s?bin/") "")
                              (("\\[ +-x +([^]]+) +\\]" _ command)
                               (string-append "command -v >/dev/null 2>&1 "
                                              command))))
@@ -245,20 +245,21 @@ the user specifically asks to proxy, so the @dfn{VPN} interface no longer
 (define-public openconnect
   (package
    (name "openconnect")
-   (version "8.08")
+   (version "8.09")
    (source (origin
             (method url-fetch)
             (uri (string-append "ftp://ftp.infradead.org/pub/openconnect/"
                                 "openconnect-" version ".tar.gz"))
             (sha256
-             (base32 "1s3rjdazx1n5izpcgz05p1sirm7kf4z3gh26dq2h2j5xmgmk0jxp"))))
+             (base32 "19p91hs6j348qp0v9c7abl3rb8d9ncc37k743qhrn29s9jz0567k"))))
    (build-system gnu-build-system)
    (propagated-inputs
     `(("libxml2" ,libxml2)
       ("gnutls" ,gnutls-3.6.13)
       ("zlib" ,zlib)))
    (inputs
-    `(("vpnc-scripts" ,vpnc-scripts)))
+    `(("lz4" ,lz4)
+      ("vpnc-scripts" ,vpnc-scripts)))
    (native-inputs
     `(("gettext" ,gettext-minimal)
       ("pkg-config" ,pkg-config)))

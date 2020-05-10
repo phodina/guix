@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2015, 2016, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
@@ -13,6 +13,7 @@
 ;;; Copyright © 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2019 Brett Gilio <brettg@gnu.org>
+;;; Copyright © 2020 Konrad Hinsen <konrad.hinsen@fastmail.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -780,7 +781,7 @@ than 8 bits, and at the end only some significant 8 bits are kept.")
     (inputs
      `(("giflib" ,giflib)
        ("lapack" ,lapack)
-       ("libjpeg" ,libjpeg)
+       ("libjpeg" ,libjpeg-turbo)
        ("libpng" ,libpng)
        ("libx11" ,libx11)
        ("openblas" ,openblas)
@@ -835,13 +836,13 @@ computing environments.")
     (inputs
      `(("openblas" ,openblas)))
     (native-inputs
-     `(("python-joblib" ,python-joblib)
-       ("python-pytest" ,python-pytest)
+     `(("python-pytest" ,python-pytest)
        ("python-pandas" ,python-pandas) ;for tests
        ("python-cython" ,python-cython)))
     (propagated-inputs
      `(("python-numpy" ,python-numpy)
-       ("python-scipy" ,python-scipy)))
+       ("python-scipy" ,python-scipy)
+       ("python-joblib" ,python-joblib)))
     (home-page "https://scikit-learn.org/")
     (synopsis "Machine Learning in Python")
     (description
@@ -1056,8 +1057,8 @@ association studies (GWAS) on extremely large data sets.")
 
 ;; There have been no proper releases yet.
 (define-public kaldi
-  (let ((commit "2f95609f0bb085bd3a1dc5eb0a39f3edea59e606")
-        (revision "1"))
+  (let ((commit "d4791c0f3fc1a09c042dac365e120899ee2ad21e")
+        (revision "2"))
     (package
       (name "kaldi")
       (version (git-version "0" revision commit))
@@ -1069,7 +1070,7 @@ association studies (GWAS) on extremely large data sets.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "082qh3pfi7hvncylp4xsmkfahbd7gb0whdfa4rwrx7fxk9rdh3kz"))))
+                  "07k80my6f19mhrkwbzhjsnpf9871wmrwkl0ym468i830w67qyjrz"))))
       (build-system gnu-build-system)
       (arguments
        `(#:test-target "test"
@@ -1167,8 +1168,8 @@ written in C++.")
       (license license:asl2.0))))
 
 (define-public gst-kaldi-nnet2-online
-  (let ((commit "617e43e73c7cc45eb9119028c02bd4178f738c4a")
-        (revision "1"))
+  (let ((commit "cb227ef43b66a9835c14eb0ad39e08ee03c210ad")
+        (revision "2"))
     (package
       (name "gst-kaldi-nnet2-online")
       (version (git-version "0" revision commit))
@@ -1180,7 +1181,7 @@ written in C++.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "0xh3w67b69818s6ib02ara4lw7wamjdmh4jznvkpzrs4skbs9jx9"))))
+                  "1i6ffwiavxx07ri0lxix6s8q0r31x7i4xxvhys5jxkixf5q34w8g"))))
       (build-system gnu-build-system)
       (arguments
        `(#:tests? #f                    ; there are none
@@ -1238,8 +1239,9 @@ automatically.")
       (license license:asl2.0))))
 
 (define-public kaldi-gstreamer-server
-  (let ((commit "1735ba49c5dc0ebfc184e45105fc600cd9f1f508")
-        (revision "1"))
+  ;; This is the tip of the py3 branch
+  (let ((commit "f68cab490be7eb0da2af1475fbc16655f50a60cb")
+        (revision "2"))
     (package
       (name "kaldi-gstreamer-server")
       (version (git-version "0" revision commit))
@@ -1251,7 +1253,7 @@ automatically.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "0j701m7lbwmzqxsfanj882v7881hrbmpqybbczbxqpcbg8q34w0k"))))
+                  "17lh1368vkg8ngrcbn2phvigzlmalrqg6djx2gg61qq1a0nj87dm"))))
       (build-system gnu-build-system)
       (arguments
        `(#:tests? #f ; there are no tests that can be run automatically
@@ -1267,6 +1269,14 @@ automatically.")
                ;; are reproducible.
                (setenv "PYTHONHASHSEED" "0")
                (with-directory-excursion "kaldigstserver"
+                 ;; See https://github.com/alumae/kaldi-gstreamer-server/issues/232
+                 (substitute* "master_server.py"
+                   (("\\.replace\\('\\\\.*") ")"))
+
+                 ;; This is a Python 2 file
+                 (delete-file "decoder_test.py")
+                 (delete-file "test-buffer.py")
+
                  (for-each (lambda (file)
                              (apply invoke
                                     `("python"
@@ -1317,12 +1327,10 @@ exec ~a ~a/~a \"$@\"~%"
                  #t))))))
       (inputs
        `(("gst-kaldi-nnet2-online" ,gst-kaldi-nnet2-online)
-         ("python2" ,python-2)
-         ("python2-futures" ,python2-futures)
-         ("python2-pygobject" ,python2-pygobject)
-         ("python2-pyyaml" ,python2-pyyaml)
-         ("python2-tornado" ,python2-tornado)
-         ("python2-ws4py" ,python2-ws4py-for-kaldi-gstreamer-server)))
+         ("python" ,python-wrapper)
+         ("python-pygobject" ,python-pygobject)
+         ("python-pyyaml" ,python-pyyaml)
+         ("python-tornado" ,python-tornado-6)))
       (home-page "https://github.com/alumae/kaldi-gstreamer-server")
       (synopsis "Real-time full-duplex speech recognition server")
       (description "This is a real-time full-duplex speech recognition server,
@@ -1760,7 +1768,7 @@ INSTALL_RPATH " (assoc-ref outputs "out") "/lib)\n")))
        ("eigen" ,eigen-for-tensorflow)
        ("gemmlowp" ,gemmlowp-for-tensorflow)
        ("lmdb" ,lmdb)
-       ("libjpeg" ,libjpeg)
+       ("libjpeg" ,libjpeg-turbo)
        ("libpng" ,libpng)
        ("giflib" ,giflib)
        ("grpc" ,grpc-1.16.1 "static")
