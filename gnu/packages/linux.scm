@@ -1065,6 +1065,13 @@ It has been modified to remove all non-free binary blobs.")
      #:defconfig "pinebook_pro_defconfig"
      #:extra-version "pinebook-pro")))
 
+(define-public linux-libre-pinebook-pro-5.7
+  (make-linux-libre* linux-libre-5.7-version
+                     linux-libre-5.7-source
+                     '("aarch64-linux")
+                     #:defconfig "pinebook_pro_defconfig"
+                     #:extra-version "pinebook-pro"))
+
 
 ;;;
 ;;; Linux kernel modules.
