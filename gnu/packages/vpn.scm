@@ -12,6 +12,7 @@
 ;;; Copyright © 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 Ryan Prior <rprior@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -40,7 +41,9 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages check)
+  #:use-module (gnu packages dns)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages gettext)
@@ -53,6 +56,7 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages python-web)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages xml))
 
@@ -245,17 +249,19 @@ the user specifically asks to proxy, so the @dfn{VPN} interface no longer
 (define-public openconnect
   (package
    (name "openconnect")
-   (version "8.09")
+   (version "8.10")
    (source (origin
             (method url-fetch)
             (uri (string-append "ftp://ftp.infradead.org/pub/openconnect/"
                                 "openconnect-" version ".tar.gz"))
             (sha256
-             (base32 "19p91hs6j348qp0v9c7abl3rb8d9ncc37k743qhrn29s9jz0567k"))))
+             (base32 "1cdsx4nsrwawbsisfkldfc9i4qn60g03vxb13nzppr2br9p4rrih"))))
    (build-system gnu-build-system)
    (propagated-inputs
     `(("libxml2" ,libxml2)
-      ("gnutls" ,gnutls-3.6.13)
+      ;; XXX ‘DTLS is insecure in GnuTLS v3.6.3 through v3.6.12.’
+      ;; See <https://gitlab.com/gnutls/gnutls/-/issues/960>.
+      ("gnutls" ,gnutls-3.6.14)
       ("zlib" ,zlib)))
    (inputs
     `(("lz4" ,lz4)
@@ -280,7 +286,7 @@ and probably others.")
 (define-public openvpn
   (package
     (name "openvpn")
-    (version "2.4.8")
+    (version "2.4.9")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -288,7 +294,7 @@ and probably others.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "149z3agjy03i66mcj5bplim2mh45s2ps1wmxbxczyzw0nxmsd37v"))))
+                "1qpbllwlha7cffsd5dlddb8rl22g9rar5zflkz1wrcllhvfkl7v4"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--enable-iproute2=yes")))
@@ -308,6 +314,40 @@ bridged configurations and remote access facilities.  It uses a custom
 security protocol that utilizes SSL/TLS for key exchange.  It is capable of
 traversing network address translators (@dfn{NAT}s) and firewalls.")
     (license license:gpl2)))
+
+(define-public protonvpn-cli
+  (package
+    (name "protonvpn-cli")
+    (version "2.2.2")
+    (source
+     (origin
+       ;; PyPI has a ".whl" file but not a proper source release.
+       ;; Thus, fetch code from Git.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/ProtonVPN/linux-cli.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0ixjb02kj4z79whm1izd8mrn2h0rp9cmw4im1qvp93rahqxdd4n8"))))
+    (build-system python-build-system)
+    (arguments '(#:tests? #f)) ; no tests in repo
+    (native-inputs
+     `(("docopt" ,python-docopt)))
+    (inputs
+     `(("pythondialog" ,python-pythondialog)
+       ("requests" ,python-requests)))
+    (propagated-inputs
+     `(("openvpn" ,openvpn)))
+    (synopsis "Command-line client for ProtonVPN")
+    (description
+     "This is the official command-line interface for ProtonVPN, a secure
+point-to-point virtual private networking (VPN) service with a gratis tier.
+It can automatically find and connect to the fastest servers or use Tor over
+VPN.  The gratis tier offers unlimited bandwidth for up to 10 devices.")
+    (home-page "https://github.com/ProtonVPN/linux-cli")
+    (license license:gpl3+)))
 
 (define-public tinc
   (package
@@ -459,7 +499,7 @@ The peer-to-peer VPN implements a Layer 2 (Ethernet) network between the peers
 (define-public wireguard-linux-compat
   (package
     (name "wireguard-linux-compat")
-    (version "1.0.20200401")
+    (version "1.0.20200520")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://git.zx2c4.com/wireguard-linux-compat/"
@@ -467,7 +507,7 @@ The peer-to-peer VPN implements a Layer 2 (Ethernet) network between the peers
                                   ".tar.xz"))
               (sha256
                (base32
-                "0ymprz3h4b92wlcqm5k5vmcgap8pjv202bgkdx0axmp12n1lmyvx"))))
+                "1hvpbfpdd3v2k27ypa1y1j422irx7hxpz87f50s28jvkxx5sxrqn"))))
     (build-system linux-module-build-system)
     (outputs '("out"
                "kernel-patch"))
@@ -513,7 +553,7 @@ WireGuard was added to Linux 5.6.")
 (define-public wireguard-tools
   (package
     (name "wireguard-tools")
-    (version "1.0.20200206")
+    (version "1.0.20200513")
     (source
      (origin
        (method git-fetch)
@@ -522,7 +562,7 @@ WireGuard was added to Linux 5.6.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0ivc08lds5w39a6f2xdfih9wlk5g724hl3kpdvxvh5yff4l84qb7"))))
+        (base32 "1yk8hng0qw2rf76hnawjbdpjssmah88bd5fk20h1c0j1yazlx0a9"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
@@ -541,7 +581,33 @@ WireGuard was added to Linux 5.6.")
        #:phases
        (modify-phases %standard-phases
          ;; No configure script
-         (delete 'configure))))
+         (delete 'configure)
+         (add-after 'install 'install-contrib-docs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (copy-recursively "contrib/"
+                                 (string-append out "/share/doc/wireguard-tools"))
+               #t)))
+         (add-after 'install 'wrap-wg-quick
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (inputs-sbin (map (lambda (input)
+                                        (string-append (assoc-ref inputs input) "/sbin"))
+                                      (list "resolvconf" "iproute" "procps"
+                                            "iptables")))
+                   (coreutils (string-append (assoc-ref inputs "coreutils")
+                                             "/bin")))
+               (wrap-program (string-append out "/bin/wg-quick")
+                 `("PATH" ":" prefix ,(append inputs-sbin
+                                              (list coreutils))))
+               #t))))))
+    (inputs
+     `(("resolvconf" ,openresolv)
+       ("coreutils" ,coreutils)
+       ("bash" ,bash)                   ; for scripts using /dev/tcp
+       ("procps" ,procps)
+       ("iproute" ,iproute)
+       ("iptables" ,iptables)))
     (home-page "https://www.wireguard.com/")
     (synopsis "Tools for configuring WireGuard tunnels")
     (description

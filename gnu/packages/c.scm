@@ -6,6 +6,8 @@
 ;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2019 Andreas Enge <andreas@enge.fr>
+;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -234,15 +236,14 @@ whose behaviour is inconsistent across *NIX flavours.")
 (define-public libhx
   (package
     (name "libhx")
-    (version "3.24")
+    (version "3.25")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/libhx/libHX/"
                            "libHX-" version ".tar.xz"))
        (sha256
-        (base32
-         "0i8v2464p830c15myknvvs6bhxaf663lrqgga95l94ygfynkw6x5"))))
+        (base32 "12avn16f8aqb0cq6jplz0sv7rh6f07m85dwc8dasnnwsvijwbpbj"))))
     (build-system gnu-build-system)
     (home-page "http://libhx.sourceforge.net")
     (synopsis "C library with common data structures and functions")
@@ -252,3 +253,89 @@ structures and functions commonly needed, such as maps, deques, linked lists,
 string formatting and autoresizing, option and config file parsing, type
 checking casts and more.")
     (license license:lgpl2.1+)))
+
+(define-public packcc
+  (package
+    (name "packcc")
+    ;; We need a few fixes on top of the latest release to prevent test
+    ;; failures in Universal Ctags.
+    (version "1.2.5-19-g58d1b9d")
+    (home-page "https://github.com/enechaev/packcc")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url home-page)
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0biyv835jlk43fvmmd3p8jafs7k2iw9qlaj37hvsl604ai6rd5aj"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:tests? #f                      ;no tests
+       #:make-flags '("-DUSE_SYSTEM_STRNLEN=1")
+       #:phases (modify-phases %standard-phases
+                  ;; The project consists of a single source file and has
+                  ;; no actual build system, so we need to do it manually.
+                  (delete 'configure)
+                  (replace 'build
+                    (lambda* (#:key make-flags #:allow-other-keys)
+                      (apply invoke "gcc" "-o" "packcc" "packcc.c"
+                                      make-flags)))
+                  (replace 'install
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let ((out (assoc-ref outputs "out")))
+                        (install-file "packcc" (string-append out "/bin"))
+                        (install-file "README.md"
+                                      (string-append out "/share/doc/packcc"))
+                        #t))))))
+    (synopsis "Packrat parser generator for C")
+    (description
+     "PackCC is a packrat parser generator for the C programming language.
+Its main features are:
+@itemize
+@item Generates a parser in C from a grammar described in a PEG.
+@item Gives your parser great efficiency by packrat parsing.
+@item Supports direct and indirect left-recursive grammar rules.
+@end itemize
+The grammar of your parser can be described in a @acronym{PEG, Parsing
+Expression Grammar}.  The PEG is a top-down parsing language, and is similar
+to the regular-expression grammar.  The PEG does not require tokenization to
+be a separate step, and tokenization rules can be written in the same way as
+any other grammar rules.")
+    (license license:expat)))
+
+(define-public sparse
+  (package
+    (name "sparse")
+    (version "0.6.1")
+    (source (origin
+              (method url-fetch)
+              (uri
+               (string-append "mirror://kernel.org/software/devel/sparse/dist/"
+                              "sparse-"  version ".tar.xz"))
+              (sha256
+               (base32
+                "0qavyryxmhd1rf11akgn1nq3r15k11bqa3qajaq36a56r225rc7x"))))
+    (build-system gnu-build-system)
+    (inputs `(("perl" ,perl)))
+    (arguments
+     '(#:make-flags `(,(string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:phases (modify-phases %standard-phases
+                  (delete 'configure)
+                  (add-after 'unpack 'patch-cgcc
+                    (lambda _
+                      (substitute* "cgcc"
+                        (("'cc'") (string-append "'" (which "gcc") "'")))
+                      #t)))))
+    (synopsis "Semantic C parser for Linux development")
+    (description
+     "Sparse is a semantic parser for C and is required for Linux development.
+It provides a compiler frontend capable of parsing most of ANSI C as well as
+many GCC extensions, and a collection of sample compiler backends, including a
+static analyzer also called @file{sparse}.  Sparse provides a set of
+annotations designed to convey semantic information about types, such as what
+address space pointers point to, or what locks a function acquires or
+releases.")
+    (home-page "https://sparse.wiki.kernel.org/index.php/Main_Page")
+    (license license:expat)))

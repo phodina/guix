@@ -65,6 +65,7 @@
   #:use-module (gnu packages lisp)
   #:use-module (gnu packages man)
   #:use-module (gnu packages nettle)
+  #:use-module (gnu packages networking)
   #:use-module (gnu packages nss)
   #:use-module (gnu packages patchutils)
   #:use-module (gnu packages perl)
@@ -117,8 +118,8 @@
   ;; Note: the 'update-guix-package.scm' script expects this definition to
   ;; start precisely like this.
   (let ((version "1.1.0")
-        (commit "52b01cb7007b793c5b21456ac8cdd9f9df5b8b16")
-        (revision 3))
+        (commit "ab9e30039d9312285ea3f4ed43f81c9c2c0dae08")
+        (revision 9))
     (package
       (name "guix")
 
@@ -134,7 +135,7 @@
                       (commit commit)))
                 (sha256
                  (base32
-                  "0rz5vnqvcrccbnrirhrsx3iw4jj75znh3ma9g7szjn313ii3hl1d"))
+                  "0qb2haf5dyq5x1hcjyx58v455lzi6ffa68ldm0615jy25w5phmxq"))
                 (file-name (string-append "guix-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
@@ -321,7 +322,7 @@ $(prefix)/etc/init.d\n")))
                        ("guile" ,guile-3.0)
                        ("gnutls" ,gnutls)
                        ("guile-gcrypt" ,guile-gcrypt)
-                       ("guile-json" ,guile-json-3)
+                       ("guile-json" ,guile-json-4)
                        ("guile-sqlite3" ,guile-sqlite3)
                        ("guile-ssh" ,guile-ssh)
                        ("guile-git" ,guile-git)
@@ -370,9 +371,9 @@ $(prefix)/etc/init.d\n")))
 
          ("glibc-utf8-locales" ,glibc-utf8-locales)))
       (propagated-inputs
-       `(("gnutls" ,(if (%current-target-system) gnutls-3.6.13 guile3.0-gnutls))
+       `(("gnutls" ,(if (%current-target-system) gnutls-3.6.14 guile3.0-gnutls))
          ("guile-gcrypt" ,guile-gcrypt)
-         ("guile-json" ,guile-json-3)
+         ("guile-json" ,guile-json-4)
          ("guile-sqlite3" ,guile-sqlite3)
          ("guile-ssh" ,guile-ssh)
          ("guile-git" ,guile-git)))
@@ -541,14 +542,14 @@ out) and returning a package that uses that as its 'source'."
 (define-public nix
   (package
     (name "nix")
-    (version "2.3.4")
+    (version "2.3.5")
     (source (origin
              (method url-fetch)
              (uri (string-append "http://nixos.org/releases/nix/nix-"
                                  version "/nix-" version ".tar.xz"))
              (sha256
               (base32
-               "03fhbb8088sgz3709zd9n9rydavar79w87l9n4q9iimcw06nlqhw"))))
+               "1hbqsrp1ii2sfq8x2mahjrl2182qck76n8blrl1jfz3xq99m6i15"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs `(("boost" ,boost)
@@ -981,7 +982,7 @@ environments.")
      `(("guix" ,guix)
        ("guile" ,guile-3.0)))
     (propagated-inputs
-     `(("guile-json" ,guile-json-3)
+     `(("guile-json" ,guile-json-4)
        ("guile-simple-zmq" ,guile-simple-zmq)
        ("guile-gcrypt" ,guile-gcrypt)))
     (synopsis "Guix kernel for Jupyter")
@@ -1113,7 +1114,7 @@ the boot loader configuration.")
 (define-public flatpak
   (package
    (name "flatpak")
-   (version "1.4.3")
+   (version "1.6.3")
    (source
     (origin
      (method url-fetch)
@@ -1121,45 +1122,78 @@ the boot loader configuration.")
                          version "/flatpak-" version ".tar.xz"))
      (sha256
       (base32
-       "11bfxmv8pxlb5x0lb2rsl45615fzfvq5r6wldf0l6ab2ngryd7i7"))))
+       "17s8nqdxd4xdy7ag9bw06adxccha78jmlsa3zpqnl3qh92pg0hji"))))
 
    ;; Wrap 'flatpak' so that GIO_EXTRA_MODULES is set, thereby allowing GIO to
    ;; find the TLS backend in glib-networking.
    (build-system glib-or-gtk-build-system)
 
    (arguments
-    '(#:tests? #f ;; Tests fail due to trying to create files where it can't.
-      #:configure-flags (list
-                         "--enable-documentation=no" ;; FIXME
-                         "--enable-system-helper=no"
-                         "--localstatedir=/var"
-                         (string-append "--with-system-bubblewrap="
-                                        (assoc-ref %build-inputs "bubblewrap")
-                                        "/bin/bwrap"))))
-   (native-inputs `(("bison" ,bison)
-                    ("gettext" ,gettext-minimal)
-                    ("glib:bin" ,glib "bin") ; for glib-mkenums + gdbus-codegen
-                    ("gobject-introspection" ,gobject-introspection)
-                    ("libcap" ,libcap)
-                    ("pkg-config" ,pkg-config)))
+    '(#:configure-flags
+      (list
+       "--enable-documentation=no" ;; FIXME
+       "--enable-system-helper=no"
+       "--localstatedir=/var"
+       (string-append "--with-system-bubblewrap="
+                      (assoc-ref %build-inputs "bubblewrap")
+                      "/bin/bwrap")
+       "--with-system-dbus-proxy")
+      #:phases
+      (modify-phases %standard-phases
+        (add-after 'unpack 'fix-tests
+          (lambda* (#:key inputs #:allow-other-keys)
+            (copy-recursively
+             (string-append (assoc-ref inputs "glibc-utf8-locales")
+                            "/lib/locale/") "/tmp/locale")
+            (for-each make-file-writable (find-files "/tmp"))
+            (substitute* "tests/make-test-runtime.sh"
+              (("cp `which.*") "echo guix\n")
+              (("cp -r /usr/lib/locale/C\\.\\*")
+               (string-append "mkdir ${DIR}/usr/lib/locale/en_US; \
+cp -r /tmp/locale/*/en_US.*")))
+            (substitute* "tests/libtest.sh"
+              (("/bin/kill") (which "kill"))
+              (("/usr/bin/python3") (which "python3")))
+            #t))
+        ;; Many tests fail for unknown reasons, so we just run a few basic
+        ;; tests
+        (replace 'check
+          (lambda _
+            (setenv "HOME" "/tmp")
+            (invoke "make" "check"
+                    "TESTS=tests/test-basic.sh tests/test-config.sh testcommon"))))))
+    (native-inputs
+    `(("bison" ,bison)
+      ("dbus" ,dbus) ; for dbus-daemon
+      ("gettext" ,gettext-minimal)
+      ("glib:bin" ,glib "bin")          ; for glib-mkenums + gdbus-codegen
+      ("glibc-utf8-locales" ,glibc-utf8-locales)
+      ("gobject-introspection" ,gobject-introspection)
+      ("libcap" ,libcap)
+      ("pkg-config" ,pkg-config)
+      ("python" ,python)
+      ("socat" ,socat)
+      ("which" ,which)))
    (propagated-inputs `(("glib-networking" ,glib-networking)
                         ("gnupg" ,gnupg)
                         ("gsettings-desktop-schemas"
                          ,gsettings-desktop-schemas)))
-   (inputs `(("appstream-glib" ,appstream-glib)
-             ("bubblewrap" ,bubblewrap)
-             ("dconf" ,dconf)
-             ("fuse" ,fuse)
-             ("gdk-pixbuf" ,gdk-pixbuf)
-             ("gpgme" ,gpgme)
-             ("json-glib" ,json-glib)
-             ("libarchive" ,libarchive)
-             ("libostree" ,libostree)
-             ("libseccomp" ,libseccomp)
-             ("libsoup" ,libsoup)
-             ("libxau" ,libxau)
-             ("libxml2" ,libxml2)
-             ("util-linux" ,util-linux)))
+   (inputs
+    `(("appstream-glib" ,appstream-glib)
+      ("bubblewrap" ,bubblewrap)
+      ("dconf" ,dconf)
+      ("fuse" ,fuse)
+      ("gdk-pixbuf" ,gdk-pixbuf)
+      ("gpgme" ,gpgme)
+      ("json-glib" ,json-glib)
+      ("libarchive" ,libarchive)
+      ("libostree" ,libostree)
+      ("libseccomp" ,libseccomp)
+      ("libsoup" ,libsoup)
+      ("libxau" ,libxau)
+      ("libxml2" ,libxml2)
+      ("util-linux" ,util-linux)
+      ("xdg-dbus-proxy" ,xdg-dbus-proxy)))
    (home-page "https://flatpak.org")
    (synopsis "System for building, distributing, and running sandboxed desktop
 applications")

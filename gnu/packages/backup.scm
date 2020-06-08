@@ -16,6 +16,7 @@
 ;;; Copyright © 2019 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2020 Marcin Karpezo <sirmacik@wioo.waw.pl>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -736,14 +737,14 @@ changes are stored.")
 (define-public wimlib
   (package
     (name "wimlib")
-    (version "1.13.1")
+    (version "1.13.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://wimlib.net/downloads/"
                                   "wimlib-" version ".tar.gz"))
               (sha256
                (base32
-                "0pxgrpr3dr81rcf2jh71aiiq3v4anc5sj1nld18f2vhvbijbrx27"))))
+                "0id9ym3hzij4kpdrk0sz3ijxp5r0z1md5jch83pml9hdy1zbx5bj"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1026,17 +1027,53 @@ stored previously can be read back in full at any time.  The program
 is format-agnostic, so you can feed virtually any files to it.")
     (license license:gpl2+)))
 
+(define-public dump
+  (package
+    (name "dump")
+    (version "0.4b46")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://sourceforge/dump/dump/"
+                           version "/dump-" version ".tar.gz"))
+       (sha256
+        (base32
+         "15rg5y15ak0ppqlhcih78layvg7cwp6hc16p3c58xs8svlkxjqc0"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       `("--sysconfdir=/etc"
+         "--disable-readline"
+         "--disable-rmt")))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("openssl" ,openssl-1.0)
+       ("zlib" ,zlib)
+       ("util-linux" ,util-linux "lib")
+       ("e2fsprogs" ,e2fsprogs)))
+    (home-page "https://dump.sourceforge.io/")
+    (synopsis "Ext2/3/4 filesystem dump/restore utilities")
+    (description "Dump examines files in a filesystem, determines which ones
+need to be backed up, and copies those files to a specified disk, tape or
+other storage medium.  Subsequent incremental backups can then be layered on
+top of the full backup.  The restore command performs the inverse function of
+dump; it can restore a full backup of a filesystem.  Single files and
+directory subtrees may also be restored from full or partial backups in
+interractive mode.")
+    (license license:bsd-3)))
+
 (define-public burp
   (package
     (name "burp")
-    (version "2.3.24")
+    (version "2.3.28")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/burp/burp-" version
                                   "/burp-" version ".tar.bz2"))
               (sha256
                (base32
-                "0dmahqx8ldqdrx9b47r7ag3m801n7h3kclcqja1cc1jzhfhfq27w"))))
+                "18f8cjsb87skabvz4cl5pdln35qmim7x686js1xzpld6wyl9kv2k"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases

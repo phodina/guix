@@ -556,8 +556,8 @@ from forcing GEXP-PROMISE."
                       #:system system
                       #:guile-for-build guile)))
 
-(define %icecat-version "68.8.0-guix0-preview1")
-(define %icecat-build-id "20200505000000") ;must be of the form YYYYMMDDhhmmss
+(define %icecat-version "68.9.0-guix0-preview1")
+(define %icecat-build-id "20200602000000") ;must be of the form YYYYMMDDhhmmss
 
 ;; 'icecat-source' is a "computed" origin that generates an IceCat tarball
 ;; from the corresponding upstream Firefox ESR tarball, using the 'makeicecat'
@@ -579,11 +579,11 @@ from forcing GEXP-PROMISE."
                   "firefox-" upstream-firefox-version ".source.tar.xz"))
             (sha256
              (base32
-              "0hp8cc7xk6qj4q1s8n97qv9sdrypkzvphik96m5qv1r5s9k24nzs"))))
+              "01s41p985g6v544lf08zch3myssn5c76jwmkzzd68zd9m3hhalck"))))
 
-         (upstream-icecat-base-version "68.8.0") ; maybe older than base-version
+         (upstream-icecat-base-version "68.9.0") ; maybe older than base-version
          ;;(gnuzilla-commit (string-append "v" upstream-icecat-base-version))
-         (gnuzilla-commit "5358ff2963a6136f8acafdc598cad540231ad23e")
+         (gnuzilla-commit "d7acf32ad905a3382cb2353577a96d29aa58f589")
          (gnuzilla-source
           (origin
             (method git-fetch)
@@ -595,7 +595,7 @@ from forcing GEXP-PROMISE."
                                       (string-take gnuzilla-commit 8)))
             (sha256
              (base32
-              "1bq0qzgkxz9q61g48bc05i0zx1z8k0pklxnmn54ch136aqgsyli4"))))
+              "0m49zm05m3n95diij2zyvpm74q66zxjhv9rp8zvaab0h7v2s09n9"))))
 
          (makeicecat-patch
           (local-file (search-patch "icecat-makeicecat.patch")))
@@ -1344,6 +1344,32 @@ standards of the IceCat project.")
            (lambda _ (invoke "./mach" "build")))
          (replace 'install
            (lambda _ (invoke "./mach" "install")))
+         ;; Thunderbird doesn't provide any .desktop file.
+         ;; See https://bugzilla.mozilla.org/show_bug.cgi?id=1637575
+         (add-after 'install 'install-desktop-file
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (apps (string-append out "/share/applications")))
+               (mkdir-p apps)
+               (with-output-to-file (string-append apps "/icedove.desktop")
+                 (lambda _
+                   (format #t
+                           "[Desktop Entry]~@
+                            Name=Icedove~@
+                            Exec=~a/bin/icedove~@
+                            Icon=icedove~@
+                            GenericName=Mail/News Client~@
+                            Categories=Network;Email;~@
+                            Terminal=false~@
+                            StartupNotify=true~@
+                            MimeType=x-scheme-handler/mailto;~@
+                            Type=Application~@
+                            Actions=ComposeMessage;~@
+                            [Desktop Action ComposeMessage]~@
+                            Name=Write new message~@
+                            Exec=~@*~a/bin/icedove -compose~%"
+                           out))))
+             #t))
          (add-after 'install 'wrap-program
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))

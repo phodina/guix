@@ -3,7 +3,7 @@
 ;;; Copyright © 2013 Joshua Grant <tadni@riseup.net>
 ;;; Copyright © 2014, 2016 David Thompson <davet@gnu.org>
 ;;; Copyright © 2014, 2015, 2016, 2017 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016 ng0 <ng0@n0.is>
+;;; Copyright © 2016 Nikita <nikita@n0.is>
 ;;; Copyright © 2016, 2017, 2018, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 David Thompson <davet@gnu.org>
 ;;; Copyright © 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
@@ -664,6 +664,53 @@ OpenGL graphics API.")
      "A library for handling OpenGL function pointer management.")
     (license license:x11)))
 
+(define-public libglvnd
+  (package
+    (name "libglvnd")
+    (version "1.3.1")
+    (home-page "https://gitlab.freedesktop.org/glvnd/libglvnd")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url home-page)
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0mkzdzdxjxjl794rblq4mq33wmb8ikqmfswbqdbr8gw2kw4wlhdl"))))
+    (build-system meson-build-system)
+    (arguments
+     '(#:configure-flags '("-Dx11=enabled")
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'disable-glx-tests
+                    (lambda _
+                      ;; This package is meant to be used alongside Mesa.
+                      ;; To avoid a circular dependency, disable tests that
+                      ;; require a running Xorg server.
+                      (substitute* "tests/meson.build"
+                        (("if with_glx")
+                         "if false"))
+                      #t)))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libx11" ,libx11)
+       ("libxext" ,libxext)
+       ("xorgproto" ,xorgproto)))
+    (synopsis "Vendor-neutral OpenGL dispatch library")
+    (description
+     "libglvnd is a vendor-neutral dispatch layer for arbitrating OpenGL
+API calls between multiple vendors.  It allows multiple drivers from
+different vendors to coexist on the same filesystem, and determines which
+vendor to dispatch each API call to at runtime.
+
+Both GLX and EGL are supported, in any combination with OpenGL and OpenGL ES.")
+    ;; libglvnd is available under a custom X11-style license, and incorporates
+    ;; code with various other licenses.  See README.md for details.
+    (license (list (license:x11-style "file://README.md")
+                   license:x11
+                   license:expat))))
+
 (define-public soil
   (package
     (name "soil")
@@ -775,7 +822,7 @@ and visualizations.")
 (define-public gl2ps
   (package
     (name "gl2ps")
-    (version "1.4.0")
+    (version "1.4.2")
     (source
      (origin
        (method url-fetch)
@@ -783,15 +830,14 @@ and visualizations.")
              "http://geuz.org/gl2ps/src/gl2ps-"
              version ".tgz"))
        (sha256
-        (base32
-         "1qpidkz8x3bxqf69hlhyz1m0jmfi9kq24fxsp7rq6wfqzinmxjq3"))))
+        (base32 "1sgzv547h7hrskb9qd0x5yp45kmhvibjwj2mfswv95lg070h074d"))))
     (build-system cmake-build-system)
     (inputs
      `(("libpng" ,libpng)
        ("mesa" ,mesa)
        ("zlib" ,zlib)))
     (arguments
-     `(#:tests? #f))  ;; no tests
+     `(#:tests? #f))                    ; no tests
     (home-page "http://www.geuz.org/gl2ps/")
     (synopsis "OpenGL to PostScript printing library")
     (description "GL2PS is a C library providing high quality vector

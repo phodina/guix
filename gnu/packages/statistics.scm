@@ -1615,13 +1615,13 @@ defined in different packages.")
 (define-public r-rlang
   (package
     (name "r-rlang")
-    (version "0.4.5")
+    (version "0.4.6")
     (source (origin
               (method url-fetch)
               (uri (cran-uri "rlang" version))
               (sha256
                (base32
-                "1a0h3dr519p3jj6aygbhwi9f2zwlan6d07f1gkh2db56y5vaq7yd"))))
+                "1jik4lywg4688dfi5fh8jbnmsxvq3382ii0nsw5armjzfq3v309s"))))
     (build-system r-build-system)
     (home-page "http://rlang.tidyverse.org")
     (synopsis "Functions for base types, core R and Tidyverse features")
@@ -2052,13 +2052,13 @@ jackknifed confidence intervals are available for most estimates.")
 (define-public r-rversions
   (package
     (name "r-rversions")
-    (version "2.0.1")
+    (version "2.0.2")
     (source (origin
               (method url-fetch)
               (uri (cran-uri "rversions" version))
               (sha256
                (base32
-                "1ic6sxnyya24d5xsxjg3fba73fhya9fhs0kaf66yha6nwxj1zv2i"))))
+                "0ghpla5r3d6zh5dn6d6ii5p0a952lcdv004m88fk8r9k76vz88rm"))))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-curl" ,r-curl)
@@ -2371,13 +2371,13 @@ functions make it easy to control additional request components.")
 (define-public r-git2r
   (package
     (name "r-git2r")
-    (version "0.26.1")
+    (version "0.27.1")
     (source (origin
               (method url-fetch)
               (uri (cran-uri "git2r" version))
               (sha256
                (base32
-                "0dbl845sahv2i641ncaf06w06djravwc5wknp9syzx0ad8l0kmhk"))))
+                "1h1vfzym6hi1fqs9p5z5v0f4xldggr425frw8k6dsidah3qhg4h9"))))
     (build-system r-build-system)
     (inputs
      `(("libgit2" ,libgit2)
@@ -3670,14 +3670,14 @@ more complete @code{viridis} package.")
 (define-public r-tidyselect
   (package
     (name "r-tidyselect")
-    (version "1.0.0")
+    (version "1.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "tidyselect" version))
        (sha256
         (base32
-         "1bwwsljkg1bxh7xnqxv7n0n1s9y8x407i6lsv826vy1ss1k1fxpy"))))
+         "14rqx4dq574hilmdwrr34wyjg8rlw4rvndpsqd9plgxm3wwfsdg6"))))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-ellipsis" ,r-ellipsis)
@@ -3685,6 +3685,8 @@ more complete @code{viridis} package.")
        ("r-purrr" ,r-purrr)
        ("r-rlang" ,r-rlang)
        ("r-vctrs" ,r-vctrs)))
+    (native-inputs
+     `(("r-knitr" ,r-knitr)))
     (home-page "https://cran.r-project.org/web/packages/tidyselect")
     (synopsis "Select from a set of strings")
     (description
@@ -3697,14 +3699,14 @@ selection.")
 (define-public r-tidyr
   (package
     (name "r-tidyr")
-    (version "1.0.2")
+    (version "1.0.3")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "tidyr" version))
        (sha256
         (base32
-         "0safj8bcf8libwr0jx4059bmarngvhfddrcv8k5iw39m9lpxs0r4"))))
+         "18ypk63nifp5jj5d9880m49zdv7n4a18gac59wj5z5xk6qr7vfal"))))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-dplyr" ,r-dplyr)
@@ -3719,6 +3721,8 @@ selection.")
        ("r-stringi" ,r-stringi)
        ("r-tibble" ,r-tibble)
        ("r-vctrs" ,r-vctrs)))
+    (native-inputs
+     `(("r-knitr" ,r-knitr)))
     (home-page "https://github.com/hadley/tidyr")
     (synopsis "Tidy data with `spread()` and `gather()` functions")
     (description
@@ -4113,14 +4117,14 @@ existing packages provide.")
 (define-public r-sfsmisc
   (package
     (name "r-sfsmisc")
-    (version "1.1-6")
+    (version "1.1-7")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "sfsmisc" version))
        (sha256
         (base32
-         "04fvjdab6vyyghyqy0abxvfbyr1myz6yib7ibwiyjw9yf7fjrcjp"))))
+         "12g6m8sf17q3qmm133nm4fa296w5n5d9ly3fvb2nvc0w4llkif3l"))))
     (build-system r-build-system)
     (home-page "https://cran.r-project.org/web/packages/sfsmisc")
     (synopsis "Utilities from \"Seminar fuer Statistik\" ETH Zurich")
@@ -4242,18 +4246,20 @@ including:
 (define-public r-rocr
   (package
     (name "r-rocr")
-    (version "1.0-7")
+    (version "1.0-11")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "ROCR" version))
        (sha256
         (base32
-         "1jay8cm7lgq56i967vm5c2hgaxqkphfpip0gn941li3yhh7p3vz7"))))
+         "0amvvrkiflmr3qygrsgrsja4gaf2v6r6h6i2bgpsm8r069vmlf2p"))))
     (properties `((upstream-name . "ROCR")))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-gplots" ,r-gplots)))
+    (native-inputs
+     `(("r-knitr" ,r-knitr)))
     (home-page "https://rocr.bioinf.mpi-sb.mpg.de/")
     (synopsis "Visualizing the performance of scoring classifiers")
     (description
@@ -4272,13 +4278,13 @@ mechanism.")
 (define-public r-zoo
   (package
     (name "r-zoo")
-    (version "1.8-7")
+    (version "1.8-8")
     (source (origin
               (method url-fetch)
               (uri (cran-uri "zoo" version))
               (sha256
                (base32
-                "1w4542zs53bm261g95086a60576v334g1jrhnbgdqni4izf2s1wy"))))
+                "1rrw431jwaxd9xljp73f15rhcxvwc0xlyrmr0ghi5fj7a03c932f"))))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-lattice" ,r-lattice)))
@@ -5281,14 +5287,14 @@ even in multithreaded code, typically using OpenMP.")
 (define-public r-mnormt
   (package
     (name "r-mnormt")
-    (version "1.5-6")
+    (version "1.5-7")
     (source
      (origin
        (method url-fetch)
         (uri (cran-uri "mnormt" version))
         (sha256
           (base32
-           "0k8y08gj6z525yvc7y3dl2kzgnafbj3i7lvpamypsmqxf74zql99"))))
+           "1y0vlvh02wza2wvfd29wxjlw3jg9rnwnx3kph5qz4179kz87fgfg"))))
     (build-system r-build-system)
     (native-inputs
      `(("gfortran" ,gfortran)))

@@ -5,7 +5,7 @@
 ;;; Copyright © 2015, 2016, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Lukas Gradl <lgradl@openmailbox.org>
 ;;; Copyright © 2016 Francesco Frassinelli <fraph24@gmail.com>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Adonay Felipe Nogueira <https://libreplanet.org/wiki/User:Adfeno> <adfeno@hyperbola.info>
@@ -620,7 +620,8 @@ address of one of the participants.")
                (for-each (lambda (file) (install-file file lib))
                          (find-files "." "\\.so\\."))
                (for-each (lambda (file) (install-file file lib))
-                         (find-files "release/plugins" "\\.so$"))))))))
+                         (find-files "release/plugins" "\\.so$"))
+               #t))))))
     (inputs
      `(("avahi" ,avahi)
        ("boost" ,boost)

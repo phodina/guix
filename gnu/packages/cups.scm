@@ -187,6 +187,7 @@ filters for the PDF-centric printing workflow introduced by OpenPrinting.")
 ;; satisfy this dependency.
 (define-public cups-minimal
   (package
+    (replacement cups-minimal-2.3.3)
     (name "cups-minimal")
     (version "2.3.1")
     (source
@@ -249,8 +250,21 @@ device-specific programs to convert and print many types of files.")
     ;; CUPS is Apache 2.0 with exceptions, see the NOTICE file.
     (license license:asl2.0)))
 
+(define-public cups-minimal-2.3.3
+  (package
+    (inherit cups-minimal)
+    (version "2.3.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/apple/cups/releases/download/v"
+                           version "/cups-" version "-source.tar.gz"))
+       (sha256
+        (base32
+         "1vpk0b2vq830f8fvf9z8qjsm5k141i7pi8djbinpnr78pi4dj7r6"))))))
+
 (define-public cups
-  (package (inherit cups-minimal)
+  (package/inherit cups-minimal
     (name "cups")
     (arguments
      `(;; Three tests fail:
@@ -421,14 +435,14 @@ should only be used as part of the Guix cups-pk-helper service.")
 (define-public hplip
   (package
     (name "hplip")
-    (version "3.20.3")
+    (version "3.20.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/hplip/hplip/" version
                                   "/hplip-" version ".tar.gz"))
               (sha256
                (base32
-                "0sh6cg7yjc11x1cm4477iaslj9n8ksghs85hqwgfbk7m5b2pw2a1"))
+                "0nj79r61fzddwwzf8kcc0qkp4y9qx46v15iarz6h6y3v91wbsjq0"))
               (modules '((guix build utils)))
               (patches (search-patches "hplip-remove-imageprocessor.patch"))
               (snippet

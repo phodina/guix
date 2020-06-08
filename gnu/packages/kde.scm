@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2016, 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016, 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017, 2018 Mark Meyer <mark@ofosos.org>
@@ -209,7 +209,7 @@ projects.")
 (define-public kdevelop
   (package
     (name "kdevelop")
-    (version "5.4.6")
+    (version "5.5.2")
     (source
       (origin
         (method url-fetch)
@@ -217,7 +217,7 @@ projects.")
                             "/" version "/src/kdevelop-"
                             version ".tar.xz"))
         (sha256
-         (base32 "01jmrmwbc1hrvq7jdfcc7mxl03q2l6kz57yca2j26xwyvfcfv5sz"))))
+         (base32 "1nkl3z1n1l7ly2zvmbx2sdhx5q72wcvpwhzsz3qgw1474qd9i3i2"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -302,15 +302,16 @@ software (Git, Subversion, Mercurial, CVS and Bazaar).")
 (define-public kdevelop-pg-qt
   (package
     (name "kdevelop-pg-qt")
-    (version "2.2.0")
+    (version "2.2.1")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://github.com/KDE/kdevelop-pg-qt/archive/v"
-                           version ".tar.gz"))
-       (file-name (string-append name "-" version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+              (url "https://github.com/KDE/kdevelop-pg-qt")
+              (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "15ja19gg6x7gww4ch12hy585x55ghbkpsiyr8fqiyjk0j6v07hh5"))))
+        (base32 "1kfab4p717acbdkcdi41d98vwch7v431gb2qi6s38hmclsf8bf8g"))))
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)))
     (inputs
@@ -328,14 +329,14 @@ for some KDevelop language plugins (Ruby, PHP, CSS...).")
 (define-public kdiagram
   (package
     (name "kdiagram")
-    (version "2.6.1")
+    (version "2.7.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://kde/stable/kdiagram/" version
                            "/kdiagram-" version ".tar.xz"))
        (sha256
-        (base32 "1c6dbp9gssjrx59z8yxzq1ay56pnw7h28symjrv0gcvhxyjirrxx"))
+        (base32 "1pgvf2q8b59hw0jg5ajmj5nrn4q8cgnifpvdd0fynk2ml6zym8k3"))
        (patches (search-patches
                  "kdiagram-Fix-missing-link-libraries.patch"))))
     (build-system qt-build-system)
@@ -359,7 +360,7 @@ illustrate project schedules.")
 (define-public krita
   (package
     (name "krita")
-    (version "4.2.7.1")
+    (version "4.2.9")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -367,14 +368,14 @@ illustrate project schedules.")
                     "/krita-" version ".tar.gz"))
               (sha256
                (base32
-                "0gcwq1w09gmx53i2fir73l222p41299wagvhbvsxwrz0v3crzliy"))))
+                "1a3djmjhnvlp8dpiz68s0lwg71nv3ypq592jfgsnm5zlxa0vp1cz"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f
        #:configure-flags
        (list "-DBUILD_TESTING=OFF"
              (string-append "-DCMAKE_CXX_FLAGS=-I"
-                            (assoc-ref %build-inputs "ilmbase")
+                            (assoc-ref %build-inputs "openexr")
                             "/include/OpenEXR"))
        #:phases
        (modify-phases %standard-phases
@@ -448,14 +449,14 @@ features include brush stabilizers, brush engines and wrap-around mode.")
 (define-public libkomparediff2
   (package
     (name "libkomparediff2")
-    (version "19.08.2")
+    (version "19.08.3")
     (source
       (origin
         (method url-fetch)
         (uri (string-append "mirror://kde/stable/applications/" version
                             "/src/libkomparediff2-" version ".tar.xz"))
         (sha256
-         (base32 "1mvihd0xpkl8kryf5dvsfgpbgs9af8c9bzq8mmr74gfsvfb8ywy5"))))
+         (base32 "0p8j24d0lzylv5crdzak87016ppgph5hiyxkvapda1m8zlb5dfm1"))))
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("pkg-config" ,pkg-config)))
@@ -480,7 +481,7 @@ used in KDE development tools Kompare and KDevelop.")
 (define-public qca
   (package
     (name "qca")
-    (version "2.2.1")
+    (version "2.3.0")
     (source
       (origin
         (method url-fetch)
@@ -488,7 +489,7 @@ used in KDE development tools Kompare and KDevelop.")
                             "/qca-" version ".tar.xz"))
         (sha256
          (base32
-          "00kv1vsrc8fp556hm8s6yw3240vx3l4067q6vfxrb3gdwgcd45np"))))
+          "1mrj748yz1grgzmfbmffgjkpcqiaj1l3m4pbddwcj7dnl50yys0x"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -506,7 +507,7 @@ cards.")
 (define-public kpmcore
   (package
     (name "kpmcore")
-    (version "4.0.1")
+    (version "4.1.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -515,9 +516,7 @@ cards.")
                     name "-" version ".tar.xz"))
               (sha256
                (base32
-                "1sslkwcj2cyrn7bpjdjdwikp1q8wrsxpsg2sxxd8hsairgy7ygh3"))
-              (patches (search-patches "kpmcore-fix-tests.patch"
-                                       "kpmcore-remove-broken-test.patch"))))
+                "0jsig7algmab9h0fb09my0axjqzw83zgscamhzl8931lribs6idm"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -577,7 +576,8 @@ different notification systems.")
           "02lr3xx5s2mgddac4n3lkgr7ppf1z5m6ajs90rjix0vs8a271kp5"))))
     (build-system qt-build-system)
     (arguments
-     `(#:configure-flags '("-DBUILD_TESTING=ON")
+     `(#:configure-flags '("-DBUILD_TESTING=ON"
+                           "-DLIBEXEC_INSTALL_DIR=libexec")
        #:tests? #f)) ; tests fail hard in our build environment
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -620,7 +620,7 @@ communicate with each other.  Here's a few things KDE Connect can do:
 (define-public kqtquickcharts
   (package
     (name "kqtquickcharts")
-    (version "19.08.2")
+    (version "19.08.3")
     (source
       (origin
         (method url-fetch)
@@ -628,7 +628,7 @@ communicate with each other.  Here's a few things KDE Connect can do:
                             version "/src/kqtquickcharts-" version ".tar.xz"))
         (sha256
          (base32
-          "1yy9fyd8y4g25ljdsbil19qdf4j3mzmzl489sx7rqpm3lfdzjh9k"))))
+          "0kwrqm7aa74plqkkyigi6b2hic6dzrygkgb6hsgj35ycrfn4rigi"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)))
@@ -645,14 +645,14 @@ charts.")
 (define-public kcachegrind
   (package
     (name "kcachegrind")
-    (version "19.04.1")
+    (version "19.08.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://kde/stable/applications/" version
                                   "/src/kcachegrind-" version ".tar.xz"))
               (sha256
                (base32
-                "1hhsk64yp6q2xh8j269j4wp9y24ggmii861r6gf02mj1mbn2p1jb"))))
+                "0sm3085vd79svfql6nqjyrwlknnmdyyvi0yjnmyb09mq7djf1icg"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)

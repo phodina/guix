@@ -16,6 +16,8 @@
 ;;; Copyright © 2019 John Soo <jsoo1@asu.edu>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
+;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2020 Ekaitz Zarraga <ekaitz@elenq.tech>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37,6 +39,7 @@
   #:use-module (guix download)
   #:use-module (guix gexp)
   #:use-module (guix git-download)
+  #:use-module (guix svn-download)
   #:use-module (guix monads)
   #:use-module (guix store)
   #:use-module (guix utils)
@@ -58,6 +61,7 @@
   #:use-module (gnu packages commencement)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
+  #:use-module (gnu packages digest)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages fontutils)
@@ -79,6 +83,7 @@
   #:use-module (gnu packages image)
   #:use-module (gnu packages image-processing)
   #:use-module (gnu packages imagemagick)
+  #:use-module (gnu packages libevent)
   #:use-module (gnu packages linux)               ;FIXME: for pcb
   #:use-module (gnu packages m4)
   #:use-module (gnu packages maths)
@@ -532,7 +537,7 @@ featuring various improvements and bug fixes.")))
                (copy-recursively "doc" doc)
                (copy-recursively "examples" examples)
                #t))))))
-    (home-page "http://www.rle.mit.edu/cpg/research_codes.htm")
+    (home-page "https://www.rle.mit.edu/cpg/research_codes.htm")
     (synopsis "Multipole-accelerated capacitance extraction program")
     (description
      "Fastcap is a capacitance extraction program based on a
@@ -580,7 +585,7 @@ multipole-accelerated algorithm.")
                       (copy-recursively "doc" doc)
                       (copy-recursively "examples" examples)
                       #t))))))
-    (home-page "http://www.rle.mit.edu/cpg/research_codes.htm")
+    (home-page "https://www.rle.mit.edu/cpg/research_codes.htm")
     (synopsis "Multipole-accelerated inductance analysis program")
     (description
      "Fasthenry is an inductance extraction program based on a
@@ -797,16 +802,16 @@ language.")
 (define-public kicad
   (package
     (name "kicad")
-    (version "5.1.5")
+    (version "5.1.6")
     (source
      (origin
-       (method url-fetch)
-       (file-name (string-append name "-" version ".tar.xz"))
-       (uri (string-append
-             "https://launchpad.net/kicad/" (version-major version)
-             ".0/" version "/+download/kicad-" version ".tar.xz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://gitlab.com/kicad/code/kicad.git")
+             (commit version)))
        (sha256
-        (base32 "0x3417f2pa7p65s9f7l49rqbnrzy8gz6i0n07mlbxqbnm0fmlql0"))))
+        (base32 "1pa3z0h0679jmgxlzc833h6q85b5paxdp69kf2h93vkaryj58622"))
+       (file-name (git-file-name name version))))
     (build-system cmake-build-system)
     (arguments
      `(#:out-of-source? #t
@@ -820,7 +825,7 @@ language.")
        (modify-phases %standard-phases
          (add-after 'install 'install-translations
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (copy-recursively (assoc-ref inputs "kicad-i18l")
+             (copy-recursively (assoc-ref inputs "kicad-i18n")
                                (assoc-ref outputs "out"))
              #t))
          (add-after 'install 'wrap-program
@@ -858,7 +863,7 @@ language.")
      `(("boost" ,boost)
        ("desktop-file-utils" ,desktop-file-utils)
        ("gettext" ,gettext-minimal)
-       ("kicad-i18l" ,kicad-i18l)
+       ("kicad-i18n" ,kicad-i18n)
        ("pkg-config" ,pkg-config)
        ("swig" ,swig)
        ("zlib" ,zlib)))
@@ -884,10 +889,10 @@ perform specific functions, for example, pcbnew (Editing PCB), eeschema (editing
 electrical diagrams), gerbview (viewing Gerber files) and others.")
     (license license:gpl3+)))
 
-(define kicad-i18l
+(define kicad-i18n
   (package
-    (name "kicad-i18l")
-    (version "5.1.5")
+    (name "kicad-i18n")
+    (version (package-version kicad))
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -896,7 +901,7 @@ electrical diagrams), gerbview (viewing Gerber files) and others.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1rfpifl8vky1gba2angizlb2n7mwmsiai3r6ip6qma60wdj8sbd3"))))
+                "0qryi8xjm23ka363zfl7bbga0v5c31fr3d4nyxp3m168vkv9zhha"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases
@@ -905,16 +910,19 @@ electrical diagrams), gerbview (viewing Gerber files) and others.")
          (delete 'check))))
     (native-inputs
      `(("gettext" ,gettext-minimal)))
-    (home-page "https://kicad-pcb.org/")
+    (home-page (package-home-page kicad))
     (synopsis "KiCad GUI translations")
     (description "This package contains the po files that are used for the GUI
 translations for KiCad.")
     (license license:gpl3+)))
 
+(define-public kicad-i18l
+  (deprecated-package "kicad-i18l" kicad-i18n))
+
 (define-public kicad-symbols
   (package
     (name "kicad-symbols")
-    (version "5.1.5")
+    (version (package-version kicad))
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -923,11 +931,11 @@ translations for KiCad.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "048b07ffsaav1ssrchw2p870lvb4rsyb5vnniy670k7q9p16qq6h"))))
+                "12w3rdy085drlikkpb27n9ni7cyg9l0pqy7hnr86cxjcw3l5wcx6"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f))                    ; no tests exist
-    (home-page "https://kicad-pcb.org/")
+    (home-page (package-home-page kicad))
     (synopsis "Official KiCad schematic symbol libraries")
     (description "This package contains the official KiCad schematic symbol
 libraries.")
@@ -943,7 +951,7 @@ libraries.")
   (package
     (inherit kicad-symbols)
     (name "kicad-footprints")
-    (version "5.1.5")
+    (version (package-version kicad))
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -952,7 +960,7 @@ libraries.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1c4whgn14qhz4yqkl46w13p6rpv1k0hsc9s9h9368fxfcz9knb2j"))))
+                "1kmf91a5mmvj9izrv40mkaw1w36yjgn8daczd9rq2wlmd0rdp1zx"))))
     (synopsis "Official KiCad footprint libraries")
     (description "This package contains the official KiCad footprint libraries.")))
 
@@ -960,7 +968,7 @@ libraries.")
   (package
     (inherit kicad-symbols)
     (name "kicad-packages3d")
-    (version "5.1.5")
+    (version (package-version kicad))
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -969,7 +977,7 @@ libraries.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0cff2ms1bsw530kqb1fr1m2pjixyxzwa81mxgac3qpbcf8fnpvaz"))))
+                "0b9jglf77fy0n0r8xs4yqkv6zvipyfvp0z5dnqlzp32csy5aqpi1"))))
     (synopsis "Official KiCad 3D model libraries")
     (description "This package contains the official KiCad 3D model libraries.")))
 
@@ -977,7 +985,7 @@ libraries.")
   (package
     (inherit kicad-symbols)
     (name "kicad-templates")
-    (version "5.1.5")
+    (version (package-version kicad))
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -986,7 +994,7 @@ libraries.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0cs3bm3zb5ngw5ldn0lzw5bvqm4kvcidyrn76438alffwiz2b15g"))))
+                "1hppcsrkn4dk6ggby6ckh0q65qxkywrbyxa4lwpaf7pxjyv498xg"))))
     (synopsis "Official KiCad project and worksheet templates")
     (description "This package contains the official KiCad project and
 worksheet templates.")))
@@ -1328,7 +1336,7 @@ bindings for Python, Java, OCaml and more.")
 (define-public radare2
   (package
     (name "radare2")
-    (version "4.2.1")
+    (version "4.4.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1336,39 +1344,37 @@ bindings for Python, Java, OCaml and more.")
                     (commit version)))
               (sha256
                (base32
-                "14b9433cgc2nabhz836zfgvgh2dwailcmvy05krsa0inmzbvx9fg"))
-              (file-name (git-file-name name version))
-              (modules '((guix build utils)))
-              (snippet
-               '(begin
-                  (substitute* "libr/asm/p/Makefile"
-                    (("LDFLAGS\\+=") "LDFLAGS+=-Wl,-rpath=$(LIBDIR) "))
-                  (substitute* "libr/parse/p/Makefile"
-                    (("LDFLAGS\\+=") "LDFLAGS+=-Wl,-rpath=$(LIBDIR) "))
-                  (substitute* "libr/bin/p/Makefile"
-                    (("LDFLAGS\\+=") "LDFLAGS+=-Wl,-rpath=$(LIBDIR) "))
-                  #t))))
+                "0gwdnrnk7wdgkajp2qwg4fyplh7nsbmf01bzx07px6xmiscd9z2s"))
+              (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
      '(#:tests? #f                      ; tests require git and network access
        #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'mklibdir
-           (lambda* (#:key inputs #:allow-other-keys)
-             (mkdir-p (string-append (assoc-ref %outputs "out") "/lib"))
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (mkdir-p (string-append (assoc-ref outputs "out") "/lib"))
              #t)))
        #:configure-flags
-       (list "--with-sysmagic" "--with-syszip" "--with-openssl"
-             "--without-nonpic" "--with-rpath" "--with-syscapstone")
+       (list "--with-openssl"
+             "--with-rpath"
+             "--with-syscapstone"
+             "--with-sysmagic"
+             "--with-syszip"
+             "--with-sysxxhash")
        #:make-flags
        (list "CC=gcc")))
+    ;; TODO: Add gmp and libzip and make the build system actually find them.
     (inputs
-     `(("openssl" ,openssl)
-       ("zip" ,zip)
-       ("gmp" ,gmp)
-       ("capstone" ,capstone)))
+     `(("capstone" ,capstone)
+       ("libuv" ,libuv)
+       ("openssl" ,openssl)
+       ("zip" ,zip)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
+    (propagated-inputs
+     ;; In the Libs: section of r_hash.pc.
+     `(("xxhash" ,xxhash)))
     (home-page "https://radare.org/")
     (synopsis "Reverse engineering framework")
     (description
@@ -1691,7 +1697,19 @@ parallel computing platforms.  It also supports serial execution.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "117dqs0d4pcgbzvr3jn5ppra7n7x2m6c161ywh6laa934pw7h2bz"))))
+                "117dqs0d4pcgbzvr3jn5ppra7n7x2m6c161ywh6laa934pw7h2bz"))
+              (patches
+               (list (origin
+                       ;; Fix build with GCC 7.  Patch taken from Arch Linux:
+                       ;; https://git.archlinux.org/svntogit/community.git/tree/trunk?h=packages/freehdl
+                       (method url-fetch)
+                       (uri "https://git.archlinux.org/svntogit/community.git\
+/plain/trunk/build-fix.patch?h=packages/freehdl\
+&id=3bb90d64dfe6883e26083cd1fa96226d0d59175a")
+                       (file-name "freehdl-c++-namespace.patch")
+                       (sha256
+                        (base32
+                         "09df3c70rx81rnhlhry1wpdhji274nx9jb74rfprk06l4739zm08")))))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1767,7 +1785,6 @@ parallel computing platforms.  It also supports serial execution.")
        ("libtool" ,libtool)))
     (native-inputs
      `(("pkg-config-native" ,pkg-config)
-       ("gcc" ,gcc-5)
        ("libtool-native" ,libtool)))
     (home-page "http://www.freehdl.seul.org/")
     (synopsis "VHDL simulator")
@@ -2030,17 +2047,18 @@ simulator backends @code{Qucsator}, @code{ngspice} and @code{Xyce}.")
 (define-public librepcb
   (package
     (name "librepcb")
-    (version "0.1.3")
+    (version "0.1.4")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://download.librepcb.org/releases/"
                            version "/librepcb-" version "-source.zip"))
        (sha256
-        (base32 "1ich849dsx2hmcwlwbry4mkg374n940l3hy6srh4qms2rm7vd7x0"))))
+        (base32 "1b5dkanz3q0y5ag80w0l85hn7axrachb5m9zvyv4zvzrfy09wa88"))))
     (build-system gnu-build-system)
     (inputs
      `(("qtbase" ,qtbase)
+       ("qtsvg" ,qtsvg)
        ("zlib" ,zlib)))
     (native-inputs
      `(("qttools" ,qttools)             ; for lrelease
@@ -2157,7 +2175,7 @@ simulation.")
 (define-public cutter
   (package
     (name "cutter")
-    (version "1.10.1")
+    (version "1.10.3")
     (source
      (origin
        (method git-fetch)
@@ -2166,8 +2184,7 @@ simulation.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32
-         "1gvsrcskcdd1hxrjpkpc657anmfs25f174vxk4wzvn385rnmrxd3"))))
+        (base32 "0qj8jyij02nif4jpirl09ygwnv8a9zi3vkb5sf5s8mg7qwlpnvyk"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -2176,8 +2193,8 @@ simulation.")
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out"))
                    (radare2 (assoc-ref inputs "radare2")))
-               ;; fix pkg-config detection ./src/lib_radare2.pri:PREFIX=/usr/lib
-               ;; override `qmake PREFIX=`
+               ;; Fix pkg-config detection ./src/lib_radare2.pri:PREFIX=/usr/lib
+               ;; override `qmake PREFIX=`.
                (substitute* "./src/lib_radare2.pri"
                  (("PREFIX") "R2PREFIX")
                  (("R2PREFIX=/usr") (string-append "R2PREFIX=" radare2)))
@@ -2246,7 +2263,9 @@ specification can be downloaded at @url{http://3mf.io/specification/}.")
                            ".src.tar.gz"))
        (sha256
         (base32
-         "0nbgk5q5pgnw53la0kccdcpz2f4xf6d6076rkn0q08z57hkc85ha"))))
+         "0nbgk5q5pgnw53la0kccdcpz2f4xf6d6076rkn0q08z57hkc85ha"))
+       (patches (search-patches
+                 "openscad-parser-boost-1.72.patch"))))
     (build-system cmake-build-system)
     (inputs
      `(("boost" ,boost)
@@ -2312,6 +2331,15 @@ full programmatic control over your models.")
        (uri (git-reference
              (url "https://github.com/FreeCAD/FreeCAD.git")
              (commit version)))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           ;; Fix build with Python 3.8, see
+           ;; <https://tracker.freecadweb.org/view.php?id=4143>.
+           (substitute* "src/Base/swigpyrun.inl"
+             (("PyObject \\*modules = interp->modules;")
+              "PyObject *modules = PyEval_GetBuiltins();"))
+           #t))
        (file-name (git-file-name name version))
        (sha256
         (base32
@@ -2512,3 +2540,82 @@ without any changes.  And programmers that are familiar with the magellan API
 can continue using it with a free library without the restrictions of the
 official SDK.")
     (license license:bsd-3)))
+
+(define-public openctm
+  (let ((revision 603))
+    ;; Previous versions don't compile, they need to link libGL and libGLU.
+    ;; Fixed in this revision.
+    (package
+      (name "openctm")
+      (version (string-append "1.0.3." (number->string revision)))
+      (source
+       (origin
+         (method svn-fetch)
+         (uri (svn-reference
+               (url "https://svn.code.sf.net/p/openctm/code/trunk")
+               (revision revision)))
+         (file-name (string-append name "-" version "-checkout"))
+         (sha256
+          (base32 "01wb70m48xh5gwhv60a5brv4sxl0i0rh038w32cgnlxn5x86s9f1"))))
+      (build-system gnu-build-system)
+      (native-inputs
+       `(("pkg-config" ,pkg-config)))
+      (inputs
+       `(("mesa" ,mesa)
+         ("glu" ,glu)
+         ("glut" ,freeglut)
+         ("gtk" ,gtk+-2)))
+      (arguments
+       `(#:tests? #f                              ;no tests
+         #:phases
+         (modify-phases %standard-phases
+           (replace 'configure
+             (lambda* (#:key outputs #:allow-other-keys)
+               (rename-file "Makefile.linux" "Makefile")
+               (let ((out (assoc-ref outputs "out")))
+                 ;; Create output directories.
+                 (mkdir-p (string-append out "/lib"))
+                 (mkdir-p (string-append out "/include"))
+                 (mkdir-p (string-append out "/bin"))
+                 ;; Fix rpath.
+                 (substitute* "tools/Makefile.linux"
+                   (("-rpath,\\.")
+                    (string-append "-rpath," out "/lib/"))
+                   (("/usr/local")
+                    out))
+                 ;; Set right output.
+                 (substitute* "Makefile"
+                   (("/usr/lib")
+                    (string-append out "/lib"))
+                   (("\\/usr\\/local")
+                    out))
+                 #t))))))
+      (synopsis "3D triangle mesh format and related tools and libraries")
+      (description "OpenCTM is a file format, a software library and a tool set
+for compression of 3D triangle meshes.  The geometry is compressed to a
+fraction of comparable file formats (3DS, STL, COLLADA...), and the format is
+accessible through a simple API")
+      (license license:zlib)
+      (home-page "http://openctm.sourceforge.net/"))))
+
+(define-public lib3ds
+  (package
+    (name "lib3ds")
+    (version "1.3.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://storage.googleapis.com/google-code-archive-downloads"
+             "/v2/code.google.com/lib3ds/lib3ds-" version ".zip"))
+       (sha256
+        (base32 "1qr9arfdkjf7q11xhvxwzmhxqz3nhcjkyb8zzfjpz9jm54q0rc7m"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("unzip" ,unzip)))
+    (home-page "https://code.google.com/archive/p/lib3ds")
+    (synopsis "3DS format file toolkit")
+    (description "Lib3ds is a toolkit for handling the 3DS format for 3D
+model files.  Its main goal is to simplify the creation of 3DS import and
+export filters.")
+    (license license:lgpl2.1+)))

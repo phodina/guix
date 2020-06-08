@@ -3,7 +3,7 @@
 ;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2019 Giacomo Leidi <goodoldpaul@autistici.org>
-;;; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019, 2020 John Soo <jsoo1@asu.edu>
 ;;; Copyright © 2019, 2020 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
@@ -18967,14 +18967,14 @@ rust.")
 (define-public rust-rpassword-4
   (package
     (name "rust-rpassword")
-    (version "4.0.3")
+    (version "4.0.5")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "rpassword" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0jnl8wzmdazkpzqs0vsw0n0vm0v4b8chqifd6s84nl9w2ybhx7ym"))))
+        (base32 "17z99xazhhbaczw0ib1vnnq450j0zacdn8b2zcbdir68sdbicdwr"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
@@ -25681,15 +25681,14 @@ designed for reexporting.")
 (define-public rust-version-check-0.9
   (package
     (name "rust-version-check")
-    (version "0.9.1")
+    (version "0.9.2")
     (source
       (origin
         (method url-fetch)
         (uri (crate-uri "version_check" version))
         (file-name (string-append name "-" version ".crate"))
         (sha256
-         (base32
-          "1kikqlnggii1rvnxrbls55sc46lxvinz5k3giscgncjj4p87b1q7"))))
+         (base32 "1vbaqdf802qinsq8q20w8w0qn2pv0rkq5p73ijcblrwxcvjp5adm"))))
     (build-system cargo-build-system)
     (home-page "https://github.com/SergioBenitez/version_check")
     (synopsis "Check that the installed rustc meets some version requirements")
@@ -27435,7 +27434,7 @@ to XDG Base Directory specification")
 (define-public rust-xml-rs-0.8
   (package
     (name "rust-xml-rs")
-    (version "0.8.1")
+    (version "0.8.3")
     (source
      (origin
        (method url-fetch)
@@ -27444,7 +27443,7 @@ to XDG Base Directory specification")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0c905wsmk995xypxljpxzq6vv660r1pzgyrpsfiz13kw3hf0dzcs"))))
+         "12ndxyhzxw2zdr76ql8nfdwb2vwhvdkrxwk4pbjafqfglmjv0zdh"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-development-inputs

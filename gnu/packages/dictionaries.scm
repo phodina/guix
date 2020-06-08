@@ -119,7 +119,7 @@ acronyms distributed as an info document.")
      "GCIDE is a free dictionary based on a combination of sources.  It can
 be used via the GNU Dico program or accessed online at
 http://gcide.gnu.org.ua/")
-    (home-page "http://gcide.gnu.org.ua/")
+    (home-page "https://gcide.gnu.org.ua/")
     (license license:gpl3+)))
 
 (define-public diction
@@ -231,7 +231,7 @@ and a Python library.")
 (define-public translate-shell
   (package
     (name "translate-shell")
-    (version "0.9.6.11")
+    (version "0.9.6.12")
     (source
       (origin
         (method git-fetch)
@@ -240,7 +240,7 @@ and a Python library.")
                (commit (string-append "v" version))))
         (file-name (git-file-name name version))
         (sha256
-         (base32 "137fz3ahzf65hfqcs4k7hhrmfjlhlw7wr3gfsvk88bnyqkyw44sm"))))
+         (base32 "075vqnha21rhr1b61dim7dqlfwm1yffyzcaa83s36rpk9r5sddzx"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases

@@ -3,11 +3,11 @@
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2015, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2016 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Quiliro <quiliro@fsfla.org>
-;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2018 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2018 Eric Bavier <bavier@member.fsf.org>
@@ -15,6 +15,7 @@
 ;;; Copyright © 2018 John Soo <jsoo1@asu.edu>
 ;;; Copyright © 2020 Mike Rosset <mike.rosset@gmail.com>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Kei Kebreau <kkebreau@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -141,7 +142,7 @@
     (description "Grantlee Templates can be used for theming and generation of
 other text such as code.  The syntax uses the syntax of the Django template
 system, and the core design of Django is reused in Grantlee.")
-    (license license:lgpl2.0+)))
+    (license license:lgpl2.1+)))
 
 (define-public qt-4
   (package
@@ -1810,6 +1811,15 @@ message.")))
      (substitute-keyword-arguments (package-arguments qtsvg)
        ((#:phases phases)
         `(modify-phases ,phases
+           (add-after 'unpack 'fix-build-with-newer-re2
+             (lambda _
+               ;; Adjust for API change in re2, taken from
+               ;; https://chromium-review.googlesource.com/c/chromium/src/+/2145261
+               (substitute* "src/3rdparty/chromium/components/autofill/core\
+/browser/address_rewriter.cc"
+               (("options\\.set_utf8\\(true\\)")
+                "options.set_encoding(RE2::Options::EncodingUTF8)"))
+               #t))
            (add-after 'unpack 'patch-ninja-version-check
              (lambda _
                ;; The build system assumes the system Ninja is too old because
@@ -2328,7 +2338,7 @@ securely.  It will not store any data unencrypted unless explicitly requested.")
 (define-public qwt
   (package
     (name "qwt")
-    (version "6.1.4")
+    (version "6.1.5")
     (source
       (origin
         (method url-fetch)
@@ -2336,7 +2346,7 @@ securely.  It will not store any data unencrypted unless explicitly requested.")
          (string-append "mirror://sourceforge/qwt/qwt/"
                         version "/qwt-" version ".tar.bz2"))
         (sha256
-         (base32 "1navkcnmn0qz8kzsyqmk32d929zl72l0b580w1ica7z5559j2a8m"))))
+         (base32 "0hf0mpca248xlqn7xnzkfj8drf19gdyg5syzklvq8pibxiixwxj0"))))
   (build-system gnu-build-system)
   (inputs
    `(("qtbase" ,qtbase)
@@ -2689,3 +2699,47 @@ generate Python bindings for your C or C++ code.")
     (description
      "Contains lupdate, rcc and uic tools for PySide2")
     (license license:gpl2)))
+
+(define-public libqglviewer
+  (package
+    (name "libqglviewer")
+    (version "2.7.2")
+    (source (origin
+              (method url-fetch)
+              (uri
+               (string-append "http://libqglviewer.com/src/libQGLViewer-"
+                              version ".tar.gz"))
+              (sha256
+               (base32
+                "023w7da1fyn2z69nbkp2rndiv886zahmc5cmira79zswxjfpklp2"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:tests? #f                      ; no check target
+       #:make-flags
+       (list (string-append "PREFIX="
+                            (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key make-flags #:allow-other-keys)
+             (apply invoke (cons "qmake" make-flags)))))))
+    (native-inputs
+     `(("qtbase" ,qtbase)
+       ("qttools" ,qttools)))
+    (inputs
+     `(("glu" ,glu)))
+    (home-page "http://libqglviewer.com")
+    (synopsis "Qt-based C++ library for the creation of OpenGL 3D viewers")
+    (description
+     "@code{libQGLViewer} is a C++ library based on Qt that eases the creation
+of OpenGL 3D viewers.
+
+It provides some of the typical 3D viewer functionalities, such as the
+possibility to move the camera using the mouse, which lacks in most of the
+other APIs.  Other features include mouse manipulated frames, interpolated
+keyFrames, object selection, stereo display, screenshot saving and much more.
+It can be used by OpenGL beginners as well as to create complex applications,
+being fully customizable and easy to extend.")
+    ;; According to LICENSE, either version 2 or version 3 of the GNU GPL may
+    ;; be used.
+    (license (list license:gpl2 license:gpl3))))

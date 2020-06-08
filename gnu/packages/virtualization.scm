@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2016, 2017, 2018 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016, 2017, 2018. 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018. 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Andy Patterson <ajpatter@uwaterloo.ca>
@@ -101,16 +101,17 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
-  #:use-module (srfi srfi-1))
+  #:use-module (srfi srfi-1)
+  #:use-module (ice-9 match))
 
-(define (qemu-patch commit file-name sha256)
+(define (qemu-patch commit file-name sha256-bv)
   "Return an origin for COMMIT."
   (origin
     (method url-fetch)
     (uri (string-append
           "http://git.qemu.org/?p=qemu.git;a=commitdiff_plain;h="
           commit))
-    (sha256 sha256)
+    (hash (content-hash sha256-bv sha256))
     (file-name file-name)))
 
 (define-public qemu
@@ -302,15 +303,43 @@ server and embedded PowerPC, and S390 guests.")
                              '("mips64el-linux" "i586-gnu")))))
 
 (define-public qemu-minimal
-  ;; QEMU without GUI support.
+  ;; QEMU without GUI support, only supporting the host's architecture
   (package (inherit qemu)
     (name "qemu-minimal")
-    (synopsis "Machine emulator and virtualizer (without GUI)")
+    (synopsis
+     "Machine emulator and virtualizer (without GUI) for the host architecture")
     (arguments
      (substitute-keyword-arguments (package-arguments qemu)
        ((#:configure-flags _ '(list))
-        ;; Restrict to the targets supported by Guix.
-        ''("--target-list=i386-softmmu,x86_64-softmmu,mips64el-softmmu,arm-softmmu,aarch64-softmmu"))))
+        ;; Restrict to the host's architecture.
+        (match (car (string-split (or (%current-target-system)
+                                      (%current-system))
+                                  #\-))
+          ("i686"
+           '(list "--target-list=i386-softmmu"))
+          ("x86_64"
+           '(list "--target-list=i386-softmmu,x86_64-softmmu"))
+          ("mips64"
+           '(list (string-append "--target-list=mips-softmmu,mipsel-softmmu,"
+                                 "mips64-softmmu,mips64el-softmmu")))
+          ("mips"
+           '(list "--target-list=mips-softmmu,mipsel-softmmu"))
+          ("aarch64"
+           '(list "--target-list=arm-softmmu,aarch64-softmmu"))
+          ("arm"
+           '(list "--target-list=arm-softmmu"))
+          ("alpha"
+           '(list "--target-list=alpha-softmmu"))
+          ("powerpc64"
+           '(list "--target-list=ppc-softmmu,ppc64-softmmu"))
+          ("powerpc"
+           '(list "--target-list=ppc-softmmu"))
+          ("s390"
+           '(list "--target-list=s390x-softmmu"))
+          ("riscv"
+           '(list "--target-list=riscv32-softmmu,riscv64-softmmu"))
+          (else   ; An empty list actually builds all the targets.
+            ''())))))
 
     ;; Remove dependencies on optional libraries, notably GUI libraries.
     (native-inputs (fold alist-delete (package-native-inputs qemu)
@@ -626,9 +655,10 @@ virtualization library.")
     (build-system python-build-system)
     (arguments
      `(#:use-setuptools? #f          ; uses custom distutils 'install' command
-       ;; Some of the tests seem to require network access to install virtual
-       ;; machines.
-       #:tests? #f
+       #:test-target "test_ui"
+       #:tests? #f                      ; TODO The tests currently fail
+                                        ; RuntimeError: Loop condition wasn't
+                                        ; met
        #:imported-modules ((guix build glib-or-gtk-build-system)
                            ,@%python-build-system-modules)
        #:modules ((ice-9 match)
@@ -675,6 +705,16 @@ virtualization library.")
                                ,(filter identity paths))))
                          bin-files))
              #t))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (setenv "HOME" "/tmp")
+               (system "Xvfb :1 &")
+               (setenv "DISPLAY" ":1")
+               ;; Dogtail requires that Assistive Technology support be enabled
+               (setenv "GTK_MODULES" "gail:atk-bridge")
+               (invoke "dbus-run-session" "--" "python" "setup.py" "test_ui"))
+             #t))
          (add-after 'install 'glib-or-gtk-compile-schemas
            (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-compile-schemas))
          (add-after 'install 'glib-or-gtk-wrap
@@ -703,7 +743,14 @@ virtualization library.")
        ("gobject-introspection" ,gobject-introspection)
        ("gtk+" ,gtk+ "bin")             ; gtk-update-icon-cache
        ("perl" ,perl)                   ; pod2man
-       ("intltool" ,intltool)))
+       ("intltool" ,intltool)
+       ;; The following are required for running the tests
+       ;; ("python-dogtail" ,python-dogtail)
+       ;; ("xvfb" ,xorg-server-for-tests)
+       ;; ("dbus" ,dbus)
+       ;; ("at-spi2-core" ,at-spi2-core)
+       ;; ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
+       ))
     (home-page "https://virt-manager.org/")
     (synopsis "Manage virtual machines")
     (description
@@ -716,14 +763,14 @@ domains, their live performance and resource utilization statistics.")
 (define-public criu
   (package
     (name "criu")
-    (version "3.13")
+    (version "3.14")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://download.openvz.org/criu/criu-"
+              (uri (string-append "https://download.openvz.org/criu/criu-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1yn9ix9lqvqvjrs3a3g6g1wqfniyf9n7giy0mr3jvijmrcm7y0pa"))))
+                "1jrr3v99g18gc0hriz0avq6ccdvyya0j6wwz888sdsc4icc30gzn"))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
@@ -1393,7 +1440,7 @@ which is a hypervisor.")
 (define-public osinfo-db-tools
   (package
     (name "osinfo-db-tools")
-    (version "1.7.0")
+    (version "1.8.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://releases.pagure.org/libosinfo/osinfo-db-tools-"
@@ -1401,7 +1448,7 @@ which is a hypervisor.")
 
               (sha256
                (base32
-                "08x8mrafphyll0d35xdc143rip3ahrz6bmzhc85nwhq7yk2vxpab"))))
+                "038q3gzdbkfkhpicj0755mw1q4gbvn57pslpw8n2dp3lds9im0g9"))))
     (build-system meson-build-system)
     (inputs
      `(("libsoup" ,libsoup)
@@ -1427,14 +1474,14 @@ administrators and developers in managing the database.")
 (define-public osinfo-db
   (package
     (name "osinfo-db")
-    (version "20200203")
+    (version "20200529")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://releases.pagure.org/libosinfo/osinfo-db-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "1zjq1dhlci00j17dij7s3l30hybzmaykpk5b6bd5xbllp745njn5"))))
+                "0mbrf9j5wmjhc6jixvhp4jqyxixh1717lqrmzmipdg99xnzba81n"))))
     (build-system trivial-build-system)
     (arguments
      `(#:modules ((guix build utils))

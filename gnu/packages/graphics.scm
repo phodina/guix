@@ -21,6 +21,7 @@
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Raghav Gururajan <raghavgururajan@disroot.org>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -42,6 +43,7 @@
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages audio)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages boost)
@@ -51,6 +53,7 @@
   #:use-module (gnu packages flex)
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages fontutils)
+  #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
@@ -61,11 +64,13 @@
   #:use-module (gnu packages image)
   #:use-module (gnu packages imagemagick)
   #:use-module (gnu packages jemalloc)
+  #:use-module (gnu packages maths)
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages pdf)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages photo)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages plotutils)
   #:use-module (gnu packages pth)
   #:use-module (gnu packages pulseaudio)  ; libsndfile, libsamplerate
   #:use-module (gnu packages python)
@@ -143,17 +148,72 @@ objects!")
     (home-page "http://www.fox-toolkit.org")
     (license license:lgpl2.1+)))
 
+(define-public autotrace
+  (let ((commit "travis-20190624.59")
+        (version-base "0.40.0"))
+    (package
+      (name "autotrace")
+      (version (string-append version-base "-"
+                              (if (string-prefix? "travis-" commit)
+                                  (string-drop commit 7)
+                                  commit)))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/autotrace/autotrace.git")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0mk4yavy42dj0pszr1ggnggpvmzs4ds46caa9wr55cqsypn7bq6s"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:phases (modify-phases %standard-phases
+                    ;; See: https://github.com/autotrace/autotrace/issues/27.
+                    (add-after 'unpack 'include-spline.h-header
+                      (lambda _
+                        (substitute* "Makefile.am"
+                          ((".*src/types.h.*" all)
+                           (string-append all "\t\tsrc/spline.h \\\n")))
+                        #t))
+                    ;; See: https://github.com/autotrace/autotrace/issues/26.
+                    (replace 'check
+                      (lambda _
+                        (invoke "sh" "tests/runtests.sh"))))))
+      (native-inputs
+       `(("which" ,which)
+         ("pkg-config" ,pkg-config)
+         ("autoconf" ,autoconf)
+         ("automake" ,automake)
+         ("intltool" ,intltool)
+         ("libtool" ,libtool)
+         ("gettext" ,gettext-minimal)))
+      (inputs
+       `(("glib" ,glib)
+         ("libjpeg" ,libjpeg-turbo)
+         ("libpng" ,libpng)
+         ("imagemagick" ,imagemagick)
+         ("pstoedit" ,pstoedit)))
+      (home-page "https://github.com/autotrace/autotrace")
+      (synopsis "Bitmap to vector graphics converter")
+      (description "AutoTrace is a utility for converting bitmap into vector
+graphics.  It can trace outlines and midlines, effect color reduction or
+despeckling and has support for many input and output formats.  It can be used
+with the @command{autotrace} utility or as a C library, @code{libautotrace}.")
+      (license (list license:gpl2+         ;for the utility itself
+                     license:lgpl2.1+))))) ;for use as a library
+
 (define-public blender
   (package
     (name "blender")
-    (version "2.82a")
+    (version "2.83.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://download.blender.org/source/"
                                   "blender-" version ".tar.xz"))
               (sha256
                (base32
-                "18zbdgas6qf2kmvvlimxgnq7y9kj7hdxcgixrs6fj50x40q01q2d"))))
+                "07rzm4xaj94pjxy2vlqfhi1adsqpshfkrzrq8kljmcbnw22vrqhl"))))
     (build-system cmake-build-system)
     (arguments
       (let ((python-version (version-major+minor (package-version python))))
@@ -299,7 +359,7 @@ many more.")
 (define-public ilmbase
   (package
     (name "ilmbase")
-    (version "2.4.1")
+    (version "2.5.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -308,9 +368,9 @@ many more.")
               (file-name (git-file-name "ilmbase" version))
               (sha256
                (base32
-                "020gyl8zv83ag6gbcchmqiyx9rh2jca7j8n52zx1gk4rck7kwc01"))
+                "1k50cvi3sk6gf6w713lkk2gv5cvs74vkc7s7k4z6nmyhi4g89w4y"))
               (patches (search-patches "ilmbase-fix-tests.patch"
-                                       "ilmbase-openexr-pkg-config.patch"))))
+                                       "ilmbase-fix-test-arm.patch"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
@@ -327,6 +387,120 @@ abstraction.  Imath implements 2D and 3D vectors, 3x3 and 4x4 matrices,
 quaternions and other useful 2D and 3D math functions.  Iex is an
 exception-handling library.")
     (license license:bsd-3)))
+
+(define-public lib2geom
+  ;; Use the latest master commit, as the 1.0 release suffer build problems.
+  (let ((revision "1")
+        (commit "42e119d94934a9514c61571cfb6b4af503ece082"))
+    (package
+      (name "lib2geom")
+      (version (git-version "1.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://gitlab.com/inkscape/lib2geom.git")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "195rs0kdbs8w62irha1nwy83bccz04wglmk578qrj1mky7fc4rjv"))
+                (patches
+                 ;; Patch submitted to upstream (see:
+                 ;; https://gitlab.com/inkscape/lib2geom/merge_requests/17).
+                 (search-patches "lib2geom-enable-assertions.patch"))
+                (modules '((guix build utils)))
+                (snippet
+                 '(begin
+                    ;; Fix py2geom module initialization (see:
+                    ;; https://gitlab.com/inkscape/lib2geom/merge_requests/18).
+                    (substitute* "src/py2geom/__init__.py"
+                      (("_py2geom") "py2geom._py2geom"))
+                    #t))))
+      (build-system cmake-build-system)
+      (arguments
+       `(#:imported-modules ((guix build python-build-system)
+                             ,@%cmake-build-system-modules)
+         #:configure-flags '("-D2GEOM_BUILD_SHARED=ON"
+                             "-D2GEOM_BOOST_PYTHON=ON"
+                             ;; Compiling the Cython bindings fail (see:
+                             ;; https://gitlab.com/inkscape/lib2geom/issues/21).
+                             "-D2GEOM_CYTHON_BINDINGS=OFF")
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'patch-python-lib-install-path
+             (lambda* (#:key inputs outputs #:allow-other-keys)
+               (let* ((python-version (@ (guix build python-build-system)
+                                         python-version))
+                      (python-maj-min-version (python-version
+                                               (assoc-ref inputs "python")))
+                      (site-package (string-append
+                                     (assoc-ref outputs "out")
+                                     "/lib/python" python-maj-min-version
+                                     "/site-packages")))
+                 (substitute* '("src/cython/CMakeLists.txt"
+                                "src/py2geom/CMakeLists.txt")
+                   (("PYTHON_LIB_INSTALL \"[^\"]*\"")
+                    (format #f "PYTHON_LIB_INSTALL ~s" site-package))))
+               #t)))))
+      (native-inputs `(("python" ,python-wrapper)
+                       ("googletest" ,googletest)
+                       ("pkg-config" ,pkg-config)))
+      (inputs `(("cairo" ,cairo)
+                ("pycairo" ,python-pycairo)
+                ("double-conversion" ,double-conversion)
+                ("glib" ,glib)
+                ("gsl" ,gsl)))
+      (propagated-inputs
+       `(("boost" ,boost)))             ;referred to in 2geom/pathvector.h.
+      (home-page "https://gitlab.com/inkscape/lib2geom/")
+      (synopsis "C++ 2D graphics library")
+      (description "2geom is a C++ library of mathematics for paths, curves,
+and other geometric calculations.  Designed for vector graphics, it tackles
+Bézier curves, conic sections, paths, intersections, transformations, and
+basic geometries.")
+      ;; Because the library is linked with the GNU Scientific Library
+      ;; (GPLv3+), the combined work must be licensed as GPLv3+ (see:
+      ;; https://gitlab.com/inkscape/inkscape/issues/784).
+      (license license:gpl3+))))
+
+(define-public pstoedit
+  (package
+    (name "pstoedit")
+    (version "3.75")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/pstoedit/pstoedit/"
+                                  version "/pstoedit-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1kv46g2wsvsvcngkavxl5gnw3l6g5xqnh4kmyx4b39a01d8xiddp"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("ghostscript" ,ghostscript)
+       ("imagemagick" ,imagemagick)
+       ("libplot" ,plotutils)
+       ("libjpeg" ,libjpeg-turbo)
+       ("zlib" ,zlib)))               ;else libp2edrvmagick++.so fails to link
+    (home-page "http://www.pstoedit.net/")
+    (synopsis "Converter for PostScript and PDF graphics")
+    (description "The @code{pstoedit} utility allows translating graphics
+in the PostScript or PDF (Portable Document Format) formats to various
+other vector formats such as:
+@itemize
+@item Tgif (.obj)
+@item gnuplot
+@item xfig (.fig)
+@item Flattened PostScript
+@item DXF, a CAD (Computed-Aided Design) exchange format
+@item PIC (for troff/groff)
+@item MetaPost (for usage with TeX/LaTeX)
+@item LaTeX2e picture
+@item GNU Metafile (for use with plotutils/libplot)
+@item Any format supported by ImageMagick
+@end itemize")
+    (license license:gpl2+)))
 
 (define-public ogre
   (package
@@ -426,10 +600,7 @@ graphics.")
                    ;; https://github.com/openexr/openexr/issues/67#issuecomment-21169748
                    (lambda _
                      (substitute* "IlmImfTest/main.cpp"
-                       ((".*testOptimizedInterleavePatterns.*") "")
-                       ;; This test is broken in 2.4.0 and will be fixed in a later
-                       ;; release: <https://github.com/openexr/openexr/issues/571>.
-                       ((".*testLargeDataWindowOffsets.*") ""))
+                       ((".*testOptimizedInterleavePatterns.*") ""))
                      #t)))
                '()))))
     (native-inputs
@@ -484,22 +655,6 @@ on formats and functionality used in professional, large-scale animation and
 visual effects work for film.")
     (home-page "https://www.openimageio.org")
     (license license:bsd-3)))
-
-;; This older version of OpenImageIO is required for Blender 2.79.
-(define-public openimageio-1.7
-  (package
-    (inherit openimageio)
-    (name "openimageio")
-    (version "1.7.19")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/OpenImageIO/oiio.git")
-                    (commit (string-append "Release-" version))))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "0yxxy43l3lllw7maqg42dlkgqms2d4772sxzxk7kmxg4lnhsvndc"))))))
 
 (define-public openscenegraph
   (package

@@ -4,7 +4,7 @@
 ;;; Copyright © 2014, 2015, 2016, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Paul van der Walt <paul@denknerd.org>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
-;;; Copyright © 2016 ng0 <ng0@n0.is>
+;;; Copyright © 2016 Nikita <nikita@n0.is>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016, 2017, 2019 Ludovic Courtès <ludo@gnu.org>
@@ -690,7 +690,7 @@ extracting content or merging files.")
       (origin
         (method url-fetch)
         (uri (string-append "https://mupdf.com/downloads/archive/"
-                            name "-" version "-source.tar.xz"))
+                            "mupdf-" version "-source.tar.xz"))
         (sha256
          (base32
           "1npmy92lkj41nnc14b4fpq7z62pminy94zsdbrczj22jpn283rvg"))

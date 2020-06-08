@@ -114,7 +114,7 @@
        ("texi2html" ,texi2html)
        ("glib:bin" ,glib "bin")
        ("pkg-config" ,pkg-config)))
-    (home-page "http://gcompris.net")
+    (home-page "https://gcompris.net")
     (synopsis "Educational software suite")
     (description "GCompris is an educational software suite comprising of
 numerous activities for children aged 2 to 10.  Some of the activities are
@@ -386,7 +386,10 @@ to open the application in a web browser, for offline usage.")
                             Type=Application~%"
                            out)))
                #t))))))
-    (inputs `(("python-pyqt" ,python-pyqt)))
+    (native-inputs
+     `(("unzip" ,unzip)))
+    (inputs
+     `(("python-pyqt" ,python-pyqt)))
     (synopsis "School tools for physically disabled children")
     (description "ToutEnClic is intended to facilitate the schooling
 of physically disabled children in ordinary schools.  It is both
@@ -606,14 +609,14 @@ Portuguese, Spanish and Italian.")
 (define-public fet
   (package
     (name "fet")
-    (version "5.44.4")
+    (version "5.44.8")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.lalescu.ro/liviu/fet/download/"
                            "fet-" version ".tar.bz2"))
        (sha256
-        (base32 "1bji4910v6adhngdh5ajz5bxam9z3yqnh8d1h1xajy6npm6qq3nx"))))
+        (base32 "1i59xpkdnrd3qzgqs11vsws57g33zvkad5q3an56vd94aw7z3kpw"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -645,15 +648,14 @@ hours.")
 (define-public klavaro
   (package
     (name "klavaro")
-    (version "3.09")
+    (version "3.10")
     (source
       (origin
         (method url-fetch)
         (uri (string-append "mirror://sourceforge/klavaro/klavaro-"
                             version ".tar.bz2"))
         (sha256
-         (base32
-          "12gml7h45b1w9s318h0d5wxw92h7pgajn2kh57j0ak9saq0yb0wr"))))
+         (base32 "0jnzdrndiq6m0bwgid977z5ghp4q61clwdlzfpx4fd2ml5x3iq95"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)

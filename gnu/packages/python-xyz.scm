@@ -23,7 +23,7 @@
 ;;; Copyright © 2016 Daniel Pimentel <d4n1@d4n1.org>
 ;;; Copyright © 2016 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2016, 2017 Troy Sankey <sankeytms@gmail.com>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2016 Dylan Jeffers <sapientech@sapientech@openmailbox.org>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
@@ -77,6 +77,10 @@
 ;;; Copyright © 2020 Lars-Dominik Braun <ldb@leibniz-psychology.org>
 ;;; Copyright © 2020 Alex ter Weele <alex.ter.weele@gmail.com>
 ;;; Copyright © 2020 Matthew Kraai <kraai@ftbfs.org>
+;;; Copyright © 2020 Ryan Prior <rprior@protonmail.com>
+;;; Copyright © 2020 Josh Holland <josh@inv.alid.pw>
+;;; Copyright © 2020 Yuval Kogman <nothingmuch@woobling.org>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -847,14 +851,14 @@ of the netcdf4 package before.")
 (define-public python-netcdf4
   (package
     (name "python-netcdf4")
-    (version "1.4.2")
+    (version "1.5.3")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "netCDF4" version))
        (sha256
         (base32
-         "0c0sklgrmv15ygliin8qq0hp7vanmbi74m6zpi0r1ksr0hssyd5r"))))
+         "1gn35mb2yc263pci720aik8ymz41lrvxlrn3z83vyjwghiashg1a"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -1203,17 +1207,25 @@ class.")
 (define-public python-can
   (package
     (name "python-can")
-    (version "3.3.2")
+    (version "3.3.3")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "python-can" version))
        (sha256
         (base32
-         "0bkbxi45sckzir6s0j3h01pkfn4vkz3ymih2zjp7zw77wz0vbvsz"))))
+         "123lz1bl6xf3d0fvxzr4bg4884yg4m9s21z6xd2m68zhnbv9rmpc"))))
     (build-system python-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'relax-version-requirements
+                    (lambda _
+                      (substitute* "setup.py"
+                        (("mock~=2\\.0") "mock")
+                        (("coverage<5") "coverage")
+                        (("pytest~=4\\.3") "pytest")
+                        (("hypothesis~=4\\.56") "hypothesis"))
+                      #t))
                   (add-after 'unpack 'fix-broken-tests
                     ;; The tests try to run two scripts it expects should be
                     ;; in PATH, but they aren't at this time (see:
@@ -1228,6 +1240,7 @@ class.")
        ("python-wrapt" ,python-wrapt)))
     (native-inputs
      `(("python-codecov" ,python-codecov)
+       ("python-coverage" ,python-coverage)
        ("python-future" ,python-future)
        ("python-hypothesis" ,python-hypothesis)
        ("python-mock" ,python-mock)
@@ -1242,7 +1255,7 @@ class.")
 controller area network (CAN) support for Python developers; providing common
 abstractions to different hardware devices, and a suite of utilities for
 sending and receiving messages on a CAN bus.")
-    (license license:gpl3+)))
+    (license license:lgpl3+)))
 
 (define-public python-diskcache
   (package
@@ -1656,38 +1669,30 @@ human-friendly syntax.")
 (define-public python2-schedule
   (package-with-python2 python-schedule))
 
-(define-public python2-mechanize
+(define-public python-mechanize
   (package
-    (name "python2-mechanize")
-    (version "0.2.5")
+    (name "python-mechanize")
+    (version "0.4.5")
     (source
      (origin
       (method url-fetch)
       (uri (pypi-uri "mechanize" version))
       (sha256
        (base32
-        "0rj7r166i1dyrq0ihm5rijfmvhs8a04im28lv05c0c3v206v4rrf"))))
+        "1z9kqcwb8gfq2l6i42z624kxpd8692a0c8gw2x5bbm7n848w2mb3"))))
     (build-system python-build-system)
-    (arguments
-     `(#:python ,python-2 ; apparently incompatible with Python 3
-       #:tests? #f))
-         ;; test fails with message
-         ;; AttributeError: 'module' object has no attribute 'test_pullparser'
-         ;; (python-3.3.2) or
-         ;; AttributeError: 'module' object has no attribute 'test_urllib2_localnet'
-         ;; (python-2.7.5).
-         ;; The source code is from March 2011 and probably not up-to-date
-         ;; with respect to python unit tests.
-    (home-page "http://wwwsearch.sourceforge.net/mechanize/")
+    (propagated-inputs
+     `(("python-html5lib" ,python-html5lib)))
+    (home-page "https://github.com/python-mechanize/mechanize")
     (synopsis
      "Stateful programmatic web browsing in Python")
     (description
      "Mechanize implements stateful programmatic web browsing in Python,
 after Andy Lester’s Perl module WWW::Mechanize.")
-    (license (license:non-copyleft
-              "file://COPYING"
-              "See COPYING in the distribution."))))
+    (license license:bsd-3)))
 
+(define-public python2-mechanize
+  (package-with-python2 python-mechanize))
 
 (define-public python-simplejson
   (package
@@ -1747,23 +1752,44 @@ Python 3.3+.")
 (define-public python2-pyicu
   (package-with-python2 python-pyicu))
 
-(define-public python2-dogtail
-  ;; Python 2 only, as it leads to "TabError: inconsistent use of tabs and
-  ;; spaces in indentation" with Python 3.
+(define-public python-dogtail
   (package
-    (name "python2-dogtail")
-    (version "0.9.9")
+    (name "python-dogtail")
+    (version "0.9.11")
     (source (origin
              (method url-fetch)
-             (uri (pypi-uri "dogtail" version))
+             (uri
+              (string-append
+               "https://gitlab.com/dogtail/dogtail/-/raw/released/"
+               "dogtail-" version ".tar.gz"))
              (sha256
               (base32
-               "0p5wfssvzr9w0bvhllzbbd8fnp4cca2qxcpcsc33dchrmh5n552x"))))
+               "0sr38z7b2n12bvfd4xw4b5dnnhkn5zl3h0ymmnnzavcihfqia6l0"))))
     (build-system python-build-system)
-    (arguments `(#:python ,python-2
-                 #:tests? #f))                    ; invalid command "test"
-    ;; Currently no offical homepage.
-    (home-page "https://pypi.org/project/dogtail/")
+    (arguments
+     `(#:tests? #f                      ; TODO Launching dbus for the tests
+                                        ; fails
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (system "Xvfb :1 &")
+               (setenv "DISPLAY" ":1")
+               (invoke "dbus-run-session" "--" "nosetests" "-v" "tests/"))
+             #t)))))
+    (propagated-inputs
+     `(("python-pygobject" ,python-pygobject)
+       ("python-pycairo" ,python-pycairo)
+       ("python-pyatspi" ,python-pyatspi)))
+    (native-inputs
+     `(("python-nose" ,python-nose)
+       ("gtk+" ,gtk+)
+       ("xvfb" ,xorg-server)
+       ("dbus" ,dbus)
+       ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
+       ("gobject-introspection" ,gobject-introspection)))
+    (home-page "https://gitlab.com/dogtail/dogtail/")
     (synopsis "GUI test tool and automation framework written in Python")
     (description
      "Dogtail is a GUI test tool and automation framework written in Python.
@@ -1771,6 +1797,9 @@ It uses Accessibility (a11y) technologies to communicate with desktop
 applications. dogtail scripts are written in Python and executed like any
 other Python program.")
     (license license:gpl2+)))
+
+(define-public python2-dogtail
+  (package-with-python2 python-dogtail))
 
 (define-public python-empy
   (package
@@ -3699,14 +3728,14 @@ which can produce feeds in RSS 2.0, RSS 0.91, and Atom formats.")
 (define-public python-toml
   (package
     (name "python-toml")
-    (version "0.9.4")
+    (version "0.10.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "toml" version))
        (sha256
         (base32
-         "0bdbpbip67wdm6c7xwc6mmbmskyradj4cdxn1iibj4fcx1nbv1lf"))))
+         "03wbqm5cn685cwx2664hjdpz370njl7lf0yal8s0dkp5w4mn2swj"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f))                     ;no tests suite in release
@@ -3720,20 +3749,19 @@ Language (TOML) configuration files.")
 (define-public python-jsonrpc-server
   (package
     (name "python-jsonrpc-server")
-    (version "0.3.2")
+    (version "0.3.4")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "python-jsonrpc-server" version))
        (sha256
         (base32
-         "0ddgdp26dfxaz6isjbb12974b3rxavgsqrn2zrmck62cmipg5g05"))))
+         "0dzya99nbi4mw7q85vmyw1wfgbx5dpmysnvm0bwx5m4xbi4zafy7"))))
     (build-system python-build-system)
     (propagated-inputs
-     `(("python-future" ,python-future)
-       ("python-mock" ,python-mock)
+     `(("python-mock" ,python-mock)
        ("python-pytest" ,python-pytest)
-       ("python-ujson" ,python-ujson)))
+       ("python-ujson" ,python-ujson-1)))
     (home-page
      "https://github.com/palantir/python-jsonrpc-server")
     (synopsis "JSON RPC 2.0 server library")
@@ -3767,21 +3795,21 @@ Server (PLS).")
 (define-public python-language-server
   (package
     (name "python-language-server")
-    (version "0.31.7")
+    (version "0.32.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "python-language-server" version))
        (sha256
         (base32
-         "0f8rljff4h2ay9m2n9ang7axai37nzd39zd7m6c90rci5wh8cmxh"))))
+         "0j5swacmjps9sas1gfwg0xi84rmjhfhz20cwg3k4058d20rs20ip"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-pluggy" ,python-pluggy)
        ("python-jsonrpc-server" ,python-jsonrpc-server)
        ;; Note: Remove the special versions of Jedi and Parso when updating
        ;; this package.
-       ("python-jedi" ,python-jedi-0.15)
+       ("python-jedi" ,python-jedi)
        ("python-yapf" ,python-yapf)
        ("python-pyflakes" ,python-pyflakes)
        ("python-pydocstyle" ,python-pydocstyle)
@@ -5056,14 +5084,14 @@ where key might be occurred more than once in the container.")
 (define-public python-orderedmultidict
   (package
     (name "python-orderedmultidict")
-    (version "0.7.11")
+    (version "1.0")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "orderedmultidict" version))
         (sha256
           (base32
-            "0dls862ibm7qbq4fnvwx0xn1v9hwyzywbff8xjjdr42dd75208yw"))))
+            "1idjbl933avgaadscrjw1np3xkvnz3phq0l8vw5qs0rqcjx9b65q"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -5768,6 +5796,25 @@ them as the version argument or in a SCM managed file.")
 (define-public python2-setuptools-scm
   (package-with-python2 python-setuptools-scm))
 
+(define-public python-sexpdata
+  (package
+    (name "python-sexpdata")
+    (version "0.0.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "sexpdata" version))
+       (sha256
+        (base32
+         "1q4lsjyzzqrdv64l0pv4ij9nd8gqhvxqcrpxc2xpxs652sk2gj0s"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/jd-boyd/sexpdata")
+    (synopsis "S-expression parser for Python")
+    (description
+     "Sexpdata is an S-expression parser/serializer.  It has load and dump
+functions like pickle, json or PyYAML module.")
+    (license license:bsd-3)))
+
 (define-public python-pathlib2
   (package
     (name "python-pathlib2")
@@ -5896,6 +5943,25 @@ need to use the older and less efficient @code{pkg_resources} package.")
        ("python-configparser" ,python2-configparser)
        ("python-contextlib2" ,python2-contextlib2-bootstrap)
        ("python-importlib-resources" ,python2-importlib-resources-bootstrap))))))
+
+(define-public python-importmagic
+  (package
+    (name "python-importmagic")
+    (version "0.1.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "importmagic" version))
+       (sha256
+        (base32
+         "1n7qxa1snj06aw45mcfz7bxc46zp7fxj687140g2k6jcnyjmfxrz"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/alecthomas/importmagic")
+    (synopsis "Library for adding, removing and managing Python imports")
+    (description
+     "Importmagic is a Python library for automatically managing imports by
+finding unresolved symbols in Python code and their corresponding imports.")
+    (license license:bsd-3)))
 
 (define-public python-jaraco-packaging
   (package
@@ -6847,14 +6913,14 @@ some are not yet implemented).")
 (define-public python-netifaces
   (package
     (name "python-netifaces")
-    (version "0.10.7")
+    (version "0.10.9")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "netifaces" version))
         (sha256
           (base32
-            "1gccklrcplbbqh81g1mdgpa5y8na7kkf29cq2ka3f5a2fp5hyndx"))))
+            "1wxby874kcr3pp4ygzk5aiarbzhg1yi093d56s1qg4k2s7yrzvid"))))
     (build-system python-build-system)
     (home-page "https://github.com/al45tair/netifaces")
     (synopsis
@@ -7262,14 +7328,13 @@ It is written entirely in Python.")
 (define-public python-backports-csv
   (package
     (name "python-backports-csv")
-    (version "1.0.5")
+    (version "1.0.7")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "backports.csv" version))
        (sha256
-        (base32
-         "1imzbrradkfn8s2m1qcimyn74dn1mz2p3j381jljn166rf2i6hlc"))))
+        (base32 "0vdx5jlhs91iizc8j8l8811nqprwvdx39pgkdc82w2qkfgzxyxqj"))))
     (build-system python-build-system)
     (home-page "https://github.com/ryanhiebert/backports.csv")
     (synopsis "Backport of Python 3's csv module for Python 2")
@@ -7902,13 +7967,13 @@ should be stored on various operating systems.")
 (define-public python-llfuse
   (package
     (name "python-llfuse")
-    (version "1.3.5")
+    (version "1.3.6")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "llfuse" version ".tar.bz2"))
               (sha256
                (base32
-                "1n7a90jww3ly49fm7x27m3xw3la3qfrnykcakga654g6kcyjlhbf"))))
+                "1j9fzxpgmb4rxxyl9jcf84zvznhgi3hnh4hg5vb0qaslxkvng8ii"))))
     (build-system python-build-system)
     (inputs
      `(("fuse" ,fuse)
@@ -8787,6 +8852,29 @@ functions to find and load entry points.")
 (define-public python2-entrypoints
   (package-with-python2 python-entrypoints))
 
+(define-public python-epc
+  (package
+    (name "python-epc")
+    (version "0.0.5")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "epc" version))
+       (sha256
+        (base32
+         "09bx1ln1bwa00917dndlgs4k589h8qx2x080xch5m58p92kjwkd1"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-sexpdata" ,python-sexpdata)))
+    (native-inputs
+     `(("python-nose" ,python-nose)))
+    (home-page "https://github.com/tkf/python-epc")
+    (synopsis "Remote procedure call (RPC) stack for Emacs Lisp and Python")
+    (description
+     "Python-EPC can call elisp functions from Python and Python functions
+from elisp.")
+    (license license:gpl3)))
+
 (define-public python-nbconvert
   (package
     (name "python-nbconvert")
@@ -8909,17 +8997,18 @@ interactive computing.")
 (define-public python-widgetsnbextension
   (package
     (name "python-widgetsnbextension")
-    (version "3.4.2")
+    (version "3.5.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "widgetsnbextension" version))
        (sha256
         (base32
-         "0rc2nivdy7k4m3vljx7wdh2jh11djapcgwhvzlbs0isl8gl8nqgs"))))
+         "1ismyaxbv9d56yqqqb8xl58hg0iq0bbyy014a53y1g3hfbc8g7q7"))))
     (build-system python-build-system)
     (propagated-inputs
-     `(("python-ipykernel" ,python-ipykernel)
+     `(("python-ipykernel"
+        ,(prompt-toolkit-2-instead-of-prompt-toolkit python-ipykernel))
        ("python-notebook" ,python-notebook)))
     (native-inputs
      `(("python-certifi" ,python-certifi)
@@ -8936,17 +9025,18 @@ notebooks.")
 (define-public python-ipywidgets
   (package
     (name "python-ipywidgets")
-    (version "5.2.2")
+    (version "7.5.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "ipywidgets" version))
        (sha256
         (base32
-         "1lk0qrr5l9a0z7qkkn30hv5832whxwxymf1l576fmmad0n7hkxms"))))
+         "15sww2mvnkqlvx55gwa82v05062a8j1xpncnqna4k9sl53hgcig9"))))
     (build-system python-build-system)
     (propagated-inputs
-     `(("python-ipython" ,python-ipython)
+     `(("python-ipython" ,(prompt-toolkit-2-instead-of-prompt-toolkit
+                           python-ipython))
        ("python-traitlets" ,python-traitlets)
        ("python-widgetsnbextension" ,python-widgetsnbextension)))
     (native-inputs
@@ -8966,19 +9056,20 @@ in the data.")
 (define-public python-jupyter-console
   (package
     (name "python-jupyter-console")
-    (version "6.0.0")
+    (version "6.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "jupyter_console" version))
        (sha256
         (base32
-         "1xdjw11cppf1fxvwkw2bk13ckkwas3bdah8baingn9296mvfi31h"))))
+         "06s3kr5vx0l1y1b7fxb04dmrppscl7q69sl9yyfr0d057d1ssvkg"))))
     (build-system python-build-system)
     (propagated-inputs
-     `(("python-ipykernel" ,python-ipykernel)
+     `(("python-ipykernel" ,(prompt-toolkit-2-instead-of-prompt-toolkit
+        python-ipykernel))
        ("python-jupyter-client" ,python-jupyter-client)
-       ("python-prompt-toolkit" ,python-prompt-toolkit)
+       ("python-prompt-toolkit" ,python-prompt-toolkit-2)
        ("python-pygments" ,python-pygments)))
     (native-inputs
      `(("python-nose" ,python-nose)))
@@ -9479,25 +9570,23 @@ applications.")
 (define-public python-apipkg
   (package
     (name "python-apipkg")
-    (version "1.4")
+    (version "1.5")
     (source (origin
              (method url-fetch)
              (uri (pypi-uri "apipkg" version))
              (sha256
               (base32
-               "1iks5701qnp3dlr3q1d9qm68y2plp2m029irhpz92a44psfkjf1f"))))
+               "1xhak74yj3lqflvpijg15rnkklrigvsp5q7s4as4h6a157d8q8ip"))))
     (build-system python-build-system)
     (native-inputs
-     `(("python-pytest" ,python-pytest)))
+     `(("python-pytest" ,python-pytest)
+       ("python-setuptools-scm" ,python-setuptools-scm)))
     (synopsis "Namespace control and lazy-import mechanism")
     (description "With apipkg you can control the exported namespace of a Python
 package and greatly reduce the number of imports for your users.  It is a small
 pure Python module that works on virtually all Python versions.")
     (home-page "https://github.com/pytest-dev/apipkg")
     (license license:expat)))
-
-(define-public python2-apipkg
-  (package-with-python2 python-apipkg))
 
 (define-public python-execnet
   (package
@@ -11162,13 +11251,13 @@ graphviz.")
 (define-public python-gevent
   (package
     (name "python-gevent")
-    (version "1.5.0")
+    (version "20.5.0")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "gevent" version))
               (sha256
                (base32
-                "0aac3d4vhv5n4rsb6cqzq0d1xx9immqz4fmpddw35yxkwdc450dj"))
+                "1yppsrs0ccld9j9zfbsd0bxb987b2zkh2ar7whjxcrqzpkvg3iqx"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -11396,23 +11485,20 @@ network support library.")
 (define-public python-ply
   (package
     (name "python-ply")
-    (version "3.10")
+    (version "3.11")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "ply" version))
         (sha256
           (base32
-            "1jxsr1d2f732r6ljhvm827113dckwl6qwakfvpbdhcbhvpvlmscn"))))
+            "18qx113g9bi1ac4indd5phma82zcdq601lxncp3vjn43m2mc3iq0"))))
     (build-system python-build-system)
     (home-page "http://www.dabeaz.com/ply/")
     (synopsis "Python Lex & Yacc")
     (description "PLY is a @code{lex}/@code{yacc} implemented purely in Python.
 It uses LR parsing and does extensive error checking.")
     (license license:bsd-3)))
-
-(define-public python2-ply
-  (package-with-python2 python-ply))
 
 (define-public python-tabulate
   (package
@@ -12049,14 +12135,14 @@ collections of data.")
 (define-public python-prompt-toolkit
   (package
     (name "python-prompt-toolkit")
-    (version "2.0.7")
+    (version "3.0.5")
     (source
      (origin
        (method url-fetch)
-       (uri (pypi-uri "prompt_toolkit" version ".tar.gz"))
+       (uri (pypi-uri "prompt_toolkit" version))
        (sha256
         (base32
-         "0fgacqk73w7s932vy46pan2yp8rvjmlkag20xvaydh9mhf6h85zx"))))
+         "1j3x5s4gp4ih73sbcni0a0vffbzvrxbrbnkvb3fzjgxn810ilgan"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -12070,12 +12156,11 @@ collections of data.")
              (add-installed-pythonpath inputs outputs)
              (invoke "py.test"))))))
     (propagated-inputs
-     `(("python-wcwidth" ,python-wcwidth)
-       ("python-six" ,python-six)
-       ("python-pygments" ,python-pygments)))
+     `(("python-wcwidth" ,python-wcwidth)))
     (native-inputs
      `(("python-pytest" ,python-pytest)))
-    (home-page "https://github.com/jonathanslenders/python-prompt-toolkit")
+    (home-page
+     "https://github.com/prompt-toolkit/python-prompt-toolkit")
     (synopsis "Library for building command line interfaces in Python")
     (description
      "Prompt-Toolkit is a library for building interactive command line
@@ -12085,11 +12170,31 @@ code completion, incremental search, support for Chinese double-width
 characters, mouse support, and auto suggestions.")
     (license license:bsd-3)))
 
+(define-public python-prompt-toolkit-2
+  (package (inherit python-prompt-toolkit)
+    (name "python-prompt-toolkit")
+    (version "2.0.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "prompt_toolkit" version))
+       (sha256
+        (base32
+         "0fgacqk73w7s932vy46pan2yp8rvjmlkag20xvaydh9mhf6h85zx"))))
+    (propagated-inputs
+     `(("python-wcwidth" ,python-wcwidth)
+       ("python-six" ,python-six)
+       ("python-pygments" ,python-pygments)))))
+
+(define-public prompt-toolkit-2-instead-of-prompt-toolkit
+  (package-input-rewriting/spec
+   `(("python-prompt-toolkit" . ,(const python-prompt-toolkit-2)))))
+
 (define-public python2-prompt-toolkit
-  (package-with-python2 python-prompt-toolkit))
+  (package-with-python2 python-prompt-toolkit-2))
 
 (define-public python-prompt-toolkit-1
-  (package (inherit python-prompt-toolkit)
+  (package (inherit python-prompt-toolkit-2)
     (version "1.0.15")
     (source
      (origin
@@ -12148,20 +12253,6 @@ well.")
 
 (define-public python2-jedi
   (package-with-python2 python-jedi))
-
-;; python-language-server requires 0.15 specifically.  Remove once unused.
-(define-public python-jedi-0.15
-  (package
-    (inherit python-jedi)
-    (version "0.15.2")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "jedi" version))
-              (sha256
-               (base32
-                "01zqasl690x1i6dq4mvh13pz0cw8i276xsivsrnn00x90iqm42g9"))))
-    (propagated-inputs
-     `(("python-parso" ,python-parso-0.5)))))
 
 (define-public ptpython
   (package
@@ -12482,27 +12573,26 @@ discovery, monitoring and configuration.")
 (define-public python-odfpy
   (package
     (name "python-odfpy")
-    (version "1.3.3")
+    (version "1.4.1")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "odfpy" version))
               (sha256
                (base32
-                "1a6ms0w9zfhhkqhvrnynwwbxrivw6hgjc0s5k7j06npc7rq0blxw"))))
+                "1v1qqk9p12qla85yscq2g413l3qasn6yr4ncyc934465b5p6lxnv"))))
     (arguments
-     `(#:modules ((srfi srfi-1)
-                  (guix build python-build-system)
-                  (guix build utils))
-       #:phases
+     `(#:phases
        (modify-phases %standard-phases
          (replace 'check
-           ;; The test runner invokes python2 and python3 for test*.py.
-           ;; To avoid having both in inputs, we replicate it here.
            (lambda _
-             (for-each (lambda (test-file) (invoke "python" test-file))
-                       (find-files "tests" "^test.*\\.py$"))
-             #t)))))
+             (setenv "PYTHONPATH" (string-append "./build/lib:"
+                                                 (getenv "PYTHONPATH")))
+             (invoke "pytest" "-vv"))))))
     (build-system python-build-system)
+    (native-inputs
+     `(("python-pytest" ,python-pytest)))
+    (propagated-inputs
+     `(("python-defusedxml" ,python-defusedxml)))
     (home-page "https://github.com/eea/odfpy")
     (synopsis "Python API and tools to manipulate OpenDocument files")
     (description "Collection of libraries and utility programs written in
@@ -13028,33 +13118,16 @@ PNG, JPEG, JPEG2000 and GIF files in pure Python.")
 (define-public python-argcomplete
   (package
     (name "python-argcomplete")
-    (version "1.10.3")
+    (version "1.11.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "argcomplete" version))
        (sha256
         (base32
-         "02jkc44drb0yjz6x28lvg6rj607n8r2irdpdvyylm8xnycn54zx3"))))
+         "0h1przxffrhqvi46k40pzjsvdrq4zc3sl1pc96kkigqppq0vdrss"))
+       (patches (search-patches "python-argcomplete-1.11.1-fish31.patch"))))
     (build-system python-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'embed-tool-references
-           (lambda _
-             (substitute* "argcomplete/bash_completion.d/python-argcomplete.sh"
-               ((" grep")
-                (string-append " " (which "grep")))
-               ((" egrep")
-                (string-append " " (which "egrep")))
-               (("elif which")
-                (string-append "elif " (which "which")))
-               (("\\$\\(which")
-                (string-append "$(" (which "which"))))
-             #t)))))
-    (inputs
-     `(("grep" ,grep)
-       ("which" ,which)))
     (native-inputs
      `(("python-coverage" ,python-coverage)
        ("python-flake8" ,python-flake8)
@@ -13547,13 +13620,13 @@ instead of servers and network commands.")
 (define-public python-automat
   (package
     (name "python-automat")
-    (version "0.7.0")
+    (version "20.2.0")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "Automat" version))
               (sha256
                (base32
-                "03ivg70n3b1cbcd2zvjhk8y4kmqxcvhmili39lmgx09dza1qpmyb"))))
+                "0cyzrcqiibwdsp4y0djkllnzab8m5faa4s0d1kpi23k1fhy80ybr"))))
     (build-system python-build-system)
     ;; We disable the tests because they require python-twisted, while
     ;; python-twisted depends on python-automat.  Twisted is optional, but the
@@ -13832,37 +13905,22 @@ clone, while other processes access the original tree.")
 (define-public python-astroid
   (package
     (name "python-astroid")
-    (version "2.3.3")
+    (version "2.4.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "astroid" version))
        (sha256
-        (base32 "0fnibsl2cb5mvzbfm7sycj85smx48f8w8m7ks1sqlmpr9ps0gski"))))
+        (base32 "1h99jal7ax07xna1djw5z7hpgb8vjrl3hrrg49p1phljwniww5sc"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-lazy-object-proxy" ,python-lazy-object-proxy)
        ("python-six" ,python-six)
-       ("python-typed-ast" ,python-typed-ast)
        ("python-wrapt" ,python-wrapt)))
     (native-inputs
      `(("python-dateutil" ,python-dateutil)
-       ("python-nose" ,python-nose)
        ("python-pytest" ,python-pytest)
        ("python-pytest-runner" ,python-pytest-runner)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'remove-spurious-test
-           (lambda _
-             ;; This can be removed after upgrading from python-3.7
-             ;; https://github.com/PyCQA/astroid/issues/593
-             ;; https://bugs.python.org/issue34056
-             (delete-file "astroid/tests/unittest_modutils.py")
-             #t))
-         (replace 'check
-           (lambda _
-             (invoke "pytest" "astroid"))))))
     (home-page "https://github.com/PyCQA/astroid")
     (synopsis "Common base representation of python source code for pylint and
 other projects")
@@ -14080,7 +14138,7 @@ exception message with a traceback that points to the culprit.")
 (define-public python-mwclient
   (package
     (name "python-mwclient")
-    (version "0.10.0")
+    (version "0.10.1")
     (source
      (origin
        (method git-fetch)
@@ -14090,8 +14148,7 @@ exception message with a traceback that points to the culprit.")
               (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32
-         "1c3q6lwmb05yqywc4ya98ca7hsl15niili8rccl4n1yqp77c103v"))))
+        (base32 "120snnsh9n5svfwkyj1w9jrxf99jnqm0jk282yypd3lpyca1l9hj"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-requests-oauthlib" ,python-requests-oauthlib)
@@ -15040,16 +15097,22 @@ window memory map manager.")
 (define-public python-regex
   (package
     (name "python-regex")
-    (version "2019.04.14")
+    (version "2020.6.8")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "regex" version))
               (sha256
                (base32
-                "1a6hhfs6l6snr1z654ay6wzbmwdkmv282fzfkd5hk2d1n73y8v6m"))))
-    ;; TODO: Fix and enable regex_test.py tests that complain about the
-    ;; test.support module not existing.
+                "1b3k0zi1pd99q5mk7ri7vcx2y1mq5inm9hk8dryqyhrpkmh4xdp9"))))
     (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (invoke "python" "-c"
+                     "from regex.test_regex import test_main; test_main()"))))))
     (home-page "https://bitbucket.org/mrabarnett/mrab-regex")
     (synopsis "Alternative regular expression module")
     (description "This regular expression implementation is backwards-
@@ -16511,19 +16574,6 @@ Parso is also able to list multiple syntax errors in your Python file.")
 
 (define-public python2-parso
   (package-with-python2 python-parso))
-
-;; This version is required for Jedi@0.15, which in turn is needed for
-;; python-language-server.
-(define-public python-parso-0.5
-  (package
-    (inherit python-parso)
-    (version "0.5.2")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "parso" version))
-              (sha256
-               (base32
-                "1qgvrkpma7vylrk047mxxvqd66nwqk978n3ig2w8iz9m3bgjbksm"))))))
 
 (define-public python-async-generator
   (package
@@ -18351,6 +18401,50 @@ services to what you expect in your tests.")
 (define-public python-ujson
   (package
     (name "python-ujson")
+    (version "2.0.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "ujson" version))
+        (sha256
+         (base32
+          "18z9gb9ggy1r464b9q1gqs078mqgrkj6dys5a47529rqk3yfybdx"))
+        (modules '((guix build utils)))
+        (snippet
+         '(begin (delete-file-recursively "deps") #t))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'link-to-system-double-conversion
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((d-c (assoc-ref inputs "double-conversion")))
+               (substitute* "setup.py"
+                 (("./deps/double-conversion/double-conversion\"")
+                  (string-append d-c "/include/double-conversion\""))
+                 (("-lstdc++" stdc)
+                  (string-append "-L" d-c "/lib\","
+                                 " \"-ldouble-conversion\","
+                                 " \"" stdc)))
+               #t)))
+         (replace 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (invoke "pytest"))))))
+    (native-inputs
+     `(("double-conversion" ,double-conversion)
+       ("python-setuptools-scm" ,python-setuptools-scm)
+       ("python-pytest" ,python-pytest)))
+    (home-page "https://github.com/ultrajson/ultrajson")
+    (synopsis "Ultra fast JSON encoder and decoder for Python")
+    (description
+     "UltraJSON is an ultra fast JSON encoder and decoder written in pure C with
+bindings for Python 3.")
+    (license license:bsd-3)))
+
+(define-public python-ujson-1
+  (package
+    (inherit python-ujson)
     (version "1.35")
     (source
      (origin
@@ -18359,17 +18453,16 @@ services to what you expect in your tests.")
        (sha256
         (base32
          "11jz5wi7mbgqcsz52iqhpyykiaasila4lq8cmc2d54bfa3jp6q7n"))))
-    (build-system python-build-system)
+    (arguments
+     '(#:phases %standard-phases))
+    (native-inputs '())
     (home-page "http://www.esn.me")
-    (synopsis
-     "Ultra fast JSON encoder and decoder for Python")
     (description
      "UltraJSON is an ultra fast JSON encoder and decoder written in pure C with
- bindings for Python 2.5+ and 3.")
-    (license license:bsd-3)))
+bindings for Python 2.5+ and 3.")))
 
-(define-public python2-ujson
-  (package-with-python2 python-ujson))
+(define-public python2-ujson-1
+  (package-with-python2 python-ujson-1))
 
 (define-public python-iocapture
   ;; The latest release is more than a year older than this commit.
@@ -18776,7 +18869,8 @@ and cuts down boilerplate code when testing libraries for asyncio.")
        (uri (pypi-uri "shouldbe" version))
        (sha256
         (base32
-         "16zbvjxf71dl4yfbgcr6idyim3mdrfvix1dv8b95p0s9z07372pj"))))
+         "16zbvjxf71dl4yfbgcr6idyim3mdrfvix1dv8b95p0s9z07372pj"))
+       (patches (search-patches "python-shouldbe-0.1.2-cpy3.8.patch"))))
     (build-system python-build-system)
     (propagated-inputs
       `(("python-forbiddenfruit" ,python-forbiddenfruit)))
@@ -19889,3 +19983,90 @@ module.  @code{cmd2} provides a wealth of features on top of @code{cmd} to
 make your life easier and eliminates much of the boilerplate code which would
 be necessary when using @code{cmd}.")
     (license license:expat)))
+
+(define-public python-pytidylib
+  (package
+    (name "python-pytidylib")
+    (version "0.3.2")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "pytidylib" version))
+              (sha256
+               (base32
+                "1wqa9dv5d7swka14rnky862hc7dgk2g3dhlrz57hdn3hb7bwic92"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'qualify-libtidy
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((libtidy (string-append (assoc-ref inputs "tidy")
+                                           "/lib/libtidy.so")))
+               (substitute* "tidylib/tidy.py"
+                 (("ctypes\\.util\\.find_library\\('tidy'\\)")
+                  (format #f "'~a'" libtidy)))
+               #t))))))
+    (inputs `(("tidy" ,tidy)))
+    (home-page "https://github.com/countergram/pytidylib")
+    (synopsis "Python wrapper for HTML Tidy library")
+    (description
+     "PyTidyLib is a Python package that wraps the HTML Tidy library.  This
+allows you, from Python code, to “fix” invalid (X)HTML markup.")
+    (license license:expat)))
+
+(define-public python2-pytidylib
+  (package-with-python2 python-pytidylib))
+
+(define-public python-mujson
+  (package
+    (name "python-mujson")
+    (version "1.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "mujson" version))
+        (sha256
+         (base32
+          "0wbj6r8yzsdx2b0kbldlkznr1a9nn33za2q9x3g0hbg420dwzn97"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/mattgiles/mujson")
+    (synopsis "Use the fastest JSON functions available at import time")
+    (description "This packages selects the fastest JSON functions available
+at import time.")
+    (license license:expat)))
+
+(define-public python-bashlex
+  (package
+    (name "python-bashlex")
+    (version "0.14")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "bashlex" version))
+       (sha256
+        (base32
+         "1z9g96fgsfpdwawp4sb5x6hbdhmda7kgmcrqlf9xx4bs1f8f14js"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'pregenerate-yacc-tables
+           (lambda _
+             ;; parser.py caches tables, which attempts to write to site lib
+             ;; see https://github.com/idank/bashlex/issues/51
+             (invoke "python" "-c" "import bashlex"))))))
+    (home-page
+     "https://github.com/idank/bashlex")
+    (synopsis "Python parser for bash")
+    (description "@code{bashlex} is a Python port of the parser used
+internally by GNU bash.
+
+For the most part it's transliterated from C, the major differences are:
+
+@itemize
+@item it does not execute anything
+@item it is reentrant
+@item it generates a complete AST
+@end itemize
+")
+    (license license:gpl3+)))

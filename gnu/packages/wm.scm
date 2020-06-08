@@ -9,7 +9,7 @@
 ;;; Copyright © 2016 Al McElrath <hello@yrns.org>
 ;;; Copyright © 2016 Carlo Zancanaro <carlo@zancanaro.id.au>
 ;;; Copyright © 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2016, 2017, 2018 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017, 2018, 2020 Nikita <nikita@n0.is>
 ;;; Copyright © 2016 doncatnip <gnopap@gmail.com>
 ;;; Copyright © 2016 Ivan Vilata i Balaguer <ivan@selidor.net>
 ;;; Copyright © 2017 Mekeor Melire <mekeor.melire@gmail.com>
@@ -271,14 +271,14 @@ commands would.")
 (define-public i3-wm
   (package
     (name "i3-wm")
-    (version "4.18")
+    (version "4.18.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://i3wm.org/downloads/i3-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "0dv5g8ycfmijxfjyw8hzsxaf80v09lb73zh7x2vszy78h3amifqz"))))
+                "0z709cianlzw0x0qwq4361347354xd9ckj1v7vjvhb1zh3x91gws"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -1176,15 +1176,15 @@ It is inspired by Xmonad and dwm.  Its major features include:
 (define-public cwm
   (package
     (name "cwm")
-    (version "6.3")
+    (version "6.6")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://chneukirchen.org/releases/cwm-"
+       (uri (string-append "https://leahneukirchen.org/releases/cwm-"
                            version ".tar.gz"))
        (sha256
         (base32
-         "17pdp9cfgh2n3n3905l4rl9qk7b722i8psnarhlc2h98qzx7zmac"))))
+         "0p350pbfn92m21jiq4i324sdskxhs71p435g0mgz7cmzprnhhg92"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags (list "CC=gcc"
@@ -1219,7 +1219,7 @@ It is inspired by Xmonad and dwm.  Its major features include:
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("bison" ,bison)))
-    (home-page "https://github.com/chneukirchen/cwm")
+    (home-page "https://github.com/leahneukirchen/cwm")
     (synopsis "OpenBSD fork of the calmwm window manager")
     (description "Cwm is a stacking window manager for X11.  It is an OpenBSD
 project derived from the original Calm Window Manager.")
@@ -1268,14 +1268,14 @@ its size
 (define-public polybar
   (package
     (name "polybar")
-    (version "3.4.2")
+    (version "3.4.3")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/polybar/polybar/releases/"
                            "download/" version "/polybar-" version ".tar"))
        (sha256
-        (base32 "0fmnviz4b01aw50nkv4yibm8ykc5ff860ynw3xb1ymlsjrvwj8jd"))))
+        (base32 "0bw22qvbcdvyd0qv3ax48r34rnclbbb6dyb8h8zljq1r3lf15vfl"))))
     (build-system cmake-build-system)
     (arguments
      ;; Test is disabled because it requires downloading googletest from the
@@ -1661,8 +1661,8 @@ productive, customizable lisp based systems.")
            (delete 'create-symlinks)))))))
 
 (define-public stumpish
-  (let ((commit "dd5b037923ec7d3cc27c55806bcec5a1b8cf4e91")
-        (revision "1"))
+  (let ((commit "920f8fc1488f7953f205e1dda4c2ecbbbda56d6")
+        (revision "2"))
     (package
       (name "stumpish")
       (version (git-version "0.0.1" revision commit)) ;no upstream release
@@ -1674,7 +1674,7 @@ productive, customizable lisp based systems.")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
-          (base32 "0ahxdj9f884afpzxczx6mx7l4nwg4kw6afqaq7lwhf7lxcwylldn"))))
+          (base32 "0giac390bq95ag41xkxqp8jjrhfx1wpgglz7jg5rkm0wjhcwmyml"))))
       (inputs
        `(("bash" ,bash)
          ("rlwrap" ,rlwrap)))
@@ -1701,8 +1701,8 @@ productive, customizable lisp based systems.")
   (deprecated-package "sbcl-stumpwm-with-slynk" stumpwm+slynk))
 
 (define-public sbcl-stumpwm-ttf-fonts
-  (let ((commit "dd5b037923ec7d3cc27c55806bcec5a1b8cf4e91")
-        (revision "1"))
+  (let ((commit "920f8fc1488f7953f205e1dda4c2ecbbbda56d6")
+        (revision "2"))
     (package
       (name "sbcl-ttf-fonts")
       (version (git-version "0.0.1" revision commit)) ;no upstream release
@@ -1714,7 +1714,7 @@ productive, customizable lisp based systems.")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
-          (base32 "0ahxdj9f884afpzxczx6mx7l4nwg4kw6afqaq7lwhf7lxcwylldn"))))
+          (base32 "0giac390bq95ag41xkxqp8jjrhfx1wpgglz7jg5rkm0wjhcwmyml"))))
       (inputs
        `(("stumpwm" ,stumpwm "lib")
          ("clx-truetype" ,sbcl-clx-truetype)))
@@ -1732,8 +1732,8 @@ rendering.")
       (license (list license:gpl2+ license:gpl3+ license:bsd-2)))))
 
 (define-public sbcl-stumpwm-pass
-  (let ((commit "dd5b037923ec7d3cc27c55806bcec5a1b8cf4e91")
-        (revision "1"))
+  (let ((commit "920f8fc1488f7953f205e1dda4c2ecbbbda56d6")
+        (revision "2"))
     (package
       (name "sbcl-pass")
       (version (git-version "0.0.1" revision commit)) ;no upstream release
@@ -1745,7 +1745,7 @@ rendering.")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
-          (base32 "0ahxdj9f884afpzxczx6mx7l4nwg4kw6afqaq7lwhf7lxcwylldn"))))
+          (base32 "0giac390bq95ag41xkxqp8jjrhfx1wpgglz7jg5rkm0wjhcwmyml"))))
       (inputs
        `(("stumpwm" ,stumpwm "lib")))
       (build-system asdf-build-system/sbcl)
@@ -1762,8 +1762,8 @@ password-store into StumpWM.")
       (license (list license:gpl2+ license:gpl3+ license:bsd-2)))))
 
 (define-public sbcl-stumpwm-globalwindows
-  (let ((commit "dd5b037923ec7d3cc27c55806bcec5a1b8cf4e91")
-        (revision "1"))
+    (let ((commit "920f8fc1488f7953f205e1dda4c2ecbbbda56d6")
+        (revision "2"))
     (package
       (name "sbcl-globalwindows")
       (version (git-version "0.0.1" revision commit)) ;no upstream release
@@ -1775,7 +1775,7 @@ password-store into StumpWM.")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
-          (base32 "0ahxdj9f884afpzxczx6mx7l4nwg4kw6afqaq7lwhf7lxcwylldn"))))
+          (base32 "0giac390bq95ag41xkxqp8jjrhfx1wpgglz7jg5rkm0wjhcwmyml"))))
       (inputs
        `(("stumpwm" ,stumpwm "lib")))
       (build-system asdf-build-system/sbcl)
@@ -1792,8 +1792,8 @@ windows in the current X session.")
       (license (list license:gpl2+ license:gpl3+ license:bsd-2)))))
 
 (define-public sbcl-stumpwm-swm-gaps
-  (let ((commit "dd5b037923ec7d3cc27c55806bcec5a1b8cf4e91")
-        (revision "1"))
+  (let ((commit "920f8fc1488f7953f205e1dda4c2ecbbbda56d6")
+        (revision "2"))
     (package
       (name "sbcl-swm-gaps")
       (version (git-version "0.0.1" revision commit)) ;no upstream release
@@ -1805,7 +1805,7 @@ windows in the current X session.")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
-          (base32 "0ahxdj9f884afpzxczx6mx7l4nwg4kw6afqaq7lwhf7lxcwylldn"))))
+          (base32 "0giac390bq95ag41xkxqp8jjrhfx1wpgglz7jg5rkm0wjhcwmyml"))))
       (inputs
        `(("stumpwm" ,stumpwm "lib")))
       (build-system asdf-build-system/sbcl)
@@ -1838,9 +1838,10 @@ between windows.")
                   "1wwqbph392iwz8skaqxb0xpklb1l6yganqz80g4x1fhrnz7idmlh"))))
       (build-system gnu-build-system)
       (arguments
-       '(#:tests? #f ; no test suite
-         #:make-flags (list "CC=gcc"
-                            (string-append "PREFIX=" %output))
+       `(#:tests? #f                    ; no test suite
+         #:make-flags
+         (list ,(string-append "CC=" (cc-for-target))
+               (string-append "PREFIX=" %output))
          #:phases
          (modify-phases %standard-phases
            (delete 'configure))))

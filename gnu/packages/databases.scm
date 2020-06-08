@@ -11,7 +11,7 @@
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2016, 2017, 2018 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
@@ -933,7 +933,7 @@ as a drop-in replacement of MySQL.")
 (define-public mariadb-connector-c
   (package
     (name "mariadb-connector-c")
-    (version "3.1.6")
+    (version "3.1.8")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -942,13 +942,12 @@ as a drop-in replacement of MySQL.")
                     version "-src.tar.gz"))
               (sha256
                (base32
-                "083724f5daaqyzdcx508caz6fk2hs89jff85zg28ih43vxkvnrnj"))))
+                "0yrzhsxmjiwkhchagx8dymzhvxl3k5h40wn9wpicqjvgjb9k8523"))))
     (inputs
      `(("openssl" ,openssl)))
     (build-system cmake-build-system)
     (arguments
-     ;; No tests.
-     '(#:tests? #f))
+     '(#:tests? #f))                    ; no tests
     (home-page "https://mariadb.com/kb/en/mariadb-connector-c/")
     (synopsis "Client library to connect to MySQL or MariaDB")
     (description "The MariaDB Connector/C is used to connect applications
@@ -1459,7 +1458,7 @@ extremely small.")
 (define-public perl-dbi
   (package
     (name "perl-dbi")
-    (version "1.642")
+    (version "1.643")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1467,7 +1466,7 @@ extremely small.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0pbzqazrx7pnw4nbyaf27in4b6yddkirbd2ws7mnqa2n7812a81z"))))
+                "1yinx39960y241vf2sknxj0dfz82a5m9gvklq5rw78k0nlyrjawa"))))
     (build-system perl-build-system)
     (synopsis "Database independent interface for Perl")
     (description "This package provides an database interface for Perl.")
@@ -1703,7 +1702,7 @@ columns, primary keys, unique constraints and relationships.")
 (define-public perl-dbd-sqlite
   (package
     (name "perl-dbd-sqlite")
-    (version "1.62")
+    (version "1.64")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1711,7 +1710,7 @@ columns, primary keys, unique constraints and relationships.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0p78ri1q6xpc1i98i6mlriv8n66iz8r5r11dlsknjm4y58rfz0mx"))))
+                "00gz5aw3xrr92lf9nfk0dhmy7a8jzmxhznddd9b0a8w4a1xqzbpl"))))
     (build-system perl-build-system)
     (inputs `(("sqlite" ,sqlite)))
     (propagated-inputs `(("perl-dbi" ,perl-dbi)))
@@ -2049,17 +2048,14 @@ database.")
 (define-public perl-db-file
  (package
   (name "perl-db-file")
-  (version "1.852")
+  (version "1.853")
   (source
     (origin
       (method url-fetch)
-      (uri (string-append
-             "mirror://cpan/authors/id/P/PM/PMQS/DB_File-"
-             version
-             ".tar.gz"))
+      (uri (string-append "mirror://cpan/authors/id/P/PM/PMQS/DB_File-"
+                          version ".tar.gz"))
       (sha256
-        (base32
-          "14c30xyqx9c1hxw40bqbzls41al8gmklxv5jbk2kknmn4dsrbdrs"))))
+        (base32 "1y967si45vj0skip1hnhicbv9da29fv6qcfwnsbnvj06n36mkj6h"))))
   (build-system perl-build-system)
   (inputs `(("bdb" ,bdb)))
   (native-inputs `(("perl-test-pod" ,perl-test-pod)))
@@ -2081,16 +2077,16 @@ database.")
 (define-public lmdb
   (package
     (name "lmdb")
-    (version "0.9.24")
+    (version "0.9.25")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/LMDB/lmdb.git")
+             (url "https://git.openldap.org/openldap/openldap.git")
              (commit (string-append "LMDB_" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "088q6m8fvr12w43s461h7cvpg5hj8csaqj6n9pci150dz7bk5lxm"))))
+        (base32 "0i60zlca8r6fib23gdgl4c80gxpx24772ggpvz94yr7zaai4k11w"))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
@@ -2102,7 +2098,7 @@ database.")
              (substitute* "Makefile"
                (("/usr/local") (assoc-ref outputs "out")))
             #t)))))
-    (home-page "https://symas.com/products/lightning-memory-mapped-database")
+    (home-page "https://symas.com/lmdb/")
     (synopsis "Lightning Memory-Mapped Database library")
     (description
      "The @dfn{Lightning Memory-Mapped Database} (LMDB) is a high-performance
@@ -2182,14 +2178,14 @@ on another machine, accessed via TCP/IP.")
 (define-public python-peewee
   (package
     (name "python-peewee")
-    (version "2.10.2")
+    (version "3.9.6")
       (source
         (origin
         (method url-fetch)
         (uri (pypi-uri "peewee" version))
         (sha256
          (base32
-          "10f2mrd5hw6rjklrzaix2lsxlgc8vx3xak54arcy6yd791zhchi3"))))
+          "1j4sh946k0736m7pd54z0y6i2hjhgg3kdllx1pwq8xkzzcgrx1xw"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f)) ; Fails to import test data
@@ -2382,13 +2378,13 @@ etc., and an SQL engine for performing simple SQL queries.")
 (define-public python-lmdb
   (package
     (name "python-lmdb")
-    (version "0.95")
+    (version "0.98")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "lmdb" version))
               (sha256
                (base32
-                "0nx9f193gzl33r1lbqhb96h1igya7pz8wmahr8m9x5zgc05hal91"))
+                "027pgbdhhdcbwj53vrzr6a60gjhmz4s75gl3180fd4q8pwlbq986"))
               (modules '((guix build utils)))
               (snippet
                ;; Delete bundled lmdb source files.
@@ -2423,9 +2419,6 @@ Memory-Mapped Database} (LMDB), a high-performance key-value store.")
            ;; ‘lib/win32/inttypes.h’ and ‘lib/win32-stdint/stdint.h’ are BSD-3,
            ;; but not actually needed on platforms currently supported by Guix.
            license:bsd-3))))
-
-(define-public python2-lmdb
-  (package-with-python2 python-lmdb))
 
 (define-public python-orator
   (package

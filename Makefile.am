@@ -7,9 +7,9 @@
 # Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 # Copyright © 2017 Leo Famulari <leo@famulari.name>
 # Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
-# Copyright © 2017 Jan Nieuwenhuizen <janneke@gnu.org>
+# Copyright © 2017, 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 # Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
-# Copyright © 2018 ng0 <ng0@n0.is>
+# Copyright © 2018 Nikita <nikita@n0.is>
 # Copyright © 2018 Julien Lepiller <julien@lepiller.eu>
 # Copyright © 2018 Oleg Pykhalov <go.wigust@gmail.com>
 # Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
@@ -95,6 +95,7 @@ MODULES =					\
   guix/repl.scm					\
   guix/inferior.scm				\
   guix/describe.scm				\
+  guix/quirks.scm				\
   guix/channels.scm				\
   guix/gnu-maintenance.scm			\
   guix/self.scm					\
@@ -103,6 +104,7 @@ MODULES =					\
   guix/lint.scm				\
   guix/glob.scm					\
   guix/git.scm					\
+  guix/git-authenticate.scm			\
   guix/graph.scm				\
   guix/cache.scm				\
   guix/cve.scm					\
@@ -317,7 +319,8 @@ MODULES += $(STORE_MODULES)
 dist_noinst_DATA =				\
   guix/tests.scm				\
   guix/tests/http.scm				\
-  guix/tests/git.scm
+  guix/tests/git.scm				\
+  guix/tests/gnupg.scm
 
 # Auxiliary files for packages.
 AUX_FILES =						\
@@ -338,12 +341,14 @@ AUX_FILES =						\
   gnu/packages/aux-files/linux-libre/4.9-x86_64.conf	\
   gnu/packages/aux-files/linux-libre/4.4-i686.conf	\
   gnu/packages/aux-files/linux-libre/4.4-x86_64.conf	\
+  gnu/packages/aux-files/pack-audit.c			\
   gnu/packages/aux-files/run-in-namespace.c
 
 # Templates, examples.
 EXAMPLES =					\
   gnu/system/examples/asus-c201.tmpl		\
   gnu/system/examples/bare-bones.tmpl		\
+  gnu/system/examples/bare-hurd.tmpl		\
   gnu/system/examples/beaglebone-black.tmpl	\
   gnu/system/examples/desktop.tmpl		\
   gnu/system/examples/lightweight-desktop.tmpl	\
@@ -402,6 +407,7 @@ SCM_TESTS =					\
   tests/gem.scm				\
   tests/gexp.scm				\
   tests/git.scm					\
+  tests/git-authenticate.scm			\
   tests/glob.scm				\
   tests/gnu-maintenance.scm			\
   tests/grafts.scm				\
@@ -556,6 +562,7 @@ EXTRA_DIST +=						\
   build-aux/cuirass/guix-modular.scm			\
   build-aux/cuirass/hydra-to-cuirass.scm		\
   build-aux/check-final-inputs-self-contained.scm	\
+  build-aux/check-channel-news.scm			\
   build-aux/compile-as-derivation.scm			\
   build-aux/generate-authors.scm			\
   build-aux/git-authenticate.scm			\
@@ -573,6 +580,8 @@ EXTRA_DIST +=						\
   tests/dsa.key						\
   tests/ed25519.key					\
   tests/ed25519.sec					\
+  tests/ed25519bis.key					\
+  tests/ed25519bis.sec					\
   build-aux/config.rpath				\
   bootstrap						\
   doc/build.scm						\
@@ -630,7 +639,7 @@ commit_v1_0_1 = d68de958b60426798ed62797ff7c96c327a672ac
 
 # Authenticate the current Git checkout by checking signatures on every commit
 # starting from $(commit_v1_0_1).
-authenticate:
+authenticate: guix/openpgp.go guix/git-authenticate.go guix/git.go
 	$(AM_V_at)echo "Authenticating Git checkout..." ;	\
 	"$(top_builddir)/pre-inst-env" $(GUILE)			\
 	  --no-auto-compile -e git-authenticate			\
@@ -884,6 +893,11 @@ assert-final-inputs-self-contained: $(GOBJECTS)
 	$(AM_V_at)$(top_builddir)/pre-inst-env "$(GUILE)"			\
 	  "$(top_srcdir)/build-aux/check-final-inputs-self-contained.scm"
 
+# Validate channel news.
+check-channel-news: $(GOBJECTS)
+	$(AM_V_at)$(top_builddir)/pre-inst-env "$(GUILE)"	\
+	  "$(top_srcdir)/build-aux/check-channel-news.scm"
+
 # Compute the Hydra jobs and write them in the target file.
 hydra-jobs.scm: $(GOBJECTS)
 	$(AM_V_at)$(MKDIR_P) "`dirname "$@"`"
@@ -903,7 +917,7 @@ cuirass-jobs.scm: $(GOBJECTS)
 
 .PHONY: gen-ChangeLog gen-AUTHORS gen-tarball-version
 .PHONY: assert-no-store-file-names assert-binaries-available
-.PHONY: assert-final-inputs-self-contained
+.PHONY: assert-final-inputs-self-contained check-channel-news
 .PHONY: clean-go make-go as-derivation authenticate
 .PHONY: update-guix-package update-NEWS release
 

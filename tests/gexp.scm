@@ -78,7 +78,8 @@
                         (mkdir-p out)
                         (call-with-output-file (string-append out "/hg2g.scm")
                           (lambda (port)
-                            (write '(define-module (hg2g)
+                            (define defmod 'define-module) ;fool Geiser
+                            (write `(,defmod (hg2g)
                                       #:export (the-answer))
                                    port)
                             (write '(define the-answer 42) port)))))))))
@@ -284,6 +285,20 @@
            (((thing "out"))
             (eq? thing file))))))
 
+(test-assert "file-append, raw store item"
+  (let* ((obj   (plain-file "example.txt" "Hello!"))
+         (a     (file-append obj "/a"))
+         (b     (file-append a "/b"))
+         (c     (file-append b "/c"))
+         (exp   #~(list #$c))
+         (item  (run-with-store %store (lower-object obj)))
+         (lexp  (run-with-store %store (lower-gexp exp))))
+    (and (equal? (lowered-gexp-sexp lexp)
+                 `(list ,(string-append item "/a/b/c")))
+         (equal? (lowered-gexp-sources lexp)
+                 (list item))
+         (null? (lowered-gexp-inputs lexp)))))
+
 (test-assertm "with-parameters for %current-system"
   (mlet* %store-monad ((system -> (match (%current-system)
                                     ("aarch64-linux" "x86_64-linux")
@@ -321,6 +336,60 @@
        (string=? result
                  (string-append (derivation->output-path drv)
                                 "/bin/touch"))))))
+(test-equal "let-system"
+  (list `(begin ,(%current-system) #t) '(system-binding) '()
+        'low '() '())
+  (let* ((exp #~(begin
+                  #$(let-system system system)
+                  #t))
+         (low (run-with-store %store (lower-gexp exp))))
+    (list (lowered-gexp-sexp low)
+          (match (gexp-inputs exp)
+            (((($ (@@ (guix gexp) <system-binding>)) "out"))
+             '(system-binding))
+            (x x))
+          (gexp-native-inputs exp)
+          'low
+          (lowered-gexp-inputs low)
+          (lowered-gexp-sources low))))
+
+(test-equal "let-system, target"
+  (list `(list ,(%current-system) #f)
+        `(list ,(%current-system) "aarch64-linux-gnu"))
+  (let ((exp #~(list #$@(let-system (system target)
+                          (list system target)))))
+    (list (gexp->sexp* exp)
+          (gexp->sexp* exp "aarch64-linux-gnu"))))
+
+(test-equal "let-system, ungexp-native, target"
+  `(here it is: ,(%current-system) #f)
+  (let ((exp #~(here it is: #+@(let-system (system target)
+                                 (list system target)))))
+    (gexp->sexp* exp "aarch64-linux-gnu")))
+
+(test-equal "let-system, nested"
+  (list `(system* ,(string-append "qemu-system-" (%current-system))
+                  "-m" "256")
+        '()
+        '(system-binding))
+  (let ((exp #~(system*
+                #+(let-system (system target)
+                    (file-append (@@ (gnu packages virtualization)
+                                     qemu)
+                                 "/bin/qemu-system-"
+                                 system))
+                "-m" "256")))
+    (list (match (gexp->sexp* exp)
+            (('system* command rest ...)
+             `(system* ,(and (string-prefix? (%store-prefix) command)
+                             (basename command))
+                       ,@rest))
+            (x x))
+          (gexp-inputs exp)
+          (match (gexp-native-inputs exp)
+            (((($ (@@ (guix gexp) <system-binding>)) "out"))
+             '(system-binding))
+            (x x)))))
 
 (test-assert "ungexp + ungexp-native"
   (let* ((exp    (gexp (list (ungexp-native %bootstrap-guile)

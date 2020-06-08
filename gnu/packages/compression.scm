@@ -7,14 +7,14 @@
 ;;; Copyright © 2015, 2016, 2017, 2018, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015, 2017, 2018 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2015 Jeff Mickey <j@codemac.net>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
-;;; Copyright © 2016, 2019 Kei Kebreau <kkebreau@posteo.net>
+;;; Copyright © 2016, 2019, 2020 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2016, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2017 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2017 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Stefan Reichör <stefan@xsteve.at>
@@ -875,7 +875,8 @@ extract such file systems.")
                       (symlink "pigz" (string-append bin  "/unpigz"))
                       (install-file "pigz.1" man)
                       #t))))
-       #:make-flags (list "CC=gcc")
+       #:make-flags
+       (list ,(string-append "CC=" (cc-for-target)))
        #:test-target "tests"))
     (inputs `(("zlib" ,zlib)))
     (home-page "https://zlib.net/pigz/")
@@ -1685,7 +1686,7 @@ of archives.")
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
-       (list "CC=gcc")))
+       (list ,(string-append "CC=" (cc-for-target)))))
     (home-page "https://www.nongnu.org/lzip/lunzip.html")
     (synopsis "Small, stand-alone lzip decompressor")
     (description
@@ -1712,7 +1713,7 @@ Lunzip is intended to be fully compatible with the regular lzip package.")
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
-       (list "CC=gcc")))
+       (list ,(string-append "CC=" (cc-for-target)))))
     (home-page "https://www.nongnu.org/lzip/clzip.html")
     (synopsis "Small, stand-alone lzip compressor and decompressor")
     (description
@@ -1942,7 +1943,7 @@ download times, and other distribution and storage costs.")
 (define-public quazip
   (package
     (name "quazip")
-    (version "0.9")
+    (version "0.9.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1951,7 +1952,7 @@ download times, and other distribution and storage costs.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0psvf3d9akyyx3bckc9325nmbp97xiagf8la4vhca5xn2f430fbn"))))
+                "11icgwv2xyxhd1hm1add51xv54zwkcqkg85d1xqlgiigvbm196iq"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f))                    ;no test
@@ -2101,7 +2102,7 @@ file compression algorithm.")
 (define-public xarchiver
   (package
     (name "xarchiver")
-    (version "0.5.4.14")
+    (version "0.5.4.15")
     (source
      (origin
        (method git-fetch)
@@ -2110,7 +2111,7 @@ file compression algorithm.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1iklwgykgymrwcc5p1cdbh91v0ih1m58s3w9ndl5kyd44bwlb7px"))))
+        (base32 "0a3y54r5zp2c0cqm77r07qrl1vh200wvqmbhm35diy22fvkq5mwc"))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
      `(("gettext" ,gettext-minimal)
@@ -2118,7 +2119,7 @@ file compression algorithm.")
        ("libxslt" ,libxslt)
        ("pkg-config" ,pkg-config)))
     (inputs
-     `(("adwaita-icon-theme" ,adwaita-icon-theme) ; Hard-coded theme
+     `(("adwaita-icon-theme" ,adwaita-icon-theme) ; hard-coded theme
        ("gtk+" ,gtk+)))
     (home-page "https://github.com/ib/xarchiver")
     (synopsis "Graphical front-end for archive operations")
@@ -2189,3 +2190,36 @@ computations.")
     ;; Blosc itself is released under BSD-3 but it incorporates code under
     ;; other non-copyleft licenses.
     (license license:bsd-3)))
+
+(define-public ecm
+  (package
+    (name "ecm")
+    (version "1.0.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/alucryd/ecm-tools")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1rvyx5gcy8lfklgj80szlz3312x45wzx0d9jsgwyvy8f6m4nnb0c"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ; no check target
+       #:make-flags
+       (list (string-append "CC=" ,(cc-for-target))
+             (string-append "DESTDIR=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda _
+             (substitute* "Makefile"
+               (("\\$\\(DESTDIR\\)/usr") "$(DESTDIR)"))
+             #t)))))
+    (home-page "https://github.com/alucryd/ecm-tools")
+    (synopsis "Error code modeler")
+    (description "ECM is a utility that converts ECM files, i.e., CD data files
+with their error correction data losslessly rearranged for better compression,
+to their original, binary CD format.")
+    (license license:gpl3+)))

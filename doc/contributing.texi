@@ -501,7 +501,7 @@ It is a good idea to strip commit identifiers in the @code{version}
 field to, say, 7 digits.  It avoids an aesthetic annoyance (assuming
 aesthetics have a role to play here) as well as problems related to OS
 limits such as the maximum shebang length (127 bytes for the Linux
-kernel.)  It is best to use the full commit identifiers in
+kernel).  It is best to use the full commit identifiers in
 @code{origin}s, though, to avoid ambiguities.  A typical package
 definition may look like this:
 
@@ -938,7 +938,7 @@ your @code{operating-system} configuration:
 @lisp
 (service qemu-binfmt-service-type
  (qemu-binfmt-configuration
-   (platforms (lookup-qemu-platforms "arm" "aarch64" "mips64el"))
+   (platforms (lookup-qemu-platforms "arm" "aarch64"))
    (guix-support? #t)))
 @end lisp
 
@@ -951,7 +951,6 @@ commands, respectively:
 @example
 guix build --system=armhf-linux --rounds=2 hello
 guix build --system=aarch64-linux --rounds=2 hello
-guix build --system=mips64el-linux --rounds=2 hello
 @end example
 
 @item
@@ -1083,12 +1082,14 @@ guix pull --url=/path/to/your/checkout --profile=/tmp/guix.master
 @end enumerate
 
 When posting a patch to the mailing list, use @samp{[PATCH] @dots{}} as
-a subject.  You may use your email client or the @command{git
-send-email} command (@pxref{Sending a Patch Series}).  We prefer to get
-patches in plain text messages, either inline or as MIME attachments.
-You are advised to pay attention if your email client changes anything
-like line breaks or indentation which could potentially break the
-patches.
+a subject, if your patch is to be applied on a branch other than
+@code{master}, say @code{core-updates}, specify it in the subject like
+@samp{[PATCH core-updates] @dots{}}.  You may use your email client or
+the @command{git send-email} command (@pxref{Sending a Patch Series}).
+We prefer to get patches in plain text messages, either inline or as
+MIME attachments.  You are advised to pay attention if your email client
+changes anything like line breaks or indentation which could potentially
+break the patches.
 
 When a bug is resolved, please close the thread by sending an email to
 @email{@var{NNN}-done@@debbugs.gnu.org}.
@@ -1275,6 +1276,14 @@ When pushing a commit on behalf of somebody else, please add a
 @code{Signed-off-by} line at the end of the commit log message---e.g.,
 with @command{git am --signoff}.  This improves tracking of who did
 what.
+
+When adding channel news entries (@pxref{Channels, Writing Channel
+News}), make sure they are well-formed by running the following command
+right before pushing:
+
+@example
+make check-channel-news
+@end example
 
 For anything else, please post to @email{guix-patches@@gnu.org} and
 leave time for a review, without committing anything (@pxref{Submitting

@@ -6,7 +6,7 @@
 ;;; Copyright © 2016 Jelle Licht <jlicht@fsfe.org>
 ;;; Copyright © 2016 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2016, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016 ng0 <ng0@n0.is>
+;;; Copyright © 2016 Nikita <nikita@n0.is>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
@@ -19,6 +19,7 @@
 ;;; Copyright © 2019 Yoshinori Arai <kumagusu08@gmail.com>
 ;;; Copyright © 2019 Mădălin Ionel Patrașcu <madalinionel.patrascu@mdc-berlin.de>
 ;;; Copyright © 2019 Wiktor Żelazny <wzelazny@vurv.cz>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -53,6 +54,7 @@
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages java)
   #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
@@ -140,7 +142,7 @@ libenca and several charset conversion libraries and tools.")
 (define-public utf8proc
   (package
     (name "utf8proc")
-    (version "2.4.0")
+    (version "2.5.0")
     (source
      (origin
        (method git-fetch)
@@ -149,26 +151,29 @@ libenca and several charset conversion libraries and tools.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1i42hqwc8znqii9brangwkxk5cyc2lk95ip405fg88zr7z2ncr34"))))
+        (base32 "1xlkazhdnja4lksn5c9nf4bln5gjqa35a8gwlam5r0728w0h83qq"))))
     (build-system gnu-build-system)
-    (native-inputs           ;test data that is otherwise downloaded with curl
-     `(("NormalizationTest.txt"
-        ,(origin
-           (method url-fetch)
-           (uri (string-append "https://www.unicode.org/Public/12.1.0/ucd/"
-                               "NormalizationTest.txt"))
-           (sha256
-            (base32 "0hb97k9xv1lr847hwz0719ksqy39s47xw6k01dgs1368jdibvawc"))))
-       ("GraphemeBreakTest.txt"
-        ,(origin
-           (method url-fetch)
-           (uri (string-append "https://www.unicode.org/Public/12.1.0/ucd/"
-                               "auxiliary/GraphemeBreakTest.txt"))
-           (sha256
-            (base32 "0qc90ppmrwfn3y9cdn8jcjrn7qpdf0fhxkwh945yp4rvh37mbgcm"))))
+    (native-inputs
+     (let ((UNICODE_VERSION "13.0.0"))  ; defined in data/Makefile
+       ;; Test data that is otherwise downloaded with curl.
+       `(("NormalizationTest.txt"
+          ,(origin
+             (method url-fetch)
+             (uri (string-append "https://www.unicode.org/Public/"
+                                 UNICODE_VERSION "/ucd/NormalizationTest.txt"))
+             (sha256
+              (base32 "07g0ya4f6zfzvpp24ccxkb2yq568kh83gls85rjl950nv5fya3nn"))))
+         ("GraphemeBreakTest.txt"
+          ,(origin
+             (method url-fetch)
+             (uri (string-append "https://www.unicode.org/Public/"
+                                 UNICODE_VERSION
+                                 "/ucd/auxiliary/GraphemeBreakTest.txt"))
+             (sha256
+              (base32 "07f8rrvcsq4pibdz6zxggxy8w7zjjqyw2ggclqlhalyv45yv7prj"))))
 
-       ;; For tests.
-       ("perl" ,perl)))
+         ;; For tests.
+         ("perl" ,perl))))
     (arguments
      '(#:make-flags (list "CC=gcc"
                           (string-append "prefix=" (assoc-ref %outputs "out")))
@@ -476,16 +481,21 @@ as existing hashing techniques, with provably negligible risk of collisions.")
 (define-public oniguruma
   (package
     (name "oniguruma")
-    (version "6.9.4")
+    (version "6.9.5-rev1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/kkos/"
-                                  "oniguruma/releases/download/v" version
+                                  "oniguruma/releases/download/v"
+                                  ;; If there is a "-" in the version, convert
+                                  ;; to underscore for this part of the URI.
+                                  (string-map (lambda (c) (if (char=? #\- c) #\_ c))
+                                              version)
                                   "/onig-" version ".tar.gz"))
               (sha256
                (base32
-                "0lvd1rpp49i0k1icblb0i76lj2cwmhf1c5p1jdz2m6g0ywpx4sa6"))))
+                "17m92k1n6bvza6m35fpd5g36zwpwm3hfz3478iwj5bvj2sfq8g6k"))))
     (build-system gnu-build-system)
+    (arguments '(#:configure-flags '("--disable-static")))
     (home-page "https://github.com/kkos/oniguruma")
     (synopsis "Regular expression library")
     (description "Oniguruma is a regular expressions library.  The special
@@ -716,6 +726,110 @@ categories.")
      "C library for creating and parsing configuration files.")
     (license (list license:lgpl2.1         ; Main distribution.
                    license:asl1.1))))      ; src/readdir.{c,h}
+
+(define-public drm-tools
+  (package
+    (name "drm-tools")
+    (version "1.1.33")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/drmtools/drm_tools-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "187zbxw21zcg8gpyc13gxlycfw0n05a6rmqq6im5wr9zk1v1wj80"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f                      ;the test suite fails
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'set-install-prefixes
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out")))
+                        (substitute* "CMakeLists.txt"
+                          (("tmp/testinstall")
+                           (string-drop out 1))
+                          (("/man/man1")
+                           "/share/man/man1"))
+                        #t)))
+                  (add-after 'unpack 'adjust-test-paths
+                    (lambda _
+                      (substitute* '("test_extract_increment.sh"
+                                     "test_extract_features.sh"
+                                     "test_extract_features2.sh"
+                                     "test_dmath.sh")
+                        (("\\./extract") "extract")
+                        (("\\./dmath") "dmath")
+                        (("/usr/local/bin/") "")
+                        (("/bin/rm") "rm")
+                        (("/bin/cp") "cp"))
+                      #t))
+                  (delete 'check)
+                  ;; The produced binaries are written directly to %output/bin.
+                  (delete 'install)
+                  (add-after 'build 'check
+                    (lambda* (#:key outputs tests? #:allow-other-keys)
+                      (when tests?
+                        (let* ((out (assoc-ref outputs "out"))
+                               (bin (string-append out "/bin")))
+                          (setenv "PATH" (string-append bin ":"
+                                                        (getenv "PATH")))
+                          (with-directory-excursion
+                              (format #f "../drm_tools-~a" ,version)
+                            (invoke "sh" "test_all.sh")))))))))
+    (native-inputs `(("which" ,which))) ;for tests
+    (inputs `(("pcre" ,pcre)))
+    (home-page "http://drmtools.sourceforge.net/")
+    (synopsis "Utilities to manipulate text and binary files")
+    (description "The drm_tools package contains the following commands:
+@table @command
+@item accudate
+An extended version of the \"date\" program that has sub-second accuracy.
+@item binformat
+Format complex binary data into text.
+@item binload
+Load data into a binary file using simple commands from the input.
+@item binorder
+Sort, merge, search, retrieve or generate test data consisting of fixed size
+binary records.
+@item binreplace
+Find or find/replace in binary files.
+@item binsplit
+Split test data consisting of fixed size binary records into one or more
+output streams.
+@item chardiff
+Find changes between two files at the character level.  Unlike \"diff\", it
+lists just the characters that differ, so if the 40,000th character is
+different only that one character will be shown, not the entire line.
+@item columnadd
+Add columns of integers, decimals, and/or times.
+@item datasniffer
+A utility for formatting binary data dumps.
+@item dmath
+Double precision interactive command line math calculator.
+@item extract
+Extract and emit data from text files based on character or token position.
+@item execinput
+A utility that reads from STDIN and executes each line as a command in a
+sub-process.
+@item indexed_text
+A utility for rapid retrieval of text by line numbers, in any order, from a
+text file.
+@item mdump
+Format binary data.
+@item msgqueue
+Create message queues and send/receive messages.
+@item mbin
+@itemx mbout
+Multiple buffer in and out.  Used for buffering a lot of data between a slow
+device and a fast device.  Mostly for buffering streaming tape drives for use
+with slower network connections, so that streaming is maintained as much as
+possible to minimize wear on the tape device.
+@item pockmark
+Corrupt data streams - useful for testing error correction and data recovery.
+@item tarsieve
+Filter, list, or split a tar file.
+@end table")
+    (license license:gpl2+)))
 
 (define-public java-rsyntaxtextarea
   (package

@@ -2,7 +2,7 @@
 ;;; Copyright © 2013, 2014, 2015 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014, 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016, 2017, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017, 2018, 2019 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
@@ -51,24 +51,28 @@
 (define-public tor
   (package
     (name "tor")
-    (version "0.4.2.7")
+    (version "0.4.3.5")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://dist.torproject.org/tor-"
                                  version ".tar.gz"))
              (sha256
               (base32
-               "0v82ngwwmmcb7i9563bgsmrjy6xp83xyhqhaljygd0pkvlsxi886"))))
+               "0s6qspi102drn1nk3gfxs51x992xarc44gkfsi8y3l48wr50wsk1"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "--enable-lzma"
+             "--enable-zstd")))
     (native-inputs
      `(("pkg-config" ,pkg-config)
-       ("python" ,python-2)))           ; for tests
+       ("python" ,python)))             ; for tests
     (inputs
-     `(("zlib" ,zlib)
-       ("openssl" ,openssl)
-       ("libevent" ,libevent)
+     `(("libevent" ,libevent)
        ("libseccomp" ,libseccomp)
+       ("openssl" ,openssl)
        ("xz" ,xz)
+       ("zlib" ,zlib)
        ("zstd" ,zstd "lib")))
     (home-page "https://www.torproject.org/")
     (synopsis "Anonymous network router to improve privacy on the Internet")

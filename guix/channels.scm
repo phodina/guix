@@ -38,7 +38,6 @@
                 #:select (source-properties->location
                           &error-location
                           &fix-hint))
-  #:use-module ((guix build utils) #:select (substitute*))
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-2)
   #:use-module (srfi srfi-9)
@@ -48,6 +47,7 @@
   #:use-module (srfi srfi-35)
   #:autoload   (guix self) (whole-package make-config.scm)
   #:autoload   (guix inferior) (gexp->derivation-in-inferior) ;FIXME: circular dep
+  #:autoload   (guix quirks) (%quirks %patches applicable-patch? apply-patch)
   #:use-module (ice-9 match)
   #:use-module (ice-9 vlist)
   #:use-module ((ice-9 rdelim) #:select (read-string))
@@ -73,6 +73,7 @@
             channel-instances->manifest
             %channel-profile-hooks
             channel-instances->derivation
+            ensure-forward-channel-update
 
             profile-channels
 
@@ -200,36 +201,30 @@ description file or its default value."
 channel INSTANCE."
   (channel-metadata-dependencies (channel-instance-metadata instance)))
 
-;; Patch to apply to a source tree.
-(define-record-type <patch>
-  (patch predicate application)
-  patch?
-  (predicate    patch-predicate)                  ;procedure
-  (application  patch-application))               ;procedure
-
 (define (apply-patches checkout commit patches)
   "Apply the matching PATCHES to CHECKOUT, modifying files in place.  The
 result is unspecified."
   (let loop ((patches patches))
     (match patches
       (() #t)
-      ((($ <patch> predicate modify) rest ...)
-       ;; PREDICATE is passed COMMIT so that it can choose to only apply to
-       ;; ancestors.
-       (when (predicate checkout commit)
-         (modify checkout))
+      ((patch rest ...)
+       (when (applicable-patch? patch checkout commit)
+         (apply-patch patch checkout))
        (loop rest)))))
 
 (define* (latest-channel-instance store channel
-                                  #:key (patches %patches))
-  "Return the latest channel instance for CHANNEL."
+                                  #:key (patches %patches)
+                                  starting-commit)
+  "Return two values: the latest channel instance for CHANNEL, and its
+relation to STARTING-COMMIT when provided."
   (define (dot-git? file stat)
     (and (string=? (basename file) ".git")
          (eq? 'directory (stat:type stat))))
 
-  (let-values (((checkout commit)
+  (let-values (((checkout commit relation)
                 (update-cached-checkout (channel-url channel)
-                                        #:ref (channel-reference channel))))
+                                        #:ref (channel-reference channel)
+                                        #:starting-commit starting-commit)))
     (when (guix-channel? channel)
       ;; Apply the relevant subset of PATCHES directly in CHECKOUT.  This is
       ;; safe to do because 'switch-to-ref' eventually does a hard reset.
@@ -238,12 +233,55 @@ result is unspecified."
     (let* ((name     (url+commit->name (channel-url channel) commit))
            (checkout (add-to-store store name #t "sha256" checkout
                                    #:select? (negate dot-git?))))
-      (channel-instance channel commit checkout))))
+      (values (channel-instance channel commit checkout)
+              relation))))
 
-(define* (latest-channel-instances store channels #:optional (previous-channels '()))
+(define (ensure-forward-channel-update channel start instance relation)
+  "Raise an error if RELATION is not 'ancestor, meaning that START is not an
+ancestor of the commit in INSTANCE, unless CHANNEL specifies a commit.
+
+This procedure implements a channel update policy meant to be used as a
+#:validate-pull argument."
+  (match relation
+    ('ancestor #t)
+    ('self #t)
+    (_
+     (raise (make-compound-condition
+             (condition
+              (&message (message
+                         (format #f (G_ "\
+aborting update of channel '~a' to commit ~a, which is not a descendant of ~a")
+                                 (channel-name channel)
+                                 (channel-instance-commit instance)
+                                 start))))
+
+             ;; If the user asked for a specific commit, they might want
+             ;; that to happen nevertheless, so tell them about the
+             ;; relevant 'guix pull' option.
+             (if (channel-commit channel)
+                 (condition
+                  (&fix-hint
+                   (hint (G_ "Use @option{--allow-downgrades} to force
+this downgrade."))))
+                 (condition
+                  (&fix-hint
+                   (hint (G_ "This could indicate that the channel has
+been tampered with and is trying to force a roll-back, preventing you from
+getting the latest updates.  If you think this is not the case, explicitly
+allow non-forward updates."))))))))))
+
+(define* (latest-channel-instances store channels
+                                   #:key
+                                   (current-channels '())
+                                   (validate-pull
+                                    ensure-forward-channel-update))
   "Return a list of channel instances corresponding to the latest checkouts of
-CHANNELS and the channels on which they depend.  PREVIOUS-CHANNELS is a list
-of previously processed channels."
+CHANNELS and the channels on which they depend.
+
+CURRENT-CHANNELS is the list of currently used channels.  It is compared
+against the newly-fetched instances of CHANNELS, and VALIDATE-PULL is called
+for each channel update and can choose to emit warnings or raise an error,
+depending on the policy it implements."
   ;; Only process channels that are unique, or that are more specific than a
   ;; previous channel specification.
   (define (ignore? channel others)
@@ -254,38 +292,53 @@ of previously processed channels."
                        (not (or (channel-commit a)
                                 (channel-commit b))))))))
 
-  ;; Accumulate a list of instances.  A list of processed channels is also
-  ;; accumulated to decide on duplicate channel specifications.
-  (define-values (resulting-channels instances)
-    (fold2 (lambda (channel previous-channels instances)
-             (if (ignore? channel previous-channels)
-                 (values previous-channels instances)
-                 (begin
-                   (format (current-error-port)
-                           (G_ "Updating channel '~a' from Git repository at '~a'...~%")
-                           (channel-name channel)
-                           (channel-url channel))
-                   (let ((instance (latest-channel-instance store channel)))
-                     (let-values (((new-instances new-channels)
-                                   (latest-channel-instances
-                                    store
-                                    (channel-instance-dependencies instance)
-                                    previous-channels)))
-                       (values (append (cons channel new-channels)
-                                       previous-channels)
-                               (append (cons instance new-instances)
-                                       instances)))))))
-           previous-channels
-           '()                                    ;instances
-           channels))
+  (define (current-commit name)
+    ;; Return the current commit for channel NAME.
+    (any (lambda (channel)
+           (and (eq? (channel-name channel) name)
+                (channel-commit channel)))
+         current-channels))
 
-  (let ((instance-name (compose channel-name channel-instance-channel)))
-    ;; Remove all earlier channel specifications if they are followed by a
-    ;; more specific one.
-    (values (delete-duplicates instances
-                               (lambda (a b)
-                                 (eq? (instance-name a) (instance-name b))))
-            resulting-channels)))
+  (let loop ((channels channels)
+             (previous-channels '()))
+    ;; Accumulate a list of instances.  A list of processed channels is also
+    ;; accumulated to decide on duplicate channel specifications.
+    (define-values (resulting-channels instances)
+      (fold2 (lambda (channel previous-channels instances)
+               (if (ignore? channel previous-channels)
+                   (values previous-channels instances)
+                   (begin
+                     (format (current-error-port)
+                             (G_ "Updating channel '~a' from Git repository at '~a'...~%")
+                             (channel-name channel)
+                             (channel-url channel))
+                     (let*-values (((current)
+                                    (current-commit (channel-name channel)))
+                                   ((instance relation)
+                                    (latest-channel-instance store channel
+                                                             #:starting-commit
+                                                             current)))
+                       (when relation
+                         (validate-pull channel current instance relation))
+
+                       (let-values (((new-instances new-channels)
+                                     (loop (channel-instance-dependencies instance)
+                                           previous-channels)))
+                         (values (append (cons channel new-channels)
+                                         previous-channels)
+                                 (append (cons instance new-instances)
+                                         instances)))))))
+             previous-channels
+             '()                                  ;instances
+             channels))
+
+    (let ((instance-name (compose channel-name channel-instance-channel)))
+      ;; Remove all earlier channel specifications if they are followed by a
+      ;; more specific one.
+      (values (delete-duplicates instances
+                                 (lambda (a b)
+                                   (eq? (instance-name a) (instance-name b))))
+              resulting-channels))))
 
 (define* (checkout->channel-instance checkout
                                      #:key commit
@@ -346,66 +399,6 @@ to '%package-module-path'."
 
     (gexp->derivation-in-inferior name build core)))
 
-(define (syscalls-reexports-local-variables? source)
-  "Return true if (guix build syscalls) contains the bug described at
-<https://bugs.gnu.org/36723>."
-  (catch 'system-error
-    (lambda ()
-      (define content
-        (call-with-input-file (string-append source
-                                             "/guix/build/syscalls.scm")
-          read-string))
-
-      ;; The faulty code would use the 're-export' macro, causing the
-      ;; 'AT_SYMLINK_NOFOLLOW' local variable to be re-exported when using
-      ;; Guile > 2.2.4.
-      (string-contains content "(re-export variable)"))
-    (lambda args
-      (if (= ENOENT (system-error-errno args))
-          #f
-          (apply throw args)))))
-
-(define (guile-2.2.4)
-  (module-ref (resolve-interface '(gnu packages guile))
-              'guile-2.2.4))
-
-(define %quirks
-  ;; List of predicate/package pairs.  This allows us to provide information
-  ;; about specific Guile versions that old Guix revisions might need to use
-  ;; just to be able to build and run the trampoline in %SELF-BUILD-FILE.  See
-  ;; <https://bugs.gnu.org/37506>
-  `((,syscalls-reexports-local-variables? . ,guile-2.2.4)))
-
-
-(define %bug-41028-patch
-  ;; Patch for <https://bugs.gnu.org/41028>.  The faulty code is the
-  ;; 'compute-guix-derivation' body, which uses 'call-with-new-thread' without
-  ;; importing (ice-9 threads).  However, the 'call-with-new-thread' binding
-  ;; is no longer available in the default name space on Guile 3.0.
-  (let ()
-    (define (missing-ice-9-threads-import? source commit)
-      ;; Return true if %SELF-BUILD-FILE is missing an (ice-9 threads) import.
-      (define content
-        (call-with-input-file (string-append source "/" %self-build-file)
-          read-string))
-
-      (and (string-contains content "(call-with-new-thread")
-           (not (string-contains content "(ice-9 threads)"))))
-
-    (define (add-missing-ice-9-threads-import source)
-      ;; Add (ice-9 threads) import in the gexp of 'compute-guix-derivation'.
-      (substitute* (string-append source "/" %self-build-file)
-        (("^ +\\(use-modules \\(ice-9 match\\)\\)")
-         (object->string '(use-modules (ice-9 match) (ice-9 threads))))))
-
-   (patch missing-ice-9-threads-import? add-missing-ice-9-threads-import)))
-
-(define %patches
-  ;; Bits of past Guix revisions can become incompatible with newer Guix and
-  ;; Guile.  This variable lists <patch> records for the Guix source tree that
-  ;; apply to the Guix source.
-  (list %bug-41028-patch))
-
 (define* (guile-for-source source #:optional (quirks %quirks))
   "Return the Guile package to use when building SOURCE or #f if the default
 '%guile-for-build' should be good enough."
@@ -415,6 +408,21 @@ to '%package-module-path'."
        #f)
       (((predicate . guile) rest ...)
        (if (predicate source) (guile) (loop rest))))))
+
+(define (call-with-guile guile thunk)
+  (lambda (store)
+    (values (parameterize ((%guile-for-build
+                            (if guile
+                                (package-derivation store guile)
+                                (%guile-for-build))))
+              (run-with-store store (thunk)))
+            store)))
+
+(define-syntax-rule (with-guile guile exp ...)
+  "Set GUILE as the '%guile-for-build' parameter for the dynamic extent of
+EXP, a series of monadic expressions."
+  (call-with-guile guile (lambda ()
+                           (mbegin %store-monad exp ...))))
 
 (define (with-trivial-build-handler mvalue)
   "Run MVALUE, a monadic value, with a \"trivial\" build handler installed
@@ -454,10 +462,7 @@ package modules under SOURCE using CORE, an instance of Guix."
         ;; Note: BUILD can return #f if it does not support %PULL-VERSION.  In
         ;; the future we'll fall back to a previous version of the protocol
         ;; when that happens.
-        (mbegin %store-monad
-          (mwhen guile
-            (set-guile-for-build guile))
-
+        (with-guile guile
           ;; BUILD is usually quite costly.  Install a "trivial" build handler
           ;; so we don't bounce an outer build-accumulator handler that could
           ;; cause us to redo half of the BUILD computation several times just
@@ -675,10 +680,20 @@ channel instances."
 (define latest-channel-instances*
   (store-lift latest-channel-instances))
 
-(define* (latest-channel-derivation #:optional (channels %default-channels))
+(define* (latest-channel-derivation #:optional (channels %default-channels)
+                                    #:key
+                                    (current-channels '())
+                                    (validate-pull
+                                     ensure-forward-channel-update))
   "Return as a monadic value the derivation that builds the profile for the
-latest instances of CHANNELS."
-  (mlet %store-monad ((instances (latest-channel-instances* channels)))
+latest instances of CHANNELS.  CURRENT-CHANNELS and VALIDATE-PULL are passed
+to 'latest-channel-instances'."
+  (mlet %store-monad ((instances
+                       (latest-channel-instances* channels
+                                                  #:current-channels
+                                                  current-channels
+                                                  #:validate-pull
+                                                  validate-pull)))
     (channel-instances->derivation instances)))
 
 (define (profile-channels profile)
@@ -819,3 +834,7 @@ NEW.  When OLD is omitted or is #f, return all the news entries of CHANNEL."
       (if (= GIT_ENOTFOUND (git-error-code error))
           '()
           (apply throw key error rest)))))
+
+;;; Local Variables:
+;;; eval: (put 'with-guile 'scheme-indent-function 1)
+;;; End:

@@ -475,20 +475,6 @@ BED, GFF/GTF, VCF.")
                          (find-files "bin" ".*")))
              #t)))))))
 
-;; Needed for pybedtools.
-(define-public bedtools-2.26
-  (package (inherit bedtools)
-    (name "bedtools")
-    (version "2.26.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/arq5x/bedtools2/releases/"
-                                  "download/v" version "/"
-                                  "bedtools-" version ".tar.gz"))
-              (sha256
-               (base32
-                "0jhavwifnf7lmkb11h9y7dynr8d699h0rd2l52j1pfgircr2zwv5"))))))
-
 (define-public pbbam
   (package
     (name "pbbam")
@@ -806,12 +792,13 @@ intended to behave exactly the same as the original BWK awk.")
        ;; See https://github.com/daler/pybedtools/issues/192
        #:phases
        (modify-phases %standard-phases
-         ;; See https://github.com/daler/pybedtools/issues/261
          (add-after 'unpack 'disable-broken-tests
            (lambda _
-             ;; This test (pybedtools.test.test_scripts.test_venn_mpl) needs a
-             ;; graphical environment.
              (substitute* "pybedtools/test/test_scripts.py"
+               ;; This test freezes.
+               (("def test_intron_exon_reads")
+                "def _do_not_test_intron_exon_reads")
+               ;; This test fails in the Python 2 build.
                (("def test_venn_mpl")
                 "def _do_not_test_venn_mpl"))
              (substitute* "pybedtools/test/test_helpers.py"
@@ -868,7 +855,7 @@ intended to behave exactly the same as the original BWK awk.")
              (mkdir-p "/tmp/test")
              (copy-recursively "pybedtools/test" "/tmp/test")
              (with-directory-excursion "/tmp/test"
-               (invoke "pytest")))))))
+               (invoke "pytest" "-v" "--doctest-modules")))))))
     (propagated-inputs
      `(("bedtools" ,bedtools)
        ("samtools" ,samtools)
@@ -984,6 +971,64 @@ e.g. microbiome samples, genomes, metagenomes.")
                  (substitute* "setup.py"
                    (("install_requires.append\\(\"pyqi\"\\)") "pass"))
                  #t)))))))))
+
+(define-public python-pairtools
+  (package
+    (name "python-pairtools")
+    (version "0.3.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/mirnylab/pairtools")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0gr8y13q7sd6yai6df4aavl2470n1f9s3cib6r473z4hr8hcbwmc"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-references
+           (lambda _
+             (substitute* '("pairtools/pairtools_merge.py"
+                            "pairtools/pairtools_sort.py")
+               (("/bin/bash") (which "bash")))
+             #t))
+         (replace 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (with-directory-excursion "/tmp"
+               (invoke "pytest" "-v")))))))
+    (native-inputs
+     `(("python-cython" ,python-cython)
+       ("python-nose" ,python-nose)
+       ("python-pytest" ,python-pytest)))
+    (inputs
+     `(("python" ,python-wrapper)))
+    (propagated-inputs
+     `(("htslib" ,htslib)               ; for bgzip, looked up in PATH
+       ("samtools" ,samtools)           ; looked up in PATH
+       ("lz4" ,lz4) ; for lz4c
+       ("python-click" ,python-click)
+       ("python-numpy" ,python-numpy)))
+    (home-page "https://github.com/mirnylab/pairtools")
+    (synopsis "Process mapped Hi-C data")
+    (description "Pairtools is a simple and fast command-line framework to
+process sequencing data from a Hi-C experiment.  Process pair-end sequence
+alignments and perform the following operations:
+
+@itemize
+@item detect ligation junctions (a.k.a. Hi-C pairs) in aligned paired-end
+  sequences of Hi-C DNA molecules
+@item sort @code{.pairs} files for downstream analyses
+@item detect, tag and remove PCR/optical duplicates
+@item generate extensive statistics of Hi-C datasets
+@item select Hi-C pairs given flexibly defined criteria
+@item restore @code{.sam} alignments from Hi-C pairs.
+@end itemize
+")
+    (license license:expat)))
 
 (define-public bioperl-minimal
   (let* ((inputs `(("perl-module-build" ,perl-module-build)
@@ -1401,7 +1446,7 @@ package provides command line tools using the Bio++ library.")
        ("python" ,python-wrapper)))
     (native-inputs
      `(("cpio" ,cpio)))
-    (home-page "http://blast.ncbi.nlm.nih.gov")
+    (home-page "https://blast.ncbi.nlm.nih.gov")
     (synopsis "Basic local alignment search tool")
     (description
      "BLAST is a popular method of performing a DNA or protein sequence
@@ -5723,7 +5768,7 @@ Roche 454, Ion Torrent and Pacific BioSciences SMRT.")
 (define-public ngs-sdk
   (package
     (name "ngs-sdk")
-    (version "2.9.6")
+    (version "2.10.5")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -5732,7 +5777,7 @@ Roche 454, Ion Torrent and Pacific BioSciences SMRT.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0d5k5kabgl15as37kj9x65xc92j4gcqms86hvihw3yb6wag0r0q3"))))
+                "1ix51c25hjn57w93qmwzw80xh2i34wx8j2hn7szh8p6w8i3az5qa"))))
     (build-system gnu-build-system)
     (arguments
      `(#:parallel-build? #f ; not supported
@@ -5789,7 +5834,7 @@ simultaneously.")
 (define-public ncbi-vdb
   (package
     (name "ncbi-vdb")
-    (version "2.9.6")
+    (version "2.10.6")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -5798,7 +5843,7 @@ simultaneously.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0knkj1sq34hlivgv5qd6jlczqrs3ldmfgn6vbbw7p4mqxvb9mirk"))))
+                "0m8hlxscidsfqm9x9fyi62q6lpf1dv5115kgjjgnrkl49q9c27m6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:parallel-build? #f ; not supported
@@ -6148,7 +6193,7 @@ sequence itself can be retrieved from these databases.")
 (define-public sra-tools
   (package
     (name "sra-tools")
-    (version "2.9.6")
+    (version "2.10.6")
     (source
      (origin
        (method git-fetch)
@@ -6158,11 +6203,11 @@ sequence itself can be retrieved from these databases.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0vqzap68v81k0zif2mnqfy8pnw2nrhsg87p6mgq8qk3nk2jv2rgy"))))
+         "1cr2mijkfs5sm35ffjs6861qsd1qkgnhnbavdv65zg5d655abbjf"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:parallel-build? #f ; not supported
-       #:tests? #f ; no "check" target
+     `(#:parallel-build? #f             ; not supported
+       #:tests? #f                      ; no "check" target
        #:make-flags
        (list (string-append "DEFAULT_CRT="
                             (assoc-ref %build-inputs "ncbi-vdb")
@@ -6205,6 +6250,9 @@ sequence itself can be retrieved from these databases.")
              ;; Dynamic linking
              (substitute* "tools/copycat/Makefile"
                (("smagic-static") "lmagic"))
+             (substitute* "tools/driver-tool/utf8proc/Makefile"
+               (("CC\\?=gcc") "myCC=gcc")
+               (("\\(CC\\)") "(myCC)"))
 
              ;; The 'configure' script doesn't recognize things like
              ;; '--enable-fast-install'.
@@ -6217,8 +6265,9 @@ sequence itself can be retrieved from these databases.")
                      (string-append "--with-magic-prefix="
                                     (assoc-ref inputs "libmagic"))
                      ;; TODO: building with libxml2 fails with linker errors
-                     ;; (string-append "--with-xml2-prefix="
-                     ;;                (assoc-ref inputs "libxml2"))
+                     #;
+                     (string-append "--with-xml2-prefix="
+                                    (assoc-ref inputs "libxml2"))
                      (string-append "--with-ncbi-vdb-sources="
                                     (assoc-ref inputs "ncbi-vdb"))
                      (string-append "--with-ncbi-vdb-build="
@@ -6234,8 +6283,9 @@ sequence itself can be retrieved from these databases.")
        ("ncbi-vdb" ,ncbi-vdb)
        ("libmagic" ,file)
        ("fuse" ,fuse)
-       ("hdf5" ,hdf5)
-       ("zlib" ,zlib)))
+       ("hdf5" ,hdf5-1.10)
+       ("zlib" ,zlib)
+       ("python" ,python-wrapper)))
     (home-page
      "https://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=software")
     (synopsis "Tools and libraries for reading and writing sequencing data")
@@ -8697,9 +8747,9 @@ library implementing most of the pipeline's features.")
     (inputs
      `(("r-minimal" ,r-minimal)
        ("r-rcas" ,r-rcas)
-       ("guile-next" ,guile-2.2)
+       ("guile" ,guile-2.2)
        ("guile-json" ,guile-json-1)
-       ("guile-redis" ,guile-redis)))
+       ("guile-redis" ,guile2.2-redis)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (home-page "https://github.com/BIMSBbioinfo/rcas-web")
@@ -13738,18 +13788,31 @@ bound.")
 (define-public python-pypairix
   (package
     (name "python-pypairix")
-    (version "0.3.6")
+    (version "0.3.7")
+    ;; The tarball on pypi does not include the makefile to build the
+    ;; programs.
     (source
      (origin
-       (method url-fetch)
-       (uri (pypi-uri "pypairix" version))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/4dn-dcic/pairix.git")
+             (commit version)))
+       (file-name (git-file-name name version))
        (sha256
         (base32
-         "0zs92b74s5v4xy2h16s15f3z6l4nnbw8x8zyif7xx5xpafjn0xss"))))
+         "1snr3lrmsld8sy77ng6ba6wcmd33xjccf1l2f3m6pi29xis9nd6p"))))
     (build-system python-build-system)
-    ;; FIXME: the tests fail because test.support cannot be loaded:
-    ;; ImportError: cannot import name 'support'
-    (arguments '(#:tests? #f))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'build-programs
+           (lambda _ (invoke "make")))
+         (add-after 'install 'install-programs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (copy-recursively "bin" (string-append
+                                      (assoc-ref outputs "out")
+                                      "/bin"))
+             #t)))))
     (inputs
      `(("zlib" ,zlib)))
     (home-page "https://github.com/4dn-dcic/pairix")
@@ -14679,7 +14742,7 @@ is a Cython wrapper for FIt-SNE.")
        ("java-eclipse-jdt-core" ,java-eclipse-jdt-core)
        ("java-eclipse-jdt-compiler-apt" ,java-eclipse-jdt-compiler-apt)
        ("java-openmpi" ,java-openmpi)))
-    (home-page "http://sourceforge.net/projects/bbmap/")
+    (home-page "https://sourceforge.net/projects/bbmap/")
     (synopsis "Aligner and other tools for short sequencing reads")
     (description
      "This package provides bioinformatic tools to align, deduplicate,

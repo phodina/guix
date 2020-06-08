@@ -1,8 +1,10 @@
 ;; GNU Guix news, for use by 'guix pull'.
 ;;
 ;; Copyright © 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;; Copyright © 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;
 ;; Copying and distribution of this file, with or without modification, are
 ;; permitted in any medium without royalty provided the copyright notice and
@@ -10,6 +12,106 @@
 
 (channel-news
  (version 0)
+
+ (entry (commit "b460ba7992a0b4af2ddb5927dcf062784539ef7b")
+        (title (en "Add support to boot from a Btrfs subvolume")
+               (de "Unterstützung für Systemstart von einem
+Btrfs-Unterlaufwerk hinzugefügt")
+               (fr "Ajout du support pour démarrer depuis un sous-volume Btrfs")
+               (nl "Nieuwe ondersteuning voor het opstarten vanaf een Btrfs-subvolume"))
+        (body
+         (en "The generation of the GRUB configuration file produced from an
+operating system declaration now takes into account the use of a Btrfs
+subvolume for the partition holding @file{/gnu/store}.  Run the command
+@command{info \"(guix) Btrfs file system\"} for more information and
+examples.")
+         (de "Für die Erzeugung einer GRUB-Konfigurationsdatei aus einer
+Betriebssystemdeklaration kann jetzt ein Btrfs-Unterlaufwerk („Subvolume“) für
+die Partition mit @file{/gnu/store} angegeben werden.  Führen Sie
+@command{info \"(guix) Btrfs file system\"} aus, wenn Sie mehr Informationen
+und Beispiele sehen möchten.")
+         (fr "La génération du fichier de configuration de GRUB produite à
+partir de la déclaration d'un @code{operating-system} tient maintenant compte
+de l'utilisation d'un sous-volume Btrfs pour la partition contenant
+@file{/gnu/store}.  Exécutez la commande @command{info\"(guix) Btrfs file
+system\"} pour des exemples et plus d'information.")
+         (nl "Het opmaken van het GRUB-configuratiebestand op basis van
+een @code{operating-system}-declaratie houdt nu rekening met het gebruik van
+een Btrfs-subvolume voor de partitie die @file{/gnu/store} bevat.  Voer
+@command{info \"(guix) Btrfs file system\"} uit voor meer informatie en
+voorbeelden.")))
+
+ (entry (commit "6456232164890dbf5aa20394ee24637feb4b7b9e")
+        (title (en "@command{guix pack -RR} introduces a new execution
+engine")
+               (de "@command{guix pack -RR} führt neuen Ausführungstreiber
+ein"))
+        (body
+         (en "The @command{guix pack -RR} command allows you to create a
+tarball containing @dfn{relocatable binaries}.  Until now, those would rely
+either on Linux ``unprivileged user namespaces'' or on PRoot, when
+unprivileged user namespaces are not supported.  However, PRoot introduces
+significant overhead for some workloads.
+
+To address that, @command{guix pack -RR} introduces a third option based on an
+extension to the GNU run-time linker (ld.so) and on Fakechroot, which incurs
+very little overhead.  You can select the fastest option when executing a
+relocatable binary like this:
+
+@example
+GUIX_EXECUTION_ENGINE=performance
+export GUIX_EXECUTION_ENGINE
+@end example
+
+Run @command{info \"(guix) Invoking guix pack\"} for more information.")
+         (de "Mit dem Befehl @command{guix pack -RR} können Sie einen Tarball
+mit @dfn{verschieblichen Binärdateien} erzeugen (englisch „Relocatable
+Binaries“).  Bisher wurden diese entweder in „unprivilegierten
+Benutzernamensräumen“ ohne Berechtigungen ausgeführt, oder in PRoot, wenn
+keine unprivilegierten Benutzernamensräume unterstützt wurden.  Allerdings
+fällt bei der Ausführung mit PRoot bei manchen Anwendungen deutlich mehr
+Rechenaufwand an.
+
+Um dem entgegenzuwirken, stellt @command{guix pack -RR} nun eine dritte Option
+zur Verfügung, die sich eine Erweiterung des GNU-Laufzeit-Binders („Run-Time
+Linker“, ld.so) und Fakechroot zu Nutze macht.  Dadurch entsteht fast kein
+Mehraufwand.  Sie können sich die schnellste Option aussuchen, wenn Sie eine
+verschiebliche Binärdatei ausführen, zum Beispiel so:
+
+@example
+GUIX_EXECUTION_ENGINE=performance
+export GUIX_EXECUTION_ENGINE
+@end example
+
+Führen Sie @command{info \"(guix.de) Aufruf von guix pack\"} aus, wenn Sie
+mehr wissen wollen.")))
+
+ (entry (commit "88a96c568c47c97d05d883ada5afbc4e1200b10f")
+        (title (en "New @option{--path} option for @command{guix graph}")
+               (de "Neue Option @option{--path} für @command{guix graph}"))
+        (body
+         (en "The @command{guix graph} command has a new @option{--path}
+option that instructs it to display the shortest path between two packages,
+derivations, or store items.  For example, the command below displays the
+shortest path from the @code{libreoffice} package to @code{libunistring}:
+
+@example
+guix graph --path libreoffice libunistring
+@end example
+
+Run @code{info \"(guix) Invoking guix graph\"} for more information.")
+         (de "Der Befehl @command{guix graph} verfügt über eine neue
+Befehlszeilenoption @option{--path}, die ihn den kürzesten Pfad zwischen zwei
+Paketen, Ableitungen oder Store-Objekten ausgeben lässt.  Zum Beispiel zeigt
+folgender Befehl den kürzesten Pfad vom Paket @code{libreoffice} zu
+@code{libunistring}:
+
+@example
+guix graph --path libreoffice libunistring
+@end example
+
+Führen Sie @code{info \"(guix.de) Aufruf von guix graph\"} aus, um mehr zu
+erfahren.")))
 
  (entry (commit "a33eac038a811603c8b9ed106ae405a5f80a0e9d")
         (title (en "GNU C Library upgraded")

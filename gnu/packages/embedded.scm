@@ -5,6 +5,8 @@
 ;;; Copyright © 2017, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019 Clément Lassieur <clement@lassieur.org>
+;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -87,12 +89,27 @@
                           (origin-patches (package-source xgcc))))))
       (native-inputs
        `(("flex" ,flex)
-         ("gcc" ,gcc-5)
+         ("gcc@5" ,gcc-5)
          ,@(package-native-inputs xgcc)))
       (arguments
        (substitute-keyword-arguments (package-arguments xgcc)
          ((#:phases phases)
           `(modify-phases ,phases
+             (add-after 'set-paths 'augment-CPLUS_INCLUDE_PATH
+               (lambda* (#:key inputs #:allow-other-keys)
+                 (let ((gcc (assoc-ref inputs  "gcc")))
+                   ;; Remove the default compiler from CPLUS_INCLUDE_PATH to
+                   ;; prevent header conflict with the GCC from native-inputs.
+                   (setenv "CPLUS_INCLUDE_PATH"
+                           (string-join
+                            (delete (string-append gcc "/include/c++")
+                                    (string-split (getenv "CPLUS_INCLUDE_PATH")
+                                                  #\:))
+                            ":"))
+                   (format #t
+                           "environment variable `CPLUS_INCLUDE_PATH' changed to ~a~%"
+                           (getenv "CPLUS_INCLUDE_PATH"))
+                   #t)))
              (add-after 'unpack 'fix-genmultilib
                (lambda _
                  (substitute* "gcc/genmultilib"
@@ -234,7 +251,7 @@ usable on embedded products.")
            (origin-patches (package-source gcc-7))
            (search-patches "gcc-7-cross-environment-variables.patch")))))
       (native-inputs
-       `(("gcc" ,gcc-5)
+       `(("gcc@5" ,gcc-5)
          ("flex" ,flex)
          ("isl" ,isl-0.18)
          ,@(alist-delete "isl" (package-native-inputs xgcc))))
@@ -253,7 +270,22 @@ usable on embedded products.")
                (lambda _
                  (substitute* "gcc/genmultilib"
                    (("#!/bin/sh") (string-append "#!" (which "sh"))))
-                 #t))))
+                 #t))
+             (add-after 'set-paths 'augment-CPLUS_INCLUDE_PATH
+               (lambda* (#:key inputs #:allow-other-keys)
+                 (let ((gcc (assoc-ref inputs  "gcc")))
+                   ;; Remove the default compiler from CPLUS_INCLUDE_PATH to
+                   ;; prevent header conflict with the GCC from native-inputs.
+                   (setenv "CPLUS_INCLUDE_PATH"
+                           (string-join
+                            (delete (string-append gcc "/include/c++")
+                                    (string-split (getenv "CPLUS_INCLUDE_PATH")
+                                                  #\:))
+                            ":"))
+                   (format #t
+                           "environment variable `CPLUS_INCLUDE_PATH' changed to ~a~%"
+                           (getenv "CPLUS_INCLUDE_PATH"))
+                   #t)))))
          ((#:configure-flags flags)
           ;; The configure flags are largely identical to the flags used by the
           ;; "GCC ARM embedded" project.
@@ -1008,7 +1040,7 @@ the Raspberry Pi chip."))))
 (define-public python-libmpsse
   (package
     (name "python-libmpsse")
-    (version "1.4")
+    (version "1.4.1")
     (source
       (origin
         (method git-fetch)
@@ -1018,7 +1050,7 @@ the Raspberry Pi chip."))))
         (file-name "libmpsse-checkout")
         (sha256
           (base32
-            "14f1kiiia4kfd9mzwx4h63aa8bpz9aknbrrr7mychnsp3arw0z25"))))
+            "1rypfb96k2szqgygp3jnwg2zq9kwmfz0460dsahn3r2vkzml8wn7"))))
     (build-system gnu-build-system)
     (inputs
      `(("libftdi" ,libftdi)
@@ -1041,8 +1073,7 @@ the Raspberry Pi chip."))))
                (chdir "src")
                (setenv "PYDEV" (string-append python
                                "/include/python"
-                               ,(version-major+minor (package-version python))
-                               "m"))
+                               ,(version-major+minor (package-version python))))
                #t)))
          (replace 'install
            (lambda* (#:key inputs outputs make-flags #:allow-other-keys #:rest args)

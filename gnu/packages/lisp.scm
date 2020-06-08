@@ -3,14 +3,14 @@
 ;;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Federico Beffa <beffa@fbengineering.ch>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2016, 2017 Andy Patterson <ajpatter@uwaterloo.ca>
 ;;; Copyright © 2017, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Benjamin Slade <slade@jnanam.net>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
-;;; Copyright © 2018, 2019 Pierre Neidhardt <mail@ambrevar.xyz>
+;;; Copyright © 2018, 2019, 2020 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2018, 2019 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2019, 2020 Katherine Cox-Buday <cox.katherine.e@gmail.com>
 ;;; Copyright © 2019 Jesse Gildersleve <jessejohngildersleve@protonmail.com>
@@ -372,14 +372,14 @@ an interpreter, a compiler, a debugger, and much more.")
 (define-public sbcl
   (package
     (name "sbcl")
-    (version "2.0.4")
+    (version "2.0.5")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/sbcl/sbcl/" version "/sbcl-"
                            version "-source.tar.bz2"))
        (sha256
-        (base32 "1lc2i4qq1kfdybmxnj2zq2hn3hfx0vvlqim4gvlgvs3bfr0lcaqj"))))
+        (base32 "1jz26w1i3riv032aa35vww4cv7cjk2ww7dp70c7wk4r8s66zhl00"))))
     (build-system gnu-build-system)
     (outputs '("out" "doc"))
     (native-inputs
@@ -569,8 +569,16 @@ statistical profiler, a code coverage tool, and many other extensions.")
   ;;     it, as is the case for SBCL, but I know of no attempt to do so."
   (package
     (name "ccl")
-    (version "1.11.5")
-    (source #f)
+    (version "1.12")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/Clozure/ccl/")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name "ccl" version))
+              (sha256
+               (base32
+                "0kxr24d2fzsmpsilijpwwfl6g89y7fcrwb80kai5nx9pwgxmjbp3"))))
     (build-system gnu-build-system)
     ;; CCL consists of a "lisp kernel" and "heap image", both of which are
     ;; shipped in precompiled form in source tarballs.  The former is a C
@@ -578,59 +586,51 @@ statistical profiler, a code coverage tool, and many other extensions.")
     ;; generated without an already working copy of CCL, and is platform
     ;; dependent, so we need to fetch the correct tarball for the platform.
     (inputs
-     `(("ccl"
+     `(("ccl-bootstrap"
         ,(origin
            (method url-fetch)
            (uri (string-append
-                 "https://github.com/Clozure/ccl/releases/download/v" version
-                 "/ccl-" version "-"
+                 "https://github.com/Clozure/ccl/releases/download/v" version "/"
                  (match (%current-system)
-                   ((or "i686-linux" "x86_64-linux") "linuxx86")
                    ("armhf-linux" "linuxarm")
-                   ;; Prevent errors when querying this package on unsupported
-                   ;; platforms, e.g. when running "guix package --search="
-                   (_ "UNSUPPORTED"))
+                   ;; XXX: This source only works on x86, but provide it as a
+                   ;; catch-all to prevent errors when querying this package
+                   ;; on unsupported platforms.
+                   (_ "linuxx86"))
                  ".tar.gz"))
            (sha256
             (base32
              (match (%current-system)
-               ((or "i686-linux" "x86_64-linux")
-                "0hs1f3z7crgzvinpj990kv9gvbsipxvcvwbmk54n51nasvc5025q")
                ("armhf-linux"
-                "0p0l1dzsygb6i1xxgbipjpxkn46xhq3jm41a34ga1qqp4x8lkr62")
-               (_ ""))))))))
+                "0x4bjx6cxsjvxyagijhlvmc7jkyxifdvz5q5zvz37028va65243c")
+               (_ "15l7cfa4a7jkfwdzsfm4q3n22jnb57imxahpql3h77xin57v1gbz"))))))))
     (native-inputs
-     `(("m4" ,m4)
-       ("subversion" ,subversion)))
+     `(("m4" ,m4)))
     (arguments
      `(#:tests? #f                      ;no 'check' target
-       #:modules ((srfi srfi-26)
+       #:modules ((ice-9 match)
+                  (srfi srfi-26)
                   (guix build utils)
                   (guix build gnu-build-system))
        #:phases
        (modify-phases %standard-phases
-         (replace 'unpack
+         (add-after 'unpack 'unpack-image
            (lambda* (#:key inputs #:allow-other-keys)
-             (invoke "tar" "xzvf" (assoc-ref inputs "ccl"))
-             (chdir "ccl")
-             #t))
+             (invoke "tar" "xzvf" (assoc-ref inputs "ccl-bootstrap"))))
          (delete 'configure)
          (add-before 'build 'pre-build
            ;; Enter the source directory for the current platform's lisp
            ;; kernel, and run 'make clean' to remove the precompiled one.
-           (lambda _
+           (lambda* (#:key system #:allow-other-keys)
              (substitute* "lisp-kernel/m4macros.m4"
                (("/bin/pwd") (which "pwd")))
              (chdir (string-append
                      "lisp-kernel/"
-                     ,(match (or (%current-target-system) (%current-system))
-                        ("i686-linux"   "linuxx8632")
-                        ("x86_64-linux" "linuxx8664")
-                        ("armhf-linux"  "linuxarm")
-                        ;; Prevent errors when querying this package
-                        ;; on unsupported platforms, e.g. when running
-                        ;; "guix package --search="
-                        (_              "UNSUPPORTED"))))
+                     (match system
+                       ("i686-linux" "linuxx8632")
+                       ("x86_64-linux" "linuxx8664")
+                       ("armhf-linux" "linuxarm")
+                       (_ (string-append "unknown system: " system)))))
              (substitute* '("Makefile")
                (("/bin/rm") "rm"))
              (setenv "CC" "gcc")
@@ -638,7 +638,7 @@ statistical profiler, a code coverage tool, and many other extensions.")
          ;; XXX Do we need to recompile the heap image as well for Guix?
          ;; For now just use the one we already got in the tarball.
          (replace 'install
-           (lambda* (#:key outputs inputs #:allow-other-keys)
+           (lambda* (#:key outputs inputs system #:allow-other-keys)
              ;; The lisp kernel built by running 'make' in lisp-kernel/$system
              ;; is put back into the original directory, so go back.  The heap
              ;; image is there as well.
@@ -649,25 +649,23 @@ statistical profiler, a code coverage tool, and many other extensions.")
                     (wrapper (string-append bindir "ccl"))
                     (bash (assoc-ref inputs "bash"))
                     (kernel
-                     ,(match (or (%current-target-system) (%current-system))
-                        ("i686-linux"   "lx86cl")
-                        ("x86_64-linux" "lx86cl64")
-                        ("armhf-linux"  "armcl")
-                        ;; Prevent errors when querying this package
-                        ;; on unsupported platforms, e.g. when running
-                        ;; "guix package --search="
-                        (_              "UNSUPPORTED")))
+                     (match system
+                       ("i686-linux" "lx86cl")
+                       ("x86_64-linux" "lx86cl64")
+                       ("armhf-linux" "armcl")
+                       ;; Unlikely to work, but try it anyway...
+                       (_ system)))
                     (heap (string-append kernel ".image")))
                (install-file kernel libdir)
                (install-file heap libdir)
 
-               (let ((dirs '("lib" "library" "examples" "tools" "objc-bridge"
-                             ,@(match (%current-system)
-                                ("x86_64-linux"
-                                 '("x86-headers64"))
-                                ("i686-linux"
-                                 '("x86-headers"))
-                                (_ '())))))
+               (let ((dirs `("lib" "library" "examples" "tools" "objc-bridge"
+                             ,@(match system
+                                 ("x86_64-linux"
+                                  '("x86-headers64"))
+                                 ("i686-linux"
+                                  '("x86-headers"))
+                                 (_ '())))))
                  (for-each copy-recursively
                            dirs
                            (map (cut string-append libdir <>) dirs)))
@@ -689,57 +687,7 @@ statistical profiler, a code coverage tool, and many other extensions.")
 implementation featuring fast compilation speed, native threads, a precise,
 generational, compacting garbage collector, and a convenient foreign-function
 interface.")
-    ;; See file doc/LICENSE for clarifications it makes regarding how the LGPL
-    ;; applies to Lisp code according to them.
-    (license (list license:lgpl2.1
-                   license:clarified-artistic)))) ;TRIVIAL-LDAP package
-
-(define-public ccl-1.12
-  ;; This is a development snapshot.  The last stable version is from November
-  ;; 2017 and does not support package-local-nicknames, which prevents CCL
-  ;; from compiling some third-party packages.
-  ;; The main drawback of 1.12 is that ARM is not supported for now.
-  (package
-    (inherit ccl)
-    (version "1.12-dev.5")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/Clozure/ccl/")
-                    (commit (string-append "v" version))))
-              (file-name (git-file-name "ccl" version))
-              (sha256
-               (base32
-                "1za5j4ll4hk1vi1i7v1bmqhaqbsgc16izn46qmry7dnbig0rdqm0"))))
-    ;; CCL consists of a "lisp kernel" and "heap image".
-    ;; See comment in `ccl' package.
-    (inputs
-     `(("ccl-bootstrap"
-        ,(origin
-           (method url-fetch)
-           (uri (string-append
-                 "https://github.com/Clozure/ccl/releases/download/v" version "/"
-                 (match (%current-system)
-                   ((or "i686-linux" "x86_64-linux") "linuxx86")
-                   ;; Prevent errors when querying this package on unsupported
-                   ;; platforms, e.g. when running "guix package --search="
-                   (_ "UNSUPPORTED"))
-                 ".tar.gz"))
-           (sha256
-            (base32
-             (match (%current-system)
-               ((or "i686-linux" "x86_64-linux")
-                "1pqiybxxv4wx5zlp1i60nim3njaczwl5321bdwq6frjsl3s95xmb")
-               (_ ""))))))))
-    (arguments
-     (substitute-keyword-arguments (package-arguments ccl)
-       ((#:phases phases)
-        `(modify-phases ,phases
-           (replace 'unpack (assoc-ref %standard-phases 'unpack))
-           (add-after 'unpack 'unpack-image
-             (lambda* (#:key inputs #:allow-other-keys)
-               (invoke "tar" "xzvf" (assoc-ref inputs "ccl-bootstrap"))))))))
-    (supported-systems '("i686-linux" "x86_64-linux"))))
+    (license license:asl2.0)))
 
 (define-public lush2
   (package
@@ -852,7 +800,7 @@ enough to play the original mainframe Zork all the way through.")
 (define-public txr
   (package
     (name "txr")
-    (version "235")
+    (version "239")
     (source
      (origin
        (method git-fetch)
@@ -861,11 +809,11 @@ enough to play the original mainframe Zork all the way through.")
              (commit (string-append "txr-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0kpqk2x0sz7sqxsrhasq0xnljjlnxwhh4xjx2nii0zy2jkv4vsbn"))))
+        (base32 "1jldpkd5f855m3z4zjpd1ha64f405pcdwwrnr8jnk66v22dsvdwx"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:configure-flags
-       (list "cc=gcc"
+     `(#:configure-flags
+       (list ,(string-append "cc=" (cc-for-target))
              (string-append "--prefix=" (assoc-ref %outputs "out")))
        #:test-target "tests"
        #:phases

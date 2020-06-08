@@ -136,9 +136,9 @@ if test "x$guix_cv_have_recent_guile_sqlite3" != "xyes"; then
   AC_MSG_ERROR([A recent Guile-SQLite3 could not be found; please install it.])
 fi
 
-GUILE_MODULE_AVAILABLE([have_guile_gcrypt], [(gcrypt hash)])
-if test "x$have_guile_gcrypt" != "xyes"; then
-  AC_MSG_ERROR([Guile-Gcrypt could not be found; please install it.])
+GUIX_CHECK_GUILE_GCRYPT
+if test "x$guix_cv_have_recent_guile_gcrypt" != "xyes"; then
+  AC_MSG_ERROR([A recent Guile-Gcrypt could not be found; please install it.])
 fi
 
 dnl Guile-newt is used by the graphical installer.
@@ -285,15 +285,6 @@ AM_MISSING_PROG([HELP2MAN], [help2man])
 dnl Documentation translation.
 AM_MISSING_PROG([PO4A_TRANSLATE], [po4a-translate])
 AM_MISSING_PROG([PO4A_UPDATEPO], [po4a-updatepo])
-
-dnl Emacs (optional), for 'etc/indent-code.el'.
-AC_PATH_PROG([EMACS], [emacs])
-if test "x$EMACS" = x; then
-    AC_MSG_WARN([Please install GNU Emacs to use etc/indent-code.el.])
-else
-    AC_SUBST([EMACS])
-    AC_CONFIG_FILES([etc/indent-code.el], [chmod +x etc/indent-code.el])
-fi
 
 case "$storedir" in
   /gnu/store)

@@ -29,7 +29,7 @@
                 #:renamer (lambda (name)
                             (cond ((eq? name 'location) 'make-location)
                                   (else name))))
-  #:use-module (gcrypt hash)
+  #:use-module ((gcrypt hash) #:prefix gcrypt:)
   #:use-module (guix derivations)
   #:use-module (guix packages)
   #:use-module (guix grafts)
@@ -51,6 +51,7 @@
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
   #:use-module (srfi srfi-64)
+  #:use-module (rnrs bytevectors)
   #:use-module (rnrs io ports)
   #:use-module (ice-9 vlist)
   #:use-module (ice-9 regex)
@@ -496,6 +497,32 @@
                  (call-with-input-file
                      (search-path %load-path "guix/base32.scm")
                    get-bytevector-all)))))
+
+(test-equal "package-source-derivation, origin, sha512"
+  "hello"
+  (let* ((bash    (search-bootstrap-binary "bash" (%current-system)))
+         (builder (add-text-to-store %store "my-fixed-builder.sh"
+                                     "echo -n hello > $out" '()))
+         (method  (lambda* (url hash-algo hash #:optional name
+                                #:rest rest)
+                    (and (eq? hash-algo 'sha512)
+                         (raw-derivation name bash (list builder)
+                                         #:sources (list builder)
+                                         #:hash hash
+                                         #:hash-algo hash-algo))))
+         (source  (origin
+                    (method method)
+                    (uri "unused://")
+                    (file-name "origin-sha512")
+                    (hash (content-hash
+                           (gcrypt:bytevector-hash (string->utf8 "hello")
+                                                   (gcrypt:lookup-hash-algorithm
+                                                    'sha512))
+                           sha512))))
+         (drv    (package-source-derivation %store source))
+         (output (derivation->output-path drv)))
+    (build-derivations %store (list drv))
+    (call-with-input-file output get-string-all)))
 
 (unless (network-reachable?) (test-skip 1))
 (test-equal "package-source-derivation, snippet"
@@ -979,6 +1006,39 @@
           (assoc-ref (bag-build-inputs bag) "libc")
           (assoc-ref (bag-build-inputs bag) "coreutils"))))
 
+(test-assert "package->bag, sensitivity to %current-target-system"
+  ;; https://bugs.gnu.org/41713
+  (let* ((lower (lambda* (name #:key system target inputs native-inputs
+                               #:allow-other-keys)
+                  (and (not target)
+                       (bag (name name) (system system) (target target)
+                            (build-inputs native-inputs)
+                            (host-inputs inputs)
+                            (build (lambda* (store name inputs
+                                                   #:key system target
+                                                   #:allow-other-keys)
+                                     (build-expression->derivation
+                                      store "foo" '(mkdir %output))))))))
+         (bs    (build-system
+                  (name 'build-system-without-cross-compilation)
+                  (description "Does not support cross compilation.")
+                  (lower lower)))
+         (dep   (dummy-package "dep" (build-system bs)))
+         (pkg   (dummy-package "example"
+                  (native-inputs `(("dep" ,dep)))))
+         (do-not-build (lambda (continue store lst . _) lst)))
+    (equal? (with-build-handler do-not-build
+              (parameterize ((%current-target-system "powerpc64le-linux-gnu")
+                             (%graft? #t))
+                (package-cross-derivation %store pkg
+                                          (%current-target-system)
+                                          #:graft? #t)))
+            (with-build-handler do-not-build
+              (package-cross-derivation %store
+                                        (package (inherit pkg))
+                                        "powerpc64le-linux-gnu"
+                                        #:graft? #t)))))
+
 (test-equal "package->bag, cross-compilation"
   `(,(%current-system) "foo86-hurd"
     (,(package-source gnu-make))
@@ -999,6 +1059,19 @@
     (match (assoc "dep" inputs)
       (("dep" package)
        (eq? package dep)))))
+
+(test-assert "package->bag, sensitivity to %current-target-system"
+  (let* ((dep (dummy-package "dep"
+                (propagated-inputs (if (%current-target-system)
+                                       `(("libxml2" ,libxml2))
+                                       '()))))
+         (pkg (dummy-package "foo"
+                (native-inputs `(("dep" ,dep)))))
+         (bag (package->bag pkg (%current-system) "foo86-hurd")))
+    (equal? (parameterize ((%current-target-system "foo64-gnu"))
+              (bag-transitive-inputs bag))
+            (parameterize ((%current-target-system #f))
+              (bag-transitive-inputs bag)))))
 
 (test-assert "bag->derivation"
   (parameterize ((%graft? #f))

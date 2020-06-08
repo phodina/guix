@@ -87,42 +87,6 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages))
 
-(define-public fsarchiver
-  (package
-    (name "fsarchiver")
-    (version "0.8.5")
-    (source
-     (origin
-       (method git-fetch)
-       (uri
-        (git-reference
-         (url "https://github.com/fdupoux/fsarchiver.git")
-         (commit version)))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1rvwq5v3rl14bqxjm1ibfapyicf0sa44nw7451v10kx39lp56ylp"))))
-    (build-system gnu-build-system)
-    (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("pkg-config" ,pkg-config)))
-    (inputs
-     `(("bzip2" ,bzip2)
-       ("e2fsprogs" ,e2fsprogs)
-       ("libgcrypt" ,libgcrypt)
-       ("lz4" ,lz4)
-       ("lzo" ,lzo)
-       ("util-linux" ,util-linux "lib")
-       ("xz" ,xz)
-       ("zlib" ,zlib)
-       ("zstd:lib" ,zstd "lib")))
-    (synopsis "Filesystem Backup/Deployment Tool")
-    (description "FSArchiver allows you to save the contents of a file-system to
-a compressed archive file.  The file-system can be restored on a partition which
-has a different size and it can be restored on a different file-system.")
-    (home-page "http://www.fsarchiver.org/")
-    (license license:gpl2)))
-
 (define-public udevil
   (package
     (name "udevil")
@@ -838,8 +802,17 @@ to create devices with respective mappings for the ATARAID sets discovered.")
                (base32
                 "15c7g2gbkahmy8c6677pvbvblan5h8jxcqqmn6nlvqwqynq2mkjm"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-configuration-directory
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+              (substitute* "src/lib/blockdev.c"
+               (("/etc/libblockdev/conf.d/" path) (string-append out path)))))))))
     (native-inputs
-     `(("pkg-config" ,pkg-config)
+     `(("gobject-introspection" ,gobject-introspection)
+       ("pkg-config" ,pkg-config)
        ("python" ,python-wrapper)
        ("util-linux" ,util-linux)))
     (inputs
@@ -849,7 +822,6 @@ to create devices with respective mappings for the ATARAID sets discovered.")
        ("dmraid" ,dmraid)
        ("eudev" ,eudev)
        ("glib" ,glib)
-       ("gobject-introspection" ,gobject-introspection)
        ("kmod" ,kmod)
        ("libbytesize" ,libbytesize)
        ("libyaml" ,libyaml)
@@ -990,7 +962,8 @@ since they are better handled by external tools.")
                     (file-prog (assoc-ref inputs "file")))
                (with-directory-excursion "src"
                  (substitute* '("FilePanel.cpp" "help.h" "SearchPanel.cpp"
-                                "startupnotification.cpp" "xfeutils.cpp")
+                                "startupnotification.cpp" "xfeutils.cpp"
+                                "../st/config.h")
                    (("/bin/sh" file) (string-append bash file))
                    (("/bin/ls" file) (string-append coreutils file))
                    (("/usr(/bin/du)" _ file) (string-append coreutils file))
@@ -1002,11 +975,13 @@ since they are better handled by external tools.")
          (add-after 'unpack 'patch-share-dirs
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
-                    (share (string-append out "/share")))
+                    (share (string-append out "/share"))
+                    (xfe (string-append share "/xfe")))
                (with-directory-excursion "src"
                  (substitute* '("foxhacks.cpp" "help.h" "xfedefs.h"
                                 "XFileExplorer.cpp")
-                   (("/(usr|opt)(/local)?/share") share)))
+                   (("/(usr|opt)(/local)?/share") share)
+                   (("~/.config/xfe") xfe)))
                #t))))))
     (native-inputs
      `(("intltool" ,intltool)

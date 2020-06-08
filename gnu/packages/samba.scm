@@ -51,6 +51,7 @@
   #:use-module (gnu packages popt)
   #:use-module (gnu packages python)
   #:use-module (gnu packages readline)
+  #:use-module (gnu packages time)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml))
@@ -123,7 +124,7 @@ the Linux kernel CIFS client.")
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
-       (list "CC=gcc")
+       (list ,(string-append "CC=" (cc-for-target)))
        #:phases
        (modify-phases %standard-phases
          (replace 'configure
@@ -158,24 +159,34 @@ the Linux kernel CIFS client.")
                          '("AUTHORS" "INSTALL" "LICENSE" "README.md"))
                #t))))))
     (home-page "https://github.com/ndevilla/iniparser")
-    (synopsis "Standalone ini file parsing library")
+    (synopsis "Simple @file{.ini} configuration file parsing library")
     (description
-     "iniparser is a free stand-alone @code{ini} file parsing library (Windows
-configuration files).  It is written in portable ANSI C and should compile
-anywhere.")
+     "The iniParser C library reads and writes Windows-style @file{.ini}
+configuration files.  These are simple text files with a basic structure
+composed of sections, properties, and values.  While not expressive, they
+are easy to read, write, and modify.
+
+The library is small, thread safe, and written in portable ANSI C with no
+external dependencies.")
     (license x11)))
 
 (define-public samba
   (package
     (name "samba")
-    (version "4.11.8")
-    (source (origin
-             (method url-fetch)
-             (uri (string-append "https://download.samba.org/pub/samba/stable/"
-                                 "samba-" version ".tar.gz"))
-             (sha256
-              (base32
-               "1jh0a5ma03kgjcwr22a3jir8gxymn63aljgq2lgvpfyj6ym0q55v"))))
+    (version "4.12.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://download.samba.org/pub/samba/stable/"
+                           "samba-" version ".tar.gz"))
+       (sha256
+        (base32 "09w7aap1cjc41ayhaksm1igc7p7gl40fad4a1l6q4ds9a2jbrb9z"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           ;; TODO: also remove the bundled ‘third_party/popt’.
+           (delete-file-recursively "third_party/pyiso8601")
+           #t))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -222,13 +233,13 @@ anywhere.")
        ;; ("gamin" ,gamin)
        ("gpgme" ,gpgme)
        ("gnutls" ,gnutls)
-       ("iniparser" ,iniparser)
        ("jansson" ,jansson)
-       ("libaio" ,libaio)
        ("libarchive" ,libarchive)
        ("linux-pam" ,linux-pam)
        ("lmdb" ,lmdb)
        ("openldap" ,openldap)
+       ("perl" ,perl)
+       ("python" ,python)
        ("popt" ,popt)
        ("readline" ,readline)
        ("tdb" ,tdb)))
@@ -238,12 +249,15 @@ anywhere.")
        ("talloc" ,talloc)
        ("tevent" ,tevent)))
     (native-inputs
-     `(("docbook-xsl" ,docbook-xsl)    ;for generating manpages
-       ("xsltproc" ,libxslt)           ;ditto
-       ("rpcsvc-proto" ,rpcsvc-proto)  ;for 'rpcgen'
-       ("perl" ,perl)
+     `(("perl-parse-yapp" ,perl-parse-yapp)
        ("pkg-config" ,pkg-config)
-       ("python" ,python)))
+       ("python-iso8601" ,python-iso8601)
+       ("rpcsvc-proto" ,rpcsvc-proto)   ; for 'rpcgen'
+
+       ;; For generating man pages.
+       ("docbook-xml" ,docbook-xml-4.2)
+       ("docbook-xsl" ,docbook-xsl)
+       ("xsltproc" ,libxslt)))
     (home-page "https://www.samba.org/")
     (synopsis
      "The standard Windows interoperability suite of programs for GNU and Unix")

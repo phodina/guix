@@ -2,7 +2,7 @@
 ;;; Copyright © 2013, 2015, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015, 2018 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2016, 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017, 2018 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 Andy Wingo <wingo@igalia.com>
@@ -12,6 +12,8 @@
 ;;; Copyright © 2013 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2014 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2019 Hartmut Goebel <h.goebel@goebel-consult.de>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -42,20 +44,25 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
+  #:use-module (gnu packages c)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cpp)
   #:use-module (gnu packages emacs)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages graphviz)
+  #:use-module (gnu packages llvm)
+  #:use-module (gnu packages linux)
+  #:use-module (gnu packages lua)
+  #:use-module (gnu packages ncurses)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
+  #:use-module (gnu packages perl-compression)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages texinfo)
-  #:use-module (gnu packages ncurses)
-  #:use-module (gnu packages llvm)
-  #:use-module (gnu packages lua))
+  #:use-module (gnu packages web)
+  #:use-module (gnu packages xml))
 
 ;;; Tools to deal with source code: metrics, cross-references, etc.
 
@@ -133,18 +140,26 @@ highlighting your own code that seemed comprehensible when you wrote it.")
        (list (string-append "--with-ncurses="
                             (assoc-ref %build-inputs "ncurses"))
              (string-append "--with-sqlite3="
-                            (assoc-ref %build-inputs "sqlite")))
+                            (assoc-ref %build-inputs "sqlite"))
+             "--disable-static")
 
        #:phases
        (modify-phases %standard-phases
         (add-after 'install 'post-install
           (lambda* (#:key outputs #:allow-other-keys)
-            ;; Install the Emacs Lisp file in the right place.
+            ;; Install the plugin files in the right place.
             (let* ((out  (assoc-ref outputs "out"))
                    (data (string-append out "/share/gtags"))
+                   (vim  (string-append out "/share/vim/vimfiles/plugin"))
                    (lisp (string-append out "/share/emacs/site-lisp")))
-              (install-file (string-append data "/gtags.el") lisp)
-              (delete-file (string-append data "/gtags.el"))
+              (mkdir-p lisp)
+              (mkdir-p vim)
+              (rename-file (string-append data "/gtags.el")
+                           (string-append lisp "/gtags.el"))
+              (rename-file (string-append data "/gtags.vim")
+                           (string-append vim "/gtags.vim"))
+              (rename-file (string-append data "/gtags-cscope.vim")
+                           (string-append vim "/gtags-cscope.vim"))
               #t))))))
     (home-page "https://www.gnu.org/software/global/")
     (synopsis "Cross-environment source code tag system")
@@ -215,7 +230,7 @@ COCOMO model or user-provided parameters.")
 (define-public cloc
   (package
     (name "cloc")
-    (version "1.84")
+    (version "1.86")
     (source
      (origin
        (method git-fetch)
@@ -224,7 +239,7 @@ COCOMO model or user-provided parameters.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "14xikdwcr6pcnkk2i43zrsj88z8b3mrv0svbnbvxvarw1id83pnn"))))
+        (base32 "082gj2b3x11bilz8c572dd60vn6n0fhld5zhi7wk7g1wy9wlgm9w"))))
     (build-system gnu-build-system)
     (inputs
      `(("coreutils" ,coreutils)
@@ -319,6 +334,83 @@ features that are not supported by the standard @code{stdio} implementation.")
     (license (license:non-copyleft
               "http://sourceforge.net/p/ctrio/git/ci/master/tree/README"))))
 
+(define-public universal-ctags
+  ;; The project is unable to decide whether to use 1.0 or 6.0 as the
+  ;; first public release version (it started as a fork of another ctags
+  ;; project that was on version 5.8), and five years later have been
+  ;; unable to tag a release.  Thus, we just take the master branch.
+  (let ((commit "0c78c0c4a68030df0d025c90bad291108b5e7107")
+        (revision "0"))
+    (package
+      (name "universal-ctags")
+      (version (git-version "0.0.0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/universal-ctags/ctags")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "0lnxc3kwi6srw0015m16vyjfdc7pdr9d1qzxjsbfv3c69ag87jhc"))
+         (modules '((guix build utils)))
+         (snippet
+          '(begin
+             ;; Remove the bundled PackCC and associated build rules.
+             (substitute* "Makefile.am"
+               (("\\$\\(packcc_verbose\\)\\$\\(PACKCC\\)")
+                "packcc")
+               (("\\$\\(PEG_SRCS\\) \\$\\(PEG_HEADS\\): packcc\\$\\(EXEEXT\\)")
+                "$(PEG_SRCS) $(PEG_HEADS):")
+               (("noinst_PROGRAMS \\+= packcc")
+                ""))
+             (delete-file-recursively "misc/packcc")
+             #t))))
+      (build-system gnu-build-system)
+      (arguments
+       '(#:phases (modify-phases %standard-phases
+                    (add-after 'unpack 'make-files-writable
+                      (lambda _
+                        (for-each make-file-writable (find-files "."))
+                        #t))
+                    (add-before 'bootstrap 'patch-optlib2c
+                      (lambda _
+                        ;; The autogen.sh script calls out to optlib2c to
+                        ;; generate translations, so we can not wait for the
+                        ;; patch-source-shebangs phase.
+                        (patch-shebang "misc/optlib2c")
+                        #t))
+                    (add-before 'check 'patch-tests
+                      (lambda _
+                        (substitute* "misc/units"
+                          (("SHELL=/bin/sh")
+                           (string-append "SHELL=" (which "sh"))))
+                        (substitute* "Tmain/utils.sh"
+                          (("/bin/echo") (which "echo")))
+                        #t)))))
+      (native-inputs
+       `(("autoconf" ,autoconf)
+         ("automake" ,automake)
+         ("packcc" ,packcc)
+         ("perl" ,perl)
+         ("pkg-config" ,pkg-config)))
+      (inputs
+       `(("jansson" ,jansson)
+         ("libseccomp" ,libseccomp)
+         ("libxml2" ,libxml2)
+         ("libyaml" ,libyaml)))
+      (home-page "https://ctags.io/")
+      (synopsis "Generate tag files for source code")
+      (description
+       "Universal Ctags generates an index (or tag) file of language objects
+found in source files for many popular programming languages.  This index
+makes it easy for text editors and other tools to locate the indexed items.
+Universal Ctags improves on traditional ctags because of its multilanguage
+support, its ability for the user to define new languages searched by regular
+expressions, and its ability to generate emacs-style TAGS files.")
+      (license license:gpl2+))))
+
 (define-public withershins
   (package
     (name "withershins")
@@ -375,36 +467,60 @@ stack traces.")
     (license license:gpl3+)))
 
 (define-public lcov
-  (package
-    (name "lcov")
-    (version "1.14")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "mirror://sourceforge/ltp/Coverage%20Analysis"
-                                  "/LCOV-" version "/lcov-" version ".tar.gz"))
-              (sha256
-               (base32
-                "06h7ixyznf6vz1qvksjgy5f3q2nw9akf6zx59npf0h3l32cmd68l"))))
-    (build-system gnu-build-system)
-    (arguments
-     '(#:make-flags
-       (let ((out (assoc-ref %outputs "out")))
-         (list (string-append "PREFIX=" out)))
-       #:phases
-       (modify-phases %standard-phases
-         (delete 'configure))           ; no configure script
-       #:tests? #f))                    ; no 'check' target
-    (inputs `(("perl" ,perl)))
-    (home-page "http://ltp.sourceforge.net/coverage/lcov.php")
-    (synopsis "Code coverage tool that enhances GNU gcov")
-    (description
-     "LCOV is an extension of @command{gcov}, a tool part of the
+  ;; Use a recent commit from upstream since the latest official release
+  ;; (1.14) doesn't support GCC 9 (see:
+  ;; https://github.com/linux-test-project/lcov/issues/58).
+  (let* ((commit "40580cd65909bc8324ae09b36bca2e178652ff3f")
+         (revision "0")
+         (version (git-version "1.14" revision commit)))
+    (package
+      (name "lcov")
+      (version "1.14")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/linux-test-project/lcov.git")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0shgmh6fzhnj1qfdl90jgjmlbb1ih1qh879dca8hc58yggy3hqgb"))))
+      (build-system gnu-build-system)
+      (arguments
+       '(#:test-target "test"
+         #:make-flags (list (string-append "PREFIX="
+                                           (assoc-ref %outputs "out")))
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'patch-pwd
+             ;; Lift the requirement of having a shell in PATH.
+             (lambda _
+               (substitute* "bin/geninfo"
+                 (("qw/abs_path/")
+                  "qw/abs_path getcwd/"))
+               (substitute* '("bin/lcov" "bin/geninfo")
+                 (("`pwd`")
+                  "getcwd()"))
+               #t))
+           (delete 'configure)          ;no configure script
+           (add-after 'install 'wrap
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let ((out (assoc-ref outputs "out")))
+                 (wrap-program (string-append out "/bin/geninfo")
+                   `("PERL5LIB" ":" prefix (,(getenv "PERL5LIB")))))
+               #t)))))
+      (inputs `(("perl" ,perl)
+                ("perl-json" ,perl-json)
+                ("perl-perlio-gzip" ,perl-perlio-gzip)))
+      (home-page "http://ltp.sourceforge.net/coverage/lcov.php")
+      (synopsis "Code coverage tool that enhances GNU gcov")
+      (description "LCOV is an extension of @command{gcov}, a tool part of the
 GNU@tie{}Binutils, which provides information about what parts of a program
 are actually executed (i.e., \"covered\") while running a particular test
 case.  The extension consists of a set of Perl scripts which build on the
 textual @command{gcov} output to implement the following enhanced
 functionality such as HTML output.")
-    (license license:gpl2+)))
+      (license license:gpl2+))))
 
 (define-public rtags
   (package

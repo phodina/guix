@@ -1,10 +1,11 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2017, 2018, 2019 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2017, 2018, 2019, 2020 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2019, 2020 Christopher Howard <christopher@librehacker.com>
 ;;; Copyright © 2019, 2020 Evan Straw <evan.straw99@gmail.com>
 ;;; Copyright © 2020 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2020 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2020 Charlie Ritter <chewzerita@posteo.net>
+;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -152,23 +153,14 @@ system configuration:
 (kernel-arguments '(\"modprobe.blacklist=dvb_usb_rtl28xxu\"))
 @end lisp
 
-To install the rtl-sdr udev rules, you must add this package in the
-configuration of the udev system service. E.g.:
-
-@lisp
-(services
- (modify-services %desktop-services
-  (udev-service-type config =>
-   (udev-configuration (inherit config)
-    (rules (cons rtl-sdr
-            (udev-configuration-rules config)))))))
-@end lisp")
+To install the rtl-sdr udev rules, you must extend 'udev-service-type' with
+this package.  E.g.: @code{(udev-rules-service 'rtl-sdr rtl-sdr)}")
     (license license:gpl2+)))
 
 (define-public chirp
   (package
     (name "chirp")
-    (version "20181205")
+    (version "20200430")
     (source
      (origin
        (method url-fetch)
@@ -176,7 +168,7 @@ configuration of the udev system service. E.g.:
                            version "/chirp-daily-" version ".tar.gz"))
        (sha256
         (base32
-         "1cp280b95j39xaxs50zn55jigg7pyfpm9n098hmsyxrplqn8z43c"))))
+         "060fzplgmpfrk6wkfaasx7phpfk90mmylk6drbwzk4f9r1655vda"))))
     (build-system python-build-system)
     (inputs
      `(("python2-libxml2" ,python2-libxml2)
@@ -200,7 +192,7 @@ memory contents between them.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/csete/aptdec")
+             (url "https://github.com/Xerbo/aptdec")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -211,7 +203,15 @@ memory contents between them.")
      `(("libpng" ,libpng)
        ("libsndfile" ,libsndfile)))
     (arguments
-     `(#:make-flags (list "CC=gcc")
+     `(#:make-flags
+       (list
+        (string-append "CC="
+                       (if ,(%current-target-system)
+                           (string-append (assoc-ref %build-inputs "cross-gcc")
+                                          "/bin/" ,(%current-target-system) "-gcc")
+                           "gcc"))
+        (string-append "PREFIX=" %output)
+        (string-append "RPM_BUILD_ROOT=" %output))
        #:tests? #f ; no tests
        #:phases
        (modify-phases %standard-phases
@@ -221,7 +221,7 @@ memory contents between them.")
              (let ((out (assoc-ref outputs "out")))
                (install-file "atpdec" (string-append out "/bin")))
              #t)))))
-    (home-page "https://github.com/csete/aptdec")
+    (home-page "https://github.com/Xerbo/aptdec")
     (synopsis "NOAA Automatic Picture Transmission (APT) decoder")
     (description "Aptdec decodes Automatic Picture Transmission (APT) images.
 These are medium resolution images of the Earth transmitted by, among other
@@ -582,14 +582,14 @@ using GNU Radio and the Qt GUI toolkit.")
 (define-public fldigi
   (package
     (name "fldigi")
-    (version "4.1.12")
+    (version "4.1.13")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://www.w1hkj.com/files/fldigi/fldigi-"
                            version ".tar.gz"))
        (sha256
-        (base32 "1yjjv2ss84xfiaidypp476mhrbpnw4zf7mb5cdqwhdh604x0svr1"))))
+        (base32 "0mlq4z5k3h466plij8hg9xn5xbjxk557g4pw13cplpf32fhng224"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -750,20 +750,10 @@ for correctness.")
      (synopsis "User-space library and utilities for HackRF SDR")
      (description
       "Command line utilities and a C library for controlling the HackRF
-Software Defined Radio (SDR) over USB.  Installing this package installs
-the userspace hackrf utilities and C library.  To install the hackrf
-udev rules, you must add this package as a system service via
-modify-services.  E.g.:
-
-@lisp
-(services
- (modify-services
-  %desktop-services
-  (udev-service-type config =>
-   (udev-configuration (inherit config)
-    (rules (cons hackrf
-            (udev-configuration-rules config)))))))
-@end lisp")
+Software Defined Radio (SDR) over USB.  Installing this package installs the
+userspace hackrf utilities and C library.  To install the hackrf udev rules,
+you must extend 'udev-service-type' with this package.  E.g.:
+@code{(udev-rules-service 'hackrf hackrf #:groups '(\"dialout\"))}.")
      (license license:gpl2))))
 
 (define-public hamlib
@@ -864,7 +854,20 @@ users.")
        ("qtmultimedia" ,qtmultimedia)
        ("qtserialport" ,qtserialport)))
     (arguments
-     `(#:tests? #f)) ; No test suite
+     `(#:tests? #f ; No test suite
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'work-around-runtime-bug
+           (lambda _
+             ;; Some of the programs in this package fail to find symbols
+             ;; in libm at runtime. Adding libm manually at the end of the
+             ;; library lists when linking the programs seems to help.
+             ;; TODO: find exactly what is wrong in the way the programs
+             ;; are built.
+             (substitute* "CMakeLists.txt"
+               (("target_link_libraries \\((.*)\\)" all libs)
+                (string-append "target_link_libraries (" libs " m)")))
+             #t)))))
     (synopsis "Weak-signal ham radio communication program")
     (description
      "WSJT-X implements communication protocols or modes called FT4, FT8,
@@ -920,6 +923,17 @@ weak-signal conditions.")
                 (string-append "DESTINATION "
                                (assoc-ref outputs "out")
                                "/share")))
+             #t))
+         (add-after 'fix-paths 'work-around-runtime-bug
+           (lambda _
+             ;; Some of the programs in this package fail to find symbols
+             ;; in libm at runtime. Adding libm manually at the end of the
+             ;; library lists when linking the programs seems to help.
+             ;; TODO: find exactly what is wrong in the way the programs
+             ;; are built.
+             (substitute* "CMakeLists.txt"
+               (("target_link_libraries \\((.*)\\)" all libs)
+                (string-append "target_link_libraries (" libs " m)")))
              #t))
          (add-after 'unpack 'fix-hamlib
            (lambda _
@@ -1011,13 +1025,12 @@ gain and standing wave ratio.")
        ("rtl-sdr" ,rtl-sdr)))
     (arguments
      `(#:test-target "test"
+       #:make-flags
+       (list (string-append "CC=" ,(cc-for-target))
+             "BLADERF=no")
        #:phases
        (modify-phases %standard-phases
-         (replace 'configure
-           (lambda _
-             (setenv "CC" "gcc")
-             (setenv "BLADERF" "no")
-             #t))
+         (delete 'configure)
          (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((bin (string-append (assoc-ref outputs "out") "/bin/")))
@@ -1031,3 +1044,29 @@ It can be used to decode the ADS-B signals that planes emit to indicate
 their position, altitude, speed, etc.")
     (home-page "https://github.com/flightaware/dump1090")
     (license license:bsd-3)))
+
+(define-public rtl-433
+  (package
+    (name "rtl-433")
+    (version "20.02")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/merbanan/rtl_433.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "11991xky9gawkragdyg27qsf7kw5bhlg7ygvf3fn7ng00x4xbh1z"))))
+    (build-system cmake-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libusb" ,libusb)
+       ("rtl-sdr" ,rtl-sdr)))
+    (synopsis "Decoder for radio transmissions in ISM bands")
+    (description
+     "This is a generic data receiver, mainly for decoding radio transmissions
+from devices on the 433 MHz, 868 MHz, 315 MHz, 345 MHz and 915 MHz ISM bands.")
+    (home-page "https://github.com/merbanan/rtl_433")
+    (license license:gpl2+)))

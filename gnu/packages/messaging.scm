@@ -5,7 +5,7 @@
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2016 Andy Patterson <ajpatter@uwaterloo.ca>
 ;;; Copyright © 2016, 2017, 2018, 2019 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 Mekeor Melire <mekeor.melire@gmail.com>
@@ -440,7 +440,16 @@ authentication.")
                            version "/pidgin-" version ".tar.bz2"))
        (sha256
         (base32 "13vdqj70315p9rzgnbxjp9c51mdzf1l4jg1kvnylc4bidw61air7"))
-       (patches (search-patches "pidgin-add-search-path.patch"))))
+       (patches (search-patches "pidgin-add-search-path.patch"
+                                ;; Remove the snippet and bootstrapping
+                                ;; native-inputs together with this patch.
+                                "pidgin-libnm.patch"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           ;; Remove stale generated file after applying pidgin-libnm.patch.
+           (delete-file "configure")
+           #t))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
@@ -448,7 +457,12 @@ authentication.")
        ("intltool" ,intltool)
        ("gconf" ,gconf)
        ("python" ,python-2)
-       ("doxygen" ,doxygen)))
+       ("doxygen" ,doxygen)
+
+       ;; For bootstrapping after applying pidgin-libnm.patch.
+       ("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)))
     (inputs
      `(("gtk+" ,gtk+-2)
        ("libgcrypt" ,libgcrypt)
@@ -704,7 +718,7 @@ else [])"))
                           ;; FIXME: Cannot use this expression as it would
                           ;; introduce a circular dependency at the top level.
                           ;; (version-major+minor (package-version python))
-                          "3.7"
+                          "3.8"
 
                           "/site-packages"))))))
     (native-inputs
@@ -741,7 +755,7 @@ end-to-end encryption support; XML console.")
 (define-public gajim-omemo
   (package
     (name "gajim-omemo")
-    (version "2.6.29")
+    (version "2.7.4")
     (source (origin
               (method url-fetch/zipbomb)
               (uri (string-append
@@ -749,7 +763,7 @@ end-to-end encryption support; XML console.")
                     version ".zip"))
               (sha256
                (base32
-                "1mif5qkrvxclqbqmq6njini4laznbs5nn82w2f1hkl8c1284dvgi"))))
+                "00zrj57n86c2m99n0swmmaws4f8zccbgbi8fknv6f9b1vif9jc8p"))))
     (build-system trivial-build-system)
     (arguments
      `(#:modules ((guix build utils))
@@ -765,7 +779,7 @@ end-to-end encryption support; XML console.")
     (propagated-inputs
      `(("python-axolotl" ,python-axolotl)))
     (home-page
-     "https://dev.gajim.org/gajim/gajim-plugins/wikis/OmemoGajimPlugin")
+     "https://dev.gajim.org/gajim/gajim-plugins/-/wikis/OmemoGajimPlugin")
     (synopsis "Gajim OMEMO plugin")
     (description
      "This package provides the Gajim OMEMO plugin.  OMEMO is an XMPP
@@ -1803,16 +1817,16 @@ notifications, and Python scripting support.")
 (define-public libqmatrixclient
   (package
     (name "libqmatrixclient")
-    (version "0.5.2")
+    (version "0.5.3.2")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-              (url "https://github.com/QMatrixClient/libqmatrixclient")
+              (url "https://github.com/quotient-im/libQuotient")
               (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1bhlqfs7251fss4icx794ka614npr6zyrpp4qwc4q5408ykfm7lr"))))
+        (base32 "0gkwr3yw6k2m0j8cc085b5p2q788rf5nhp1p5hc5d55pc7mci2qs"))))
     (build-system cmake-build-system)
     (inputs
      `(("qtbase" ,qtbase)
@@ -1955,16 +1969,16 @@ There is support for:
 (define-public quaternion
   (package
     (name "quaternion")
-    (version "0.0.9.4c")
+    (version "0.0.9.4e")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-              (url "https://github.com/QMatrixClient/Quaternion")
+              (url "https://github.com/quotient-im/Quaternion")
               (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0gpv6b3nn3lsyym8809kiqkpdszfasldqjpk5s542zyn41gdlql4"))))
+        (base32 "0hqhg7l6wpkdbzrdjvrbqymmahziri07ba0hvbii7dd2p0h248fv"))))
     (build-system qt-build-system)
     (inputs
      `(("libqmatrixclient" ,libqmatrixclient)

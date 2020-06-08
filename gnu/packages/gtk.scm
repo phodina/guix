@@ -13,7 +13,7 @@
 ;;; Copyright © 2016 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2016 Patrick Hetu <patrick.hetu@auf.org>
-;;; Copyright © 2016 ng0 <ng0@n0.is>
+;;; Copyright © 2016 Nikita <nikita@n0.is>
 ;;; Copyright © 2017 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
@@ -24,6 +24,7 @@
 ;;; Copyright © 2019 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;; Copyright © 2020 Brendan Tildesley <mail@brendan.scot>
 ;;; Copyright © 2020 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -318,14 +319,14 @@ functions which were removed.")
 (define-public ganv
   (package
     (name "ganv")
-    (version "1.4.2")
+    (version "1.6.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://download.drobilla.net/ganv-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "0g7s5mp14qgbfjdql0k1s8464r21g47ssn5dws6jazsnw6njhl0l"))))
+                "0pik2d3995z0rjcjhb4hsj5fsph3m8khg6j10k6mx4j2j727aq6l"))))
     (build-system waf-build-system)
     (arguments
      `(#:phases
@@ -337,7 +338,6 @@ functions which were removed.")
                      (string-append "-Wl,-rpath="
                                     (assoc-ref outputs "out") "/lib"))
              #t)))
-       #:python ,python-2 ;XXX: The bundled waf fails with Python 3.7.0.
        #:tests? #f)) ; no check target
     (inputs
      `(("gtk" ,gtk+-2)
@@ -650,6 +650,24 @@ is part of the GNOME accessibility project.")
    (license license:lgpl2.0+)
    (home-page "https://projects.gnome.org/accessibility/")))
 
+;;; A minimal variant used to prevent a cycle with Inkscape.
+(define at-spi2-core-minimal
+  (package
+    (inherit at-spi2-core)
+    (name "at-spi2-core-minimal")
+    (outputs (delete "doc" (package-outputs at-spi2-core)))
+    (arguments
+     (substitute-keyword-arguments (package-arguments at-spi2-core)
+       ((#:configure-flags configure-flags)
+        `(delete "-Ddocs=true" ,configure-flags))
+       ((#:phases phases)
+        `(modify-phases ,phases
+           (delete 'set-documentation-path)
+           (delete 'prepare-doc-directory)
+           (delete 'move-documentation)))))
+    (native-inputs
+     (alist-delete "gtk-doc" (package-native-inputs at-spi2-core)))))
+
 (define-public at-spi2-atk
   (package
    (name "at-spi2-atk")
@@ -672,6 +690,8 @@ is part of the GNOME accessibility project.")
                    (setenv "DBUS_FATAL_WARNINGS" "0")
                    (invoke "dbus-launch" "meson" "test"))))))
    (propagated-inputs
+    ;; TODO: Replace by at-spi2-core-minimal in the next staging window, or
+    ;; when Inkscape 0.92 is upgraded to 1.0 to avoid a cycle.
     `(("at-spi2-core" ,at-spi2-core))) ; required by atk-bridge-2.0.pc
    (inputs
     `(("atk" ,atk)))
@@ -923,13 +943,13 @@ exceptions, macros, and a dynamic programming environment.")
       (version (string-append "2.18.1-" revision "."
                               (string-take commit 7)))
       (source (origin
-                (method url-fetch)
-                (uri (string-append "https://gitlab.com/wingo/guile-rsvg/"
-                                    "repository/archive.tar.gz?ref="
-                                    commit))
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://gitlab.com/wingo/guile-rsvg/")
+                      (commit commit)))
                 (sha256
                  (base32
-                  "0vdzjx8l5nc4y2xjqs0g1rqn1zrwfsm30brh5gz00r1x41a2pvv2"))
+                  "0cnbl40df2sbhpc32cma6j6w312rfvcgbxxqaixgf0ymim3fb248"))
                 (patches (search-patches "guile-rsvg-pkgconfig.patch"))
                 (modules '((guix build utils)))
                 (snippet

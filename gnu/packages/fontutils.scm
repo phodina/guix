@@ -5,7 +5,7 @@
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2018, 2019 Ludovic Courtès <ludo@gnu.org>
@@ -37,6 +37,7 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages fonts)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
@@ -292,6 +293,12 @@ fonts to/from the WOFF2 format.")
 (define-public fontconfig
   (package
    (name "fontconfig")
+
+   ;; This replacement is not security-related, but works around the fact
+   ;; that gs-fonts are not recognized by newer versions of Pango, causing
+   ;; many applications to fail to find fonts otherwise.
+   (replacement fontconfig/font-dejavu)
+
    (version "2.13.1")
    (source (origin
             (method url-fetch)
@@ -347,6 +354,13 @@ high quality, anti-aliased and subpixel rendered text on a display.")
    (license (license:non-copyleft "file://COPYING"
                        "See COPYING in the distribution."))
    (home-page "https://www.freedesktop.org/wiki/Software/fontconfig")))
+
+(define fontconfig/font-dejavu
+  (package
+    (inherit fontconfig)
+    (inputs
+     ;; XXX: Reuse the name to avoid having to override the configure flags.
+     `(("gs-fonts" ,font-dejavu)))))
 
 (define-public t1lib
   (package

@@ -79,6 +79,8 @@
             fdatasync
             pivot-root
             scandir*
+            getxattr
+            setxattr
 
             fcntl-flock
             lock-file
@@ -723,6 +725,49 @@ backend device."
              (list (strerror err))
              (list err))))))
 
+(define getxattr
+  (let ((proc (syscall->procedure ssize_t "getxattr"
+                                  `(* * * ,size_t))))
+    (lambda (file key)
+      "Get the extended attribute value for KEY on FILE."
+      (let-values (((size err)
+                    ;; Get size of VALUE for buffer.
+                    (proc (string->pointer/utf-8 file)
+                          (string->pointer key)
+                          (string->pointer "")
+                          0)))
+        (cond ((< size 0) #f)
+              ((zero? size) "")
+              ;; Get VALUE in buffer of SIZE.  XXX actual size can race.
+              (else (let*-values (((buf) (make-bytevector size))
+                                  ((size err)
+                                   (proc (string->pointer/utf-8 file)
+                                         (string->pointer key)
+                                         (bytevector->pointer buf)
+                                         size)))
+                      (if (>= size 0)
+                          (utf8->string buf)
+                          (throw 'system-error "getxattr" "~S: ~A"
+                                 (list file key (strerror err))
+                                 (list err))))))))))
+
+(define setxattr
+  (let ((proc (syscall->procedure int "setxattr"
+                                  `(* * * ,size_t ,int))))
+    (lambda* (file key value #:optional (flags 0))
+      "Set extended attribute KEY to VALUE on FILE."
+      (let*-values (((bv) (string->utf8 value))
+                    ((ret err)
+                     (proc (string->pointer/utf-8 file)
+                           (string->pointer key)
+                           (bytevector->pointer bv)
+                           (bytevector-length bv)
+                           flags)))
+        (unless (zero? ret)
+          (throw 'system-error "setxattr" "~S: ~A"
+                 (list file key value (strerror err))
+                 (list err)))))))
+
 
 ;;;
 ;;; Random.
@@ -1173,7 +1218,7 @@ handler if the lock is already held by another process."
   ;; zero.
   16)
 
-(define (set-thread-name name)
+(define (set-thread-name!/linux name)
   "Set the name of the calling thread to NAME.  NAME is truncated to 15
 bytes."
   (let ((ptr (string->pointer name)))
@@ -1186,7 +1231,7 @@ bytes."
                (list (strerror err))
                (list err))))))
 
-(define (thread-name)
+(define (thread-name/linux)
   "Return the name of the calling thread as a string."
   (let ((buf (make-bytevector %max-thread-name-length)))
     (let-values (((ret err)
@@ -1199,6 +1244,16 @@ bytes."
                  "process-name: ~A"
                  (list (strerror err))
                  (list err))))))
+
+(define set-thread-name
+  (if (string-contains %host-type "linux")
+      set-thread-name!/linux
+      (const #f)))
+
+(define thread-name
+  (if (string-contains %host-type "linux")
+      thread-name/linux
+      (const "")))
 
 
 ;;;
@@ -1270,61 +1325,130 @@ bytes."
       40
       32))
 
-(define-c-struct sockaddr-in                      ;<linux/in.h>
-  sizeof-sockaddrin
+(define-c-struct sockaddr-in/linux                ;<linux/in.h>
+  sizeof-sockaddr-in/linux
   (lambda (family port address)
     (make-socket-address family address port))
-  read-sockaddr-in
-  write-sockaddr-in!
+  read-sockaddr-in/linux
+  write-sockaddr-in!/linux
   (family    unsigned-short)
   (port      (int16 ~ big))
   (address   (int32 ~ big)))
 
-(define-c-struct sockaddr-in6                     ;<linux/in6.h>
-  sizeof-sockaddr-in6
+(define-c-struct sockaddr-in/hurd                 ;<netinet/in.h>
+  sizeof-sockaddr-in/hurd
+  (lambda (len family port address zero)
+    (make-socket-address family address port))
+  read-sockaddr-in/hurd
+  write-sockaddr-in!/hurd
+  (len       uint8)
+  (family    uint8)
+  (port      (int16 ~ big))
+  (address   (int32 ~ big))
+  (zero      (array uint8 8)))
+
+(define-c-struct sockaddr-in6/linux               ;<linux/in6.h>
+  sizeof-sockaddr-in6/linux
   (lambda (family port flowinfo address scopeid)
     (make-socket-address family address port flowinfo scopeid))
-  read-sockaddr-in6
-  write-sockaddr-in6!
+  read-sockaddr-in6/linux
+  write-sockaddr-in6!/linux
   (family    unsigned-short)
   (port      (int16 ~ big))
   (flowinfo  (int32 ~ big))
   (address   (int128 ~ big))
   (scopeid   int32))
 
-(define (write-socket-address! sockaddr bv index)
+(define-c-struct sockaddr-in6/hurd                ;<netinet/in.h>
+  sizeof-sockaddr-in6/hurd
+  (lambda (len family port flowinfo address scopeid)
+    (make-socket-address family address port flowinfo scopeid))
+  read-sockaddr-in6/hurd
+  write-sockaddr-in6!/hurd
+  (len       uint8)
+  (family    uint8)
+  (port      (int16 ~ big))
+  (flowinfo  (int32 ~ big))
+  (address   (int128 ~ big))
+  (scopeid   int32))
+
+(define (write-socket-address!/linux sockaddr bv index)
   "Write SOCKADDR, a socket address as returned by 'make-socket-address', to
 bytevector BV at INDEX."
   (let ((family (sockaddr:fam sockaddr)))
     (cond ((= family AF_INET)
-           (write-sockaddr-in! bv index
-                               family
-                               (sockaddr:port sockaddr)
-                               (sockaddr:addr sockaddr)))
+           (write-sockaddr-in!/linux bv index
+                                     family
+                                     (sockaddr:port sockaddr)
+                                     (sockaddr:addr sockaddr)))
           ((= family AF_INET6)
-           (write-sockaddr-in6! bv index
-                                family
-                                (sockaddr:port sockaddr)
-                                (sockaddr:flowinfo sockaddr)
-                                (sockaddr:addr sockaddr)
-                                (sockaddr:scopeid sockaddr)))
+           (write-sockaddr-in6!/linux bv index
+                                      family
+                                      (sockaddr:port sockaddr)
+                                      (sockaddr:flowinfo sockaddr)
+                                      (sockaddr:addr sockaddr)
+                                      (sockaddr:scopeid sockaddr)))
           (else
            (error "unsupported socket address" sockaddr)))))
+
+(define (write-socket-address!/hurd sockaddr bv index)
+  "Write SOCKADDR, a socket address as returned by 'make-socket-address', to
+bytevector BV at INDEX."
+  (let ((family (sockaddr:fam sockaddr)))
+    (cond ((= family AF_INET)
+           (write-sockaddr-in!/hurd bv index
+                                    sizeof-sockaddr-in/hurd
+                                    family
+                                    (sockaddr:port sockaddr)
+                                    (sockaddr:addr sockaddr)
+                                    '(0 0 0 0 0 0 0 0)))
+          ((= family AF_INET6)
+           (write-sockaddr-in6!/hurd bv index
+                                     sizeof-sockaddr-in6/hurd
+                                     family
+                                     (sockaddr:port sockaddr)
+                                     (sockaddr:flowinfo sockaddr)
+                                     (sockaddr:addr sockaddr)
+                                     (sockaddr:scopeid sockaddr)))
+          (else
+           (error "unsupported socket address" sockaddr)))))
+
+(define write-socket-address!
+  (if (string-contains %host-type "linux-gnu")
+      write-socket-address!/linux
+      write-socket-address!/hurd))
 
 (define PF_PACKET 17)                             ;<bits/socket.h>
 (define AF_PACKET PF_PACKET)
 
-(define* (read-socket-address bv #:optional (index 0))
+(define* (read-socket-address/linux bv #:optional (index 0))
   "Read a socket address from bytevector BV at INDEX."
   (let ((family (bytevector-u16-native-ref bv index)))
     (cond ((= family AF_INET)
-           (read-sockaddr-in bv index))
+           (read-sockaddr-in/linux bv index))
           ((= family AF_INET6)
-           (read-sockaddr-in6 bv index))
+           (read-sockaddr-in6/linux bv index))
           (else
            ;; XXX: Unsupported address family, such as AF_PACKET.  Return a
            ;; vector such that the vector can at least call 'sockaddr:fam'.
            (vector family)))))
+
+(define* (read-socket-address/hurd bv #:optional (index 0))
+  "Read a socket address from bytevector BV at INDEX."
+  (let ((family (bytevector-u16-native-ref bv index)))
+    (cond ((= family AF_INET)
+           (read-sockaddr-in/hurd bv index))
+          ((= family AF_INET6)
+           (read-sockaddr-in6/hurd bv index))
+          (else
+           ;; XXX: Unsupported address family, such as AF_PACKET.  Return a
+           ;; vector such that the vector can at least call 'sockaddr:fam'.
+           (vector family)))))
+
+(define read-socket-address
+  (if (string-contains %host-type "linux-gnu")
+      read-socket-address/linux
+      read-socket-address/hurd))
 
 (define %ioctl
   ;; The most terrible interface, live from Scheme.
@@ -1938,8 +2062,8 @@ correspond to a terminal, return the value returned by FALL-BACK."
         ;; would return EINVAL instead in some cases:
         ;; <https://bugs.ruby-lang.org/issues/10494>.
         ;; Furthermore, some FUSE file systems like unionfs return ENOSYS for
-        ;; that ioctl.
-        (if (memv errno (list ENOTTY EINVAL ENOSYS))
+        ;; that ioctl, and bcachefs returns EPERM.
+        (if (memv errno (list ENOTTY EINVAL ENOSYS EPERM))
             (fall-back)
             (apply throw args))))))
 

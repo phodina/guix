@@ -9,7 +9,7 @@
 ;;; Copyright © 2017 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2018 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Eric Bavier <bavier@member.fsf.org>
@@ -686,7 +686,7 @@ information is written to standard error.")
 (define-public asunder
   (package
     (name "asunder")
-    (version "2.9.5")
+    (version "2.9.6")
     (source (origin
               (method url-fetch)
               (uri
@@ -695,7 +695,7 @@ information is written to standard error.")
                               ".tar.bz2"))
               (sha256
                (base32
-                "069x6az2r3wlb2hd07iz0hxpxwknw7s9h7pyhnkmzv1pw9ci3kk4"))))
+                "1ycnd82lh7qy1pcbngd4b41s16j9hnm2kyfrncg4cwr3bfk7yg7a"))))
     (build-system glib-or-gtk-build-system)
     (arguments
      '(#:out-of-source? #f

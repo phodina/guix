@@ -4,7 +4,7 @@
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
-;;; Copyright © 2016 ng0 <ng0@n0.is>
+;;; Copyright © 2016 Nikita <nikita@n0.is>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Vasile Dumitrascu <va511e@yahoo.com>
@@ -16,6 +16,7 @@
 ;;; Copyright © 2020 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2020 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2020 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -118,7 +119,7 @@ and BOOTP/TFTP for network booting of diskless machines.")
 (define-public isc-bind
   (package
     (name "bind")
-    (version "9.16.2")
+    (version "9.16.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -126,7 +127,7 @@ and BOOTP/TFTP for network booting of diskless machines.")
                     "/bind-" version ".tar.xz"))
               (sha256
                (base32
-                "0gwr4p14zy5jqq050n762rfc33km51qwipcwy6bsvk55ziybgrfr"))))
+                "0zjgaspnx0p0rp83h4yj595s25da7fjis94z9frhv3azvq9nbb17"))))
     (build-system gnu-build-system)
     (outputs `("out" "utils"))
     (inputs
@@ -390,14 +391,14 @@ to result in system-wide compromise.")
 (define-public unbound
   (package
     (name "unbound")
-    (version "1.10.0")
+    (version "1.10.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.unbound.net/downloads/unbound-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0mg9divpysr42sp0m693a70693dp8025v6c9dv1yabr4g1jlhbqm"))))
+        (base32 "0dnmh9jjh2v274f0hl31bgv40pl77mmfgky8bkqr5kvi3b17fdmp"))))
     (build-system gnu-build-system)
     (outputs '("out" "python"))
     (native-inputs
@@ -594,14 +595,14 @@ Extensions} (DNSSEC).")
 (define-public knot
   (package
     (name "knot")
-    (version "2.9.3")
+    (version "2.9.5")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://secure.nic.cz/files/knot-dns/"
                            "knot-" version ".tar.xz"))
        (sha256
-        (base32 "0zm0642hkb16sqkqpa84f89f3s0bw44m837r1nia8m89swvz3bgj"))
+        (base32 "0xmzmhd2m9rb24clrrd9k058harsq67nyjplpbyxvy1g46xah28i"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -1000,4 +1001,35 @@ known public suffixes.")
     (description "MaraDNS is a small and lightweight DNS server.  MaraDNS
 consists of a UDP-only authoritative DNS server for hosting domains, and a UDP
 and TCP-capable recursive DNS server for finding domains on the internet.")
+    (license license:bsd-2)))
+
+(define-public openresolv
+  (package
+    (name "openresolv")
+    (version "3.10.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://roy.marples.name/downloads/openresolv/"
+                                  "openresolv-" version ".tar.xz"))
+              (sha256
+               (base32
+                "01ms6c087la4hk0f0w6n2vpsb7dg4kklah2rqyhz88p0vr9bqy20"))
+              (patches
+               (search-patches "openresolv-restartcmd-guix.patch"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ; No test suite
+       #:configure-flags
+       (list (string-append "--sysconfdir=/etc"))
+       #:make-flags
+       (list (string-append "SYSCONFDIR=/" (assoc-ref %outputs "out") "/etc"))))
+    (home-page "https://roy.marples.name/projects/openresolv/")
+    (synopsis "Resolvconf POSIX compliant implementation, a middleman for resolv.conf")
+    (description "openresolv is an implementation of @command{resolvconf}, the
+middleman between the network configuration services and
+@file{/etc/resolv.conf}.  @command{resolvconf} itself is just a script that
+stores, removes and lists a full @file{resolv.conf} generated for the
+interface.  It then calls all the helper scripts it knows about so it can
+configure the real @file{/etc/resolv.conf} and optionally any local
+nameservers other than libc.")
     (license license:bsd-2)))

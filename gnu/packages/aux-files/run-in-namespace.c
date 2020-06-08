@@ -42,6 +42,15 @@
 #include <dirent.h>
 #include <sys/syscall.h>
 
+/* Whether we're building the ld.so/libfakechroot wrapper.  */
+#define HAVE_EXEC_WITH_LOADER						\
+  (defined PROGRAM_INTERPRETER) && (defined LOADER_AUDIT_MODULE)	\
+  && (defined FAKECHROOT_LIBRARY)
+
+/* The original store, "/gnu/store" by default.  */
+static const char original_store[] = "@STORE_DIRECTORY@";
+
+
 /* Like 'malloc', but abort if 'malloc' returns NULL.  */
 static void *
 xmalloc (size_t size)
@@ -113,9 +122,42 @@ rm_rf (const char *directory)
     assert_perror (errno);
 }
 
-/* Bind mount all the top-level entries in SOURCE to TARGET.  */
+/* Make TARGET a bind-mount of SOURCE.  Take into account ENTRY's type, which
+   corresponds to SOURCE.  */
+static int
+bind_mount (const char *source, const struct dirent *entry,
+	    const char *target)
+{
+  if (entry->d_type == DT_DIR)
+    {
+      int err = mkdir (target, 0700);
+      if (err != 0)
+	return err;
+    }
+  else
+    close (open (target, O_WRONLY | O_CREAT));
+
+  return mount (source, target, "none",
+		MS_BIND | MS_REC | MS_RDONLY, NULL);
+}
+
+#if HAVE_EXEC_WITH_LOADER
+
+/* Make TARGET a symlink to SOURCE.  */
+static int
+make_symlink (const char *source, const struct dirent *entry,
+	      const char *target)
+{
+  return symlink (source, target);
+}
+
+#endif
+
+/* Mirror with FIRMLINK all the top-level entries in SOURCE to TARGET.  */
 static void
-bind_mount (const char *source, const char *target)
+mirror_directory (const char *source, const char *target,
+		  int (* firmlink) (const char *, const struct dirent *,
+				    const char *))
 {
   DIR *stream = opendir (source);
 
@@ -150,17 +192,7 @@ bind_mount (const char *source, const char *target)
       else
 	{
 	  /* Create the mount point.  */
-	  if (entry->d_type == DT_DIR)
-	    {
-	      int err = mkdir (new_entry, 0700);
-	      if (err != 0)
-		assert_perror (errno);
-	    }
-	  else
-	    close (open (new_entry, O_WRONLY | O_CREAT));
-
-	  int err = mount (abs_source, new_entry, "none",
-			   MS_BIND | MS_REC | MS_RDONLY, NULL);
+	  int err = firmlink (abs_source, entry, new_entry);
 
 	  /* It used to be that only directories could be bind-mounted.  Thus,
 	     keep going if we fail to bind-mount a non-directory entry.
@@ -228,7 +260,7 @@ exec_in_user_namespace (const char *store, int argc, char *argv[])
      bind-mounted in the right place.  */
   int err;
   char *new_root = mkdtemp (strdup ("/tmp/guix-exec-XXXXXX"));
-  char *new_store = concat (new_root, "@STORE_DIRECTORY@");
+  char *new_store = concat (new_root, original_store);
   char *cwd = get_current_dir_name ();
 
   /* Create a child with separate namespaces and set up bind-mounts from
@@ -244,7 +276,7 @@ exec_in_user_namespace (const char *store, int argc, char *argv[])
       /* Note: Due to <https://bugzilla.kernel.org/show_bug.cgi?id=183461>
 	 we cannot make NEW_ROOT a tmpfs (which would have saved the need
 	 for 'rm_rf'.)  */
-      bind_mount ("/", new_root);
+      mirror_directory ("/", new_root, bind_mount);
       mkdir_p (new_store);
       err = mount (store, new_store, "none", MS_BIND | MS_REC | MS_RDONLY,
 		   NULL);
@@ -307,11 +339,11 @@ exec_with_proot (const char *store, int argc, char *argv[])
   int proot_specific_argc = 4;
   int proot_argc = argc + proot_specific_argc;
   char *proot_argv[proot_argc + 1], *proot;
-  char bind_spec[strlen (store) + 1 + sizeof "@STORE_DIRECTORY@"];
+  char bind_spec[strlen (store) + 1 + sizeof original_store];
 
   strcpy (bind_spec, store);
   strcat (bind_spec, ":");
-  strcat (bind_spec, "@STORE_DIRECTORY@");
+  strcat (bind_spec, original_store);
 
   proot = concat (store, PROOT_PROGRAM);
 
@@ -337,6 +369,173 @@ exec_with_proot (const char *store, int argc, char *argv[])
 #endif
 
 
+#if HAVE_EXEC_WITH_LOADER
+
+/* Execute the wrapped program by invoking the loader (ld.so) directly,
+   passing it the audit module and preloading libfakechroot.so.  */
+static void
+exec_with_loader (const char *store, int argc, char *argv[])
+{
+  char *loader = concat (store,
+			 PROGRAM_INTERPRETER + sizeof original_store);
+  size_t loader_specific_argc = 6;
+  size_t loader_argc = argc + loader_specific_argc;
+  char *loader_argv[loader_argc + 1];
+  loader_argv[0] = argv[0];
+  loader_argv[1] = "--audit";
+  loader_argv[2] = concat (store,
+			   LOADER_AUDIT_MODULE + sizeof original_store);
+  loader_argv[3] = "--preload";
+  loader_argv[4] = concat (store,
+			   FAKECHROOT_LIBRARY + sizeof original_store);
+  loader_argv[5] = concat (store,
+			   "@WRAPPED_PROGRAM@" + sizeof original_store);
+
+  for (size_t i = 0; i < argc; i++)
+    loader_argv[i + loader_specific_argc] = argv[i + 1];
+
+  loader_argv[loader_argc] = NULL;
+
+  /* Set up the root directory.  */
+  int err;
+  char *new_root = mkdtemp (strdup ("/tmp/guix-exec-XXXXXX"));
+  mirror_directory ("/", new_root, make_symlink);
+
+  char *new_store = concat (new_root, original_store);
+  char *new_store_parent = dirname (strdup (new_store));
+  mkdir_p (new_store_parent);
+  symlink (store, new_store);
+
+#ifdef GCONV_DIRECTORY
+  /* Tell libc where to find its gconv modules.  This is necessary because
+     gconv uses non-interposable 'open' calls.  */
+  char *gconv_path = concat (store,
+			     GCONV_DIRECTORY + sizeof original_store);
+  setenv ("GCONV_PATH", gconv_path, 1);
+  free (gconv_path);
+#endif
+
+  setenv ("FAKECHROOT_BASE", new_root, 1);
+
+  pid_t child = fork ();
+  switch (child)
+    {
+    case 0:
+      err = execv (loader, loader_argv);
+      if (err < 0)
+	assert_perror (errno);
+      exit (EXIT_FAILURE);
+      break;
+
+    case -1:
+      assert_perror (errno);
+      exit (EXIT_FAILURE);
+      break;
+
+    default:
+      {
+  	int status;
+	waitpid (child, &status, 0);
+	chdir ("/");			  /* avoid EBUSY */
+	rm_rf (new_root);
+	free (new_root);
+
+	close (2);			/* flushing stderr should be silent */
+
+	if (WIFEXITED (status))
+	  exit (WEXITSTATUS (status));
+	else
+	  /* Abnormal termination cannot really be reproduced, so exit
+	     with 255.  */
+	  exit (255);
+      }
+    }
+}
+
+#endif
+
+
+/* Execution engines.  */
+
+struct engine
+{
+  const char *name;
+  void (* exec) (const char *, int, char **);
+};
+
+static void
+buffer_stderr (void)
+{
+  static char stderr_buffer[4096];
+  setvbuf (stderr, stderr_buffer, _IOFBF, sizeof stderr_buffer);
+}
+
+/* The default engine: choose a robust method.  */
+static void
+exec_default (const char *store, int argc, char *argv[])
+{
+  /* Buffer stderr so that nothing's displayed if 'exec_in_user_namespace'
+     fails but 'exec_with_proot' works.  */
+  buffer_stderr ();
+
+  exec_in_user_namespace (store, argc, argv);
+#ifdef PROOT_PROGRAM
+  exec_with_proot (store, argc, argv);
+#endif
+}
+
+/* The "performance" engine: choose performance over robustness.  */
+static void
+exec_performance (const char *store, int argc, char *argv[])
+{
+  buffer_stderr ();
+
+  exec_in_user_namespace (store, argc, argv);
+#if HAVE_EXEC_WITH_LOADER
+  exec_with_loader (store, argc, argv);
+#endif
+}
+
+/* List of supported engines.  */
+static const struct engine engines[] =
+  {
+   { "default", exec_default },
+   { "performance", exec_performance },
+   { "userns", exec_in_user_namespace },
+#ifdef PROOT_PROGRAM
+   { "proot", exec_with_proot },
+#endif
+#if HAVE_EXEC_WITH_LOADER
+   { "fakechroot", exec_with_loader },
+#endif
+   { NULL, NULL }
+  };
+
+/* Return the "execution engine" to use.  */
+static const struct engine *
+execution_engine (void)
+{
+  const char *str = getenv ("GUIX_EXECUTION_ENGINE");
+
+  if (str == NULL)
+    str = "default";
+
+ try:
+  for (const struct engine *engine = engines;
+       engine->name != NULL;
+       engine++)
+    {
+      if (strcmp (engine->name, str) == 0)
+	return engine;
+    }
+
+  fprintf (stderr, "%s: unsupported Guix execution engine; ignoring\n",
+	   str);
+  str = "default";
+  goto try;
+}
+
+
 int
 main (int argc, char *argv[])
 {
@@ -348,8 +547,7 @@ main (int argc, char *argv[])
   /* SELF is something like "/home/ludo/.local/gnu/store/…-foo/bin/ls" and we
      want to extract "/home/ludo/.local/gnu/store".  */
   size_t index = strlen (self)
-    - strlen ("@WRAPPED_PROGRAM@")
-    + strlen ("@STORE_DIRECTORY@");
+    - strlen ("@WRAPPED_PROGRAM@") + strlen (original_store);
   char *store = strdup (self);
   store[index] = '\0';
 
@@ -359,25 +557,20 @@ main (int argc, char *argv[])
      @WRAPPED_PROGRAM@ right away.  This is not just an optimization: it's
      needed when running one of these wrappers from within an unshare'd
      namespace, because 'unshare' fails with EPERM in that context.  */
-  if (strcmp (store, "@STORE_DIRECTORY@") != 0
+  if (strcmp (store, original_store) != 0
       && lstat ("@WRAPPED_PROGRAM@", &statbuf) != 0)
     {
-      /* Buffer stderr so that nothing's displayed if 'exec_in_user_namespace'
-	 fails but 'exec_with_proot' works.  */
-      static char stderr_buffer[4096];
-      setvbuf (stderr, stderr_buffer, _IOFBF, sizeof stderr_buffer);
+      const struct engine *engine = execution_engine ();
+      engine->exec (store, argc, argv);
 
-      exec_in_user_namespace (store, argc, argv);
-#ifdef PROOT_PROGRAM
-      exec_with_proot (store, argc, argv);
-#else
+      /* If we reach this point, that's because ENGINE failed to do the
+	 job.  */
       fprintf (stderr, "\
 This may be because \"user namespaces\" are not supported on this system.\n\
 Consequently, we cannot run '@WRAPPED_PROGRAM@',\n\
 unless you move it to the '@STORE_DIRECTORY@' directory.\n\
 \n\
 Please refer to the 'guix pack' documentation for more information.\n");
-#endif
       return EXIT_FAILURE;
     }
 
