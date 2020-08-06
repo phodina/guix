@@ -1,7 +1,7 @@
-From e0942d0422b75445de59d2d5a316a9293839f633 Mon Sep 17 00:00:00 2001
+From 647fe78ac65a505aefff3825760185d66ada0da2 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:06:20 +0200
-Subject: [PATCH 03/24] soc: rockchip: Add rockchip suspend mode driver
+Subject: [PATCH 02/26] soc: rockchip: Add rockchip suspend mode driver
 
 Code gore, do not mainline. This belongs in ATF
 
@@ -371,5 +371,5 @@ index 000000000000..0cccd6430ef6
 +
 +#endif
 -- 
-2.26.2
+2.28.0
 

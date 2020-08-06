@@ -1,7 +1,7 @@
-From 74c6c5715de042c792f55b072a9b9e2f3cf082c7 Mon Sep 17 00:00:00 2001
+From ef76d3135780573232aa2d6c60858eec118c8a7a Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:34:47 +0200
-Subject: [PATCH 14/24] sound: soc: codecs: es8316: Run micdetect only if jack
+Subject: [PATCH 13/26] sound: soc: codecs: es8316: Run micdetect only if jack
  status asserted
 
 Think this is (was?) required to prevent flapping of detection status on
@@ -26,5 +26,5 @@ index 36eef1fb3d18..b303ebbd5f53 100644
  		snd_soc_jack_report(es8316->jack, 0, SND_JACK_BTN_0);
  	}
 -- 
-2.26.2
+2.28.0
 

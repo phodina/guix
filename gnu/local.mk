@@ -1374,30 +1374,32 @@ dist_patch_DATA =						\
   %D%/packages/patches/osip-CVE-2017-7853.patch			\
   %D%/packages/patches/ots-no-include-missing-file.patch	\
   %D%/packages/patches/owncloud-disable-updatecheck.patch	\
-  %D%/packages/patches/pinebook-pro-01-power-supply-Add-support-for-CellWise-cw2015-fuel-ga.patch \
-  %D%/packages/patches/pinebook-pro-02-leds-Add-support-for-inverted-LED-triggers.patch \
-  %D%/packages/patches/pinebook-pro-03-soc-rockchip-Add-rockchip-suspend-mode-driver.patch \
-  %D%/packages/patches/pinebook-pro-04-firmware-Add-Rockchip-SIP-driver.patch \
-  %D%/packages/patches/pinebook-pro-05-tty-serdev-support-shutdown-op.patch \
-  %D%/packages/patches/pinebook-pro-06-bluetooth-hci_serdev-Clear-registered-bit-on-unregis.patch \
-  %D%/packages/patches/pinebook-pro-07-bluetooth-hci_bcm-disable-power-on-shutdown.patch \
-  %D%/packages/patches/pinebook-pro-08-mmc-core-pwrseq_simple-disable-mmc-power-on-shutdown.patch \
-  %D%/packages/patches/pinebook-pro-09-regulator-core-add-generic-suspend-states-support.patch \
-  %D%/packages/patches/pinebook-pro-10-usb-typec-bus-Catch-crash-due-to-partner-NULL-value.patch \
-  %D%/packages/patches/pinebook-pro-11-usb-typec-tcpm-add-hacky-generic-altmode-support.patch \
-  %D%/packages/patches/pinebook-pro-12-phy-rockchip-typec-Set-extcon-capabilities.patch \
-  %D%/packages/patches/pinebook-pro-13-usb-typec-altmodes-displayport-Add-hacky-generic-alt.patch \
-  %D%/packages/patches/pinebook-pro-14-sound-soc-codecs-es8316-Run-micdetect-only-if-jack-s.patch \
-  %D%/packages/patches/pinebook-pro-15-ASoC-soc-jack.c-supported-inverted-jack-detect-GPIOs.patch \
-  %D%/packages/patches/pinebook-pro-16-arm64-dts-rockchip-add-default-rk3399-rockchip-suspe.patch \
-  %D%/packages/patches/pinebook-pro-17-arm64-dts-rockchip-enable-earlycon.patch \
-  %D%/packages/patches/pinebook-pro-18-arm64-dts-rockchip-reserve-memory-for-ATF-rockchip-S.patch \
-  %D%/packages/patches/pinebook-pro-19-arm64-dts-rockchip-add-cw2015-fuel-gauge.patch \
-  %D%/packages/patches/pinebook-pro-20-arm64-dts-rockchip-use-power-led-for-disk-activity-i.patch \
-  %D%/packages/patches/pinebook-pro-21-arm64-dts-rockchip-add-oficially-unsupported-2GHz-op.patch \
-  %D%/packages/patches/pinebook-pro-22-arm64-dts-rockchip-add-typec-extcon-hack.patch \
-  %D%/packages/patches/pinebook-pro-23-arm64-dts-rockchip-add-rockchip-suspend-node.patch \
-  %D%/packages/patches/pinebook-pro-24-arm64-configs-add-defconfig-for-Pinebook-Pro.patch \
+  %D%/packages/patches/pinebook-pro-01-leds-Add-support-for-inverted-LED-triggers.patch	\
+  %D%/packages/patches/pinebook-pro-02-soc-rockchip-Add-rockchip-suspend-mode-driver.patch	\
+  %D%/packages/patches/pinebook-pro-03-firmware-Add-Rockchip-SIP-driver.patch	\
+  %D%/packages/patches/pinebook-pro-04-tty-serdev-support-shutdown-op.patch	\
+  %D%/packages/patches/pinebook-pro-05-bluetooth-hci_serdev-Clear-registered-bit-on-unregis.patch	\
+  %D%/packages/patches/pinebook-pro-06-bluetooth-hci_bcm-disable-power-on-shutdown.patch	\
+  %D%/packages/patches/pinebook-pro-07-mmc-core-pwrseq_simple-disable-mmc-power-on-shutdown.patch	\
+  %D%/packages/patches/pinebook-pro-08-regulator-core-add-generic-suspend-states-support.patch	\
+  %D%/packages/patches/pinebook-pro-09-usb-typec-bus-Catch-crash-due-to-partner-NULL-value.patch	\
+  %D%/packages/patches/pinebook-pro-10-usb-typec-tcpm-add-hacky-generic-altmode-support.patch	\
+  %D%/packages/patches/pinebook-pro-11-phy-rockchip-typec-Set-extcon-capabilities.patch	\
+  %D%/packages/patches/pinebook-pro-12-usb-typec-altmodes-displayport-Add-hacky-generic-alt.patch	\
+  %D%/packages/patches/pinebook-pro-13-sound-soc-codecs-es8316-Run-micdetect-only-if-jack-s.patch	\
+  %D%/packages/patches/pinebook-pro-14-ASoC-soc-jack.c-supported-inverted-jack-detect-GPIOs.patch	\
+  %D%/packages/patches/pinebook-pro-15-arm64-dts-rockchip-add-default-rk3399-rockchip-suspe.patch	\
+  %D%/packages/patches/pinebook-pro-16-arm64-dts-rockchip-enable-earlycon.patch	\
+  %D%/packages/patches/pinebook-pro-17-arm64-dts-rockchip-reserve-memory-for-ATF-rockchip-S.patch	\
+  %D%/packages/patches/pinebook-pro-18-arm64-dts-rockchip-add-cw2015-fuel-gauge.patch	\
+  %D%/packages/patches/pinebook-pro-19-arm64-dts-rockchip-use-power-led-for-disk-activity-i.patch	\
+  %D%/packages/patches/pinebook-pro-20-arm64-dts-rockchip-add-oficially-unsupported-2GHz-op.patch	\
+  %D%/packages/patches/pinebook-pro-21-arm64-dts-rockchip-add-typec-extcon-hack.patch	\
+  %D%/packages/patches/pinebook-pro-22-arm64-dts-rockchip-add-rockchip-suspend-node.patch	\
+  %D%/packages/patches/pinebook-pro-23-arm64-configs-add-defconfig-for-Pinebook-Pro.patch	\
+  %D%/packages/patches/pinebook-pro-24-arm64-dts-rockchip-setup-USB-type-c-port-as-dual-dat.patch	\
+  %D%/packages/patches/pinebook-pro-25-arm64-configs-Update-Pinbook-Pro-defconfig-to-v5.8-r.patch	\
+  %D%/packages/patches/pinebook-pro-26-soc-rockchip-Port-rockchip_pm_config-driver-to-Linux.patch	\
   %D%/packages/patches/p7zip-CVE-2016-9296.patch		\
   %D%/packages/patches/p7zip-CVE-2017-17969.patch		\
   %D%/packages/patches/p7zip-remove-unused-code.patch		\

@@ -1,7 +1,7 @@
-From 30ed5fc4b485cbcbc890eaf7e49dca654c0f493a Mon Sep 17 00:00:00 2001
+From 34dd01fcb581d221aacb960a9e3a3030429c6638 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:23:54 +0200
-Subject: [PATCH 11/24] usb: typec: tcpm: add hacky generic altmode support
+Subject: [PATCH 10/26] usb: typec: tcpm: add hacky generic altmode support
 
 This is a hack and it is based on extcon. Do not try to mainline
 unless you are in need for some retroactive abortion by the
@@ -251,5 +251,5 @@ index 82b19ebd7838..9858df11590b 100644
  	tcpm_init(port);
  	mutex_unlock(&port->lock);
 -- 
-2.26.2
+2.28.0
 

@@ -1,7 +1,7 @@
-From 06c8485df1b2db5b0e47cc318aef006618e95500 Mon Sep 17 00:00:00 2001
+From e31835178104ce7e82d2a573f80ea953bfb3012c Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:14:06 +0200
-Subject: [PATCH 06/24] bluetooth: hci_serdev: Clear registered bit on
+Subject: [PATCH 05/26] bluetooth: hci_serdev: Clear registered bit on
  unregister
 
 Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
@@ -10,10 +10,10 @@ Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
  1 file changed, 2 insertions(+)
 
 diff --git a/drivers/bluetooth/hci_serdev.c b/drivers/bluetooth/hci_serdev.c
-index 4652896d4990..72270f01e580 100644
+index 599855e4c57c..1ef9b965a9a0 100644
 --- a/drivers/bluetooth/hci_serdev.c
 +++ b/drivers/bluetooth/hci_serdev.c
-@@ -364,5 +364,7 @@ void hci_uart_unregister_device(struct hci_uart *hu)
+@@ -362,5 +362,7 @@ void hci_uart_unregister_device(struct hci_uart *hu)
  
  	hu->proto->close(hu);
  	serdev_device_close(hu->serdev);
@@ -22,5 +22,5 @@ index 4652896d4990..72270f01e580 100644
  }
  EXPORT_SYMBOL_GPL(hci_uart_unregister_device);
 -- 
-2.26.2
+2.28.0
 

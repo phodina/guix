@@ -1,7 +1,7 @@
-From e855f22f699de90911aa43e5832277b815095a7c Mon Sep 17 00:00:00 2001
+From ea5ed45f85ea1184106aa55d2eafa94a8ede38bf Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:26:27 +0200
-Subject: [PATCH 13/24] usb: typec: altmodes: displayport: Add hacky, generic
+Subject: [PATCH 12/26] usb: typec: altmodes: displayport: Add hacky, generic
  altmode detection
 
 Do not mainline, hack.
@@ -117,5 +117,5 @@ index 0edfb89e04a8..c87cd57302cd 100644
  	ret = sysfs_create_group(&alt->dev.kobj, &dp_altmode_group);
  	if (ret)
 -- 
-2.26.2
+2.28.0
 

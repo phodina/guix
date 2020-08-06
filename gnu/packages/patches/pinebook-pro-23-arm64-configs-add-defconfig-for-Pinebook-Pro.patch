@@ -1,7 +1,7 @@
-From e45b0b141cad68d1953a1319855898915aefab22 Mon Sep 17 00:00:00 2001
+From 936a9a224504a2497cec4fa331a1953fe6e4dfee Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 15:20:15 +0200
-Subject: [PATCH 24/24] arm64: configs: add defconfig for Pinebook Pro
+Subject: [PATCH 23/26] arm64: configs: add defconfig for Pinebook Pro
 
 Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
 ---
@@ -3016,5 +3016,5 @@ index 000000000000..bc7bcee200e4
 +# CONFIG_FTRACE is not set
 +# CONFIG_RUNTIME_TESTING_MENU is not set
 -- 
-2.26.2
+2.28.0
 
