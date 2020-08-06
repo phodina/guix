@@ -1,7 +1,7 @@
-From eff9d0a19176eaee8f2cf775e35b9f2e6bb6bfc0 Mon Sep 17 00:00:00 2001
+From a0a431a31237cfd281a16ca0dd1ca31853fb1752 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:42:54 +0200
-Subject: [PATCH 20/24] arm64: dts: rockchip: use power led for disk-activity
+Subject: [PATCH 19/26] arm64: dts: rockchip: use power led for disk-activity
  indication
 
 Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
@@ -10,10 +10,10 @@ Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
-index 75eebcf4b5e3..56e767a03f85 100644
+index aed6426273c0..73af605d6175 100644
 --- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
-@@ -110,7 +110,8 @@ green-led {
+@@ -110,7 +110,8 @@ green_led: led-0 {
  			default-state = "on";
  			function = LED_FUNCTION_POWER;
  			gpios = <&gpio0 RK_PB3 GPIO_ACTIVE_HIGH>;
@@ -22,7 +22,7 @@ index 75eebcf4b5e3..56e767a03f85 100644
 +			linux,default-trigger = "mmc2-inverted";
  		};
  
- 		red-led {
+ 		red_led: led-1 {
 -- 
-2.26.2
+2.28.0
 

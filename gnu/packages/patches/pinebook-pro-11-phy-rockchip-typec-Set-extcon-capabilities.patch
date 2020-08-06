@@ -1,7 +1,7 @@
-From fc49f74edfdbfe2352270eefc4e77ec7a2d1316f Mon Sep 17 00:00:00 2001
+From 32dbd649f3251732cccf5b0bac2e0e2334a6e3bf Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:25:32 +0200
-Subject: [PATCH 12/24] phy: rockchip: typec: Set extcon capabilities
+Subject: [PATCH 11/26] phy: rockchip: typec: Set extcon capabilities
 
 Do not mainline, hack.
 
@@ -46,5 +46,5 @@ index 24563160197f..f5b497b4b97e 100644
  
  	pm_runtime_enable(dev);
 -- 
-2.26.2
+2.28.0
 

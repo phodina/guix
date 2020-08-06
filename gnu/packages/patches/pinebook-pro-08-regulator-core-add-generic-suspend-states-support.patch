@@ -1,7 +1,7 @@
-From 6869de1745d52ae5279b9166bd544394a52cccbb Mon Sep 17 00:00:00 2001
+From 7aec49cb387e9f5ad51e8e0d3b01376a416d4ff2 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:19:31 +0200
-Subject: [PATCH 09/24] regulator: core: add generic suspend states support
+Subject: [PATCH 08/26] regulator: core: add generic suspend states support
 
 This commit adds genric suspend support for regualtors without
 explicit suspend ops.
@@ -15,10 +15,10 @@ Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
  2 files changed, 47 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 7486f6e4e613..b03b00ea5a53 100644
+index 03154f5b939f..2354ec5072a8 100644
 --- a/drivers/regulator/core.c
 +++ b/drivers/regulator/core.c
-@@ -5268,6 +5268,14 @@ void regulator_unregister(struct regulator_dev *rdev)
+@@ -5286,6 +5286,14 @@ void regulator_unregister(struct regulator_dev *rdev)
  EXPORT_SYMBOL_GPL(regulator_unregister);
  
  #ifdef CONFIG_SUSPEND
@@ -33,7 +33,7 @@ index 7486f6e4e613..b03b00ea5a53 100644
  /**
   * regulator_suspend - prepare regulators for system wide suspend
   * @dev: ``&struct device`` pointer that is passed to _regulator_suspend()
-@@ -5278,10 +5286,33 @@ static int regulator_suspend(struct device *dev)
+@@ -5296,10 +5304,33 @@ static int regulator_suspend(struct device *dev)
  {
  	struct regulator_dev *rdev = dev_to_rdev(dev);
  	suspend_state_t state = pm_suspend_target_state;
@@ -67,7 +67,7 @@ index 7486f6e4e613..b03b00ea5a53 100644
  	regulator_unlock(rdev);
  
  	return ret;
-@@ -5300,10 +5331,19 @@ static int regulator_resume(struct device *dev)
+@@ -5318,10 +5349,19 @@ static int regulator_resume(struct device *dev)
  
  	regulator_lock(rdev);
  
@@ -92,10 +92,10 @@ index 7486f6e4e613..b03b00ea5a53 100644
  	regulator_unlock(rdev);
  
 diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index 29d920516e0b..549b68c58e68 100644
+index 7eb9fea8e482..077a935b19c5 100644
 --- a/include/linux/regulator/driver.h
 +++ b/include/linux/regulator/driver.h
-@@ -482,6 +482,9 @@ struct regulator_dev {
+@@ -465,6 +465,9 @@ struct regulator_dev {
  
  	/* time when this regulator was disabled last time */
  	unsigned long last_off_jiffy;
@@ -106,5 +106,5 @@ index 29d920516e0b..549b68c58e68 100644
  
  struct regulator_dev *
 -- 
-2.26.2
+2.28.0
 

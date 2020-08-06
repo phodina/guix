@@ -1,7 +1,7 @@
-From 7724e6a8e3d5328edc2111c457e5d47b1adf8e1e Mon Sep 17 00:00:00 2001
+From 9ef294895cf135238269e12457f104a42397b59b Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:12:56 +0200
-Subject: [PATCH 05/24] tty: serdev: support shutdown op
+Subject: [PATCH 04/26] tty: serdev: support shutdown op
 
 Allow serdev drivers to register a shutdown handler
 
@@ -51,5 +51,5 @@ index 9f14f9c12ec4..94050561325c 100644
  
  static inline struct serdev_device_driver *to_serdev_device_driver(struct device_driver *d)
 -- 
-2.26.2
+2.28.0
 

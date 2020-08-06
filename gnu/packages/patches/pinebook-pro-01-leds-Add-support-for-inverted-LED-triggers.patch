@@ -1,7 +1,7 @@
-From 78b2a7194121b12aca6308cc4845f4634d522895 Mon Sep 17 00:00:00 2001
+From ce1fd4c30259779c058c52c1471f6fdb718fd3a5 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:01:59 +0200
-Subject: [PATCH 02/24] leds: Add support for inverted LED triggers
+Subject: [PATCH 01/26] leds: Add support for inverted LED triggers
 
 Needs to be changed for upstream, invert via sysfs not trigger duplication
 
@@ -254,5 +254,5 @@ index 2451962d1ec5..c15298502b39 100644
  	/* set_brightness_work / blink_timer flags, atomic, private. */
  	unsigned long		work_flags;
 -- 
-2.26.2
+2.28.0
 
