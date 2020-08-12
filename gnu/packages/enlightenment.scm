@@ -70,7 +70,7 @@
 (define-public efl
   (package
     (name "efl")
-    (version "1.24.2")
+    (version "1.24.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -78,7 +78,7 @@
                     version ".tar.xz"))
               (sha256
                (base32
-                "0w3srvigg4kfi7xq76c7y4hnq5yr2gxrrsvlyj1g2wc1igz1vyg1"))))
+                "0ajwc8lmay5ai7nsrp778g393h0p4h98p4c22gic2w61fgkcd5fy"))))
     (build-system meson-build-system)
     (native-inputs
      `(("check" ,check)
@@ -152,11 +152,6 @@
                            ;               (assoc-ref %build-inputs "hyphen")
                            ;               "/share/hyphen")
                            "-Dnetwork-backend=connman"
-                           ,@(match (%current-system)
-                               ("armhf-linux"
-                                '("-opengl=es-egl"))
-                               (_
-                                '("-Dopengl=full")))
                            ;; for wayland
                            "-Dwl=true"
                            "-Ddrm=true")
@@ -204,7 +199,7 @@ removable devices or support for multimedia.")
 (define-public terminology
   (package
     (name "terminology")
-    (version "1.7.0")
+    (version "1.8.1")
     (source (origin
               (method url-fetch)
               (uri
@@ -212,7 +207,7 @@ removable devices or support for multimedia.")
                               "terminology/terminology-" version ".tar.xz"))
               (sha256
                (base32
-                "11qan2k6w94cglysh95yxkbv6hw9x15ri927hkiy3k0hbmpbrxc8"))
+                "1fxqjf7g30ix4qxi6366rrax27s3maxq43z2vakwnhz4mp49m9h4"))
               (modules '((guix build utils)))
               ;; Remove the bundled fonts.
               (snippet
@@ -293,7 +288,7 @@ Libraries with some extra bells and whistles.")
 (define-public enlightenment
   (package
     (name "enlightenment")
-    (version "0.24.1")
+    (version "0.24.2")
     (source (origin
               (method url-fetch)
               (uri
@@ -301,7 +296,7 @@ Libraries with some extra bells and whistles.")
                               "enlightenment/enlightenment-" version ".tar.xz"))
               (sha256
                (base32
-                "02aadl5fqvpmpjnisrc4aw7ffwyp1109y4k1wvmp33ciihbvdqmf"))
+                "1wfz0rwwsx7c1mkswn4hc9xw1i6bsdirhxiycf7ha2vcipqy465y"))
               (patches (search-patches "enlightenment-fix-setuid-path.patch"))))
     (build-system meson-build-system)
     (arguments
@@ -577,7 +572,7 @@ directories.
 (define-public evisum
   (package
     (name "evisum")
-    (version "0.4.1")
+    (version "0.5.2")
     (source
       (origin
         (method url-fetch)
@@ -585,7 +580,7 @@ directories.
                             "evisum/evisum-" version ".tar.xz"))
         (sha256
          (base32
-          "0c3sgz6g8agig1i6fwn1jv318zsm556l9f3f0dm1jll146dlk2iv"))))
+          "1s2d61hjlyh212d9d7rpdlcv90lxsb8br89806wakgnadqygh9gc"))))
     (build-system meson-build-system)
     (arguments
      '(#:tests? #f))    ; no tests

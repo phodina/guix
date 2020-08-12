@@ -8,6 +8,7 @@
 ;;; Copyright © 2019 Robert Vollmert <rob@vllmrt.net>
 ;;; Copyright © 2019 John Soo <jsoo1@asu.edu>
 ;;; Copyright © 2020 Alexandru-Sergiu Marton <brown121407@gmail.com>
+;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -91,6 +92,27 @@ for screen-scraping.")
     (home-page "https://github.com/snoyberg/cookie")
     (synopsis "HTTP cookie parsing and rendering")
     (description "HTTP cookie parsing and rendering library for Haskell.")
+    (license license:bsd-3)))
+
+(define-public ghc-curl
+  (package
+    (name "ghc-curl")
+    (version "1.3.8")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://hackage/package/curl/curl-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "0vj4hpaa30jz7c702xpsfvqaqdxz28zslsqnsfx6bf6dpwvck1wh"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("curl" ,curl)))
+    (home-page "https://hackage.haskell.org/package/curl")
+    (synopsis "Haskell bindings for libcurl")
+    (description
+     "@code{libcurl} is a versatile client-side URL transfer library.
+This package provides a Haskell binding to libcurl.")
     (license license:bsd-3)))
 
 (define-public ghc-httpd-shed
@@ -546,7 +568,7 @@ Haskell's Web Application Interface (WAI).")
        ("ghc-tasty-hedgehog" ,ghc-tasty-hedgehog)
        ("ghc-tasty-hunit" ,ghc-tasty-hunit)
        ("ghc-doctest" ,ghc-doctest)))
-    (home-page "http://github.com/sjakobi/bsb-http-chunked")
+    (home-page "https://github.com/sjakobi/bsb-http-chunked")
     (synopsis "Chunked HTTP transfer encoding for bytestring builders")
     (description "This Haskell library contains functions for encoding
 bytestring builders for chunked Hypertext Transfer Protocol (HTTP) 1.1
@@ -594,7 +616,7 @@ transfers.")
        ("ghc-hunit" ,ghc-hunit)
        ("ghc-http-client" ,ghc-http-client)
        ("hspec-discover" ,hspec-discover)))
-    (home-page "http://github.com/yesodweb/wai")
+    (home-page "https://github.com/yesodweb/wai")
     (synopsis "HTTP server library for Haskell's WAI")
     (description "Warp is a server library for HTTP/1.x and HTTP/2
 based WAI (Web Application Interface in Haskell).")
@@ -649,7 +671,7 @@ limitation, automatic pruning, energy saving and replay resistance.")
        ("ghc-tls-session-manager" ,ghc-tls-session-manager)
        ("ghc-wai" ,ghc-wai)
        ("ghc-warp" ,ghc-warp)))
-    (home-page "http://github.com/yesodweb/wai")
+    (home-page "https://github.com/yesodweb/wai")
     (synopsis "SSL/TLS support for Warp")
     (description "This package provides SSL/TLS support for Warp,
 a WAI handler, via the native Haskell TLS implementation.")
@@ -785,7 +807,7 @@ attacks.")
      `(("ghc-attoparsec" ,ghc-attoparsec)
        ("ghc-hspec" ,ghc-hspec)
        ("ghc-quickcheck" ,ghc-quickcheck)))
-    (home-page "http://www.yesodweb.com/")
+    (home-page "https://www.yesodweb.com/")
     (synopsis "CSS parser and renderer")
     (description "This package provides a CSS parser and renderer for
 Haskell.")
@@ -1266,7 +1288,7 @@ functions, widgets, etc.")
                      ("ghc-wai-extra" ,ghc-wai-extra)
                      ("ghc-yesod-core" ,ghc-yesod-core)
                      ("ghc-persistent-sqlite" ,ghc-persistent-sqlite)))
-    (home-page "http://www.yesodweb.com/")
+    (home-page "https://www.yesodweb.com/")
     (synopsis "Helpers for using Persistent from Yesod")
     (description "This Haskell package provides helpers for using Persistent
 from Yesod.")
@@ -1425,7 +1447,7 @@ ignored.")
     (inputs
      `(("ghc-hxt-charproperties" ,ghc-hxt-charproperties)
        ("ghc-hunit" ,ghc-hunit)))
-    (home-page "http://www.haskell.org/haskellwiki/Regular_expressions_for_XML_Schema")
+    (home-page "https://wiki.haskell.org/Regular_expressions_for_XML_Schema")
     (synopsis "Regular expression library for W3C XML Schema regular expressions")
     (description
      "This library supports full W3C XML Schema regular expressions inclusive

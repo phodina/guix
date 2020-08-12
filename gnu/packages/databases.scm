@@ -42,6 +42,8 @@
 ;;; Copyright © 2020 Nicolò Balzarotti <nicolo@nixo.xyz>
 ;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
 ;;; Copyright © 2020 Lars-Dominik Braun <ldb@leibniz-psychology.org>
+;;; Copyright © 2020 Guy Fleury Iteriteka <gfleury@disroot.org>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -147,7 +149,7 @@
     (source (origin
       (method git-fetch)
       (uri (git-reference
-             (url "https://github.com/4store/4store.git")
+             (url "https://github.com/4store/4store")
              (commit (string-append "v" version))))
       (file-name (git-file-name name version))
       (sha256
@@ -609,6 +611,36 @@ RDBMS systems (which are deep in functionality).")
                    ;; Some parts are licensed under the Apache License
                    license:asl2.0))))
 
+(define-public mycli
+  (package
+    (name "mycli")
+    (version "1.22.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "mycli" version))
+        (sha256
+          (base32 "1lq2x95553vdmhw13cxcgsd2g2i32izhsb7hxd4m1iwf9b3msbpv"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f))                    ; tests expect a running MySQL
+    (propagated-inputs
+      `(("python-cli-helpers" ,python-cli-helpers)
+        ("python-click" ,python-click)
+        ("python-configobj" ,python-configobj)
+        ("python-cryptography" ,python-cryptography)
+        ("python-prompt-toolkit" ,python-prompt-toolkit)
+        ("python-pygments" ,python-pygments)
+        ("python-pymysql" ,python-pymysql)
+        ("python-sqlparse" ,python-sqlparse)))
+    (home-page "http://mycli.net")
+    (synopsis
+      "Terminal Client for MySQL with AutoCompletion and Syntax Highlighting")
+    (description
+      "MyCLI is a command line interface for MySQL, MariaDB, and Percona with
+auto-completion and syntax highlighting.")
+    (license license:bsd-3)))
+
 ;; XXX When updating, check whether boost-for-mysql is still needed.
 ;; It might suffice to patch ‘cmake/boost.cmake’ as done in the past.
 (define-public mysql
@@ -684,7 +716,7 @@ Language.")
 (define-public mariadb
   (package
     (name "mariadb")
-    (version "10.1.44")
+    (version "10.1.45")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://downloads.mariadb.com/MariaDB"
@@ -692,7 +724,7 @@ Language.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0fah6d50hldq0farxwr8mj3jnniwdz0d1wsha07nx37fc79h7wi1"))
+                "1mfs0x4c0z7d306n128dxdawk3llk25vxif5zwl20fv1z5qhz3wx"))
               (patches (search-patches "mariadb-client-test-32bit.patch"))
               (modules '((guix build utils)))
               (snippet
@@ -938,7 +970,7 @@ as a drop-in replacement of MySQL.")
 (define-public mariadb-connector-c
   (package
     (name "mariadb-connector-c")
-    (version "3.1.8")
+    (version "3.1.9")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -947,7 +979,7 @@ as a drop-in replacement of MySQL.")
                     version "-src.tar.gz"))
               (sha256
                (base32
-                "0yrzhsxmjiwkhchagx8dymzhvxl3k5h40wn9wpicqjvgjb9k8523"))))
+                "1izjzf7yzjqzlk8dkp327fa9lawsv2hnnlnr7g5lshyx5azrk38h"))))
     (inputs
      `(("openssl" ,openssl)))
     (build-system cmake-build-system)
@@ -963,14 +995,14 @@ developed in C/C++ to MariaDB and MySQL databases.")
 (define-public postgresql
   (package
     (name "postgresql")
-    (version "10.12")
+    (version "10.13")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://ftp.postgresql.org/pub/source/v"
                                   version "/postgresql-" version ".tar.bz2"))
               (sha256
                (base32
-                "1rsab4zf4rx7pvvhlwhb04kb95aiad9cwazc4ksbvg2gij47z3rq"))
+                "1qal0yp7a90yzya7hl56gsmw5fvacplrdhpn7h9gnbyr1i2iyw2d"))
               (patches (search-patches "postgresql-disable-resolve_symlinks.patch"))))
     (build-system gnu-build-system)
     (arguments
@@ -1147,7 +1179,7 @@ including field and record folding.")))
 (define-public rocksdb
   (package
     (name "rocksdb")
-    (version "6.8.1")
+    (version "6.11.4")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1156,7 +1188,7 @@ including field and record folding.")))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0i6qglyrcqwxnrvq67zm7ln79a4sj8mzgij9h0nz5zkxax8v1zg1"))
+                "0n19p9cd13jg0lnibrzwkxs4xlrhyj3knypkd2ic41arbds0bdnl"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -1401,7 +1433,7 @@ which uses SQL to describe changes.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/coffeeandscripts/sqlcrush.git")
+                      (url "https://github.com/coffeeandscripts/sqlcrush")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -1481,15 +1513,14 @@ extremely small.")
 (define-public perl-dbix-class
   (package
     (name "perl-dbix-class")
-    (version "0.082841")
+    (version "0.082842")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/R/RI/RIBASUSHI/"
                            "DBIx-Class-" version ".tar.gz"))
        (sha256
-        (base32
-         "1gf3hgv8f9rnr8bl4ljgsqk4aliphmvljhsk4282kvdc4mcgh1fp"))))
+        (base32 "1rh7idjjbibc1zmiaaarask434lh0lx7f2xyfwmy37k9fa0xcpmh"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-dbd-sqlite" ,perl-dbd-sqlite)
@@ -1517,7 +1548,7 @@ extremely small.")
        ("perl-path-class" ,perl-path-class)
        ("perl-scalar-list-utils" ,perl-scalar-list-utils)
        ("perl-scope-guard" ,perl-scope-guard)
-       ("perl-sql-abstract" ,perl-sql-abstract)
+       ("perl-sql-abstract-classic" ,perl-sql-abstract-classic)
        ("perl-sub-name" ,perl-sub-name)
        ("perl-text-balanced" ,perl-text-balanced)
        ("perl-try-tiny" ,perl-try-tiny)))
@@ -1753,14 +1784,14 @@ libmysqlclient.  It will fill an aray with long options, ready to be parsed by
 (define-public perl-sql-abstract
   (package
     (name "perl-sql-abstract")
-    (version "1.86")
+    (version "1.87")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/I/IL/ILMARI/"
                            "SQL-Abstract-" version ".tar.gz"))
        (sha256
-        (base32 "1pwcm8hwxcgidyyrak37lx69d85q728jxsb0b14jz93gbvdgg9z7"))))
+        (base32 "0jhw91b23wc9bkfwcgvka4x5ddxk58m9bcp5ay7a3vx77nla09p9"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-module-install" ,perl-module-install)
@@ -1780,6 +1811,42 @@ been modified to make the SQL easier to generate from Perl data structures.
 The underlying idea is for this module to do what you mean, based on the data
 structures you provide it, so that you don't have to modify your code every
 time your data changes.")
+    (license license:perl-license)))
+
+(define-public perl-sql-abstract-classic
+  (package
+    (name "perl-sql-abstract-classic")
+    (version "1.91")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://cpan/authors/id/R/RI/RIBASUSHI/"
+                           "SQL-Abstract-Classic-" version ".tar.gz"))
+       (sha256
+        (base32 "0a7g13hs3kdxrjn43sfli09mgsi9d6w0dfw6hlk268av17yisgaf"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-test-deep" ,perl-test-deep)
+       ("perl-test-exception" ,perl-test-exception)
+       ("perl-test-warn" ,perl-test-warn)))
+    (propagated-inputs
+     `(("perl-mro-compat" ,perl-mro-compat)
+       ("perl-sql-abstract" ,perl-sql-abstract)))
+    (home-page "https://metacpan.org/release/SQL-Abstract-Classic")
+    (synopsis "Generate SQL from Perl data structures")
+    (description
+     "This module is nearly identical to @code{SQL::Abstract} 1.81, and exists
+to preserve the ability of users to opt into the new way of doing things in
+later versions according to their own schedules.
+
+It is an abstract SQL generation module based on the concepts used by
+@code{DBIx::Abstract}, with several important differences, especially when it
+comes to @code{WHERE} clauses.  These concepts were modified to make the SQL
+easier to generate from Perl data structures.
+
+The underlying idea is for this module to do what you mean, based on the data
+structures you provide it.  You shouldn't have to modify your code every time
+your data changes, as this module figures it out.")
     (license license:perl-license)))
 
 (define-public perl-sql-splitstatement
@@ -1906,14 +1973,14 @@ sets, bitmaps and hyperloglogs.")
 (define-public kyotocabinet
   (package
     (name "kyotocabinet")
-    (version "1.2.77")
+    (version "1.2.78")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://fallabs.com/kyotocabinet/pkg/"
-                                  name "-" version ".tar.gz"))
+              (uri (string-append "https://fallabs.com/kyotocabinet/pkg/"
+                                  "kyotocabinet-" version ".tar.gz"))
               (sha256
                (base32
-                "1rlx4307adbzd842b4npq6cwlw8h010ingxaz3qz1ijc70lr72an"))))
+                "1bxkf9kmcavq9rqridb8mvmrk3hj4447ffi24m2admsbm61n6k29"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -1922,7 +1989,7 @@ sets, bitmaps and hyperloglogs.")
         (string-append "LDFLAGS=-Wl,-rpath="
                        (assoc-ref %outputs "out") "/lib"))))
     (inputs `(("zlib" ,zlib)))
-    (home-page "http://fallabs.com/kyotocabinet/")
+    (home-page "https://fallabs.com/kyotocabinet/")
     (synopsis
      "Kyoto Cabinet is a modern implementation of the DBM database")
     (description
@@ -2125,7 +2192,7 @@ virtual address space — not physical RAM.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/drycpp/lmdbxx.git")
+             (url "https://github.com/drycpp/lmdbxx")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -2354,7 +2421,7 @@ for ODBC.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/brianb/mdbtools.git")
+             (url "https://github.com/brianb/mdbtools")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -2553,13 +2620,13 @@ Database API 2.0T.")
 (define-public python-sqlalchemy
   (package
     (name "python-sqlalchemy")
-    (version "1.3.15")
+    (version "1.3.18")
     (source
      (origin
       (method url-fetch)
       (uri (pypi-uri "SQLAlchemy" version))
       (sha256
-       (base32 "0iglkvymfp35zm5pxy5kzqvcv96kkas0chqdx7xpla86sspa9k64"))))
+       (base32 "1rwc6ss1cnz3kxx0p9p6xw0w79r8qw03lcc29k31yb3rcigvfbys"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-cython" ,python-cython) ; for C extensions
@@ -2636,15 +2703,13 @@ You might also want to install the following optional dependencies:
 (define-public python-alembic
   (package
     (name "python-alembic")
-    (version "1.4.1")
+    (version "1.4.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "alembic" version))
-       (patches (search-patches "python-alembic-exceptions-cause.patch"))
        (sha256
-        (base32
-         "0a4hzn76csgbf1px4f5vfm256byvjrqkgi9869nkcjrwjn35c6kr"))))
+        (base32 "1gsdrzx9h7wfva200qvvsc9sn4w79mk2vs0bbnzjhxi1jw2b0nh3"))))
     (build-system python-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases
@@ -2820,13 +2885,13 @@ designed to be easy and intuitive to use.")
 (define-public python-psycopg2
   (package
     (name "python-psycopg2")
-    (version "2.8.4")
+    (version "2.8.5")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "psycopg2" version))
        (sha256
-        (base32 "1djvh98pi4hjd8rxbq8qzc63bg8v78k33yg6pl99wak61b6fb67q"))))
+        (base32 "06081jk9srkd4ra9j8b93x9ld3a2yxsbsf5bbbcivbm1yx065m7p"))))
     (build-system python-build-system)
     (arguments
      ;; Tests would require a postgresql database "psycopg2_test"
@@ -3039,13 +3104,13 @@ is designed to have a low barrier to entry.")
 (define-public python-sqlparse
   (package
     (name "python-sqlparse")
-    (version "0.2.4")
+    (version "0.3.1")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "sqlparse" version))
               (sha256
                (base32
-                "1v3xh0bkfhb262dbndgzhivpnhdwavdzz8jjhx9vx0xbrx2880nf"))))
+                "0j652a6z7bdf6c77aczfn8m8b2nsr1bcqq48wzghf8vi6wvj0qp1"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -3090,7 +3155,7 @@ transforms idiomatic python function calls to well-formed SQL queries.")
     (source
      (origin (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/kayak/pypika.git")
+                   (url "https://github.com/kayak/pypika")
                    (commit (string-append "v" version))))
              (file-name (git-file-name name version))
              (sha256

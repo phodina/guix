@@ -33,6 +33,7 @@
             image
             image-name
             image-format
+            image-target
             image-size
             image-operating-system
             image-partitions
@@ -66,7 +67,11 @@
 (define-record-type* <image>
   image make-image
   image?
+  (name               image-name ;symbol
+                      (default #f))
   (format             image-format) ;symbol
+  (target             image-target
+                      (default #f))
   (size               image-size  ;size in bytes as integer
                       (default 'guess))
   (operating-system   image-operating-system  ;<operating-system>

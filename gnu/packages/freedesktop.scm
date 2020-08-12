@@ -20,6 +20,7 @@
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;; Copyright © 2020 Rene Saavedra <pacoon@protonmail.com>
 ;;; Copyright © 2020 Nicolò Balzarotti <nicolo@nixo.xyz>
+;;; Copyright © 2020 Anders Thuné <asse.97@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -47,6 +48,7 @@
   #:use-module (guix build-system meson)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
+  #:use-module (guix build-system glib-or-gtk)
   #:use-module (gnu packages)
   #:use-module (gnu packages acl)
   #:use-module (gnu packages admin)
@@ -60,6 +62,7 @@
   #:use-module (gnu packages disk)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages documentation)
+  #:use-module (gnu packages fontutils)
   #:use-module (gnu packages gawk)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
@@ -77,6 +80,7 @@
   #:use-module (gnu packages man)
   #:use-module (gnu packages m4)
   #:use-module (gnu packages nss)
+  #:use-module (gnu packages package-management)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages perl-check)
   #:use-module (gnu packages pkg-config)
@@ -185,14 +189,14 @@ freedesktop.org project.")
   ;; Updating this will rebuild over 700 packages through libinput-minimal.
   (package
     (name "libinput")
-    (version "1.15.2")
+    (version "1.15.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://freedesktop.org/software/libinput/"
                                   "libinput-" version ".tar.xz"))
               (sha256
                (base32
-                "0ivpb4sghl80cs7jg3xrs53kckif6wy81cny3a8mry94nszky74p"))))
+                "15ww4jl3lcxyi8m8idg8canklbqv729gnwpkz7r98c1w8a7zq3m9"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags '("-Ddocumentation=false")
@@ -847,7 +851,7 @@ XEv.")
 (define-public exempi
   (package
     (name "exempi")
-    (version "2.5.1")
+    (version "2.5.2")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -855,11 +859,22 @@ XEv.")
                    name "-" version ".tar.bz2"))
              (sha256
               (base32
-               "1j4vx054l1c2cggw4aka4iw48jkcf68qk5y064pbqw1k3ddks2qh"))))
+               "1mdfxb36p8251n5m7l55gx3fcqpk46yz9v568xfr8igxmqa47xaj"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags (list (string-append "--with-boost="
-                               (assoc-ref %build-inputs "boost")))))
+                                              (assoc-ref %build-inputs "boost")))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'remove-static-library
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; XXX: Some tests fail to build with --disable-static due to
+             ;; symbols not being visible in the shared library:
+             ;; <https://gitlab.freedesktop.org/libopenraw/exempi/-/issues/17>.
+             ;; Simply delete the static library instead to save ~4.3 MiB.
+             (delete-file (string-append (assoc-ref outputs "out")
+                                         "/lib/libexempi.a"))
+             #t)))))
     (native-inputs
      `(("boost" ,boost))) ; tests
     (inputs
@@ -1869,4 +1884,145 @@ useful with system integration.")
     (description "A library to allow applications to export a menu, originally
 into the Unity menu bar.  Based on KSNI, it also works in KDE and will
 fallback to generic Systray support if none of those are available.")
+    (license license:lgpl2.1+)))
+
+(define-public libportal
+  (let ((commit "bff3289")
+        (revision "1"))
+    (package
+      (name "libportal")
+      (version (git-version "0.3" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/flatpak/libportal")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "104b91qircr1i9jkmm6f725awywky52aimrki303kiaadn2v8b5i"))))
+      (build-system meson-build-system)
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           (add-after 'install 'move-doc
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let ((out (assoc-ref outputs "out"))
+                     (doc (assoc-ref outputs "doc"))
+                     (html "/share/gtk-doc"))
+                 (copy-recursively (string-append out html)
+                                   (string-append doc html))
+                 (delete-file-recursively (string-append out html))
+                 #t))))))
+      (native-inputs
+       `(("pkg-config" ,pkg-config)
+         ("gtk-doc" ,gtk-doc)
+         ("docbook-xsl" ,docbook-xsl)
+         ("docbook-xml" ,docbook-xml)
+         ("libxml2" ,libxml2)
+         ("glib:bin" ,glib "bin")))
+      (propagated-inputs
+       `(("glib" ,glib)))
+      (outputs '("out" "doc"))
+      (home-page "https://github.com/flatpak/libportal")
+      (synopsis "Flatpak portal library")
+      (description
+       "libportal provides GIO-style async APIs for most Flatpak portals.")
+      (license license:lgpl2.1+))))
+
+(define-public xdg-desktop-portal
+  (package
+    (name "xdg-desktop-portal")
+    (version "1.7.2")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/flatpak/xdg-desktop-portal")
+                     (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0rkwpsmbn3d3spkzc2zsd50l2r8pp4la390zcpsawaav8w7ql7xm"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("glib:bin" ,glib "bin")
+       ("which" ,which)
+       ("gettext" ,gettext-minimal)))
+    (inputs
+     `(("glib" ,glib)
+       ("flatpak" ,flatpak)
+       ("fontconfig" ,fontconfig)
+       ("json-glib" ,json-glib)
+       ("libportal" ,libportal)
+       ("dbus" ,dbus)
+       ("geoclue" ,geoclue)
+       ("pipewire" ,pipewire-0.3)
+       ("fuse" ,fuse)))
+    (home-page "https://github.com/flatpak/xdg-desktop-portal")
+    (synopsis "Desktop integration portal for sandboxed apps")
+    (description
+     "xdg-desktop-portal is a @dfn{portal front-end service} for Flatpak and
+possibly other desktop containment frameworks.  It works by exposing a series
+of D-Bus interfaces known as portals under a well-known
+name (@code{org.freedesktop.portal.Desktop}) and object
+path (@code{/org/freedesktop/portal/desktop}).
+
+The portal interfaces include APIs for file access, opening URIs, printing
+and others.")
+    (license license:lgpl2.1+)))
+
+(define-public xdg-desktop-portal-gtk
+  (package
+    (name "xdg-desktop-portal-gtk")
+    (version "1.7.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/flatpak/xdg-desktop-portal-gtk")
+                     (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "183iha9dxmvprn99ymgz17jx1lyn1fj5jyj6ghxl716zn9mxmird"))))
+    (build-system glib-or-gtk-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'po-chmod
+           (lambda _
+             ;; Make sure 'msgmerge' can modify the PO files.
+             (for-each (lambda (po)
+                         (chmod po #o666))
+                       (find-files "po" "\\.po$"))
+             #t)))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("xdg-desktop-portal" ,xdg-desktop-portal)
+       ("glib:bin" ,glib "bin")
+       ("which" ,which)
+       ("gettext" ,gettext-minimal)))
+    (inputs
+     `(("glib" ,glib)
+       ("gtk" ,gtk+)
+       ("fontconfig" ,fontconfig)
+       ("gnome-desktop" ,gnome-desktop)
+       ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)))
+    (native-search-paths
+     (list (search-path-specification
+            (variable "XDG_DESKTOP_PORTAL_DIR")
+            (files '("share/xdg-desktop-portal/portals")))))
+    (home-page "https://github.com/flatpak/xdg-desktop-portal-gtk")
+    (synopsis "GTK implementation of xdg-desktop-portal")
+    (description
+     "This package provides a backend implementation for xdg-desktop-portal
+which uses GTK+ and various pieces of GNOME infrastructure, such as the
+@code{org.gnome.Shell.Screenshot} or @code{org.gnome.SessionManager} D-Bus
+interfaces.")
     (license license:lgpl2.1+)))

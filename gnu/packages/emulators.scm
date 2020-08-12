@@ -44,8 +44,11 @@
   #:use-module (gnu packages boost)
   #:use-module (gnu packages backup)
   #:use-module (gnu packages cdrom)
+  #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages cross-base)
   #:use-module (gnu packages curl)
+  #:use-module (gnu packages digest)
   #:use-module (gnu packages elf)
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages fontutils)
@@ -88,7 +91,8 @@
   #:use-module (gnu packages web)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system glib-or-gtk)
-  #:use-module (guix build-system gnu))
+  #:use-module (guix build-system gnu)
+  #:use-module (guix build-system python))
 
 (define-public desmume
   (package
@@ -136,7 +140,7 @@
        (origin
          (method git-fetch)
          (uri (git-reference
-               (url "https://github.com/dolphin-emu/dolphin.git")
+               (url "https://github.com/dolphin-emu/dolphin")
                (commit commit)))
          (file-name (git-file-name name version))
          (modules '((guix build utils)))
@@ -285,7 +289,7 @@ older games.")
       (source (origin
                 (method git-fetch) ; no tarball available
                 (uri (git-reference
-                      (url "https://github.com/Aloshi/EmulationStation.git")
+                      (url "https://github.com/Aloshi/EmulationStation")
                       (commit commit))) ; no version tag
                 (file-name (git-file-name name version))
                 (sha256
@@ -319,7 +323,7 @@ and a game metadata scraper.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/higan-emu/higan.git")
+             (url "https://github.com/higan-emu/higan")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -411,19 +415,80 @@ Pocket Color, WonderSwan, WonderSwan Color, SwanCrystal, Pocket Challenge
 V2.")
     (license license:gpl3+)))
 
+(define-public mednafen
+  (package
+    (name "mednafen")
+    (version "1.24.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://mednafen.github.io/releases/files/"
+                           "mednafen-" version ".tar.xz"))
+       (sha256
+        (base32 "03zplcfvmnnv7grhacmr1zy789pb2wda36wylmzmar23g0zqbsix"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list
+        ;; "--with-external-mpcdec"
+        "--with-external-lzo")))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("alsa" ,alsa-lib)
+       ;; ("libmpcdec" ,libmpcdec) FIXME: not recognized.
+       ("libsndfile" ,libsndfile)
+       ("lzo" ,lzo)
+       ("sdl2" ,sdl2)
+       ("zlib" ,zlib)))
+    (home-page "https://mednafen.github.io/")
+    (synopsis "Multi-system emulator utilizing OpenGL and SDL")
+    (description
+     "Mednafen is a portable, utilizing OpenGL and SDL, argument-driven
+multi-system emulator.  Mednafen has the ability to remap hotkey functions and
+virtual system inputs to a keyboard, a joystick, or both simultaneously.  Save
+states are supported, as is real-time game rewinding.  Screen snapshots may be
+taken, in the PNG file format, at the press of a button.  Mednafen can record
+audiovisual movies in the QuickTime file format, with several different
+lossless codecs supported.
+
+The following systems are supported:
+
+@itemize
+@item Apple II/II+
+@item Atari Lynx
+@item Neo Geo Pocket (Color)
+@item WonderSwan
+@item GameBoy (Color)
+@item GameBoy Advance
+@item Nintendo Entertainment System
+@item Super Nintendo Entertainment System/Super Famicom
+@item Virtual Boy
+@item PC Engine/TurboGrafx 16 (CD)
+@item SuperGrafx
+@item PC-FX
+@item Sega Game Gear
+@item Sega Genesis/Megadrive
+@item Sega Master System
+@item Sega Saturn (experimental, x86_64 only)
+@item Sony PlayStation
+@end itemize")
+    ;; Main license is GPL2+.  Some parts are BSD-3.
+    (license (list license:gpl2+ license:bsd-3))))
+
 (define-public mgba
   (package
     (name "mgba")
-    (version "0.8.1")
+    (version "0.8.3")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mgba-emu/mgba.git")
+             (url "https://github.com/mgba-emu/mgba")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1if82mfaak3696w5d5yshynpzywrxgvg3ifdfi2rwlpvq1gpd429"))
+        (base32 "0rwlfjdr0rzbq4kaplvwsgyb8xq6nrzxss2c8xrgw9hqw3ymx4s3"))
        (modules '((guix build utils)))
        (snippet
         ;; Make sure we don't use the bundled software.
@@ -470,16 +535,16 @@ and Game Boy Color games.")
 (define-public sameboy
   (package
     (name "sameboy")
-    (version "0.13.1")
+    (version "0.13.5")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/LIJI32/SameBoy.git")
+             (url "https://github.com/LIJI32/SameBoy")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1il2bpbc3xyvvhbs2bgid64svjxcdl4dbqz6jy1azfmvzdp7jkrn"))))
+        (base32 "1v070w519l58wfyj2gpaghkaar4c0mpr8rhbkdmpnhb9rp2iajaz"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("rgbds" ,rgbds)
@@ -489,7 +554,7 @@ and Game Boy Color games.")
      `(("sdl2" ,sdl2)))
     (arguments
      `(#:tests? #f                      ; There are no tests
-       #:make-flags `("CC=gcc" "CONF=release"
+       #:make-flags `("CC=gcc" "NATIVE_CC=gcc" "CONF=release"
                       ,(string-append "DATA_DIR="
                                       (assoc-ref %outputs "out")
                                       "/share/sameboy/"))
@@ -522,7 +587,7 @@ from an emulator---from save states to scaling filters.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-core.git")
+             (url "https://github.com/mupen64plus/mupen64plus-core")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -571,7 +636,7 @@ core library.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-audio-sdl.git")
+             (url "https://github.com/mupen64plus/mupen64plus-audio-sdl")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -617,7 +682,7 @@ SDL audio plugin.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-input-sdl.git")
+             (url "https://github.com/mupen64plus/mupen64plus-input-sdl")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -662,7 +727,7 @@ SDL input plugin.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-rsp-hle.git")
+             (url "https://github.com/mupen64plus/mupen64plus-rsp-hle")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -704,7 +769,7 @@ high-level emulation (HLE) RSP processor plugin.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-rsp-z64.git")
+             (url "https://github.com/mupen64plus/mupen64plus-rsp-z64")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -746,7 +811,7 @@ Z64 RSP processor plugin.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-video-arachnoid.git")
+             (url "https://github.com/mupen64plus/mupen64plus-video-arachnoid")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -792,7 +857,7 @@ Arachnoid video plugin.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-video-glide64.git")
+             (url "https://github.com/mupen64plus/mupen64plus-video-glide64")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -846,7 +911,7 @@ Glide64 video plugin.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-video-glide64mk2.git")
+             (url "https://github.com/mupen64plus/mupen64plus-video-glide64mk2")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -896,7 +961,7 @@ Glide64MK2 video plugin.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-video-rice.git")
+             (url "https://github.com/mupen64plus/mupen64plus-video-rice")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -944,7 +1009,7 @@ Rice Video plugin.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-video-z64.git")
+             (url "https://github.com/mupen64plus/mupen64plus-video-z64")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -999,7 +1064,7 @@ Z64 video plugin.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mupen64plus/mupen64plus-ui-console.git")
+             (url "https://github.com/mupen64plus/mupen64plus-ui-console")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -1064,7 +1129,7 @@ towards a working Mupen64Plus for casual users.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/rdanbrook/nestopia.git")
+             (url "https://github.com/rdanbrook/nestopia")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -1115,7 +1180,7 @@ emulation community.  It provides highly accurate emulation.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/libretro/RetroArch.git")
+             (url "https://github.com/libretro/RetroArch")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1274,16 +1339,16 @@ play them on systems for which they were never designed!")
 (define-public mame
   (package
     (name "mame")
-    (version "0.221")
+    (version "0.222")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mamedev/mame.git")
+             (url "https://github.com/mamedev/mame")
              (commit (apply string-append "mame" (string-split version #\.)))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "07fl7alj9zlyb93i8lnn4706ndy3qiv0pjvwnwysk5rqa0r3463y"))
+        (base32 "1bfnwfxsnmza4s77ca0cyx4b290dwadkbbc2lyd7xa0yqrh7vvlx"))
        (modules '((guix build utils)))
        (snippet
         ;; Remove bundled libraries.
@@ -1621,4 +1686,340 @@ improvements.")
 derived from Gens.  Project goals include clean source code, combined features
 from various forks of Gens, and improved platform portability.")
     (supported-systems '("i686-linux" "x86_64-linux"))
+    (license license:gpl2+)))
+
+(define-public bsnes
+  (package
+    (name "bsnes")
+    (version "115")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/bsnes-emu/bsnes")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0j054x38fwai61vj36sc04r3zkzay5acq2cgd9zqv5hs51s36g5b"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:make-flags (list "-C" "bsnes"
+                          (string-append "prefix=" (assoc-ref %outputs "out")))
+       #:tests? #f                      ; No tests.
+       #:phases (modify-phases %standard-phases
+                  (delete 'configure))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("alsa-lib" ,alsa-lib)
+       ("ao" ,ao)
+       ("cairo" ,cairo)
+       ("eudev" ,eudev)
+       ("gtksourceview-2" ,gtksourceview-2)
+       ("libxrandr" ,libxrandr)
+       ("libxv" ,libxv)
+       ("openal" ,openal)
+       ("pulseaudio" ,pulseaudio)
+       ("sdl2" ,sdl2)))
+    (home-page "https://bsnes.dev/")
+    (synopsis "Emulator for the Super Nintendo / Super Famicom systems")
+    (description
+     "bsnes is a Super Nintendo / Super Famicom emulator that focuses on
+performance, features, and ease of use.")
+    (license license:gpl3)))
+
+;; python-pwntools requires a -rc release of unicorn
+(define-public unicorn
+  (let ((unless-x86
+          (lambda (code)
+            (if (member (%current-system) '("x86_64-linux" "i686-linux"))
+              '()
+              code))))
+    (package
+      (name "unicorn")
+      (version "1.0.2-rc4")
+      ;; NOTE: unicorn ships a bundled QEMU, but with a lot of custom modifications.
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/unicorn-engine/unicorn")
+               (commit version)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "17nyccgk7hpc4hab24yn57f1xnmr7kq4px98zbp2bkwcrxny8gwy"))))
+      (outputs '("out" "python"))
+      ;; The main library is not written in Python, but the build process has
+      ;; little in common with any defined build system, so we might as well
+      ;; build on top of python-build-system and make use of all
+      ;; the Python-specific phases that can be reused.
+      (build-system python-build-system)
+      (arguments
+       `(#:modules ((srfi srfi-26)
+                    (guix build python-build-system)
+                    (guix build utils))
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'install-bindings-to-python-output
+             (lambda* (#:key outputs #:allow-other-keys)
+               ;; python-build-system will build the bindings and install them to
+               ;; the "out" output, so change the build-internal names of the
+               ;; outputs.
+               ;;
+               ;; TODO: remove this once #40469 lands, through the core-updates
+               ;; holding zone, on master.
+               (set-car! (assoc "out" outputs) "lib")
+               (set-car! (assoc "python" outputs) "out")
+               #t))
+           (add-before 'build 'build-library
+             (lambda* (#:key inputs #:allow-other-keys)
+               (invoke "make"
+                       "-j" (number->string (parallel-job-count))
+                       "UNICORN_STATIC=no"
+                       "CC=gcc")))
+           (add-after 'build-library 'install-library
+             (lambda* (#:key outputs #:allow-other-keys)
+               (invoke "make" "install"
+                       "UNICORN_STATIC=no"
+                       (string-append
+                        "PREFIX="
+                        (assoc-ref outputs "lib")))))
+           (add-before 'build 'prepare-bindings
+             (lambda* (#:key outputs #:allow-other-keys)
+               (chdir "bindings/python")
+               ;; Set this environment variable so that the Python bindings
+               ;; don't build their own copy of the shared object, but use
+               ;; a dummy value such that the bindings test suite uses the
+               ;; same mechanism for loading the library as any other user.
+               (setenv "LIBUNICORN_PATH" "1")
+               (substitute* "unicorn/unicorn.py"
+                 (("_path_list = \\[.*")
+                  (string-append
+                   "_path_list = [\""
+                   (assoc-ref outputs "lib")
+                   ;; eat the rest of the list
+                   "/lib\"] + 0*[")))
+               #t))
+           (add-before 'check 'check-library
+             (lambda* (#:key outputs #:allow-other-keys)
+               (for-each
+                 (lambda (suite)
+                   (with-directory-excursion
+                     (string-append "../../tests/" suite)
+                     (invoke "make" "test" "CC=gcc"
+                             ,@(unless-x86
+                                '("AS=i686-unknown-linux-gnu-as"
+                                  "OBJCOPY=i686-unknown-linux-gnu-objcopy")))))
+                 '("unit" "regress"))
+               #t))
+           (add-after 'install 'install-samples
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((python-samples (find-files "." "sample_.*"))
+                      (c-samples (find-files "../../samples" ".*\\.c"))
+                      (python-docdir
+                        (string-append (assoc-ref outputs "out")
+                                       "/share/doc/unicorn/samples"))
+                      (c-docdir
+                        (string-append (assoc-ref outputs "lib")
+                                       "/share/doc/unicorn/samples")))
+                 (for-each (cut install-file <> c-docdir) c-samples)
+                 (for-each (cut install-file <> python-docdir) python-samples)
+                 #t))))))
+      (native-inputs
+       ;; NOTE: cross-binutils needs to be wrapped with unless-x86, as otherwise
+       ;; the linker provided by the package will be used, circumventing the ld-wrapper.
+       `(,@(unless-x86
+            `(("assembler-for-tests" ,(cross-binutils "i686-unknown-linux-gnu"))))
+         ("cmocka" ,cmocka)
+         ("hexdump-for-tests" ,util-linux)))
+      (home-page "http://www.unicorn-engine.org")
+      (synopsis "Unicorn CPU emulator framework")
+      (description
+       "Unicorn is a lightweight, multi-platform, multi-architecture CPU emulator
+framework based on QEMU.")
+      (license license:gpl2+))))
+
+(define-public ppsspp
+  (package
+    (name "ppsspp")
+    (version "1.10")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/hrydgard/ppsspp")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "02yx1w0ygclnmdl0imsvgj24lkzi55wvxkf47q617j0jgrqhy8yl"))
+       (file-name (git-file-name name version))
+       (patches
+        (search-patches "ppsspp-disable-upgrade-and-gold.patch"))
+       (modules '((guix build utils)))
+       (snippet
+        `(begin
+           ;; The following is quite a heavy-handed way of unbundling PPSSPP.
+           ;; There are still a number of external sources, that we don't
+           ;; remove here.  Some may be packaged, others are not.
+           ;; First, we patch existing sources to include the right headers.
+           (substitute* (append (list "ext/native/thin3d/vulkan_utils.cpp"
+                                      "ext/native/thin3d/thin3d_vulkan.cpp")
+                                (find-files "Common" ".*\\.(h|cpp)")
+                                (find-files "Core" ".*\\.(h|cpp)")
+                                (find-files "GPU" ".*\\.(h|cpp)")
+                                (find-files "SDL" ".*\\.(h|cpp)")
+                                (find-files "UI" ".*\\.(h|cpp)"))
+             ;; These headers are all hard-coded in the original source.
+             (("ext/cityhash/") "")
+             (("ext/glslang/") "")
+             (("ext/SPIRV-Cross/") "spirv_cross/")
+             (("ext/vulkan/") "vulkan/")
+             (("ext/xxhash.h") "xxhash.h")
+             ;; These definitions do not actually exist in the Vulkan headers,
+             ;; but PPSSPP defines them in ext/vulkan.
+             (("VK_FORMAT_BEGIN_RANGE") "VK_FORMAT_UNDEFINED")
+             (("VK_FORMAT_END_RANGE") "VK_FORMAT_ASTC_12x12_SRGB_BLOCK"))
+           ;; Next, we patch CMakeLists.
+           (substitute* "CMakeLists.txt"
+             ;; Drop unnecessary includes and targets.
+             (("include_directories\\(ext/glslang\\)") "")
+             (("include_directories\\(ext/xxhash\\)") "")
+             (("include_directories\\(ext/cityhash\\)") "")
+             (("set_target_properties\\(cityhash .*\\)") "")
+             ;; Fix linking to GLEW.
+             (("TARGET Ext::GLEW") "true")
+             (("target_link_libraries\\(native Ext::GLEW\\)")
+              "find_package(GLEW)\ntarget_link_libraries(native GLEW::GLEW)")
+             (("Ext::Snappy") "snappy")
+             ;; Don't search for cityhash/xxhash, we already have them.
+             (("add_library\\((city|xx)hash STATIC") "if()\nendif(")
+             (("ext/xxhash\\.[ch]") "")
+             (("ext/native/ext/cityhash/.*\\.(cpp|h)") "")
+             ;; Link all of spirv-cross.
+             (("spirv-cross-glsl" all)
+              (string-append all
+                             " spirv-cross-core spirv-cross-cpp"
+                             " spirv-cross-reflect spirv-cross-util")))
+           (substitute* "ext/CMakeLists.txt"
+             (("add_subdirectory\\(glew\\)") "")
+             (("add_subdirectory\\(glslang\\)") "")
+             (("add_subdirectory\\(snappy\\)") "")
+             (("add_subdirectory\\(SPIRV-Cross-build\\)") ""))
+           ;; Finally, we can delete the bundled sources.
+           (for-each delete-file-recursively
+                     '("ext/cmake"
+                       "ext/glew"
+                       "ext/glslang" "ext/glslang-build"
+                       "ext/native/ext/cityhash"
+                       "ext/native/ext/libpng17"
+                       "ext/native/ext/libzip"
+                       "ext/snappy"
+                       "ext/SPIRV-Cross" "ext/SPIRV-Cross-build"
+                       "ext/vulkan"
+                       "ext/xxhash.c"
+                       "ext/xxhash.h"
+                       "ext/zlib"))
+           ;; Since we are not including git as an input, PPSSPP is confused
+           ;; about its version.  Let's fix that here.
+           (substitute* "git-version.cmake"
+             (("unknown") ,version))))))
+    (build-system cmake-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("python" ,python)))
+    (inputs
+     `(("cityhash" ,cityhash)
+       ("ffmpeg" ,ffmpeg)
+       ("glew" ,glew)
+       ("glslang" ,glslang)
+       ("libpng" ,libpng)
+       ("libzip" ,libzip)
+       ("mesa" ,mesa)
+       ("sdl2" ,sdl2)
+       ("snappy" ,snappy)
+       ("spirv-cross" ,spirv-cross)
+       ("vulkan-headers" ,vulkan-headers)
+       ("vulkan-loader" ,vulkan-loader)
+       ("xxhash" ,xxhash)
+       ("zlib" ,zlib)
+       ;; TODO: unbundle armips.
+       ("armips-source" ,(package-source armips))
+       ("lang"
+        ,(let ((commit "d184ba2b607a03435be579406b816c90add334e6"))
+           (origin
+             (method git-fetch)
+             (uri (git-reference
+                   (url "https://github.com/hrydgard/ppsspp-lang")
+                   (commit commit)))
+             (sha256
+              (base32 "0s003x6247nx09qd6a1jz1l2hsk5d6k1zmh8mg3m6hjjhvbvd9j9"))
+             (file-name (git-file-name "ppsspp-lang" commit)))))
+       ("tests"
+        ,(let ((commit "328b839c7243e7f733f9eae88d059485e3d808e7"))
+           (origin
+             (method git-fetch)
+             (uri (git-reference
+                   (url "https://github.com/hrydgard/pspautotests")
+                   (commit commit)))
+             (sha256
+              (base32 "1gj1kr5ijxrqwvz7c41phskjr70ndp8iz0gr8c3xxsd8p9z5gdvm"))
+             (file-name (git-file-name "pspautotests" commit)))))))
+    (arguments
+     `(#:out-of-source? #f
+       #:configure-flags (list "-DUSE_DISCORD=OFF"
+                               "-DUSE_SYSTEM_FFMPEG=ON"
+                               "-DUSE_SYSTEM_LIBZIP=ON"
+                               ;; for testing
+                               "-DUNITTEST=ON" "-DHEADLESS=ON")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'add-external-sources
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; TODO: unbundle armips.
+             (copy-recursively (assoc-ref inputs "armips-source")
+                               "ext/armips")
+             ;; Some tests are externalised, so we add them here.
+             (copy-recursively (assoc-ref inputs "tests")
+                               "pspautotests")
+             ;; i18n is externalised, so we add it here.
+             (copy-recursively (assoc-ref inputs "lang")
+                               "assets/lang")
+             #t))
+         (replace 'check
+           (lambda _
+             (for-each
+              (lambda (t) (invoke "./unitTest" t))
+              '("Arm64Emitter" "ArmEmitter" "X64Emitter" "VertexJit" "Asin"
+                "SinCos" "VFPUSinCos" "MathUtil" "Parsers" "Jit"
+                "MatrixTranspose" "ParseLBN" "QuickTexHash" "CLZ" "MemMap"))
+             (invoke "python3" "test.py" "-g")
+             #t))
+         (replace 'install
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin/ppsspp (string-append out "/bin/ppsspp"))
+                    (share (string-append out "/share/ppsspp")))
+               (copy-recursively "icons/hicolor"
+                                 (string-append out "/share/icons/hicolor"))
+               (install-file "PPSSPPSDL" share)
+               (copy-recursively "assets" (string-append share "/assets"))
+
+               (make-desktop-entry-file
+                (string-append out "/share/applications/ppsspp.desktop")
+                #:name "PPSSPP"
+                #:exec (string-append share "/PPSSPPSDL")
+                #:icon "ppsspp")
+               (mkdir-p (string-append out "/bin"))
+               (with-output-to-file bin/ppsspp
+                 (lambda ()
+                   (format #t "#!~a~%exec ~a/PPSSPPSDL \"$@\""
+                           (which "sh") share)))
+               (chmod bin/ppsspp #o755)
+               #t))))))
+    (home-page "https://www.ppsspp.org/")
+    (synopsis "PSP emulator")
+    (description
+     "PPSSPP is a ``high-level'' emulator simulating the PSP operating
+system.")
     (license license:gpl2+)))

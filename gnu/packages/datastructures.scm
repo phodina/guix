@@ -3,6 +3,7 @@
 ;;; Copyright © 2016, 2017, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Meiyo Peng <meiyo.peng@gmail.com>
 ;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2020 Mark H Weaver <mhw@netris.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -21,6 +22,8 @@
 
 (define-module (gnu packages datastructures)
   #:use-module (gnu packages)
+  #:use-module (gnu packages autotools)
+  #:use-module (gnu packages boost)
   #:use-module (gnu packages perl)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
@@ -55,20 +58,23 @@ and heaps.")
 (define-public marisa
   (package
     (name "marisa")
-    (version "0.2.5")
+    (version "0.2.6")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://github.com/s-yata/marisa-trie"
-                           "/releases/download/v" version "/" name "-"
-                           version ".tar.gz"))
+       (uri (string-append "https://github.com/s-yata/marisa-trie/files/"
+                           "4832504/marisa-" version ".tar.gz"))
        (sha256
-        (base32 "19ifrcmnbr9whaaf4ly3s9ndyiq9sjqhnfkrxbz9zsb44w2n36hf"))))
+        (base32 "1pk6wmi28pa8srb4szybrwfn71jldb61c5vgxsiayxcyg1ya4qqh"))))
     (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)))
     (home-page "https://github.com/s-yata/marisa-trie")
     (synopsis "Trie data structure C++ library")
-    (description "Matching Algorithm with Recursively Implemented
-StorAge (MARISA) is a static and space-efficient trie data structure C++
+    (description "@acronym{MARISA, Matching Algorithm with Recursively
+Implemented StorAge} is a static and space-efficient trie data structure C++
 library.")
 
     ;; Dual-licensed, according to docs/readme.en.html (source files lack
@@ -82,7 +88,7 @@ library.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/sparsehash/sparsehash.git")
+                     (url "https://github.com/sparsehash/sparsehash")
                      (commit (string-append name "-" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -157,7 +163,7 @@ queues, stacks, and doubly-linked lists.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/troydhanson/uthash.git")
+             (url "https://github.com/troydhanson/uthash")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -259,7 +265,7 @@ equivalent succinct data structure are (most of the time) identical.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/y-256/libdivsufsort.git")
+                    (url "https://github.com/y-256/libdivsufsort")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -279,4 +285,42 @@ simple and an efficient C API to construct a suffix array and a
 Burrows-Wheeler transformed string from a given string over a constant-size
 alphabet.  The algorithm runs in O(n log n) worst-case time using only 5n+O(1)
 bytes of memory space, where n is the length of the string.")
+    (license license:expat)))
+
+(define-public robin-map
+  (package
+    (name "robin-map")
+    (version "0.6.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/Tessil/robin-map")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1li70vwsksva9c4yly90hjafgqfixi1g6d52qq9p6r60vqc4pkjj"))))
+    (build-system cmake-build-system)
+    (native-inputs
+     `(("boost" ,boost)))  ; needed for tests
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             (mkdir "tests")
+             (with-directory-excursion "tests"
+               (invoke "cmake" "../../source/tests")
+               (invoke "cmake" "--build" ".")
+               (invoke "./tsl_robin_map_tests")))))))
+    (home-page "https://github.com/Tessil/robin-map")
+    (synopsis "C++ implementation of a fast hash map and hash set")
+    (description "The robin-map library is a C++ implementation of a fast hash
+map and hash set using open-addressing and linear robin hood hashing with
+backward shift deletion to resolve collisions.
+
+Four classes are provided: tsl::robin_map, tsl::robin_set, tsl::robin_pg_map
+and tsl::robin_pg_set. The first two are faster and use a power of two growth
+policy, the last two use a prime growth policy instead and are able to cope
+better with a poor hash function.")
     (license license:expat)))

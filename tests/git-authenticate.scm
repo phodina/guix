@@ -32,31 +32,6 @@
 
 ;; Test the (guix git-authenticate) tools.
 
-(define %ed25519-public-key-file
-  (search-path %load-path "tests/ed25519.key"))
-(define %ed25519-secret-key-file
-  (search-path %load-path "tests/ed25519.sec"))
-(define %ed25519bis-public-key-file
-  (search-path %load-path "tests/ed25519bis.key"))
-(define %ed25519bis-secret-key-file
-  (search-path %load-path "tests/ed25519bis.sec"))
-
-(define (read-openpgp-packet file)
-  (get-openpgp-packet
-   (open-bytevector-input-port
-    (call-with-input-file file read-radix-64))))
-
-(define key-fingerprint
-  (compose openpgp-format-fingerprint
-           openpgp-public-key-fingerprint
-           read-openpgp-packet))
-
-(define (key-id file)
-  (define id
-    (openpgp-public-key-id (read-openpgp-packet)))
-
-  (string-pad (number->string id 16) 16 #\0))
-
 (define (gpg+git-available?)
   (and (which (git-command))
        (which (gpg-command)) (which (gpgconf-command))))
@@ -80,6 +55,35 @@
           (authenticate-commits repository (list commit1 commit2)
                                 #:keyring-reference "master")
           'failed)))))
+
+(unless (gpg+git-available?) (test-skip 1))
+(test-assert "signed commits, SHA1 signature"
+  (with-fresh-gnupg-setup (list %ed25519-public-key-file
+                                %ed25519-secret-key-file)
+    ;; Force use of SHA1 for signatures.
+    (call-with-output-file (string-append (getenv "GNUPGHOME") "/gpg.conf")
+      (lambda (port)
+        (display "digest-algo sha1" port)))
+
+    (with-temporary-git-repository directory
+        `((add "a.txt" "A")
+          (add "signer.key" ,(call-with-input-file %ed25519-public-key-file
+                               get-string-all))
+          (add ".guix-authorizations"
+               ,(object->string
+                 `(authorizations (version 0)
+                                  ((,(key-fingerprint %ed25519-public-key-file)
+                                    (name "Charlie"))))))
+          (commit "first commit"
+                  (signer ,(key-fingerprint %ed25519-public-key-file))))
+      (with-repository directory repository
+        (let ((commit (find-commit repository "first")))
+          (guard (c ((unsigned-commit-error? c)
+                     (oid=? (git-authentication-error-commit c)
+                            (commit-id commit))))
+            (authenticate-commits repository (list commit)
+                                  #:keyring-reference "master")
+            'failed))))))
 
 (unless (gpg+git-available?) (test-skip 1))
 (test-assert "signed commits, default authorizations"

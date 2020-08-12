@@ -63,7 +63,6 @@
   #:re-export (display-profile-content
                channel-commit-hyperlink)
   #:export (channel-list
-            with-git-error-handling
             guix-pull))
 
 
@@ -82,6 +81,7 @@
     (graft? . #t)
     (debug . 0)
     (verbosity . 1)
+    (authenticate-channels? . #t)
     (validate-pull . ,ensure-forward-channel-update)))
 
 (define (show-help)
@@ -97,6 +97,9 @@ Download and deploy the latest version of Guix.\n"))
       --branch=BRANCH    download the tip of the specified BRANCH"))
   (display (G_ "
       --allow-downgrades allow downgrades to earlier channel revisions"))
+  (display (G_ "
+      --disable-authentication
+                         disable channel authentication"))
   (display (G_ "
   -N, --news             display news compared to the previous generation"))
   (display (G_ "
@@ -165,6 +168,9 @@ Download and deploy the latest version of Guix.\n"))
                  (lambda (opt name arg result)
                    (alist-cons 'validate-pull warn-about-backward-updates
                                result)))
+         (option '("disable-authentication") #f #f
+                 (lambda (opt name arg result)
+                   (alist-cons 'authenticate-channels? #f result)))
          (option '(#\p "profile") #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'profile (canonicalize-profile arg)
@@ -195,20 +201,18 @@ Download and deploy the latest version of Guix.\n"))
 
          %standard-build-options))
 
-(define (warn-about-backward-updates channel start instance relation)
-  "Warn about non-forward updates of CHANNEL from START to INSTANCE, without
+(define (warn-about-backward-updates channel start commit relation)
+  "Warn about non-forward updates of CHANNEL from START to COMMIT, without
 aborting."
   (match relation
     ((or 'ancestor 'self)
      #t)
     ('descendant
      (warning (G_ "rolling back channel '~a' from ~a to ~a~%")
-              (channel-name channel) start
-              (channel-instance-commit instance)))
+              (channel-name channel) start commit))
     ('unrelated
      (warning (G_ "moving channel '~a' from ~a to unrelated commit ~a~%")
-              (channel-name channel) start
-              (channel-instance-commit instance)))))
+              (channel-name channel) start commit))))
 
 (define* (display-profile-news profile #:key concise?
                                current-is-newer?)
@@ -458,23 +462,6 @@ true, display what would be built without actually building it."
   "Use the right X.509 certificates for Git checkouts over HTTPS."
   (unless (honor-system-x509-certificates!)
     (honor-lets-encrypt-certificates! store)))
-
-(define (report-git-error error)
-  "Report the given Guile-Git error."
-  ;; Prior to Guile-Git commit b6b2760c2fd6dfaa5c0fedb43eeaff06166b3134,
-  ;; errors would be represented by integers.
-  (match error
-    ((? integer? error)                           ;old Guile-Git
-     (leave (G_ "Git error ~a~%") error))
-    ((? git-error? error)                         ;new Guile-Git
-     (leave (G_ "Git error: ~a~%") (git-error-message error)))))
-
-(define-syntax-rule (with-git-error-handling body ...)
-  (catch 'git-error
-    (lambda ()
-      body ...)
-    (lambda (key err)
-      (report-git-error err))))
 
 
 ;;;
@@ -773,7 +760,8 @@ Use '~/.config/guix/channels.scm' instead."))
             (channels     (channel-list opts))
             (profile      (or (assoc-ref opts 'profile) %current-profile))
             (current-channels (profile-channels profile))
-            (validate-pull    (assoc-ref opts 'validate-pull)))
+            (validate-pull    (assoc-ref opts 'validate-pull))
+            (authenticate?    (assoc-ref opts 'authenticate-channels?)))
        (cond ((assoc-ref opts 'query)
               (process-query opts profile))
              ((assoc-ref opts 'generation)
@@ -785,6 +773,8 @@ Use '~/.config/guix/channels.scm' instead."))
                                  (%graft? (assoc-ref opts 'graft?)))
                     (with-build-handler (build-notifier #:use-substitutes?
                                                         substitutes?
+                                                        #:verbosity
+                                                        (assoc-ref opts 'verbosity)
                                                         #:dry-run? dry-run?)
                       (set-build-options-from-command-line store opts)
                       (ensure-default-profile)
@@ -795,7 +785,9 @@ Use '~/.config/guix/channels.scm' instead."))
                                                        #:current-channels
                                                        current-channels
                                                        #:validate-pull
-                                                       validate-pull)))
+                                                       validate-pull
+                                                       #:authenticate?
+                                                       authenticate?)))
                         (format (current-error-port)
                                 (N_ "Building from this channel:~%"
                                     "Building from these channels:~%"

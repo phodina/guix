@@ -5,6 +5,7 @@
 ;;; Copyright © 2017 Petter <petter@mykolab.ch>
 ;;; Copyright © 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,17 +33,50 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages perl-check))
 
+(define-public perl-compress-bzip2
+  (package
+    (name "perl-compress-bzip2")
+    (version "2.28")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://cpan/authors/id/R/RU/RURBAN/"
+                           "Compress-Bzip2-" version ".tar.gz"))
+       (sha256
+        (base32 "0vhi6nqayvg6wz55bynccv5xd6gzhbigk9mjv088i6aw7xf877w5"))))
+    (build-system perl-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'use-system-bzip2
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((bzip2 (assoc-ref inputs "bzip2")))
+               (setenv "BUILD_BZLIB" "0")
+               (setenv "BZLIB_BIN" (string-append bzip2 "/bin"))
+               (setenv "BZLIB_INCLUDE" (string-append bzip2 "/include"))
+               (setenv "BZLIB_LIB" (string-append bzip2 "/lib"))
+               #t))))))
+    (inputs
+     `(("bzip2" ,bzip2)))
+    (home-page "https://metacpan.org/release/Compress-Bzip2")
+    (synopsis "Interface to Bzip2 compression library")
+    (description
+     "The Compress::Bzip2 module provides a Perl interface to the Bzip2
+compression library.  A relevant subset of the functionality provided by Bzip2
+is available in this module.")
+    (license license:perl-license)))
+
 (define-public perl-compress-raw-bzip2
   (package
     (name "perl-compress-raw-bzip2")
-    (version "2.091")
+    (version "2.095")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/P/PM/PMQS/"
                            "Compress-Raw-Bzip2-" version ".tar.gz"))
        (sha256
-        (base32 "0c5lwaynkcprjd18d3c82m8cniyq3c8mc4jk42gb32lp7cyyzmr7"))))
+        (base32 "1n72lr35axc9hhxxf9ss6b576s1fn8vab6dcsmbbb7h234j5hzg5"))))
     (build-system perl-build-system)
     ;; TODO: Use our bzip2 package.
     (home-page "https://metacpan.org/release/Compress-Raw-Bzip2")
@@ -54,14 +88,14 @@ compression library.")
 (define-public perl-compress-raw-zlib
   (package
     (name "perl-compress-raw-zlib")
-    (version "2.091")
+    (version "2.095")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/P/PM/PMQS/"
                            "Compress-Raw-Zlib-" version ".tar.gz"))
        (sha256
-        (base32 "0vrzk1jzw2kwrsvnd190m7jl925cbd4skp6ipv5pndkn4y8gnzxn"))))
+        (base32 "1ci1mp361cjkky2s30ganzvxcjj93rqjf26mli786wyicwr6ab5s"))))
     (build-system perl-build-system)
     (inputs
      `(("zlib" ,zlib)))
@@ -89,14 +123,14 @@ compression library.")
 (define-public perl-io-compress
   (package
     (name "perl-io-compress")
-    (version "2.091")
+    (version "2.095")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/P/PM/PMQS/"
                            "IO-Compress-" version ".tar.gz"))
        (sha256
-        (base32 "15ayljvmxszkd5bvzd52l7gv71ldj8bhdqdnj9f48dipn681238z"))))
+        (base32 "14spyqv7x608kvi7wsj4pw68dxwnjlh0aqff5b5iw7wg5v569q4h"))))
     (build-system perl-build-system)
     (propagated-inputs
      ;; These two packages should be updated to this one's version first.

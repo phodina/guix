@@ -353,24 +353,6 @@ graph-like environments, e.g. modular synths or finite state machine
 diagrams.")
     (license license:gpl3+)))
 
-(define-public ganv-devel
-  (let ((commit "12f7d6b0438c94dd87f773a92eee3453d971846e")
-        (revision "1"))
-    (package
-      (inherit ganv)
-      (name "ganv")
-      (version (string-append "1.5.4-" revision "."
-                              (string-take commit 9)))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://git.drobilla.net/ganv.git")
-                      (commit commit)))
-                (file-name (git-file-name name version))
-                (sha256
-                 (base32
-                  "1cr8w02lr6bk9mkxa12j3imq721b2an2yn4bj5wnwmpm91ddn2gi")))))))
-
 (define-public gtksourceview-2
   (package
     (name "gtksourceview")
@@ -779,7 +761,7 @@ application suites.")
 (define-public gtk+
   (package (inherit gtk+-2)
    (name "gtk+")
-   (version "3.24.14")
+   (version "3.24.20")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnome/sources/" name "/"
@@ -787,7 +769,7 @@ application suites.")
                                 name "-" version ".tar.xz"))
             (sha256
              (base32
-              "120yz5gxqbv7sgdbcy4i0b6ixm8jpjzialdrqs0gv15q7bwnjk8w"))
+              "1wqxkd3xnqwihcawncp9mkf9bv5a5fg5i4ahm6klpl782vvnkb1d"))
             (patches (search-patches "gtk3-respect-GUIX_GTK3_PATH.patch"
                                      "gtk3-respect-GUIX_GTK3_IM_MODULE_FILE.patch"))))
    (propagated-inputs
@@ -1308,7 +1290,7 @@ printing and other features typical of a source code editor.")
 (define-public python-pycairo
   (package
     (name "python-pycairo")
-    (version "1.19.0")
+    (version "1.19.1")
     (source
      (origin
       (method url-fetch)
@@ -1316,7 +1298,7 @@ printing and other features typical of a source code editor.")
                           version "/pycairo-" version ".tar.gz"))
       (sha256
        (base32
-        "176i283glkpycka8wwyndwld0zp1yn9xj9rpvllqgja698vsjnsg"))))
+        "111fav9m1iagw3nh2ws2vzkjh34r97yl7rdlpvsngsqg521k251c"))))
     (build-system python-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
@@ -1725,14 +1707,14 @@ glass artworks done by Venicians glass blowers.")
 (define-public gtkspell3
   (package
     (name "gtkspell3")
-    (version "3.0.9")
+    (version "3.0.10")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/gtkspell/"
                                   version "/" name "-" version ".tar.xz"))
               (sha256
                (base32
-                "09jdicmpipmj4v84gnkqwbmj4lh8v0i6pn967rb9jx4zg2ia9x54"))))
+                "0cjp6xdcnzh6kka42w9g0w2ihqjlq8yl8hjm9wsfnixk6qwgch5h"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -1743,7 +1725,7 @@ glass artworks done by Venicians glass blowers.")
        ("gtk+" ,gtk+)
        ("pango" ,pango)))
     (propagated-inputs
-     `(("enchant" ,enchant-1.6)))          ;gtkspell3-3.0.pc refers to it
+     `(("enchant" ,enchant)))           ; gtkspell3-3.0.pc refers to it
     (home-page "http://gtkspell.sourceforge.net")
     (synopsis "Spell-checking addon for GTK's TextView widget")
     (description
@@ -1759,7 +1741,7 @@ misspelled words in a GtkTextView widget.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/CristianHenzel/ClipIt.git")
+             (url "https://github.com/CristianHenzel/ClipIt")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1810,14 +1792,14 @@ input.")
 (define-public spread-sheet-widget
   (package
     (name "spread-sheet-widget")
-    (version "0.3")
+    (version "0.5")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://alpha.gnu.org/gnu/ssw/"
                            "spread-sheet-widget-" version ".tar.gz"))
        (sha256
-        (base32 "1h93yyh2by6yrmkwqg38nd5knids05k5nqzcihc1hdwgzg3c4b8y"))))
+        (base32 "0vxqv229vp6l278hz11ayrfirn4gj736clh4wlmn0h21bh5b8pfc"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("glib" ,glib "bin")             ; for glib-genmarshal, etc.
@@ -1874,7 +1856,7 @@ independent of your desktop environment, and supports global key bindings.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/v1cont/yad.git")
+             (url "https://github.com/v1cont/yad")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256

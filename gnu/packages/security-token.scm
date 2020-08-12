@@ -65,15 +65,14 @@
 (define-public ccid
   (package
     (name "ccid")
-    (version "1.4.32")
+    (version "1.4.33")
     (source (origin
               (method url-fetch)
-              (uri (string-append
-                    "https://ccid.apdu.fr/files/"
-                    name "-" version ".tar.bz2"))
+              (uri (string-append "https://ccid.apdu.fr/files/ccid-"
+                                  version ".tar.bz2"))
               (sha256
                (base32
-                "0f8nzk7379ip4x2ii5vn6h67jyx733pq0ywnnsj2llbxi2vllpsl"))))
+                "0974h2v9wq0j0ajw3c7yckaw8wqcppb2npfhfhmv9phijy9xlmjj"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags (list (string-append "--enable-usbdropdir=" %output
@@ -257,7 +256,7 @@ website for more information about Yubico and the YubiKey.")
 (define-public opensc
   (package
     (name "opensc")
-    (version "0.19.0")
+    (version "0.20.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -265,7 +264,7 @@ website for more information about Yubico and the YubiKey.")
                     version "/opensc-" version ".tar.gz"))
               (sha256
                (base32
-                "09jqzl18z5qfrf4vf2nvbpdm3mphpgfkl3ww1clkaxh2z56hwnic"))))
+                "0qs8pabkrpj1z52bkdsk59s2z6q5m0hfh9d5j1f68qs4lksb9x5v"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -357,7 +356,7 @@ and other operations.  It includes a library and a command-line tool.")
                                               (assoc-ref %outputs "out")
                                               "/lib/udev/rules.d"))))
     (inputs
-     `(("json-c" ,json-c)
+     `(("json-c" ,json-c-0.13)
        ("libusb" ,libusb)
        ;; The library "libyubikey" is also known as "yubico-c".
        ("libyubikey" ,libyubikey)))
@@ -457,7 +456,7 @@ PCSC API Python wrapper module.")
                                "/xml/dtd/docbook/docbookx.dtd")))
              #t)))))
     (inputs
-     `(("json-c" ,json-c)
+     `(("json-c" ,json-c-0.13)
        ("hidapi" ,hidapi)))
     (native-inputs
      `(("help2man" ,help2man)
@@ -485,7 +484,7 @@ operations.")
               (method git-fetch)
               (uri
                (git-reference
-                (url "https://github.com/Yubico/libu2f-server.git")
+                (url "https://github.com/Yubico/libu2f-server")
                 (commit (string-append "libu2f-server-" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -497,7 +496,7 @@ operations.")
        (list "--enable-gtk-doc"
              "--enable-tests")))
     (inputs
-     `(("json-c" ,json-c)
+     `(("json-c" ,json-c-0.13)
        ("libressl" ,libressl)))
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -528,7 +527,7 @@ verifying the cryptographic operations.")
               (method git-fetch)
               (uri
                (git-reference
-                (url "https://github.com/Yubico/pam-u2f.git")
+                (url "https://github.com/Yubico/pam-u2f")
                 (commit (string-append "pam_u2f-" version))))
               (file-name (git-file-name name version))
               (sha256

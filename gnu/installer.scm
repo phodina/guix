@@ -318,8 +318,10 @@ selected keymap."
                        cryptsetup
                        dosfstools ;mkfs.fat
                        e2fsprogs ;mkfs.ext4
+                       lvm2-static ;dmsetup
                        btrfs-progs
                        jfsutils ;jfs_mkfs
+                       ntfs-3g ;mkfs.ntfs
                        kbd ;chvt
                        guix ;guix system init call
                        util-linux ;mkwap
@@ -440,5 +442,6 @@ selected keymap."
        ;; some reason, unicode support is not correctly installed
        ;; when calling this in 'installer-builder'.
        (setenv "LANG" "en_US.UTF-8")
-       (execl #$(program-file "installer-real" installer-builder)
+       (execl #$(program-file "installer-real" installer-builder
+                              #:guile guile-3.0-latest)
               "installer-real"))))

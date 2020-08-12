@@ -5,10 +5,11 @@
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2017, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,32 +33,40 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system qt)
   #:use-module (gnu packages)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages backup)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages python)
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages kde-frameworks)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages perl)
-  #:use-module (gnu packages xml))
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages qt)
+  #:use-module (gnu packages sqlite)
+  #:use-module (gnu packages xml)
+  #:use-module (gnu packages xorg))
 
 (define-public asciidoc
   (package
     (name "asciidoc")
     (version "8.6.10")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/asciidoc/asciidoc/"
-                                  "archive/" version ".tar.gz"))
-              (file-name (string-append name "-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/asciidoc/asciidoc")
+                     (commit version)))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "10xrl1iwyvs8aqm0vzkvs3dnsn93wyk942kk4ppyl6w9imbzhlly"))))
+                "1hrqkgjmp1gq3f9rkbr8l0y62fzvwb9n8ys35s25bg2ld04y4g4y"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                     ; no 'check' target
@@ -111,7 +120,7 @@ release/xsl/current")
               ("docbook-xsl" ,docbook-xsl)
               ("libxml2" ,libxml2)
               ("libxslt" ,libxslt)))
-    (home-page "http://asciidoc.org/")
+    (home-page "https://asciidoc.org/")
     (synopsis "Text-based document generation system")
     (description
      "AsciiDoc is a text document format for writing notes, documentation,
@@ -127,7 +136,7 @@ markup) can be customized and extended by the user.")
 (define-public asciidoc-py3
   (package (inherit asciidoc)
     (name "asciidoc-py3")
-    (version "9.0.0rc1")
+    (version "9.0.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -136,7 +145,7 @@ markup) can be customized and extended by the user.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1v815dgab62970m9cr2crwbh4kvlzk6pv3hk4bzv6gfa4lbwfkfl"))))
+                "1xpws5lgzaqwgbc7sq6bp8adjxy8qb4qb9nj4vvpxamjgx3pny54"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)))
@@ -258,3 +267,34 @@ sort, and search the document catalog.  It will also be able to communicate
 with catalog servers on the Net to search for documents which are not on the
 local system.")
     (license lgpl2.1+)))
+
+(define-public zeal
+  (package
+    (name "zeal")
+    (version "0.6.1")
+    (home-page "https://github.com/zealdocs/zeal")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url home-page)
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "05qcjpibakv4ibhxgl5ajbkby3w7bkxsv3nfv2a0kppi1z0f8n8v"))))
+    (build-system qt-build-system)
+    (arguments `(#:tests? #f))          ; no tests
+    (native-inputs
+     `(("extra-cmake-modules" ,extra-cmake-modules)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libarchive" ,libarchive)
+       ("sqlite" ,sqlite)
+       ("qtbase" ,qtbase)
+       ("qtwebkit" ,qtwebkit)
+       ("qtx11extras" ,qtx11extras)
+       ("xcb-util-keyms" ,xcb-util-keysyms)))
+    (synopsis "Offline documentation browser inspired by Dash")
+    (description "Zeal is a simple offline documentation browser
+inspired by Dash.")
+    (license gpl3+)))

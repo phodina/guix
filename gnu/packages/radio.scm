@@ -66,7 +66,6 @@
   #:use-module (gnu packages tcl)
   #:use-module (gnu packages tex)
   #:use-module (gnu packages texinfo)
-  #:use-module (gnu packages version-control)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (guix build-system cmake)
@@ -82,7 +81,7 @@
     (source
      (origin (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/jgaeddert/liquid-dsp.git")
+                   (url "https://github.com/jgaeddert/liquid-dsp")
                    (commit (string-append "v" version))))
              (file-name (git-file-name name version))
              (sha256
@@ -113,7 +112,7 @@ mathematical operations, and much more.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "git://git.osmocom.org/rtl-sdr.git")
+             (url "https://git.osmocom.org/rtl-sdr/")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -296,7 +295,6 @@ used by RDS Spy, and audio files containing @dfn{multiplex} signals (MPX).")
     (build-system cmake-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
-       ("git" ,git-minimal)
        ("ghostscript" ,ghostscript)
        ("orc" ,orc)
        ("pkg-config" ,pkg-config)
@@ -433,7 +431,6 @@ environment.")
     (build-system cmake-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
-       ("git" ,git-minimal)
        ("pkg-config" ,pkg-config)
        ("python" ,python)
        ("python-mako" ,python-mako)
@@ -473,7 +470,6 @@ to access different radio hardware.")
        ("automake" ,automake)
        ("bash-minimal" ,bash-minimal)
        ("doxygen" ,doxygen)
-       ("git" ,git-minimal)
        ("libtool" ,libtool)
        ("pkg-config" ,pkg-config)
        ("texlive" ,(texlive-union (list texlive-amsfonts
@@ -548,7 +544,7 @@ to the fix block above.
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/csete/gqrx.git")
+             (url "https://github.com/csete/gqrx")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -618,14 +614,14 @@ hardware.")
 (define-public flrig
   (package
     (name "flrig")
-    (version "1.3.50")
+    (version "1.3.51")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://www.w1hkj.com/files/flrig/flrig-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0fzrknzzi8kmzmrcfpc8rxr7v4a4ny6z6z5q5qwh95sp2kn2qzp9"))))
+        (base32 "0aq4x0ai9q08ypfhzfj2inc4z3q39zq1l6h9as1kil9yn4zbay61"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -665,7 +661,7 @@ or USB connection.")
        ("libxft" ,libxft)))
     (synopsis "Tool for AMP file transfer")
     (description
-     "FLAMP is a program for transfering files by radio waves using AMP
+     "FLAMP is a program for transferring files by radio waves using AMP
 (Amateur Multicast Protocol).")
     (home-page "http://www.w1hkj.com/")
     (license license:gpl3+)))
@@ -712,7 +708,7 @@ for correctness.")
       (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mossmann/hackrf.git")
+             (url "https://github.com/mossmann/hackrf")
              (commit commit)))
        (file-name (git-file-name name version))
        (sha256
@@ -801,7 +797,7 @@ users.")
   (package
     (inherit hamlib)
     (name "wsjtx-hamlib")
-    (version "2.1.2")
+    (version "2.2.2")
     (source
      (origin
        (method git-fetch)
@@ -810,18 +806,32 @@ users.")
              (commit (string-append "wsjtx-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1ksv3cmr1dl45p0pp1panyc9dngd158gvv9ysv25lq4nqv1wn87i"))))
+        (base32 "01h5ps0yq5vi1x9rkw742gx6a5fj02zhbpi89i412qdfbnyk35cv"))))
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
        ("libtool" ,libtool)
        ("texinfo" ,texinfo)
-       ,@(package-native-inputs hamlib)))))
+       ,@(package-native-inputs hamlib)))
+    (arguments
+     `(#:configure-flags '("--disable-static"
+                           "--with-lua-binding"
+                           "--with-python-binding"
+                           "--with-tcl-binding"
+                           "--with-xml-support")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-tests
+           (lambda _
+             (substitute* "tests/testloc.c"
+               (("dmmm2dec\\(deg, mmm, nesw\\);")
+                "dmmm2dec(deg, mmm, 0, nesw);"))
+             #t)))))))
 
 (define-public wsjtx
   (package
     (name "wsjtx")
-    (version "2.1.2")
+    (version "2.2.2")
     (source
      (origin
        (method git-fetch)
@@ -830,7 +840,7 @@ users.")
              (commit (string-append "wsjtx-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1fnqzjd3dmxp3yjwjvwz2djk9gzb1y2cqfa188f3x8lynxhdhnfs"))
+        (base32 "0fhws44gg05d9y2al0pcdnxwxwh4bazcfl0g5mq2ks1r7w23wi5x"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -882,14 +892,14 @@ weak-signal conditions.")
   (package
     (inherit wsjtx)
     (name "js8call")
-    (version "2.1.1")
+    (version "2.2.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://files.js8call.com/" version
                            "/js8call-" version ".tgz"))
        (sha256
-        (base32 "034jnv6h172znn9ijl6wpmzx0rqibb69ppg52ndvkxhqlgrbsvyc"))
+        (base32 "149sjwc4zg6ckgq26af93p4fxappa4k9dh7rdy67g8ajfjad4cd8"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -1011,7 +1021,7 @@ gain and standing wave ratio.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/flightaware/dump1090.git")
+             (url "https://github.com/flightaware/dump1090")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1053,7 +1063,7 @@ their position, altitude, speed, etc.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/merbanan/rtl_433.git")
+             (url "https://github.com/merbanan/rtl_433")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -1069,4 +1079,42 @@ their position, altitude, speed, etc.")
      "This is a generic data receiver, mainly for decoding radio transmissions
 from devices on the 433 MHz, 868 MHz, 315 MHz, 345 MHz and 915 MHz ISM bands.")
     (home-page "https://github.com/merbanan/rtl_433")
+    (license license:gpl2+)))
+
+(define-public multimon-ng
+  (package
+    (name "multimon-ng")
+    (version "1.1.8")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/EliasOenal/multimon-ng")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1973xfyvzl1viz19zr83cgqlx5laxbjrca35rqabn6dlb6xb5xk8"))))
+    (build-system cmake-build-system)
+    (inputs
+     `(("libx11" ,libx11)
+       ("pulseaudio" ,pulseaudio)))
+    (arguments
+     '(#:tests? #f)) ; No test suite
+    (home-page "https://github.com/EliasOenal/multimon-ng")
+    (synopsis "Decoder for digital radio transmission modes")
+    (description "Multimon-ng can decode several digital radio transmission
+modes:
+@itemize
+@item POCSAG512, POCSAG1200, POCSAG2400
+@item FLEX
+@item EAS
+@item UFSK1200, CLIPFSK, AFSK1200, AFSK2400, AFSK2400_2, AFSK2400_3
+@item HAPN4800
+@item FSK9600
+@item DTMF
+@item ZVEI1, ZVEI2, ZVEI3, DZVEI, PZVEI
+@item EEA, EIA, CCIR
+@item MORSE CW
+@item X10
+@end itemize")
     (license license:gpl2+)))

@@ -32,7 +32,8 @@
   #:use-module ((guix build-system gnu) #:select (standard-packages))
   #:use-module (gnu packages)
   #:use-module (guix sets)
-  #:use-module ((guix utils) #:select (location-file))
+  #:use-module ((guix diagnostics)
+                #:select (location-file formatted-message))
   #:use-module ((guix scripts build)
                 #:select (show-transformation-options-help
                           options->transformation
@@ -43,6 +44,7 @@
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
   #:use-module (srfi srfi-37)
+  #:use-module (ice-9 format)
   #:use-module (ice-9 match)
   #:export (%package-node-type
             %reverse-package-node-type
@@ -89,10 +91,8 @@ name."
      package)
     (x
      (raise
-      (condition
-       (&message
-        (message (format #f (G_ "~a: invalid argument (package name expected)")
-                         x))))))))
+      (formatted-message (G_ "~a: invalid argument (package name expected)")
+                         x)))))
 
 (define nodes-from-package
   ;; The default conversion method.

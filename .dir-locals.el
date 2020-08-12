@@ -37,6 +37,7 @@
    (eval . (put 'with-file-lock 'scheme-indent-function 1))
    (eval . (put 'with-file-lock/no-wait 'scheme-indent-function 1))
    (eval . (put 'with-profile-lock 'scheme-indent-function 1))
+   (eval . (put 'with-writable-file 'scheme-indent-function 1))
 
    (eval . (put 'package 'scheme-indent-function 0))
    (eval . (put 'origin 'scheme-indent-function 0))
@@ -89,12 +90,17 @@
 
    (eval . (put 'with-database 'scheme-indent-function 2))
    (eval . (put 'call-with-transaction 'scheme-indent-function 2))
+   (eval . (put 'with-statement 'scheme-indent-function 3))
+   (eval . (put 'call-with-retrying-transaction 'scheme-indent-function 2))
+   (eval . (put 'call-with-savepoint 'scheme-indent-function 1))
+   (eval . (put 'call-with-retrying-savepoint 'scheme-indent-function 1))
 
    (eval . (put 'call-with-container 'scheme-indent-function 1))
    (eval . (put 'container-excursion 'scheme-indent-function 1))
    (eval . (put 'eventually 'scheme-indent-function 1))
 
    (eval . (put 'call-with-progress-reporter 'scheme-indent-function 1))
+   (eval . (put 'with-repository 'scheme-indent-function 2))
    (eval . (put 'with-temporary-git-repository 'scheme-indent-function 2))
    (eval . (put 'with-environment-variables 'scheme-indent-function 1))
    (eval . (put 'with-fresh-gnupg-setup 'scheme-indent-function 1))

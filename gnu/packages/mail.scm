@@ -32,6 +32,8 @@
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Justus Winter <justus@sequoia-pgp.org>
 ;;; Copyright © 2020 Eric Brown <ecbrown@ericcbrown.com>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -106,6 +108,8 @@
   #:use-module (gnu packages perl-web)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-check)
+  #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages readline)
@@ -127,13 +131,7 @@
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages xml)
-  #:use-module ((guix licenses)
-                #:select (fdl1.1+
-                           agpl3+
-                           gpl2 gpl2+ gpl3 gpl3+ lgpl2.1 lgpl2.1+ lgpl3+
-                           non-copyleft (expat . license:expat) bsd-3
-                           public-domain bsd-4 isc (openssl . license:openssl)
-                           bsd-2 x11-style agpl3 asl2.0 perl-license))
+  #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
@@ -145,6 +143,44 @@
   #:use-module (guix build-system trivial)
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 match))
+
+(define-public anubis
+  (package
+    (name "anubis")
+    ;; This 4.2.90 alpha release adds support for Guile 3 and has fixes for
+    ;; other issues.
+    (version "4.2.90")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://alpha.gnu.org/gnu/anubis/anubis-"
+             version ".tar.gz"))
+       (sha256
+        (base32
+         "0dvm6acl32dv8bixx9z50gzwfp6kj4kxnn1j3dcwjlp7sasjp41s"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("automake" ,automake)
+       ("autoconf" ,autoconf)
+       ("gettext" ,gettext-minimal)
+       ("m4" ,m4)))                     ;for the test suite
+    (inputs
+     `(("gdbm" ,gdbm)
+       ("gnutls" ,gnutls)
+       ("gpgme" ,gpgme)
+       ("gsasl" ,gsasl)
+       ("guile" ,guile-3.0)
+       ("libgcrypt" ,libgcrypt)         ;gnutls support depends on libgcrypt
+       ("libgpg-error" ,libgpg-error)))
+    (outputs '("out" "debug"))
+    (synopsis "SMTP message submission daemon")
+    (description "Anubis is a daemon that sits between the Mail User
+Agent (MUA) and the Mail Transfer Agent (MTA).  When a mail is sent by a user
+in the MUA, it is first passed to Anubis, which performs additional processing
+to the message before passing it on for delivery by the MTA.  Anubis may, for
+example, modify the message headers or body, or encrypt or sign the message.")
+    (home-page "https://www.gnu.org/software/anubis/manual/")
+    (license license:gpl3+)))
 
 (define-public mailutils
   (package
@@ -250,7 +286,7 @@ also available, simplifying the addition of mail capabilities to new
 software.")
     (license
      ;; Libraries are under LGPLv3+, and programs under GPLv3+.
-     (list gpl3+ lgpl3+))))
+     (list license:gpl3+ license:lgpl3+))))
 
 (define-public guile2.2-mailutils
   (package
@@ -341,13 +377,13 @@ Nullmailer is designed to be simple to configure, easy to extend, and secure.
 It requires little ongoing administration.  The included @command{sendmail}
 emulator front-end should allow most (if not all) sendmail-compatible programs
 to run without any changes.")
-    (license (list lgpl2.1+         ; lib/cli++/ (but some files lack headers)
-                   gpl2+))))        ; everything else
+    (license (list license:lgpl2.1+ ; lib/cli++/ (but some files lack headers)
+                   license:gpl2+)))) ; everything else
 
 (define-public fetchmail
   (package
     (name "fetchmail")
-    (version "6.4.6")
+    (version "6.4.8")
     (source
      (origin
        (method url-fetch)
@@ -355,7 +391,7 @@ to run without any changes.")
                            (version-major+minor version) "/"
                            "fetchmail-" version ".tar.xz"))
        (sha256
-        (base32 "04b0sq1xad6gs1bfhkbmhsn1kq6y4gsx9l9ywjvd5d0rc15yrvqn"))))
+        (base32 "1g893dr3982vrqzxybmflnqfmd1q6yipd9krvxn0avhlrrp97k96"))))
     (build-system gnu-build-system)
     (inputs
      `(("openssl" ,openssl)))
@@ -377,12 +413,12 @@ Fetchmail retrieves mail from remote mail servers and forwards it via SMTP,
 so it can then be read by normal mail user agents such as mutt, elm
 or BSD Mail.  It allows all your system MTA's filtering, forwarding, and
 aliasing facilities to work just as they would on normal mail.")
-    (license gpl2+))) ; most files are actually public domain or x11
+    (license license:gpl2+))) ; most files are actually public domain or x11
 
 (define-public mutt
   (package
     (name "mutt")
-    (version "1.14.2")
+    (version "1.14.6")
     (source (origin
              (method url-fetch)
              (uri (list
@@ -392,7 +428,7 @@ aliasing facilities to work just as they would on normal mail.")
                                    version ".tar.gz")))
              (sha256
               (base32
-               "0cdcls0x6f2w99hkjz48hxhnx86w3bnyxzibchdc9yspih770bz2"))
+               "0i0q6vwhnb1grimsrpmz8maw255rh9k0laijzxkry6xqa80jm5s7"))
              (patches (search-patches "mutt-store-references.patch"))))
     (build-system gnu-build-system)
     (inputs
@@ -424,7 +460,7 @@ aliasing facilities to work just as they would on normal mail.")
     (description
      "Mutt is a small but very powerful text-based mail client for Unix
 operating systems.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public neomutt
   (package
@@ -434,7 +470,7 @@ operating systems.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/neomutt/neomutt.git")
+             (url "https://github.com/neomutt/neomutt")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -518,7 +554,7 @@ operating systems.")
     (description
      "NeoMutt is a command-line mail reader which is based on mutt.
 It adds a large amount of new and improved features to mutt.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public gmime
   (package
@@ -563,7 +599,7 @@ It adds a large amount of new and improved features to mutt.")
      "GMime provides a core library and set of utilities which may be used for
 the creation and parsing of messages using the Multipurpose Internet Mail
 Extension (MIME).")
-    (license (list lgpl2.1+ gpl2+ gpl3+))))
+    (license (list license:lgpl2.1+ license:gpl2+ license:gpl3+))))
 
 ;; Some packages are not ready for GMime 3 yet.
 (define-public gmime-2.6
@@ -609,7 +645,7 @@ Extension (MIME).")
  (non-spam) by a statistical analysis of the message's header and
 content (body).  The program is able to learn from the user's classifications
 and corrections.  It is based on a Bayesian filter.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public offlineimap
   (package
@@ -655,7 +691,7 @@ and corrections.  It is based on a Bayesian filter.")
      "OfflineImap synchronizes emails between two repositories, so that you
 can read the same mailbox from multiple computers.  It supports IMAP as REMOTE
 repository and Maildir/IMAP as LOCAL repository.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public emacs-mew
   (package
@@ -706,12 +742,12 @@ repository and Maildir/IMAP as LOCAL repository.")
     (description "Mew (Messaging in the Emacs World) is a user interface
 for text messages, multimedia messages (MIME), news articles and
 security functionality including PGP, S/MIME, SSH, and SSL.")
-    (license bsd-3)))
+    (license license:bsd-3)))
 
 (define-public mu
   (package
     (name "mu")
-    (version "1.4.9")
+    (version "1.4.13")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/djcb/mu/releases/"
@@ -719,7 +755,7 @@ security functionality including PGP, S/MIME, SSH, and SSL.")
                                   "mu-" version ".tar.xz"))
               (sha256
                (base32
-                "0dgmwdaszh5m7v1py3f9n9f6avb30vrl93g58a1k225iwdsv01d5"))))
+                "13kfpr77qrnp3i5qnb5zd03frd3fdviggnl50973gdk0hr7m0smj"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
@@ -790,7 +826,7 @@ security functionality including PGP, S/MIME, SSH, and SSL.")
 Maildir-format.  Mu's purpose in life is to help you to quickly find the
 messages you need; in addition, it allows you to view messages, extract
 attachments, create new maildirs, and so on.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public alot
   (package
@@ -827,7 +863,7 @@ attachments, create new maildirs, and so on.")
     (description
      "Alot is an experimental terminal mail user agent (@dfn{MUA}) based on
 @code{notmuch} mail.  It is written in Python using the @code{urwid} toolkit.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public notifymuch
   (let
@@ -840,7 +876,7 @@ attachments, create new maildirs, and so on.")
        (origin
          (method git-fetch)
          (uri (git-reference
-               (url "https://github.com/kspi/notifymuch.git")
+               (url "https://github.com/kspi/notifymuch")
                (commit commit)))
          (sha256
           (base32
@@ -875,7 +911,7 @@ is configurable, and a notification for the same message will not be send
 within a configurable period (defaults to 48 hours).  To use notifymuch, run
 @command{notifymuch} after new mail is indexed, this can be automated by
 invoking @command{notifymuch} from the post-new hook.")
-      (license gpl3))))
+      (license license:gpl3))))
 
 (define-public notmuch
   (package
@@ -951,7 +987,7 @@ invoking @command{notifymuch} from the post-new hook.")
     (description
      "Notmuch is a command-line based program for indexing, searching, read-
 ing, and tagging large collections of email messages.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public notmuch-addrlookup-c
   (package
@@ -960,7 +996,7 @@ ing, and tagging large collections of email messages.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/aperezdc/notmuch-addrlookup-c.git")
+                    (url "https://github.com/aperezdc/notmuch-addrlookup-c")
                     (commit (string-append "v" version))))
               (file-name (string-append name "-" version "-checkout"))
               (sha256
@@ -1022,7 +1058,7 @@ useful for email address completion.")
     (description
      "This package provides Python bindings to use the Notmuch mail indexing
 and search library.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public python2-notmuch
   (package-with-python2 python-notmuch))
@@ -1057,7 +1093,7 @@ broadband.  Muchsync supports arbitrary pairwise synchronization among
 replicas.  A version-vector-based algorithm allows it to exchange only the
 minimum information necessary to bring replicas up to date regardless of which
 pairs have previously synchronized.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public getmail
   (package
@@ -1083,7 +1119,7 @@ arbitrary message filtering, single-user and domain-mailboxes, and many other
 useful features.")
 
     ;; License is specified in file '__init__.py'.
-    (license gpl2)))
+    (license license:gpl2)))
 
 (define-public libetpan
   (package
@@ -1121,7 +1157,7 @@ useful features.")
 framework for different kinds of mail access: IMAP, SMTP, POP and NNTP.  It
 provides an API for C language.  It's the low-level API used by MailCore and
 MailCore 2.")
-    (license bsd-3)))
+    (license license:bsd-3)))
 
 (define-public compface
   (package
@@ -1142,12 +1178,12 @@ MailCore 2.")
     (description "This package takes your 48x48x1 portrait image and
 compresses it.")
     (home-page "https://legacy.cs.indiana.edu/ftp/faces/")
-    (license (x11-style "file://README"))))
+    (license (license:x11-style "file://README"))))
 
 (define-public claws-mail
   (package
     (name "claws-mail")
-    (version "3.17.5")
+    (version "3.17.6")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1155,7 +1191,7 @@ compresses it.")
                     ".tar.xz"))
               (sha256
                (base32
-                "1gjrmdmhc7zzilrlss9yl86ybv9sra8v0qi7mkwv7d9azidx5kns"))))
+                "1s05qw0r0gqwvvkxvrrwbjkbi61dvilixiwrpgcq21qc9csc9r0m"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs `(("bogofilter" ,bogofilter)
@@ -1204,19 +1240,19 @@ other popular email clients, as well as experienced users.  Almost all commands
 are accessible with the keyboard.  Plus, Claws-Mail is extensible via addons
 which can add many functionalities to the base client.")
     (home-page "https://www.claws-mail.org/")
-    (license gpl3+))) ; most files are actually public domain or x11
+    (license license:gpl3+))) ; most files are actually public domain or x11
 
 (define-public msmtp
   (package
     (name "msmtp")
-    (version "1.8.10")
+    (version "1.8.11")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://marlam.de/msmtp/releases/"
                            "/msmtp-" version ".tar.xz"))
        (sha256
-        (base32 "041g921rdjiv8bapp61gp4rylq8cckfkcwzyh8bs7xwxs4wpzfna"))))
+        (base32 "0q0fg235qk448l1xjcwyxr7vcpzk6w57jzhjbkb0m7nffyhhypzj"))))
     (build-system gnu-build-system)
     (inputs
      `(("libsecret" ,libsecret)
@@ -1254,7 +1290,7 @@ which can add many functionalities to the base client.")
      "msmtp is an SMTP client.  In the default mode, it transmits a mail to
 an SMTP server (for example at a free mail provider) which takes care of further
 delivery.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public exim
   (package
@@ -1360,12 +1396,12 @@ Cambridge for use on Unix systems connected to the Internet.  In style it is
 similar to Smail 3, but its facilities are more general.  There is a great
 deal of flexibility in the way mail can be routed, and there are extensive
 facilities for checking incoming mail.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public dovecot
   (package
     (name "dovecot")
-    (version "2.3.10.1")
+    (version "2.3.11.3")
     (source
      (origin
        (method url-fetch)
@@ -1373,7 +1409,7 @@ facilities for checking incoming mail.")
                            (version-major+minor version) "/"
                            "dovecot-" version ".tar.gz"))
        (sha256
-        (base32 "035idr2j81s5mngnhd58rih79dhwwak7q01mqbx3rcmi4cpychk6"))))
+        (base32 "1p5gp8jbavcsaara5mfn5cbrnlxssajnchczbgmmfzr7228fmnfk"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1422,7 +1458,8 @@ It supports mbox/Maildir and its own dbox/mdbox formats.")
     ;; Most source files are covered by either lgpl2.1 or expat.  The SHA code
     ;; is covered by a variant of BSD-3, and UnicodeData.txt is covered by the
     ;; Unicode, Inc. License Agreement for Data Files and Software.
-    (license (list lgpl2.1 license:expat (non-copyleft "file://COPYING")))))
+    (license (list license:lgpl2.1 license:expat
+                   (license:non-copyleft "file://COPYING")))))
 
 (define-public dovecot-trees
   (package
@@ -1472,7 +1509,7 @@ How it works:
 using libsodium sealed boxes.
 @item New mail is encrypted as it arrives using the Curve25519 public key.
 @end enumerate\n")
-    (license agpl3)))
+    (license license:agpl3)))
 
 (define-public dovecot-libsodium-plugin
   (let ((commit "044de73c01c35385df0105f6b387bec5d5317ce7")
@@ -1509,19 +1546,19 @@ using libsodium sealed boxes.
       (description
        "@code{dovecot-libsodium-plugin} provides a libsodium password
 hashing scheme (such as scrypt) plug-in for @code{Dovecot}.")
-      (license gpl3+))))
+      (license license:gpl3+))))
 
 (define-public isync
   (package
     (name "isync")
-    (version "1.3.1")
+    (version "1.3.3")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/isync/isync/"
                            version "/isync-" version ".tar.gz"))
        (sha256 (base32
-                "1sphd30jplii58y2zmw365bckm6pszmapcy905zhjll1sm1ldjv8"))))
+                "10n8ykag0q3ws6fc15xqyg3v980v5nq3kzpablly2rh2z7vkn8gj"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("perl" ,perl)))
@@ -1530,12 +1567,12 @@ hashing scheme (such as scrypt) plug-in for @code{Dovecot}.")
        ("cyrus-sasl" ,cyrus-sasl)
        ("openssl" ,openssl-1.0)
        ("zlib" ,zlib)))
-    (home-page "http://isync.sourceforge.net/")
+    (home-page "https://isync.sourceforge.io/")
     (synopsis "Mailbox synchronization program")
     (description
      "isync/mbsync is a command-line tool for two-way synchronization of
 mailboxes.  Currently Maildir and IMAP are supported types.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public perl-email-abstract
   (package
@@ -1558,7 +1595,7 @@ mailboxes.  Currently Maildir and IMAP are supported types.")
     (synopsis "Interface to mail representations")
     (description "Email::Abstract provides module writers with the ability to
 write simple, representation-independent mail handling code.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-email-address
   (package
@@ -1577,7 +1614,7 @@ write simple, representation-independent mail handling code.")
     (description "Email::Address implements a regex-based RFC 2822 parser that
 locates email addresses in strings and returns a list of Email::Address
 objects found.  Alternatively you may construct objects manually.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-email-address-xs
   (package
@@ -1599,7 +1636,7 @@ objects found.  Alternatively you may construct objects manually.")
 addresses and groups.  Unlike Email::Address, this module does not use regular
 expressions for parsing but instead is implemented in XS and uses shared code
 from Dovecot IMAP server.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-email-date-format
   (package
@@ -1618,7 +1655,7 @@ from Dovecot IMAP server.")
     (synopsis "Produce RFC 2822 date strings")
     (description "Email::Date::Format provides a means for generating an RFC
 2822 compliant datetime string.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-email-messageid
   (package
@@ -1637,7 +1674,7 @@ from Dovecot IMAP server.")
     (synopsis "Generate world unique message-ids")
     (description "Email::MessageID generates recommended message-ids to
 identify a message uniquely.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-email-mime
   (package
@@ -1666,7 +1703,7 @@ identify a message uniquely.")
 handle MIME encoded messages.  It takes a message as a string, splits it up
 into its constituent parts, and allows you access to various parts of the
 message.  Headers are decoded from MIME encoding.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-email-mime-contenttype
   (package
@@ -1687,7 +1724,7 @@ message.  Headers are decoded from MIME encoding.")
     (synopsis "Parse MIME Content-Type headers")
     (description "Email::MIME::ContentType parses a MIME Content-Type
 header.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-email-mime-encodings
   (package
@@ -1707,7 +1744,7 @@ header.")
     (home-page "https://metacpan.org/release/Email-MIME-Encodings")
     (synopsis "Unified interface to MIME encoding and decoding")
     (description "This module wraps MIME::Base64 and MIME::QuotedPrint.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-email-sender
   (package
@@ -1738,7 +1775,7 @@ header.")
     (synopsis "Perl library for sending email")
     (description "Email::Sender replaces the old and sometimes problematic
 Email::Send library.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-email-simple
   (package
@@ -1759,7 +1796,7 @@ Email::Send library.")
     (synopsis "Parsing of RFC 2822 messages")
     (description "Email::Simple provides simple parsing of RFC 2822 message
 format and headers.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public libesmtp
   (package
@@ -1789,7 +1826,7 @@ submission of) electronic mail via a preconfigured Mail Transport Agent (MTA).
 It may be used as part of a Mail User Agent (MUA) or other program that must
 be able to post electronic mail where mail functionality may not be that
 program's primary purpose.")
-    (license (list lgpl2.1+ gpl2+))))
+    (license (list license:lgpl2.1+ license:gpl2+))))
 
 (define-public esmtp
   (package
@@ -1799,7 +1836,7 @@ program's primary purpose.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/andywingo/esmtp.git")
+             (url "https://github.com/andywingo/esmtp")
              (commit "01bf9fc")))
        (sha256
         (base32
@@ -1826,7 +1863,7 @@ user's @file{$HOME/.esmtprc} configuration file; see the @command{esmtprc} man
 page for more on configuration.  This package also provides minimal
 compatibility shims for the @command{sendmail}, @command{mailq}, and
 @command{newaliases} commands.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public fdm
   (package
@@ -1852,7 +1889,8 @@ deliver it in various ways.")
      ;; Why point to a source file?  Well, all the individual files have a
      ;; copy of this license in their headers, but there's no seprate file
      ;; with that information.
-     (non-copyleft "https://github.com/nicm/fdm/blob/master/command.c"))))
+     (license:non-copyleft
+      "https://github.com/nicm/fdm/blob/master/command.c"))))
 
 
 (define-public procmail
@@ -1900,10 +1938,10 @@ for a variety of mailbox formats such as mbox, mh and maildir.  Incoming mail
 can be sorted into separate files/directories and arbitrary commands can be
 executed on mail arrival.  Procmail is considered stable, but is no longer
 maintained.")
-    (license gpl2+))) ;; procmail allows to choose the
-                      ;; nonfree Artistic License 1.0
-                      ;; as alternative to the GPL2+.
-                      ;; This option is not listed here.
+    (license license:gpl2+))) ;; procmail allows to choose the
+                              ;; nonfree Artistic License 1.0
+                              ;; as alternative to the GPL2+.
+                              ;; This option is not listed here.
 
 (define-public khard
   (package
@@ -1940,7 +1978,7 @@ modifies and removes CardDAV address book entries at your local machine.  For
 synchronizing with a remote address book, @command{vdirsyncer} is recommended.
 Khard can also be used from within the email client @command{mutt}.")
     (home-page "https://github.com/scheibler/khard")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public perl-mail-spf
   (package
@@ -1979,7 +2017,7 @@ Khard can also be used from within the email client @command{mutt}.")
     (synopsis "Perl implementation of Sender Policy Framework")
     (description "Mail::SPF is the Sender Policy Framework implemented
 in Perl.")
-    (license bsd-3)))
+    (license license:bsd-3)))
 
 (define-public perl-mail-authenticationresults
   (package
@@ -2002,7 +2040,7 @@ in Perl.")
 that indicates the message authentication status as per RFC7601.  This module
 is not fully compliant with the RFC but it tries to implement most styles of
 Authentication-Results header seen in the wild.")
-    (license perl-license)))
+    (license license:perl-license)))
 
 (define-public perl-mail-dkim
   (package
@@ -2034,7 +2072,7 @@ Keys Identified Mail (DKIM) standard, and the older Yahoo! DomainKeys standard,
 both of which sign and verify emails using digital signatures and DNS records.
 Mail-DKIM can be used by any Perl program that wants to provide support for
 DKIM and/or DomainKeys.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public dkimproxy
   (package
@@ -2109,7 +2147,7 @@ of incoming messages.
 It was designed for Postfix, but can be used to add DKIM support to nearly any
 existing mail server.  With Postfix, the proxies can operate as either
 @code{Before-Queue} or @code{After-Queue} content filters.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public mb2md
   (package
@@ -2154,19 +2192,19 @@ existing mail server.  With Postfix, the proxies can operate as either
     (description
      "Mb2md is a Perl script that takes one or more mbox format files and
 converts them to maildir format directories.")
-    (license public-domain)))
+    (license license:public-domain)))
 
 (define-public mpop
   (package
     (name "mpop")
-    (version "1.4.9")
+    (version "1.4.10")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://marlam.de/mpop/releases/"
                            "mpop-" version ".tar.xz"))
        (sha256
-        (base32 "0hinmyd4lipy9wi3grwm72vv6xrpf4m08i9g9nlxzxnwfanw885q"))))
+        (base32 "1243hazpiwgvz2m3p48cdh0yw1019i6xjxgc7qyhmxcdy0inb6wy"))))
     (build-system gnu-build-system)
     (inputs
      `(("gnutls" ,gnutls)))
@@ -2181,7 +2219,7 @@ mpop supports multiple accounts, header based mail filtering, delivery
 to mbox files, maildir folders or an @acronym{MDA, Mail Delivery Agent},
 TLS/SSL, several authentication methods, @acronym{IDN, Internationalized Domain
 Names} and SOCKS proxies.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public mhonarc
   (package
@@ -2203,7 +2241,7 @@ Names} and SOCKS proxies.")
 provides HTML mail archiving with index, mail thread linking,
 etc; plus other capabilities including support for MIME and
 powerful user customization features.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 
 (define-public sendmail
@@ -2285,8 +2323,8 @@ define(`confINST_DEP', `')
      "Sendmail is a mail transfer agent (MTA) originally developed by Eric
 Allman.  It is highly configurable and supports many delivery methods and many
 transfer protocols.")
-    (license (non-copyleft "file://LICENSE"
-                           "See LICENSE in the distribution."))))
+    (license (license:non-copyleft "file://LICENSE"
+                                   "See LICENSE in the distribution."))))
 
 (define-public opensmtpd
   (package
@@ -2364,104 +2402,163 @@ functionality than those available in other SMTP daemons.  The objective is to
 provide enough features to satisfy typical usage at the risk of unsuitability
 to esoteric or niche requirements.")
     (home-page "https://www.opensmtpd.org")
-    (license (list bsd-2 bsd-3 bsd-4 (non-copyleft "file://COPYING")
-                   public-domain isc license:openssl))))
+    (license (list license:bsd-2 license:bsd-3 license:bsd-4
+                   (license:non-copyleft "file://COPYING")
+                   license:public-domain license:isc license:openssl))))
 
 (define-public opensmtpd-extras
   (package
     (name "opensmtpd-extras")
-    (version "5.7.1")
+    (version "6.7.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.opensmtpd.org/archives/"
-                                  name "-" version ".tar.gz"))
+                                  "opensmtpd-extras-" version ".tar.gz"))
               (sha256
                (base32
-                "1kld4hxgz792s0cb2gl7m2n618ikzqkj88w5dhaxdrxg4x2c4vdm"))))
+                "1b1mx71bvmv92lbm08wr2p60g3qhikvv3n15zsr6dcwbk9aqahzq"))))
     (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
     (inputs
      `(("libressl" ,libressl)
        ("libevent" ,libevent)
-       ("libasr" ,libasr)
-       ("python-2" ,python-2)
+       ("mysql" ,mysql)
        ("opensmtpd" ,opensmtpd)
-       ("perl" ,perl)
-       ("lua" ,lua)
        ("postgresql" ,postgresql)
-       ("sqlite" ,sqlite)
-       ("linux-pam" ,linux-pam)))
-    (native-inputs
-     `(("bison" ,bison)
-       ("pkg-config" ,pkg-config)
-       ("groff" ,groff)
-       ("automake" ,automake)
-       ("autoconf" ,autoconf)))
+       ("python" ,python-2)
+       ("sqlite" ,sqlite)))
     (arguments
-     `(;; We have to configure it like this because the default checks for for example
-       ;; python in /usr/local/bin, /usr/bin and fails otherwise.
-       #:configure-flags (list
-                          "--with-filter-clamav"    "--with-filter-dkim-signer"
-                          "--with-filter-dnsbl"     "--with-filter-lua"
-                          "--with-filter-monkey"    "--with-filter-pause"
-                          "--with-filter-perl"      "--with-filter-python"
-                          "--with-filter-regex"     "--with-filter-spamassassin"
-                          "--with-filter-stub"      "--with-filter-trace"
-                          "--with-filter-void"
+     `(#:configure-flags
+       (list "--sysconfdir=/etc"
+             "--localstatedir=/var"
 
-                          "--with-queue-null"       "--with-queue-python"
-                          "--with-queue-ram"        "--with-queue-stub"
+             "--with-queue-null"
+             "--with-queue-python"
+             "--with-queue-ram"
+             "--with-queue-stub"
 
-                          "--with-scheduler-python" "--with-scheduler-ram"
-                          "--with-scheduler-stub"
+             "--with-table-ldap"
+             "--with-table-mysql"
+             "--with-table-postgres"
+             ;; "--with-table-redis"    ; TODO: package hiredis
+             "--with-table-socketmap"
+             "--with-table-passwd"
+             "--with-table-python"
+             "--with-table-sqlite"
+             "--with-table-stub"
 
-                          "--with-table-ldap"       ; "--with-table-mysql"
-                          "--with-table-passwd"     "--with-table-postgres"
-                          "--with-table-python"     "--with-table-socketmap"
-                          "--with-table-sqlite"     "--with-table-stub"
-                          ;;"--with-table-redis"    ; TODO: package hiredis
+             "--with-scheduler-ram"
+             "--with-scheduler-stub"
+             "--with-scheduler-python"
 
-                          "--with-user=smtpd"       "--with-privsep-user=smtpd"
-                          "--localstatedir=/var"    "--sysconfdir=/etc"
-                          "--with-lua-type=lua"     ; can use lua or luajit
+             "--with-user-smtpd=smtpd"
 
-                          (string-append "--with-python="
-                                         (assoc-ref %build-inputs "python-2"))
-                          (string-append "--with-lua="
-                                         (assoc-ref %build-inputs "lua")))))
-    (license (list bsd-2 bsd-3 bsd-4
-                   public-domain isc license:openssl))
+             ;; We have to configure it like this because the default checks for
+             ;; for example Python in /usr/{,local/}bin and fails otherwise.
+             (string-append "--with-python="
+                            (assoc-ref %build-inputs "python")))))
+    (home-page "https://www.opensmtpd.org")
     (synopsis "Extra tables, filters, and various other addons for OpenSMTPD")
     (description
      "This package provides extra tables, filters, and various other addons
 for OpenSMTPD to extend its functionality.")
-    (home-page "https://www.opensmtpd.org")))
+    (license (list license:bsd-2 license:bsd-3 ; openbsd-compat
+                   license:isc))))             ; everything else
+
+(define-public mailman
+  (package
+    (name "mailman")
+    (version "3.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "mailman" version))
+        (sha256
+         (base32
+          "0idfiv48jjgc0jq4731094ddhraqq8bxnwmjk6sg5ask0jss9kxq"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("gunicorn" ,gunicorn)
+       ("python-aiosmtpd" ,python-aiosmtpd)
+       ("python-alembic" ,python-alembic)
+       ("python-atpublic" ,python-atpublic)
+       ("python-authheaders" ,python-authheaders)
+       ("python-authres" ,python-authres)
+       ("python-click" ,python-click)
+       ("python-dateutil" ,python-dateutil)
+       ("python-dnspython" ,python-dnspython)
+       ("python-falcon" ,python-falcon)
+       ("python-flufl-bounce" ,python-flufl-bounce)
+       ("python-flufl-i18n" ,python-flufl-i18n)
+       ("python-flufl-lock" ,python-flufl-lock)
+       ("python-importlib-resources" ,python-importlib-resources)
+       ("python-lazr-config" ,python-lazr-config)
+       ("python-passlib" ,python-passlib)
+       ("python-requests" ,python-requests)
+       ("python-sqlalchemy" ,python-sqlalchemy)
+       ("python-zope-component" ,python-zope-component)
+       ("python-zope-configuration" ,python-zope-configuration)
+       ("python-zope-event" ,python-zope-event)
+       ("python-zope-interface" ,python-zope-interface)))
+    (native-inputs
+     `(("python-nose" ,python-nose)))
+    (home-page "https://www.list.org")
+    (synopsis "Mailing list manager")
+    (description
+     "GNU Mailman is software for managing email discussion and mailing
+lists.  Both users and administrators generally perform their actions in a
+web interface, although email and command-line interfaces are also provided.
+The system features built-in archiving, automatic bounce processing, content
+filtering, digest delivery, and more.")
+    (license license:gpl3+)))
 
 (define-public python-mailmanclient
   (package
     (name "python-mailmanclient")
-    (version "3.1.1")
+    (version "3.3.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "mailmanclient" version))
        (sha256
         (base32
-         "0fdfs5g3pf30v2i7w18pdkv9xnfxmfcv66mzv56dck0a1igq07m3"))))
+         "0pjgzpvhdb6ql8asb20xr8d01m646zpghmcp9fmscks0n1k4di4g"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f)) ; Requires mailman running
     (propagated-inputs
-     `(("python-six" ,python-six)
-       ("python-httplib2" ,python-httplib2)))
-    (home-page "https://launchpad.net/mailman.client")
+     `(("python-requests" ,python-requests)))
+    ;(native-inputs
+    ; `(("mailman" ,mailman)
+    ;   ("python-falcon" ,python-falcon)
+    ;   ("python-pytest" ,python-pytest)
+    ;   ("python-pytest-services" ,python-pytest-services)))
+    (home-page "https://www.list.org/")
     (synopsis "Python bindings for the Mailman 3 REST API")
     (description
      "The mailmanclient library provides official Python bindings for
 the GNU Mailman 3 REST API.")
-    (license lgpl3+)))
+    (properties `((python2-variant . ,(delay python2-mailmanclient))))
+    (license license:lgpl3+)))
 
+;; This is the last version which supports Python-2.
 (define-public python2-mailmanclient
-  (package-with-python2 python-mailmanclient))
+  (let ((base (package-with-python2
+                (strip-python2-variant python-mailmanclient))))
+    (package
+      (inherit base)
+      (version "3.1.1")
+      (source
+        (origin
+          (method url-fetch)
+          (uri (pypi-uri "mailmanclient" version))
+          (sha256
+           (base32
+            "0fdfs5g3pf30v2i7w18pdkv9xnfxmfcv66mzv56dck0a1igq07m3"))))
+      (propagated-inputs
+       `(("python2-six" ,python2-six)
+         ("python2-httplib2" ,python2-httplib2))))))
 
 (define-public mlmmj
   (package
@@ -2522,6 +2619,44 @@ installation on systems where resources are limited.  Its features include:
 @end enumerate\n")
     (license license:expat)))
 
+(define-public python-django-mailman3
+  (package
+    (name "python-django-mailman3")
+    (version "1.3.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "django-mailman3" version))
+        (sha256
+         (base32
+          "1yrm7wpjy34xai72vn2vkhc9131cdrbqy08rrabf36kynj5vcdvy"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             (setenv "DJANGO_SETTINGS_MODULE"
+                     "django_mailman3.tests.settings_test")
+             (invoke "django-admin" "test"
+                     "--pythonpath=."))))))
+    (propagated-inputs
+     `(("python-django" ,python-django)
+       ("python-django-allauth" ,python-django-allauth)
+       ("python-django-gravatar2" ,python-django-gravatar2)
+       ("python-mailmanclient" ,python-mailmanclient)
+       ("python-pytz" ,python-pytz)))
+    (native-inputs
+     `(("python-mock" ,python-mock)))
+    (home-page "https://gitlab.com/mailman/django-mailman3")
+    (synopsis "Django library to help interaction with Mailman")
+    (description
+     "This package contains libraries and templates for Django-based interfaces
+interacting with Mailman.")
+    (properties `((python2-variant . ,(delay python2-django-mailman3))))
+    (license license:gpl3+)))
+
+;; This is the last version to support Python-2.
 (define-public python2-django-mailman3
   (package
     (name "python2-django-mailman3")
@@ -2559,37 +2694,140 @@ installation on systems where resources are limited.  Its features include:
     (description
      "Libraries and templates for Django-based interfaces
 interacting with Mailman.")
-    (license gpl3+)))
+    (license license:gpl3+)))
+
+(define-public python-mailman-hyperkitty
+  (package
+    (name "python-mailman-hyperkitty")
+    (version "1.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "mailman-hyperkitty" version))
+        (sha256
+         (base32
+          "1lfqa9admhvdv71f528jmz2wl0i5cv77v6l64px2pm4zqr9ckkjx"))
+        (patches
+          (list
+            (origin
+              ;; see: https://gitlab.com/mailman/mailman-hyperkitty/issues/17
+              ;; fixes test_archive_message_unserializable
+              (method url-fetch)
+              (uri "https://salsa.debian.org/mailman-team/mailman-hyperkitty/raw/debian/1.1.0-9/debian/patches/0002-Skip-the-test_archive_message_unserializable.patch")
+              (sha256
+               (base32
+                "0p1fwm46c4bl81lvsg3kjhn2r1lwgkpgxamb3xyqn7h9qdrw10hw")))))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-requests" ,python-requests)
+       ("python-zope-interface" ,python-zope-interface)))
+    (inputs
+     `(("mailman" ,mailman)))
+    (native-inputs
+     `(("python-mock" ,python-mock)
+       ("python-nose" ,python-nose)
+       ("python-nose2" ,python-nose2)))
+    (home-page "https://gitlab.com/mailman/mailman-hyperkitty/")
+    (synopsis "Mailman archiver plugin for HyperKitty")
+    (description
+     "Mailman3 allows emails sent to its mailing lists to be archived by any
+software provided that there is a plugin (loadable by Mailman3) designed to
+communicate with it properly.  This module contains a Mailman3 archiver plugin
+which sends emails to HyperKitty, the official Mailman3 web archiver.")
+    (license license:gpl3+)))
+
+(define-public python-hyperkitty
+  (package
+    (name "python-hyperkitty")
+    (version "1.3.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "HyperKitty" version))
+        (sha256
+         (base32
+          "0p85r9q6mn5as5b39xp9hkkipnk0156acx540n2ygk3qb3jd4a5n"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             ;; It is unclear why this test fails.
+             (substitute* "hyperkitty/tests/commands/test_import.py"
+               (("def test_bad_content_type_part_two")
+                "@SkipTest\n    def test_bad_content_type_part_two"))
+             (setenv "PYTHONPATH" (string-append ".:" (getenv "PYTHONPATH")))
+             (invoke "example_project/manage.py" "test"
+                     "--settings=hyperkitty.tests.settings_test"))))))
+    (propagated-inputs
+     `(("python-dateutil" ,python-dateutil)
+       ("python-django" ,python-django)
+       ("python-django-compressor" ,python-django-compressor)
+       ("python-django-extensions" ,python-django-extensions)
+       ("python-django-gravatar2" ,python-django-gravatar2)
+       ("python-django-haystack" ,python-django-haystack)
+       ("python-django-mailman3" ,python-django-mailman3)
+       ("python-django-q" ,python-django-q)
+       ("python-djangorestframework" ,python-djangorestframework)
+       ("python-flufl-lock" ,python-flufl-lock)
+       ("python-mailmanclient" ,python-mailmanclient)
+       ("python-networkx" ,python-networkx)
+       ("python-pytz" ,python-pytz)
+       ("python-robot-detection" ,python-robot-detection)))
+    (native-inputs
+     `(("python-beautifulsoup4" ,python-beautifulsoup4)
+       ("python-elasticsearch" ,python-elasticsearch)
+       ("python-isort" ,python-isort)
+       ("python-mock" ,python-mock)
+       ("python-whoosh" ,python-whoosh)))
+    (home-page "https://gitlab.com/mailman/hyperkitty")
+    (synopsis "Web interface to access GNU Mailman v3 archives")
+    (description
+     "The hyperkitty Django app provides a web user interface to access GNU
+Mailman3 archives, and manage it.  This interface uses django, and requires
+some configuration.")
+    (license license:gpl3)))    ; Some files are gpl2+
 
 (define-public postorius
   (package
     (name "postorius")
-    (version "1.0.3")
+    (version "1.3.3")
     (source
      (origin
        (method url-fetch)
-       (uri (pypi-uri "postorius" version "+post2.tar.gz"))
-       (file-name (string-append name "-" version ".tar.gz"))
+       (uri (pypi-uri "postorius" version))
        (sha256
         (base32
-         "1wymcpv2icjjy8h1ni52p6dr7wwxf71ivqgbqhzx4i82yqphcaq5"))))
+         "08jn23gblbkfl09qlykbpsmp39mmach3sl69h1j5cd5kkx839rwa"))))
     (build-system python-build-system)
     (arguments
-     `(; One test dependency relies on Persona, which was shut down in
-       ;; November 2016.
-       #:tests? #f
-       ;; The part of the frontend of Mailman is still python 2.7.
-       #:python ,python-2))
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key inputs outputs tests? #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (if tests?
+                 (invoke "python" "example_project/manage.py" "test"
+                         "--settings=test_settings" "postorius")
+                 #t))))
+       #:tests? #f)) ; Tests try to run a mailman instance to test against.
     (inputs
-     `(("python2-django" ,python2-django)
-       ("python2-django-mailman3" ,python2-django-mailman3)
-       ("python2-mailmanclient" ,python2-mailmanclient)))
+     `(("python-django" ,python-django)
+       ("python-django-mailman3" ,python-django-mailman3)
+       ("python-mailmanclient" ,python-mailmanclient)
+       ("python-readme-renderer" ,python-readme-renderer)))
+    (native-inputs
+     `(("python-beautifulsoup4" ,python-beautifulsoup4)
+       ("python-isort" ,python-isort)
+       ("python-mock" ,python-mock)
+       ("python-vcrpy" ,python-vcrpy)))
     (home-page "https://gitlab.com/mailman/postorius")
     (synopsis "Web user interface for GNU Mailman")
     (description
      "Postorius is a Django app which provides a web user interface
 to access GNU Mailman.")
-    (license (list gpl3+ lgpl3+))))
+    (license (list license:gpl3+ license:lgpl3+))))
 
 (define-public blists
   (package
@@ -2673,7 +2911,7 @@ unix-domain sockets, internet-domain sockets, and pipes to spawned processes.
 Options can be specified in environment variables, configuration files, and
 the command line allowing maximum configurability and ease of use for
 operators and scripters.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public alpine
   (package
@@ -2754,7 +2992,7 @@ tools and applications:
 @item pico, the standalone text editor, GNU nano's predecessor
 @item pilot, the standalone file system navigator
 @end enumerate\n")
-    (license asl2.0)))
+    (license license:asl2.0)))
 
 (define-public balsa
   (package
@@ -2810,7 +3048,7 @@ tools and applications:
 the GNOME desktop.  It supports both POP3 and IMAP servers as well as the
 mbox, maildir and mh local mailbox formats.  Balsa also supports SMTP and/or
 the use of a local MTA such as Sendmail.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public afew
   (package
@@ -2835,7 +3073,7 @@ the use of a local MTA such as Sendmail.")
 provides automatic tagging each time new mail is registered with notmuch.  It
 can add tags based on email headers or Maildir folders and can handle spam and
 killed threads.")
-    (license isc)))
+    (license license:isc)))
 
 (define-public pan
   (package
@@ -2882,7 +3120,7 @@ killed threads.")
 and binaries. It supports offline reading, scoring and killfiles, yEnc, NZB,
 PGP handling, multiple servers, and secure connections.")
     ;; License of the docs: fdl-1.1; Others: gpl2.
-    (license (list fdl1.1+ gpl2))))
+    (license (list license:fdl1.1+ license:gpl2))))
 
 (define-public imapfilter
   (package
@@ -2892,7 +3130,7 @@ PGP handling, multiple servers, and secure connections.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/lefcha/imapfilter.git")
+             (url "https://github.com/lefcha/imapfilter")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -2922,13 +3160,13 @@ servers.  The 4rev1 and 4 versions of IMAP are supported.")
 (define-public urlscan
   (package
     (name "urlscan")
-    (version "0.9.4")
+    (version "0.9.5")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "urlscan" version))
         (sha256
-         (base32 "1q0vxv9haap01vz1cbkzss62cgwb9365lv5vnkg2gbpx4g5y7a9l"))))
+         (base32 "07vcwirap0p4dkqrqblfn1q017slgd8m6qyijvbi3gxnr09pbyx2"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-urwid" ,python-urwid)))
@@ -2936,13 +3174,13 @@ servers.  The 4rev1 and 4 versions of IMAP are supported.")
     (synopsis "View/select the URLs in an email message or file")
     (description
      "Urlscan is a small program that is designed to integrate with the
-@code{mutt} mailreader to allow you to easily launch a Web browser for URLs
+Mutt mail reader to allow you to easily launch a Web browser for URLs
 contained in email messages.  It parses an email message or file and scans it
 for URLs and email addresses.  It then displays the URLs and their context
 within the message, and allows you to choose one or more URLs to send to your
-Web browser.  Alternatively, it send a list of all URLs to stdout.  It is a
-replacement for the @code{urlview} program.")
-    (license gpl2)))
+Web browser.  Alternatively, it send a list of all URLs to standard output.
+It is a replacement for the @command{urlview} program.")
+    (license license:gpl2)))
 
 (define-public tnef
   (package
@@ -2952,7 +3190,7 @@ replacement for the @code{urlview} program.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/verdammelt/tnef.git")
+             (url "https://github.com/verdammelt/tnef")
              (commit version)))
        (sha256
         (base32 "104g48mcm00bgiyzas2vf86331w7bnw7h3bc11ib4lp7rz6zqfck"))
@@ -2967,7 +3205,7 @@ replacement for the @code{urlview} program.")
     (description
      "TNEF is a tar-like program that unpacks MIME attachments of type
 @code{application/ms-tnef}.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public mumi
   (let ((commit "5a578328199bab51a147fbadbce12c8d06959ed6")
@@ -3029,7 +3267,7 @@ replacement for the @code{urlview} program.")
       (home-page "https://git.elephly.net/software/mumi.git")
       (synopsis "Debbugs web interface")
       (description "Mumi is a Debbugs web interface.")
-      (license agpl3+))))
+      (license license:agpl3+))))
 
 (define-public ytnef
   (package
@@ -3038,7 +3276,7 @@ replacement for the @code{urlview} program.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/Yeraze/ytnef.git")
+                    (url "https://github.com/Yeraze/ytnef")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -3053,93 +3291,91 @@ replacement for the @code{urlview} program.")
     (synopsis "TNEF stream reader for winmail.dat files")
     (description "This package provides a TNEF stream reader library and
 related tools to process winmail.dat files.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public public-inbox
-  (let ((commit "05a06f3262a2ddbf46adb85169e13ce9127e4524")
-        (revision "0"))
-    (package
-     (name "public-inbox")
-     (version (git-version "1.2.0" revision commit))
-     (source
-      (origin (method git-fetch)
-              (uri (git-reference
-                    (url "https://public-inbox.org")
-                    (commit commit)))
-              (sha256
-               (base32
-                "06cclxg46gsls3x19l9s8s9x8gkjghm6gd4jb1v9ng6fds6xi2fg"))
-              (file-name (git-file-name name version))))
-     (build-system perl-build-system)
-     (arguments
-      '(#:phases
-        (modify-phases %standard-phases
-          (add-before 'configure 'qualify-paths
-            (lambda _
-              ;; Use absolute paths for 'xapian-compact'.
-              (let ((xapian-compact (which "xapian-compact")))
-                (substitute* "script/public-inbox-compact"
-                  (("xapian-compact") xapian-compact)))
-              #t))
-          (add-before 'check 'pre-check
-            (lambda _
-              (substitute* "t/spawn.t"
-                (("\\['env'\\]") (string-append "['" (which "env") "']")))
-              (substitute* "t/ds-leak.t"
-                (("/bin/sh") (which "sh")))
-              (invoke "./certs/create-certs.perl")
-              ;; XXX: This test fails due to zombie process is not reaped by
-              ;; the builder.
-              (substitute* "t/httpd-unix.t"
-                (("^SKIP: \\{") "SKIP: { skip('Guix');"))
-              #t))
-          (add-after 'install 'wrap-programs
-            (lambda* (#:key inputs outputs #:allow-other-keys)
-              (let ((out (assoc-ref outputs "out")))
-                (for-each
-                 (lambda (prog)
-                   (wrap-program prog
-                     ;; Let those scripts find their perl modules.
-                     `("PERL5LIB" ":" prefix
-                       (,(string-append out "/lib/perl5/site_perl")
-                        ,(getenv "PERL5LIB")))
-                     ;; 'git' is invoked in various files of the PublicInbox
-                     ;; perl module.
-                     `("PATH" ":" prefix
-                       (,(string-append (assoc-ref inputs "git") "/bin")))))
-                 (find-files (string-append out "/bin"))))
-              #t)))))
-     (native-inputs
-      `(("git" ,git)
-        ("xapian" ,xapian)
-        ;; For testing.
-        ("lsof" ,lsof)
-        ("openssl" ,openssl)))
-     (inputs
-      `(("perl-dbd-sqlite" ,perl-dbd-sqlite)
-        ("perl-dbi" ,perl-dbi)
-        ("perl-email-address-xs" ,perl-email-address-xs)
-        ("perl-email-mime-contenttype" ,perl-email-mime-contenttype)
-        ("perl-email-mime" ,perl-email-mime)
-        ("perl-email-simple" ,perl-email-simple)
-        ("perl-net-server" ,perl-net-server)
-        ("perl-filesys-notify-simple" ,perl-filesys-notify-simple)
-        ("perl-plack-middleware-deflater" ,perl-plack-middleware-deflater)
-        ("perl-plack-middleware-reverseproxy" ,perl-plack-middleware-reverseproxy)
-        ("perl-plack" ,perl-plack)
-        ("perl-search-xapian" ,perl-search-xapian)
-        ("perl-timedate" ,perl-timedate)
-        ("perl-uri-escape" ,perl-uri-escape)
-        ;; For testing.
-        ("perl-ipc-run" ,perl-ipc-run)
-        ("perl-xml-feed" ,perl-xml-feed)))
-     (home-page "https://public-inbox.org/README.html")
-     (synopsis "Archive mailing lists in git repositories")
-     (description
-      "public-inbox implements the sharing of an email inbox via git to
+  (package
+    (name "public-inbox")
+    (version "1.5.0")
+    (source
+     (origin (method git-fetch)
+             (uri (git-reference
+                   (url "https://public-inbox.org")
+                   (commit (string-append "v" version))))
+             (sha256
+              (base32
+               "03zj7shdl3vibs7k5lr673bwcf8j1xx8is3mjz34ca4cdh6p5j2k"))
+             (file-name (git-file-name name version))))
+    (build-system perl-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'qualify-paths
+           (lambda _
+             ;; Use absolute paths for 'xapian-compact'.
+             (let ((xapian-compact (which "xapian-compact")))
+               (substitute* "script/public-inbox-compact"
+                 (("xapian-compact") xapian-compact)))
+             #t))
+         (add-before 'check 'pre-check
+           (lambda _
+             (substitute* "t/spawn.t"
+               (("\\['env'\\]") (string-append "['" (which "env") "']")))
+             (substitute* "t/ds-leak.t"
+               (("/bin/sh") (which "sh")))
+             (invoke "./certs/create-certs.perl")
+             ;; XXX: This test fails due to zombie process is not reaped by
+             ;; the builder.
+             (substitute* "t/httpd-unix.t"
+               (("^SKIP: \\{") "SKIP: { skip('Guix');"))
+             #t))
+         (add-after 'install 'wrap-programs
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (for-each
+                (lambda (prog)
+                  (wrap-program prog
+                    ;; Let those scripts find their perl modules.
+                    `("PERL5LIB" ":" prefix
+                      (,(string-append out "/lib/perl5/site_perl")
+                       ,(getenv "PERL5LIB")))
+                    ;; 'git' is invoked in various files of the PublicInbox
+                    ;; perl module.
+                    `("PATH" ":" prefix
+                      (,(string-append (assoc-ref inputs "git") "/bin")))))
+                (find-files (string-append out "/bin"))))
+             #t)))))
+    (native-inputs
+     `(("xapian" ,xapian)
+       ;; For testing.
+       ("lsof" ,lsof)
+       ("openssl" ,openssl)))
+    (inputs
+     `(("git" ,git)
+       ("perl-dbd-sqlite" ,perl-dbd-sqlite)
+       ("perl-dbi" ,perl-dbi)
+       ("perl-email-address-xs" ,perl-email-address-xs)
+       ("perl-email-mime-contenttype" ,perl-email-mime-contenttype)
+       ("perl-email-mime" ,perl-email-mime)
+       ("perl-email-simple" ,perl-email-simple)
+       ("perl-net-server" ,perl-net-server)
+       ("perl-filesys-notify-simple" ,perl-filesys-notify-simple)
+       ("perl-plack-middleware-deflater" ,perl-plack-middleware-deflater)
+       ("perl-plack-middleware-reverseproxy" ,perl-plack-middleware-reverseproxy)
+       ("perl-plack" ,perl-plack)
+       ("perl-search-xapian" ,perl-search-xapian)
+       ("perl-timedate" ,perl-timedate)
+       ("perl-uri-escape" ,perl-uri-escape)
+       ;; For testing.
+       ("perl-ipc-run" ,perl-ipc-run)
+       ("perl-xml-feed" ,perl-xml-feed)))
+    (home-page "https://public-inbox.org/README.html")
+    (synopsis "Archive mailing lists in git repositories")
+    (description
+     "public-inbox implements the sharing of an email inbox via git to
 complement or replace traditional mailing lists.  Readers may read via NNTP,
 Atom feeds or HTML archives.")
-     (license agpl3+))))
+    (license license:agpl3+)))
 
 (define-public sylpheed
   (package
@@ -3171,4 +3407,146 @@ Atom feeds or HTML archives.")
      "Sylpheed is a simple, lightweight but featureful, and easy-to-use e-mail
 client.  Sylpheed provides intuitive user-interface.  Sylpheed is also
 designed for keyboard-oriented operation.")
-    (license gpl2+)))
+    (license license:gpl2+)))
+
+(define-public python-authres
+  (package
+    (name "python-authres")
+    (version "1.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "authres" version))
+        (sha256
+         (base32
+          "1dr5zpqnb54h4f5ax8334l1dcp8j9083d7v4vdi1xqkwmnavklck"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           ;; Run doctests as described in the README.
+           (lambda _
+             (invoke "python" "-m" "authres" "-v"))))))
+    (home-page "https://launchpad.net/authentication-results-python")
+    (synopsis "Email Authentication Results Header Module")
+    (description
+     "This module can be used to generate and parse RFC 5451/7001/7601
+Authentication-Results headers.  It also supports Authentication Results
+extensions:
+@itemize
+@item RFC 5617 DKIM/ADSP
+@item RFC 6008 DKIM signature identification (header.b)
+@item RFC 6212 Vouch By Reference (VBR)
+@item RFC 6577 Sender Policy Framework (SPF)
+@item RFC 7281 Authentication-Results Registration for S/MIME
+@item RFC 7293 The Require-Recipient-Valid-Since Header Field
+@item RFC 7489 Domain-based Message Authentication, Reporting, and Conformance (DMARC)
+@item Authenticated Recieved Chain (ARC) (draft-ietf-dmarc-arc-protocol-08)
+@end itemize
+Note: RFC 7601 obsoletes RFC 5451, 6577, 7001, and 7410.  Authres supports the
+current standard.  No backward compatibility issues have been noted.")
+    (license license:asl2.0)))
+
+(define-public python-dkimpy
+  (package
+    (name "python-dkimpy")
+    (version "1.0.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "dkimpy" version))
+        (sha256
+         (base32
+          "14idcs0wiyc0iyi5bz3xqimxf3x6dizcjfn92s2ka5zxp95xdyvd"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (add-after 'patch-source-shebangs 'patch-more-source
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((openssl (assoc-ref inputs "openssl")))
+               (substitute* "dkim/dknewkey.py"
+                 (("/usr/bin/openssl") (string-append openssl "/bin/openssl"))))
+             #t))
+         (replace 'check
+           (lambda _
+             (invoke "python" "test.py"))))))
+    (propagated-inputs
+     `(("python-dnspython" ,python-dnspython)))
+    (native-inputs
+     `(("python-authres" ,python-authres)
+       ("python-pynacl" ,python-pynacl)))
+    (inputs
+     `(("openssl" ,openssl)))
+    (home-page "https://launchpad.net/dkimpy")
+    (synopsis "DKIM (DomainKeys Identified Mail)")
+    (description "Python module that implements @dfn{DKIM} (DomainKeys
+Identified Mail) email signing and verification (RFC6376).  It also provides
+helper scripts for command line signing and verification.  It supports DKIM
+signing/verifying of ed25519-sha256 signatures (RFC 8463).  It also supports
+the RFC 8617 Authenticated Received Chain (ARC) protocol.")
+    (license license:bsd-3)))
+
+(define-public python-authheaders
+  (package
+    (name "python-authheaders")
+    (version "0.13.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "authheaders" version))
+        (sha256
+         (base32
+          "14k6i72k5f8dyvps8vc0aq0cczc8lvqpgjfjzsy6qqychjvjcmwk"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-authres" ,python-authres)
+       ("python-dkimpy" ,python-dkimpy)
+       ("python-dnspython" ,python-dnspython)
+       ("python-publicsuffix2" ,python-publicsuffix2)))
+    (home-page "https://github.com/ValiMail/authentication-headers")
+    (synopsis "Library wrapping email authentication header verification and generation")
+    (description
+     "This is a Python library for the generation of email authentication
+headers.  The library can perform DKIM, SPF, and DMARC validation, and the
+results are packaged into the Authentication-Results header.  The library can
+DKIM and ARC sign messages and output the corresponding signature headers.")
+    ;; The package's metadata claims it were MIT licensed, but the source file
+    ;; headers disagree. MPL-2 for the public suffix list.
+    (license (list license:zpl2.1 license:zlib license:mpl2.0))))
+
+(define-public python-aiosmtpd
+  (package
+    (name "python-aiosmtpd")
+    (version "1.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "aiosmtpd" version))
+        (sha256
+         (base32
+          "1xdfk741pjmz1cm8dsi4n5vq4517i175rm94696m3f7kcgk7xsmp"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'delete-failing-test
+           (lambda _
+             (delete-file "aiosmtpd/tests/test_smtps.py")
+             #t))
+         (replace 'check
+           (lambda _
+             (invoke "python" "-m" "nose2" "-v"))))))
+    (native-inputs
+     `(("python-flufl-testing" ,python-flufl-testing)
+       ("python-nose2" ,python-nose2)))
+    (propagated-inputs
+     `(("python-atpublic" ,python-atpublic)))
+    (home-page "https://aiosmtpd.readthedocs.io/")
+    (synopsis "Asyncio based SMTP server")
+    (description
+     "This project is a reimplementation of the Python stdlib @code{smtpd.py}
+based on asyncio.")
+    (license (list license:asl2.0
+                   license:lgpl3))))    ; only for setup_helpers.py

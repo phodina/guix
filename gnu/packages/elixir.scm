@@ -27,22 +27,21 @@
   #:use-module (guix git-download)
   #:use-module (guix packages)
   #:use-module (gnu packages)
-  #:use-module (gnu packages erlang)
-  #:use-module (gnu packages version-control))
+  #:use-module (gnu packages erlang))
 
 (define-public elixir
   (package
     (name "elixir")
-    (version "1.10.3")
+    (version "1.10.4")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/elixir-lang/elixir.git")
+             (url "https://github.com/elixir-lang/elixir")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "18bqqqzvhr1zj491wc3d36a310mg1wcs12npp70zfmgqrc60q65a"))
+        (base32 "16j4rmm3ix088fvxhvyjqf1hnfg7wiwa87gml3b2mrwirdycbinv"))
        (patches (search-patches "elixir-path-length.patch"))))
     (build-system gnu-build-system)
     (arguments
@@ -100,8 +99,7 @@
              #t))
          (delete 'configure))))
     (inputs
-     `(("erlang" ,erlang)
-       ("git" ,git)))
+     `(("erlang" ,erlang)))
     (home-page "https://elixir-lang.org/")
     (synopsis "Elixir programming language")
     (description "Elixir is a dynamic, functional language used to build

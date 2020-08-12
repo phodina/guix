@@ -191,7 +191,10 @@ its first argument has the right size for the chosen algorithm."
 
 (define-content-hash-constructor build-content-hash
   (sha256 32)
-  (sha512 64))
+  (sha512 64)
+  (sha3-256 32)
+  (sha3-512 64)
+  (blake2s-256 64))
 
 (define-syntax content-hash
   (lambda (s)
@@ -920,22 +923,26 @@ dependencies are known to build on SYSTEM."
 
 (define (bag-transitive-inputs bag)
   "Same as 'package-transitive-inputs', but applied to a bag."
-  (parameterize ((%current-target-system #f))
+  (parameterize ((%current-target-system #f)
+                 (%current-system (bag-system bag)))
     (transitive-inputs (bag-direct-inputs bag))))
 
 (define (bag-transitive-build-inputs bag)
   "Same as 'package-transitive-native-inputs', but applied to a bag."
-  (parameterize ((%current-target-system #f))
+  (parameterize ((%current-target-system #f)
+                 (%current-system (bag-system bag)))
     (transitive-inputs (bag-build-inputs bag))))
 
 (define (bag-transitive-host-inputs bag)
   "Same as 'package-transitive-target-inputs', but applied to a bag."
-  (parameterize ((%current-target-system (bag-target bag)))
+  (parameterize ((%current-target-system (bag-target bag))
+                 (%current-system (bag-system bag)))
     (transitive-inputs (bag-host-inputs bag))))
 
 (define (bag-transitive-target-inputs bag)
   "Return the \"target inputs\" of BAG, recursively."
-  (parameterize ((%current-target-system (bag-target bag)))
+  (parameterize ((%current-target-system (bag-target bag))
+                 (%current-system (bag-system bag)))
     (transitive-inputs (bag-target-inputs bag))))
 
 (define* (package-closure packages #:key (system (%current-system)))
@@ -1194,39 +1201,39 @@ and return it."
   (make-weak-key-hash-table 200))
 
 (define (input-graft store system)
-  "Return a procedure that, given a package with a graft, returns a graft, and
-#f otherwise."
-  (match-lambda
-    ((? package? package)
+  "Return a procedure that, given a package with a replacement and an output name,
+returns a graft, and #f otherwise."
+  (match-lambda*
+    (((? package? package) output)
      (let ((replacement (package-replacement package)))
        (and replacement
-            (cached (=> %graft-cache) package system
+            (cached (=> %graft-cache) package (cons output system)
                     (let ((orig (package-derivation store package system
                                                     #:graft? #f))
                           (new  (package-derivation store replacement system
                                                     #:graft? #t)))
                       (graft
                         (origin orig)
-                        (replacement new)))))))
-    (x
-     #f)))
+                        (origin-output output)
+                        (replacement new)
+                        (replacement-output output)))))))))
 
 (define (input-cross-graft store target system)
   "Same as 'input-graft', but for cross-compilation inputs."
-  (match-lambda
-    ((? package? package)
-    (let ((replacement (package-replacement package)))
-      (and replacement
-           (let ((orig (package-cross-derivation store package target system
-                                                 #:graft? #f))
-                 (new  (package-cross-derivation store replacement
-                                                 target system
-                                                 #:graft? #t)))
-             (graft
-               (origin orig)
-               (replacement new))))))
-   (_
-    #f)))
+  (match-lambda*
+    (((? package? package) output)
+     (let ((replacement (package-replacement package)))
+       (and replacement
+            (let ((orig (package-cross-derivation store package target system
+                                                  #:graft? #f))
+                  (new  (package-cross-derivation store replacement
+                                                  target system
+                                                  #:graft? #t)))
+              (graft
+                (origin orig)
+                (origin-output output)
+                (replacement new)
+                (replacement-output output))))))))
 
 (define* (fold-bag-dependencies proc seed bag
                                 #:key (native? #t))
@@ -1243,26 +1250,21 @@ dependencies; otherwise, restrict to target dependencies."
                       (bag-host-inputs bag))))
         bag-host-inputs))
 
-  (define nodes
-    (match (bag-direct-inputs* bag)
-      (((labels things _ ...) ...)
-       things)))
-
-  (let loop ((nodes nodes)
+  (let loop ((inputs (bag-direct-inputs* bag))
              (result seed)
-             (visited (setq)))
-    (match nodes
+             (visited vlist-null))
+    (match inputs
       (()
        result)
-      (((? package? head) . tail)
-       (if (set-contains? visited head)
-           (loop tail result visited)
-           (let ((inputs (bag-direct-inputs* (package->bag head))))
-             (loop (match inputs
-                     (((labels things _ ...) ...)
-                      (append things tail)))
-                   (proc head result)
-                   (set-insert head visited)))))
+      (((label (? package? head) . rest) . tail)
+       (let ((output  (match rest (() "out") ((output) output)))
+             (outputs (vhash-foldq* cons '() head visited)))
+         (if (member output outputs)
+             (loop tail result visited)
+             (let ((inputs (bag-direct-inputs* (package->bag head))))
+               (loop (append inputs tail)
+                     (proc head output result)
+                     (vhash-consq head output visited))))))
       ((head . tail)
        (loop tail result visited)))))
 
@@ -1279,8 +1281,8 @@ to (see 'graft-derivation'.)"
     (let ((->graft (input-graft store system)))
       (parameterize ((%current-system system)
                      (%current-target-system #f))
-        (fold-bag-dependencies (lambda (package grafts)
-                                 (match (->graft package)
+        (fold-bag-dependencies (lambda (package output grafts)
+                                 (match (->graft package output)
                                    (#f    grafts)
                                    (graft (cons graft grafts))))
                                '()
@@ -1291,8 +1293,8 @@ to (see 'graft-derivation'.)"
         (let ((->graft (input-cross-graft store target system)))
           (parameterize ((%current-system system)
                          (%current-target-system target))
-            (fold-bag-dependencies (lambda (package grafts)
-                                     (match (->graft package)
+            (fold-bag-dependencies (lambda (package output grafts)
+                                     (match (->graft package output)
                                        (#f    grafts)
                                        (graft (cons graft grafts))))
                                    '()

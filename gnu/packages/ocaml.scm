@@ -14,6 +14,7 @@
 ;;; Copyright © 2018 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2020 Brett Gilio <brettg@gnu.org>
+;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -60,13 +61,13 @@
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages rsync)
   #:use-module (gnu packages sdl)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages tex)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages time)
   #:use-module (gnu packages tls)
-  #:use-module (gnu packages version-control)
   #:use-module (gnu packages virtualization)
   #:use-module (gnu packages web-browsers)
   #:use-module (gnu packages xml)
@@ -238,7 +239,7 @@ functional, imperative and object-oriented styles of programming.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ocaml/ocamlbuild.git")
+             (url "https://github.com/ocaml/ocamlbuild")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -461,10 +462,6 @@ the opam file fomat.")
 
        #:test-target "tests"
 
-       ;; FIXME: There's an obscure test failure:
-       ;;   …/_obuild/opam/opam.asm install P1' failed.
-       #:tests? #f
-
        #:phases (modify-phases %standard-phases
                  (add-before 'build 'pre-build
                    (lambda* (#:key inputs make-flags #:allow-other-keys)
@@ -495,15 +492,31 @@ the opam file fomat.")
                        #t)))
                  (add-before 'check 'pre-check
                    (lambda _
-                     (setenv "HOME" (getcwd))
-                     (invoke "git" "config" "--global" "user.email" "guix@gnu.org")
-                     (invoke "git" "config" "--global" "user.name" "Guix")
+                     ;; The "repo" test attempts to open some of these files O_WRONLY
+                     ;; and fails with a bogus "OpamSystem.File_not_found" otherwise.
+                     (for-each
+                      (lambda (f) (chmod f #o644))
+                      (find-files "tests/packages" "\\.opam$"))
+
+                     (substitute* "tests/Makefile"
+                       (("/usr/bin/printf")
+                        (which "printf"))
+                       ;; By default tests run twice: once with a "local" repository
+                       ;; and once with a git repository: disable the git tests to
+                       ;; avoid the dependency.
+                       (("all: local git")
+                        "all: local"))
                      #t)))))
     (native-inputs
      `(("dune" ,dune)
-       ("git" ,git)                               ;for the tests
        ("ocaml-cppo" ,ocaml-cppo)
-       ("python" ,python)))                       ;for the tests
+
+       ;; For tests.
+       ("openssl" ,openssl)
+       ("python" ,python-wrapper)
+       ("rsync" ,rsync)
+       ("unzip" ,unzip)
+       ("which" ,which)))
     (inputs
      `(("ocaml" ,ocaml)
        ("ncurses" ,ncurses)
@@ -533,7 +546,7 @@ Git-friendly development workflow.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/camlp5/camlp5.git")
+             (url "https://github.com/camlp5/camlp5")
              (commit (string-append "rel" (string-delete #\. version)))))
        (file-name (git-file-name name version))
        (sha256
@@ -620,7 +633,7 @@ written in Objective Caml.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ocaml/num.git")
+             (url "https://github.com/ocaml/num")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -666,7 +679,7 @@ the OCaml core distribution.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ocaml/tuareg.git")
+             (url "https://github.com/ocaml/tuareg")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -843,7 +856,7 @@ libpanel, librsvg and quartz.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/bcpierce00/unison.git")
+                    (url "https://github.com/bcpierce00/unison")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -1156,7 +1169,7 @@ GNU CC attributes.  It provides also a C pretty printer as an example of use.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/c-cube/qcheck.git")
+             (url "https://github.com/c-cube/qcheck")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -1683,7 +1696,7 @@ simple (yet expressive) query language to select the tests to run.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/alainfrisch/ppx_tools.git")
+             (url "https://github.com/alainfrisch/ppx_tools")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256 (base32
@@ -1738,7 +1751,7 @@ lets the client choose the concrete timeline.")
       (origin
         (method git-fetch)
         (uri (git-reference
-              (url "https://github.com/savonet/ocaml-ssl.git")
+              (url "https://github.com/savonet/ocaml-ssl")
               (commit version)))
         (file-name (git-file-name name version))
         (sha256 (base32
@@ -2575,7 +2588,7 @@ programs.  It allows the definition of simple macros and file inclusion.  Cpp oi
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/c-cube/seq.git")
+             (url "https://github.com/c-cube/seq")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -2613,7 +2626,7 @@ standard iterator type starting from 4.07.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ocaml/ocaml-re.git")
+             (url "https://github.com/ocaml/ocaml-re")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -2722,7 +2735,7 @@ writing to these structures, and they are accessed via the Bigarray module.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mirage/ezjsonm.git")
+             (url "https://github.com/mirage/ezjsonm")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -2755,7 +2768,7 @@ JSON.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mirage/ocaml-uri.git")
+             (url "https://github.com/mirage/ocaml-uri")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -2822,7 +2835,7 @@ Format module of the OCaml standard library.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/alavrik/piqi.git")
+             (url "https://github.com/alavrik/piqi")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -2940,13 +2953,14 @@ and 4 (random based) according to RFC 4122.")
     (name "ocaml4.07-piqi")
     (version "0.7.7")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/alavrik/piqi-ocaml/"
-                                  "archive/v" version ".tar.gz"))
-              (file-name (string-append name "-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/alavrik/piqi-ocaml")
+                     (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1l0b4saxmwqgw9mb10mwrz31lvpj3l0abh3cwarqp0x4vdrzshbh"))))
+                "1913jpsb8mvqi8609j4g4sm5jhg50dq0xqxgy8nmvknfryyc89nm"))))
     (build-system ocaml-build-system)
     (arguments
      `(#:make-flags
@@ -2955,6 +2969,10 @@ and 4 (random based) according to RFC 4122.")
                             "/bin/sh"))
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'make-files-writable
+           (lambda _
+             (for-each make-file-writable (find-files "."))
+             #t))
          (delete 'configure))
        #:ocaml ,ocaml-4.07
        #:findlib ,ocaml4.07-findlib))
@@ -3115,7 +3133,7 @@ function that follows the prototype of POSIX's wcwidth.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/diml/zed.git")
+             (url "https://github.com/diml/zed")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -3145,7 +3163,7 @@ connect an engine to your inputs and rendering functions to get an editor.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/diml/lambda-term.git")
+             (url "https://github.com/diml/lambda-term")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -3181,7 +3199,7 @@ instead of bindings to a C library.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ocaml-community/utop.git")
+             (url "https://github.com/ocaml-community/utop")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -3372,7 +3390,7 @@ cross-platform SDL C library.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/deducteam/dedukti.git")
+             (url "https://github.com/deducteam/dedukti")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -3517,7 +3535,7 @@ collection.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/rlepigre/ocaml-bindlib.git")
+             (url "https://github.com/rlepigre/ocaml-bindlib")
              (commit (string-append "ocaml-bindlib_" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -3725,7 +3743,7 @@ format}.  @code{craml} is released as a single binary (called @code{craml}).")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ocaml/merlin.git")
+             (url "https://github.com/ocaml/merlin")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -4169,7 +4187,7 @@ OCaml AST in the OCaml syntax;
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/ppx_compare.git")
+                     (url "https://github.com/janestreet/ppx_compare")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -4294,7 +4312,7 @@ new record values.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/ppx_sexp_conv.git")
+                     (url "https://github.com/janestreet/ppx_sexp_conv")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -4323,7 +4341,7 @@ definitions.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/ppx_variants_conv.git")
+                     (url "https://github.com/janestreet/ppx_variants_conv")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -4452,7 +4470,7 @@ storage of large amounts of data.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/ppx_hash.git")
+                     (url "https://github.com/janestreet/ppx_hash")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -4483,7 +4501,7 @@ hash functions from type exrpessions and definitions.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/ppx_enumerate.git")
+                     (url "https://github.com/janestreet/ppx_enumerate")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -4834,7 +4852,7 @@ useful errors on failure.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/ppx_expect.git")
+                     (url "https://github.com/janestreet/ppx_expect")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -4909,7 +4927,7 @@ packages.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/ppx_typerep_conv.git")
+                     (url "https://github.com/janestreet/ppx_typerep_conv")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -4975,7 +4993,7 @@ verification tool.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/ppx_bin_prot.git")
+                     (url "https://github.com/janestreet/ppx_bin_prot")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -5144,7 +5162,7 @@ Configurator allows one to:
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/spawn.git")
+                     (url "https://github.com/janestreet/spawn")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -5192,7 +5210,7 @@ thousands of times faster than fork.
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/core.git")
+                     (url "https://github.com/janestreet/core")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -5232,7 +5250,7 @@ standard library that was developed by Jane Street.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/janestreet/core_kernel.git")
+                     (url "https://github.com/janestreet/core_kernel")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -5335,7 +5353,7 @@ stream, and convert everything to UTF-8.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ocsigen/tyxml.git")
+             (url "https://github.com/ocsigen/tyxml")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -5370,7 +5388,7 @@ combinators.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/aantron/bisect_ppx.git")
+             (url "https://github.com/aantron/bisect_ppx")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -5455,7 +5473,7 @@ complexity of the OCaml module system.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/Chris00/fftw-ocaml.git")
+             (url "https://github.com/Chris00/fftw-ocaml")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -5491,7 +5509,7 @@ library FFTW.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mmottl/lacaml.git")
+             (url "https://github.com/mmottl/lacaml")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -5524,7 +5542,7 @@ convenience functions for vectors and matrices.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/Chris00/ocaml-cairo.git")
+                    (url "https://github.com/Chris00/ocaml-cairo")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -5554,7 +5572,7 @@ and SVG file output.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/garrigue/lablgtk.git")
+                    (url "https://github.com/garrigue/lablgtk")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256

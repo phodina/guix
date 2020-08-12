@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2017, 2018 Mark H Weaver <mhw@netris.org>
 ;;;
@@ -23,8 +23,9 @@
   #:use-module (guix records)
   #:use-module ((guix modules) #:hide (file-name->module-name))
   #:use-module (guix i18n)
-  #:use-module ((guix utils)
+  #:use-module ((guix diagnostics)
                 #:select (source-properties->location
+                          formatted-message
                           &fix-hint
                           &error-location))
   #:use-module (gnu services)
@@ -40,6 +41,7 @@
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
   #:use-module (ice-9 match)
+  #:use-module (ice-9 format)
   #:export (mapped-device
             mapped-device?
             mapped-device-source
@@ -131,13 +133,13 @@ DEVICE must be a \"/dev\" file name."
     ;; "usb_storage"), not file names (e.g., "usb-storage.ko").  This is
     ;; OK because we have machinery that accepts both the hyphen and the
     ;; underscore version.
-    (raise (condition
-            (&message
-             (message (format #f (G_ "you may need these modules \
+    (raise (make-compound-condition
+            (formatted-message (G_ "you may need these modules \
 in the initrd for ~a:~{ ~a~}")
-                              device missing)))
-            (&fix-hint
-             (hint (format #f (G_ "Try adding them to the
+                               device missing)
+            (condition
+             (&fix-hint
+              (hint (format #f (G_ "Try adding them to the
 @code{initrd-modules} field of your @code{operating-system} declaration, along
 these lines:
 
@@ -150,9 +152,10 @@ these lines:
 
 If you think this diagnostic is inaccurate, use the @option{--skip-checks}
 option of @command{guix system}.\n")
-                           missing)))
-            (&error-location
-             (location (source-properties->location location)))))))
+                            missing))))
+            (condition
+             (&error-location
+              (location (source-properties->location location))))))))
 
 
 ;;;
@@ -214,13 +217,13 @@ option of @command{guix system}.\n")
         (if (uuid? source)
             (match (find-partition-by-luks-uuid (uuid-bytevector source))
               (#f
-               (raise (condition
-                       (&message
-                        (message (format #f (G_ "no LUKS partition with UUID '~a'")
-                                         (uuid->string source))))
-                       (&error-location
-                        (location (source-properties->location
-                                   (mapped-device-location md)))))))
+               (raise (make-compound-condition
+                       (formatted-message (G_ "no LUKS partition with UUID '~a'")
+                                          (uuid->string source))
+                       (condition
+                        (&error-location
+                         (location (source-properties->location
+                                    (mapped-device-location md))))))))
               ((? string? device)
                (check-device-initrd-modules device initrd-modules location)))
             (check-device-initrd-modules source initrd-modules location)))))

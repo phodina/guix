@@ -132,6 +132,7 @@ MODULES =					\
   guix/build-system/haskell.scm			\
   guix/build-system/julia.scm			\
   guix/build-system/linux-module.scm		\
+  guix/build-system/maven.scm			\
   guix/build-system/node.scm			\
   guix/build-system/perl.scm			\
   guix/build-system/python.scm			\
@@ -181,6 +182,7 @@ MODULES =					\
   guix/build/gnu-build-system.scm		\
   guix/build/gnu-dist.scm			\
   guix/build/guile-build-system.scm		\
+  guix/build/maven-build-system.scm		\
   guix/build/node-build-system.scm		\
   guix/build/perl-build-system.scm		\
   guix/build/python-build-system.scm		\
@@ -212,6 +214,9 @@ MODULES =					\
   guix/build/emacs-utils.scm			\
   guix/build/java-utils.scm			\
   guix/build/lisp-utils.scm			\
+  guix/build/maven/java.scm			\
+  guix/build/maven/plugin.scm			\
+  guix/build/maven/pom.scm			\
   guix/build/graft.scm				\
   guix/build/bournish.scm			\
   guix/build/qt-utils.scm			\
@@ -281,6 +286,8 @@ MODULES =					\
   guix/scripts/publish.scm			\
   guix/scripts/edit.scm				\
   guix/scripts/size.scm				\
+  guix/scripts/git.scm				\
+  guix/scripts/git/authenticate.scm		\
   guix/scripts/graph.scm			\
   guix/scripts/weather.scm			\
   guix/scripts/container.scm			\
@@ -326,6 +333,10 @@ dist_noinst_DATA =				\
 AUX_FILES =						\
   gnu/packages/aux-files/chromium/master-preferences.json		\
   gnu/packages/aux-files/emacs/guix-emacs.el		\
+  gnu/packages/aux-files/linux-libre/5.7-arm.conf	\
+  gnu/packages/aux-files/linux-libre/5.7-arm64.conf	\
+  gnu/packages/aux-files/linux-libre/5.7-i686.conf	\
+  gnu/packages/aux-files/linux-libre/5.7-x86_64.conf	\
   gnu/packages/aux-files/linux-libre/5.4-arm.conf	\
   gnu/packages/aux-files/linux-libre/5.4-arm64.conf	\
   gnu/packages/aux-files/linux-libre/5.4-i686.conf	\
@@ -464,6 +475,7 @@ SH_TESTS =					\
   tests/guix-build-branch.sh			\
   tests/guix-download.sh			\
   tests/guix-gc.sh				\
+  tests/guix-git-authenticate.sh		\
   tests/guix-hash.sh				\
   tests/guix-pack.sh				\
   tests/guix-pack-localstatedir.sh		\
@@ -478,6 +490,7 @@ SH_TESTS =					\
   tests/guix-environment-container.sh		\
   tests/guix-graph.sh				\
   tests/guix-describe.sh			\
+  tests/guix-repl.sh     			\
   tests/guix-lint.sh
 
 TESTS = $(SCM_TESTS) $(SH_TESTS)
@@ -523,7 +536,7 @@ check-system: $(GOBJECTS)
 
 # Public keys used to sign substitutes.
 dist_pkgdata_DATA =				\
-  etc/substitutes/berlin.guixsd.org.pub		\
+  etc/substitutes/berlin.guix.gnu.org.pub	\
   etc/substitutes/ci.guix.gnu.org.pub		\
   etc/substitutes/ci.guix.info.pub
 
@@ -552,6 +565,7 @@ EXTRA_DIST +=						\
   etc/news.scm						\
   etc/release-manifest.scm				\
   etc/system-tests.scm					\
+  etc/historical-authorizations				\
   build-aux/build-self.scm				\
   build-aux/compile-all.scm				\
   build-aux/hydra/evaluate.scm				\
@@ -565,7 +579,6 @@ EXTRA_DIST +=						\
   build-aux/check-channel-news.scm			\
   build-aux/compile-as-derivation.scm			\
   build-aux/generate-authors.scm			\
-  build-aux/git-authenticate.scm			\
   build-aux/test-driver.scm				\
   build-aux/update-guix-package.scm			\
   build-aux/update-NEWS.scm				\
@@ -637,14 +650,16 @@ install-data-hook:
 # Commit corresponding to the 'v1.0.0' tag.
 commit_v1_0_0 = 6298c3ffd9654d3231a6f25390b056483e8f407c
 
-# Authenticate the current Git checkout by checking signatures on every commit
-# starting from $(commit_v1_0_0).
-authenticate: guix/openpgp.go guix/git-authenticate.go guix/git.go
+# Introduction of the 'guix' channel.  Keep in sync with (guix channels)!
+channel_intro_commit = 9edb3f66fd807b096b48283debdcddccfea34bad
+channel_intro_signer = BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA
+
+# Authenticate the current Git checkout by checking signatures on every commit.
+authenticate:
 	$(AM_V_at)echo "Authenticating Git checkout..." ;	\
-	"$(top_builddir)/pre-inst-env" $(GUILE)			\
-	  --no-auto-compile -e git-authenticate			\
-	  "$(top_srcdir)/build-aux/git-authenticate.scm"	\
-	  "$(commit_v1_0_0)"
+	guix git authenticate					\
+	    --cache-key=channels/guix --stats			\
+	    "$(channel_intro_commit)" "$(channel_intro_signer)"
 
 # Assuming Guix is already installed and the daemon is up and running, this
 # rule builds from $(srcdir), creating and building derivations.

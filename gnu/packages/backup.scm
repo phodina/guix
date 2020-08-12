@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015 Eric Bavier <bavier@member.fsf.org>
+;;; Copyright © 2014, 2015, 2020 Eric Bavier <bavier@posteo.net>
 ;;; Copyright © 2014 Ian Denhardt <ian@zenhack.net>
 ;;; Copyright © 2015, 2016, 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
@@ -55,6 +55,7 @@
   #:use-module (gnu packages dbm)
   #:use-module (gnu packages dejagnu)
   #:use-module (gnu packages ftp)
+  #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages golang)
@@ -62,6 +63,7 @@
   #:use-module (gnu packages guile)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages mcrypt)
+  #:use-module (gnu packages ncurses)
   #:use-module (gnu packages nettle)
   #:use-module (gnu packages onc-rpc)
   #:use-module (gnu packages pcre)
@@ -80,7 +82,7 @@
 (define-public duplicity
   (package
     (name "duplicity")
-    (version "0.7.19")
+    (version "0.8.15")
     (source
      (origin
       (method url-fetch)
@@ -89,32 +91,36 @@
                           "-series/" version "/+download/duplicity-"
                           version ".tar.gz"))
       (sha256
-       (base32 "0ag9dknslxlasslwfjhqgcqbkb1mvzzx93ry7lch2lfzcdd91am6"))))
+       (base32 "1kg467mxg5a97v1rlv4shk32krgv8ys4nczq4b11av4bp1lgysdc"))))
     (build-system python-build-system)
     (native-inputs
-     `(("util-linux" ,util-linux)       ; setsid command, for the tests
+     `(("gettext" ,gnu-gettext)         ; for msgfmt
+       ("util-linux" ,util-linux)       ; setsid command, for the tests
        ("par2cmdline" ,par2cmdline)
-       ("python-pexpect" ,python2-pexpect)
-       ("python-fasteners" ,python2-fasteners)
+       ("python-fasteners" ,python-fasteners)
+       ("python-future" ,python-future) ; for tests
+       ("python-pexpect" ,python-pexpect)
+       ("python-pytest" ,python-pytest)
+       ("python-pytest-runner" ,python-pytest-runner)
+       ("python-setuptools-scm" ,python-setuptools-scm)
        ("tzdata" ,tzdata-for-tests)
-       ("mock" ,python2-mock)))
+       ("mock" ,python-mock)))
     (propagated-inputs
-     `(("lockfile" ,python2-lockfile)
-       ("urllib3" ,python2-urllib3)))
+     `(("lockfile" ,python-lockfile)
+       ("urllib3" ,python-urllib3)))
     (inputs
-     `(("librsync" ,librsync-0.9)
+     `(("librsync" ,librsync)
        ("lftp" ,lftp)
        ("gnupg" ,gnupg)                 ; gpg executable needed
        ("util-linux" ,util-linux)))     ; for setsid
     (arguments
-     `(#:python ,python-2               ; setup assumes Python 2
-       #:test-target "test"
+     `(#:test-target "test"
        #:phases
        (modify-phases %standard-phases
          (add-before 'build 'use-store-file-names
            (lambda* (#:key inputs #:allow-other-keys)
              (substitute* "duplicity/gpginterface.py"
-               (("self.call = 'gpg'")
+               (("self.call = u'gpg'")
                 (string-append "self.call = '" (assoc-ref inputs "gnupg") "/bin/gpg'")))
 
              (substitute* '("testing/functional/__init__.py"
@@ -146,7 +152,7 @@ spying and/or modification by the server.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/Parchive/par2cmdline.git")
+                    (url "https://github.com/Parchive/par2cmdline")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -310,7 +316,7 @@ random access nor for in-place modification.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/miekg/rdup.git")
+             (url "https://github.com/miekg/rdup")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -404,23 +410,23 @@ errors.")
 (define-public rdiff-backup
   (package
     (name "rdiff-backup")
-    (version "1.2.8")
+    (version "2.0.5")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://savannah/rdiff-backup/rdiff-backup-"
-                           version ".tar.gz"))
+       (uri (string-append "https://github.com/rdiff-backup/rdiff-backup/releases/"
+                           "download/v" version "/rdiff-backup-" version ".tar.gz"))
        (sha256
-        (base32
-         "1nwmmh816f96h0ff1jxk95ad38ilbhbdl5dgibx1d4cl81dsi48d"))))
+        (base32 "11rvjcp77zwgkphz1kyf5yqgr3rlss7dm9xzmvpvc4lp99xq7drb"))))
     (build-system python-build-system)
+    (native-inputs
+     `(("python-setuptools-scm" ,python-setuptools-scm)))
     (inputs
-     `(("python" ,python-2)
-       ("librsync" ,librsync-0.9)))
+     `(("python" ,python)
+       ("librsync" ,librsync)))
     (arguments
-     `(#:python ,python-2
-       #:tests? #f))
-    (home-page "https://www.nongnu.org/rdiff-backup/")
+     `(#:tests? #f))                    ; Tests require root/sudo
+    (home-page "https://rdiff-backup.net/")
     (synopsis "Local/remote mirroring+incremental backup")
     (description
      "Rdiff-backup backs up one directory to another, possibly over a network.
@@ -563,14 +569,13 @@ detection, and lossless compression.")
 (define-public borg
   (package
     (name "borg")
-    (version "1.1.11")
+    (version "1.1.13")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "borgbackup" version))
        (sha256
-        (base32
-         "190gjzx83b6p64nqj840x382dgz9gfv0gm7wj585lnkrpa90j29n"))
+        (base32 "089q3flmwbz7dc28zlscwylf64kgck3jf1n6lqpwww8hlrk8cjhn"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -653,7 +658,8 @@ detection, and lossless compression.")
                         ;; These tests assume the kernel supports FUSE.
                         "and not test_fuse "
                         "and not test_fuse_allow_damaged_files "
-                        "and not test_mount_hardlinks")))))
+                        "and not test_mount_hardlinks "
+                        "and not test_readonly_mount ")))))
          (add-after 'install 'install-doc
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -999,7 +1005,7 @@ precious backup space.
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/zbackup/zbackup.git")
+             (url "https://github.com/zbackup/zbackup")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -1053,12 +1059,12 @@ is format-agnostic, so you can feed virtually any files to it.")
        ("util-linux" ,util-linux "lib")
        ("e2fsprogs" ,e2fsprogs)))
     (home-page "https://dump.sourceforge.io/")
-    (synopsis "Ext2/3/4 filesystem dump/restore utilities")
-    (description "Dump examines files in a filesystem, determines which ones
+    (synopsis "Ext2/3/4 file system dump/restore utilities")
+    (description "Dump examines files in a file system, determines which ones
 need to be backed up, and copies those files to a specified disk, tape or
 other storage medium.  Subsequent incremental backups can then be layered on
 top of the full backup.  The restore command performs the inverse function of
-dump; it can restore a full backup of a filesystem.  Single files and
+dump; it can restore a full backup of a file system.  Single files and
 directory subtrees may also be restored from full or partial backups in
 interractive mode.")
     (license license:bsd-3)))
@@ -1066,14 +1072,16 @@ interractive mode.")
 (define-public burp
   (package
     (name "burp")
-    (version "2.3.28")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "mirror://sourceforge/burp/burp-" version
-                                  "/burp-" version ".tar.bz2"))
-              (sha256
-               (base32
-                "18f8cjsb87skabvz4cl5pdln35qmim7x686js1xzpld6wyl9kv2k"))))
+    (version "2.3.32")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/grke/burp")
+             (commit version)))
+       (sha256
+        (base32 "0cxxf9ni34c9662ffmr2qc8xmh4g9pmg3swqvhn49mqgr5ra6k2g"))
+       (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1086,12 +1094,16 @@ interractive mode.")
                 (string-append prefix " 3600" suffix "\n")))
              #t)))))
     (inputs
-     `(("librsync" ,librsync)
+     `(("acl" ,acl)
+       ("librsync" ,librsync)
+       ("ncurses" ,ncurses)             ; for the live status monitor
        ("openssl" ,openssl)
        ("uthash" ,uthash)
        ("zlib" ,zlib)))
     (native-inputs
-     `(("check" ,check)
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("check" ,check)
        ("pkg-config" ,pkg-config)))
     (home-page "https://burp.grke.org")
     (synopsis "Differential backup and restore")

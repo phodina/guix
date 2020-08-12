@@ -35,7 +35,7 @@
 (define-public cryptsetup
   (package
    (name "cryptsetup")
-   (version "2.2.2")
+   (version "2.3.3")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://kernel.org/linux/utils/cryptsetup/v"
@@ -43,7 +43,7 @@
                                 "/cryptsetup-" version ".tar.xz"))
             (sha256
              (base32
-              "0ija889kfhg4n2fshpq9yh2b1jl2ipvd7sfafh08g75ba6ayrw1a"))))
+              "1pw2bq4nv2z3xyycckxkbp7dp9kkp2n6bspna3plryg277z4zjiv"))))
    (build-system gnu-build-system)
    (arguments
     `(#:configure-flags
@@ -138,7 +138,7 @@ files).  This assumes LIBRARY uses Libtool."
               (inherit (static-library libgcrypt))
               (propagated-inputs
                `(("libgpg-error-host" ,(static-library libgpg-error)))))))
-       `(("json-c" ,json-c)
+       `(("json-c" ,json-c-0.13)
          ("libgcrypt" ,libgcrypt-static)
          ("lvm2" ,lvm2-static)
          ("util-linux" ,util-linux "static")

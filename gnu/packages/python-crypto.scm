@@ -22,6 +22,8 @@
 ;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2019 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2020 Alexandros Theodotou <alex@zrythm.org>
+;;; Copyright © 2020 Justus Winter <justus@sequoia-pgp.org>
+;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -53,8 +55,10 @@
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-check)
+  #:use-module (gnu packages python-compression)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages swig)
   #:use-module (gnu packages time)
   #:use-module (gnu packages tls)
   #:use-module ((guix licenses) #:prefix license:)
@@ -205,14 +209,14 @@ This package provides a Python interface for BLAKE2.")
 (define-public python-paramiko
   (package
     (name "python-paramiko")
-    (version "2.4.2")
+    (version "2.7.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "paramiko" version))
        (sha256
         (base32
-         "1jqgj2gl1pz7bi2aab1r2xq0ml0gskmm9p235cg9y32nydymm5x8"))))
+         "17wx8lkhqxmddfdq7z7x45xqq2w3gwa974hpq1n3y0dqbn4r414j"))))
     (build-system python-build-system)
     (arguments
      `(;; FIXME: Tests require many unpackaged libraries, see dev-requirements.txt.
@@ -448,14 +452,15 @@ risk.")
 (define-public python-certifi
   (package
     (name "python-certifi")
-    (version "2019.3.9")
+    (version "2020.4.5.1")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "certifi" version))
               (sha256
                (base32
-                "1bnpw7hrf9i1l9gfxjnzi45hkrvzz0pyn9ia8m4mw7sxhgb08qdj"))))
+                "06b5gfs7wmmipln8f3z928d2mmx2j4b3x7pnqmj6cvmyfh8v7z2i"))))
     (build-system python-build-system)
+    (arguments '(#:tests? #f))          ;no tests
     (home-page "https://certifi.io/")
     (synopsis "Python CA certificate bundle")
     (description
@@ -469,14 +474,14 @@ is used by the Requests library to verify HTTPS requests.")
 (define-public python-cryptography-vectors
   (package
     (name "python-cryptography-vectors")
-    (version "2.7")
+    (version "2.9.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "cryptography_vectors" version))
        (sha256
         (base32
-         "1g38zw90510azyfrj6mxbslx2gp9yrnv5dac0w2819k9ssdznbgi"))))
+         "1d4iykcv7cn9j399hczlxm5pzxmqy6d80h3j16dkjwlmv3293b4r"))))
     (build-system python-build-system)
     (home-page "https://github.com/pyca/cryptography")
     (synopsis "Test vectors for the cryptography package")
@@ -491,14 +496,14 @@ is used by the Requests library to verify HTTPS requests.")
 (define-public python-cryptography
   (package
     (name "python-cryptography")
-    (version "2.7")
+    (version "2.9.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "cryptography" version))
        (sha256
         (base32
-         "1inlnr36kl36551c9rcad99jmhk81v33by3glkadwdcgmi17fd76"))))
+         "0af25w5mkd6vwns3r6ai1w5ip9xp0ms9s261zzssbpadzdr05hx0"))))
     (build-system python-build-system)
     (inputs
      `(("openssl" ,openssl)))
@@ -540,14 +545,14 @@ message digests and key derivation functions.")
 (define-public python-pyopenssl
   (package
     (name "python-pyopenssl")
-    (version "19.0.0")
+    (version "19.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pyOpenSSL" version))
        (sha256
         (base32
-         "007j40y7x3k8xj54dy2qnij9lldfp71k9mkflhd9vqbdiwrndjmf"))))
+         "01wmsq6w0frzbr3zps4ga9kmqjidp2h317jwpq1g9ah24r5lj94s"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -718,7 +723,7 @@ ECB and OFB).")
       (origin
        (method git-fetch)
        (uri (git-reference
-              (url "https://github.com/wbond/asn1crypto.git")
+              (url "https://github.com/wbond/asn1crypto")
               (commit version)))
         (file-name (git-file-name name version))
         (sha256
@@ -738,26 +743,44 @@ PKCS#8, PKCS#12, PKCS#5, X.509 and TSP.")
 (define-public python-pynacl
   (package
     (name "python-pynacl")
-    (version "1.3.0")
+    (version "1.4.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "PyNaCl" version))
        (modules '((guix build utils)))
-       ;; Remove bundled libsodium.
-       (snippet '(begin (delete-file-recursively "src/libsodium")
-                        #t))
+       (snippet
+        '(begin
+           ;; Remove spurious dependency on python-wheel, can be removed
+           ;; for 1.5.
+           (substitute* "setup.py"
+             (("\"wheel\"") ""))
+           ;; Remove bundled libsodium.
+           (delete-file-recursively "src/libsodium")
+           #t))
        (sha256
         (base32
-         "0330wyvggm19xhmwmz9rrr97lzbv3siwfy50gmax3vvgs7nh0q8c"))))
+         "01b56hxrbif3hx8l6rwz5kljrgvlbj7shmmd2rjh0hn7974a5sal"))))
     (build-system python-build-system)
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     `(#:modules (,@%python-build-system-modules
+                  (guix build utils)
+                  (ice-9 ftw)
+                  (srfi srfi-26))
+       #:phases
+       (modify-phases (@ (guix build python-build-system) %standard-phases)
          (add-before 'build 'use-system-sodium
            (lambda _
              (setenv "SODIUM_INSTALL" "system")
-             #t)))))
+             #t))
+         (replace 'check
+           (lambda _
+             (let ((build-directory
+                    (car (scandir "build" (cut string-prefix? "lib" <>)))))
+               (setenv "PYTHONPATH"
+                       (string-append "./build/" build-directory ":"
+                                      (getenv "PYTHONPATH")))
+               (invoke "pytest" "-vv")))))))
     (native-inputs
      `(("python-hypothesis" ,python-hypothesis)
        ("python-pytest" ,python-pytest)))
@@ -994,6 +1017,7 @@ in userspace)
         (base32 "09yirf3w77w6f49q6nxhrjm9c3a4y9s30s1k09chqrw8zdgx8sjc"))))
     (build-system python-build-system)
     (inputs `(("openssl" ,openssl)))
+    (native-inputs `(("swig" ,swig)))
     (home-page "https://gitlab.com/m2crypto/m2crypto")
     (synopsis "Python crypto and TLS toolkit")
     (description "@code{M2Crypto} is a complete Python wrapper for OpenSSL
@@ -1196,7 +1220,6 @@ Password-Authenticated Key Exchange algorithm.")
      `(("python-automat" ,python-automat)
        ("python-idna" ,python-idna)
        ("python-incremental" ,python-incremental)
-       ("python-ipaddress" ,python-ipaddress)
        ("python-service-identity" ,python-service-identity)
        ("python-twisted" ,python-twisted)
        ("python-zope-interface" ,python-zope-interface)))
@@ -1328,6 +1351,66 @@ items and collections, editing items, locking and unlocking collections
 (asynchronous unlocking is also supported).")
     (license license:bsd-3)))
 
+(define-public python-trustme
+  (package
+    (name "python-trustme")
+    (version "0.6.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "trustme" version))
+       (sha256
+        (base32 "0v3vr5z6apnfmklf07m45kv5kaqvm6hxrkaqywch57bjd2siiywx"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (invoke "pytest" "-vv"))))))
+    (native-inputs
+     `(("python-more-itertools" ,python-more-itertools)
+       ("python-pyopenssl" ,python-pyopenssl)
+       ("python-pytest" ,python-pytest)
+       ("python-pytest-cov" ,python-pytest-cov)
+       ("python-service-identity" ,python-service-identity)
+       ("python-zipp" ,python-zipp)))
+    (propagated-inputs
+     `(("python-cryptography" ,python-cryptography)))
+    (home-page "https://github.com/python-trio/trustme")
+    (synopsis "Fake a certificate authority for tests")
+    (description
+     "@code{trustme} is a tiny Python package that does one thing: it gives you
+a fake certificate authority (CA) that you can use to generate fake TLS certs to
+use in your tests.")
+    ;; Either license applies.
+    (license (list license:expat license:asl2.0))))
+
+(define-public python-certipy
+  (package
+    (name "python-certipy")
+    (version "0.1.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "certipy" version))
+        (sha256
+         (base32
+          "0n980gqpzh0fm58h3i4mi2i10wgj606lscm1r5sk60vbf6vh8mv9"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-pyopenssl" ,python-pyopenssl)))
+    (native-inputs
+     `(("python-pytest" ,python-pytest)))
+    (home-page "https://github.com/LLNL/certipy")
+    (synopsis "Utility to create and sign CAs and certificates")
+    (description
+     "Certipy was made to simplify the certificate creation process.  To that
+end, certipy exposes methods for creating and managing certificate authorities,
+certificates, signing and building trust bundles.")
+    (license license:bsd-3)))
+
 (define-public python-jeepney
   (package
     (name "python-jeepney")
@@ -1428,3 +1511,61 @@ can decide how long it takes to hash a password and how much memory is required.
 data such as API keys, cryptocurrency wallets, or seeds for digital
 signatures.")
     (license (list license:expat license:asl2.0)))) ; dual licensed
+
+(define-public python-pgpy
+  (package
+    (name "python-pgpy")
+    (version "0.5.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "PGPy" version))
+        (sha256
+         (base32
+          "0i4lqhzdwkjkim3wab0kqadx28z3r5ixlh6qxj4lif4gif56c0m7"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-cryptography" ,python-cryptography)
+       ("python-pyasn1" ,python-pyasn1)
+       ("python-singledispatch" ,python-singledispatch)
+       ("python-six" ,python-six)))
+    (home-page "https://github.com/SecurityInnovation/PGPy")
+    (synopsis "Python implementation of OpenPGP")
+    (description
+     "Currently, PGPy can load keys and signatures of all kinds in both ASCII
+armored and binary formats.
+
+It can create and verify RSA, DSA, and ECDSA signatures, at the moment.  It
+can also encrypt and decrypt messages using RSA and ECDH.")
+    (license license:bsd-3)))
+
+(define-public python-sop
+  (package
+    (name "python-sop")
+    (version "0.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "sop" version))
+        (sha256
+         (base32
+          "0gljyjsdn6hdmwlwwb5g5s0c031p6izamvfxp0d39x60af8k5jyf"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:tests? #f)) ; There are no tests, and unittest throws an error trying
+                     ; to find some:
+                     ;     TypeError: don't know how to make test from: 0.2.0
+    (home-page "https://gitlab.com/dkg/python-sop")
+    (synopsis "Stateless OpenPGP Command-Line Interface")
+    (description
+     "The Stateless OpenPGP Command-Line Interface (or sop) is a
+specification that encourages OpenPGP implementors to provide a common,
+relatively simple command-line API for purposes of object security.
+
+This Python module helps implementers build such a CLI from any implementation
+accessible to the Python interpreter.
+
+It does not provide such an implementation itself -- this is just the
+scaffolding for the command line, which should make it relatively easy to
+supply a handful of python functions as methods to a class.")
+    (license license:expat))) ; MIT license

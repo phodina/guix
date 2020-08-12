@@ -48,7 +48,8 @@
   #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-37)
   #:use-module (srfi srfi-98)
-  #:export (guix-environment))
+  #:export (assert-container-features
+            guix-environment))
 
 ;; Protect some env vars from purification.  Borrowed from nix-shell.
 (define %precious-variables
@@ -707,6 +708,8 @@ message if any test fails."
       (with-store store
         (with-build-handler (build-notifier #:use-substitutes?
                                             (assoc-ref opts 'substitutes?)
+                                            #:verbosity
+                                            (assoc-ref opts 'verbosity)
                                             #:dry-run?
                                             (assoc-ref opts 'dry-run?))
           (with-status-verbosity (assoc-ref opts 'verbosity)

@@ -7,7 +7,7 @@
 ;;; Copyright © 2015, 2017 Cyril Roelandt <tipecaml@gmail.com>
 ;;; Copyright © 2015 Federico Beffa <beffa@fbengineering.ch>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2015, 2016, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2016, 2017 Danny Milosavljevic <dannym+a@scratchpost.org>
@@ -24,7 +24,7 @@
 ;;; Copyright © 2017, 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2017, 2019 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2017 Nikita <nikita@n0.is>
-;;; Copyright © 2015, 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2017, 2018, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2018, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
@@ -33,6 +33,8 @@
 ;;; Copyright © 2020 Lars-Dominik Braun <ldb@leibniz-psychology.org>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Josh Marshall <joshua.r.marshall.1991@gmail.com>
+;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
+;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -105,8 +107,8 @@ source code editors and IDEs.")
 
 ;; Some packages require this older version.  Removed once no longer needed.
 (define-public check-0.12
-  (package/inherit
-   check
+  (package
+   (inherit check)
    (version "0.12.0")
    (source (origin
              (method url-fetch)
@@ -115,6 +117,54 @@ source code editors and IDEs.")
              (sha256
               (base32
                "0d22h8xshmbpl9hba9ch3xj8vb9ybm5akpsbbh7yj07fic4h2hj6"))))))
+
+(define-public clitest
+  (package
+    (name "clitest")
+    (version "0.3.0")
+    (home-page "https://github.com/aureliojargas/clitest")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url home-page)
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0zw5wra9hc717srmcar1wm4i34kyj8c49ny4bb7y3nrvkjp2pdb5"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         ;; This package is distributed as a single shell script and comes
+         ;; without a proper build system.
+         (delete 'configure)
+         (delete 'build)
+         (replace 'check
+           (lambda _
+             (substitute* "test.md"
+               ;; One test looks for an error from grep in the form "grep: foo",
+               ;; but our grep returns the absolute file name on errors.  Adjust
+               ;; the test to cope with that.
+               (("sed 's/\\^e\\*grep: \\.\\*/")
+                "sed 's/.*e*grep: .*/"))
+
+             (setenv "HOME" "/tmp")
+             (invoke "./clitest" "test.md")))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (install-file "clitest" (string-append out "/bin"))
+               (install-file "README.md"
+                             (string-append out "/share/doc/clitest-" ,version))
+               #t))))))
+    (native-inputs
+     `(("perl" ,perl)))                 ;for tests
+    (synopsis "Command line test tool")
+    (description
+     "@command{clitest} is a portable shell script that performs automatic
+testing of Unix command lines.")
+    (license license:expat)))
 
 (define-public cunit
   (package
@@ -236,7 +286,7 @@ a multi-paradigm automated test framework for C++ and Objective-C.")
 (define-public catch-framework2
   (package
     (name "catch2")
-    (version "2.1.2")
+    (version "2.13.0")
     (home-page "https://github.com/catchorg/Catch2")
     (source (origin
               (method git-fetch)
@@ -246,7 +296,7 @@ a multi-paradigm automated test framework for C++ and Objective-C.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "14vcckqmbydjsg40ngi6iv999zimysh2l7fmrqj1d7xl990qz233"))))
+                "0i4w0c9280a5fyi00mvvf13wlnfzyifr487n1iyr30zvvj5s5f1h"))))
     (build-system cmake-build-system)
     (inputs
      `(("python" ,python-wrapper)))
@@ -396,7 +446,7 @@ and it supports a very flexible form of test discovery.")
 (define-public doctest
   (package
     (name "doctest")
-    (version "2.3.8")
+    (version "2.4.0")
     (home-page "https://github.com/onqtam/doctest")
     (source (origin
               (method git-fetch)
@@ -404,7 +454,7 @@ and it supports a very flexible form of test discovery.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "16w907750jnp98vdzkn72lzwy1zyryaqvfi80lbdp398pj23rq65"))))
+                "1yi95saqv8qb3ix6w8d7ffvs7qbwvqmq6wblckhxhicxxdxk85cd"))))
     (build-system cmake-build-system)
     (synopsis "C++ test framework")
     (description
@@ -421,7 +471,7 @@ has been designed to be fast, light and unintrusive.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/go-check/check.git")
+                      (url "https://github.com/go-check/check")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -527,7 +577,7 @@ test coverage and has a web user interface that will refresh automatically.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/google/googletest.git")
+             (url "https://github.com/google/googletest")
              (commit (string-append "release-" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -551,7 +601,7 @@ generation.")
    (source (origin
              (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/google/googletest.git")
+                   (url "https://github.com/google/googletest")
                    (commit (string-append "release-" version))))
              (file-name (git-file-name "googletest" version))
              (sha256
@@ -969,6 +1019,33 @@ supports coverage of subprocesses.")
 
 (define-public python2-pytest-runner-2
   (package-with-python2 python-pytest-runner-2))
+
+(define-public python-pytest-lazy-fixture
+  (package
+    (name "python-pytest-lazy-fixture")
+    (version "0.6.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "pytest-lazy-fixture" version))
+        (sha256
+         (base32 "1b0hmnsxw4s2wf9pks8dg6dfy5cx3zcbzs8517lfccxsfizhqz8f"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             ;; Make the installed plugin discoverable by Pytest.
+             (add-installed-pythonpath inputs outputs)
+             (invoke "pytest" "-vv"))))))
+    (propagated-inputs
+     `(("python-pytest" ,python-pytest)))
+    (home-page "https://github.com/tvorog/pytest-lazy-fixture")
+    (synopsis "Use fixtures in @code{pytest.mark.parametrize}")
+    (description "This plugin helps to use fixtures in
+@code{pytest.mark.parametrize}.")
+    (license license:expat)))
 
 (define-public python-pytest-mock
   (package
@@ -1446,7 +1523,7 @@ have failed since the last commit or what tests are currently failing.")))
     (arguments
      ;; FIXME: 95 tests failed, 539 passed, 6 skipped, 2 errors.
      '(#:tests? #f))
-    (home-page "http://nedbatchelder.com/code/coverage")
+    (home-page "https://coverage.readthedocs.io")
     (synopsis "Code coverage measurement for Python")
     (description
      "Coverage measures code coverage, typically during test execution.  It
@@ -1524,7 +1601,7 @@ testing frameworks.")
     (propagated-inputs
      `(("python-coverage" ,python-coverage)
        ("python-requests" ,python-requests)))
-    (home-page "http://github.com/codecov/codecov-python")
+    (home-page "https://github.com/codecov/codecov-python")
     (synopsis "Upload code coverage reports to @code{codecov.io}")
     (description
      "Codecov collects code coverage reports from code written in Python, Java,
@@ -1748,6 +1825,18 @@ seamlessly into your existing Python unit testing work flow.")
     (license license:mpl2.0)
     (properties `((python2-variant . ,(delay python2-hypothesis))))))
 
+(define-public python-hypothesis-5.23
+  (package
+    (inherit python-hypothesis)
+    (version "5.23.0")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "hypothesis" version))
+              (sha256
+               (base32
+                "0sy1v6nyxg4rjcf3rlr8nalb7wqd9nccpb2lzkchbj5an13ysf1h"))))
+    (home-page "https://github.com/HypothesisWorks/hypothesis")))
+
 ;; This is the last version of Hypothesis that supports Python 2.
 (define-public python2-hypothesis
   (let ((hypothesis (package-with-python2
@@ -1763,6 +1852,29 @@ seamlessly into your existing Python unit testing work flow.")
       (propagated-inputs
        `(("python2-enum34" ,python2-enum34)
          ,@(package-propagated-inputs hypothesis))))))
+
+(define-public python-hypothesmith
+  (package
+    (name "python-hypothesmith")
+    (version "0.1.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "hypothesmith" version))
+       (sha256
+        (base32
+         "09331sspknv459xcyn1k0lx5flqlc6gmnwp9370pfvg4kg1zmss6"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-hypothesis" ,python-hypothesis-5.23)
+       ("python-lark-parser" ,python-lark-parser)
+       ("python-libcst" ,python-libcst)))
+    (home-page "https://github.com/Zac-HD/hypothesmith")
+    (synopsis "Strategies for generating Python programs")
+    (description
+     "This package contains hypothesis strategies for generating Python
+programs, something like CSmith, a random generator of C programs.")
+    (license license:mpl2.0)))
 
 (define-public python-lit
   (package
@@ -1822,13 +1934,13 @@ failures.")
 (define-public python-pytest-flakes
   (package
     (name "python-pytest-flakes")
-    (version "1.0.1")
+    (version "4.0.1")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "pytest-flakes" version))
               (sha256
                (base32
-                "0flag3n33kbhyjrhzmq990rvg4yb8hhhl0i48q9hw0ll89jp28lw"))))
+                "0045h3hnrkn2jwr42jgy2j98npx4amwr6wxzi9j0nppaqz33l49p"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -1839,7 +1951,7 @@ failures.")
              ;; It's easier to run tests after install.
              ;; Make installed package available for running the tests
              (add-installed-pythonpath inputs outputs)
-             (invoke "py.test" "-vv"))))))
+             (invoke "py.test" "-vv" "-k" "not test_syntax_error"))))))
     (native-inputs
      `(("python-coverage" ,python-coverage)
        ("python-pytest" ,python-pytest)
@@ -1889,7 +2001,7 @@ statements in the module it tests.")
 (define-public python-pylint
   (package
     (name "python-pylint")
-    (version "2.5.2")
+    (version "2.5.3")
     (source
      (origin
        (method git-fetch)
@@ -1898,8 +2010,7 @@ statements in the module it tests.")
              (commit (string-append "pylint-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32
-         "150x679mrlgm1s4ym7irf9mnsjilqyaakss4spc4pbrzkl11agnh"))))
+        (base32 "04cgbh2z1mygar63plzziyz34yg6bdr4i0g63jp256fgnqwb1bi3"))))
     (build-system python-build-system)
     ;; FIXME: Tests are failing since version 2.4.3, see:
     ;; https://github.com/PyCQA/pylint/issues/3198.
@@ -2088,7 +2199,7 @@ a fork of pytest-capturelog.")
     (propagated-inputs
      `(("python-coverage" ,python-coverage)
        ("python-nose" ,python-nose)))
-    (home-page "http://github.com/cmheisel/nose-xcover")
+    (home-page "https://github.com/cmheisel/nose-xcover")
     (synopsis "Extends nose.plugins.cover to add Cobertura-style XML reports")
     (description "Nose-xcover is a companion to the built-in
 @code{nose.plugins.cover}.  This plugin will write out an XML coverage report
@@ -2519,7 +2630,7 @@ provides a simple way to achieve this.")
 (define-public umockdev
   (package
     (name "umockdev")
-    (version "0.14.1")
+    (version "0.14.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/martinpitt/umockdev/"
@@ -2527,7 +2638,7 @@ provides a simple way to achieve this.")
                                   "umockdev-" version ".tar.xz"))
               (sha256
                (base32
-                "1g78jcrvb7yyh0q5kv5409wjqf8nlfqnw1rknm3a247mcx317dpz"))))
+                "1nh6xsssmssmk0lxp9c9dmq3wzlpbpkg77nmmd09csbpybibgxfp"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases

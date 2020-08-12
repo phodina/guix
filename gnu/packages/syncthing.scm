@@ -3,6 +3,7 @@
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -21,13 +22,23 @@
 
 (define-module (gnu packages syncthing)
   #:use-module (guix build-system go)
+  #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix licenses)
   #:use-module (gnu packages)
-  #:use-module (gnu packages golang))
+  #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages glib)
+  #:use-module (gnu packages gnome)
+  #:use-module (gnu packages golang)
+  #:use-module (gnu packages gtk)
+  #:use-module (gnu packages linux)
+  #:use-module (gnu packages python)
+  #:use-module (gnu packages python-crypto)
+  #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages time))
 
 (define-public syncthing
   (package
@@ -176,6 +187,69 @@ supports a wide variety of computing platforms.  It uses the Block Exchange
 Protocol.")
     (home-page "https://github.com/syncthing/syncthing")
     (license mpl2.0)))
+
+(define-public syncthing-gtk
+  (package
+    (name "syncthing-gtk")
+    (version "0.9.4.4")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/syncthing/syncthing-gtk.git")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0nc0wd7qvyri7841c3dd9in5d7367hys0isyw8znv5fj4c0a6v1f"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:python ,python-2
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'hardcode-dependencies
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((psmisc (assoc-ref inputs "psmisc"))
+                   (syncthing (assoc-ref inputs "syncthing")))
+               ;; Hardcode dependencies paths to avoid propagation.
+               (substitute* "syncthing_gtk/tools.py"
+                 (("killall") (string-append psmisc "/bin/killall")))
+               (substitute* "syncthing_gtk/configuration.py"
+                 (("/usr/bin/syncthing") (string-append syncthing
+                                                        "/bin/syncthing"))))
+             #t))
+         (add-after 'wrap 'wrap-libs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/syncthing-gtk")
+                 `("GI_TYPELIB_PATH" ":" prefix
+                   (,(getenv "GI_TYPELIB_PATH"))))
+               #t))))))
+    (inputs
+     `(("gtk+" ,gtk+)
+       ("libappindicator" ,libappindicator)
+       ("libnotify" ,libnotify)
+       ("python2-bcrypt" ,python2-bcrypt)
+       ("python2-dateutil" ,python2-dateutil)
+       ("python2-pycairo" ,python2-pycairo)
+       ("python2-pygobject" ,python2-pygobject)
+       ("python-nautilus" ,python-nautilus)
+       ("psmisc" ,psmisc)
+       ("syncthing" ,syncthing)))
+    (native-inputs
+     `(("python2-setuptools" ,python2-setuptools)))
+    (home-page "https://github.com/syncthing/syncthing-gtk")
+    (synopsis "GTK3 based GUI and notification area icon for Syncthing")
+    (description "@code{syncthing-gtk} is a GTK3 Python based GUI and
+notification area icon for Syncthing.  Supported Syncthing features:
+
+@itemize
+@item Everything that WebUI can display
+@item Adding, editing and deleting nodes
+@item Adding, editing and deleting repositories
+@item Restart, shutdown server
+@item Editing daemon settings
+@end itemize\n")
+    (license gpl2)))
 
 (define-public go-github-com-jackpal-go-nat-pmp
   (package
@@ -531,7 +605,11 @@ higher-level API for doing so.")
                   "1hfxffnpaw49pr3wrkbzq3pnv3nyzsvk5dxndv0yz70xlrbg8a04"))))
       (build-system go-build-system)
       (arguments
-       `(#:import-path "github.com/rcrowley/go-metrics"))
+       ;; Arbitrary precision tests are known to be broken on aarch64, ppc64le
+       ;; and s390x. See: https://github.com/rcrowley/go-metrics/issues/249
+       `(#:tests? ,(not (string-prefix? "aarch64" (or (%current-target-system)
+                                                      (%current-system))))
+         #:import-path "github.com/rcrowley/go-metrics"))
       (propagated-inputs
        `(("go-github-com-stathat-go" ,go-github-com-stathat-go)))
       (synopsis "Go port of Coda Hale's Metrics library")
@@ -659,7 +737,7 @@ inherent errors.")
         (origin
           (method git-fetch)
           (uri (git-reference
-                 (url "https://github.com/chmduquesne/rollinghash.git")
+                 (url "https://github.com/chmduquesne/rollinghash")
                  (commit commit)))
           (file-name (git-file-name name version))
           (sha256
@@ -683,7 +761,7 @@ hashes.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                       (url "https://github.com/petermattis/goid.git")
+                       (url "https://github.com/petermattis/goid")
                        (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -707,7 +785,7 @@ the current goroutine's ID.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                       (url "https://github.com/kballard/go-shellquote.git")
+                       (url "https://github.com/kballard/go-shellquote")
                        (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -757,7 +835,7 @@ notification library in Go.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                       (url "https://github.com/beorn7/perks.git")
+                       (url "https://github.com/beorn7/perks")
                        (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -783,7 +861,7 @@ bounds.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                       (url "https://github.com/prometheus/client_model.git")
+                       (url "https://github.com/prometheus/client_model")
                        (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -816,7 +894,7 @@ bounds.")
           (method git-fetch)
           (uri
             (git-reference
-              (url "https://github.com/matttproud/golang_protobuf_extensions.git")
+              (url "https://github.com/matttproud/golang_protobuf_extensions")
               (commit commit)))
           (file-name (git-file-name name version))
           (sha256
@@ -843,7 +921,7 @@ message streaming.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                       (url "https://github.com/prometheus/common.git")
+                       (url "https://github.com/prometheus/common")
                        (commit (string-append "v" version))))
                 (file-name (git-file-name name version))
                 (sha256
@@ -886,7 +964,7 @@ Prometheus metrics.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                       (url "https://github.com/prometheus/procfs.git")
+                       (url "https://github.com/prometheus/procfs")
                        (commit (string-append "v" version))))
                 (file-name (git-file-name name version))
                 (sha256
@@ -911,7 +989,7 @@ system, kernel, and process metrics from the @file{/proc} pseudo file system.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                       (url "https://github.com/prometheus/client_golang.git")
+                       (url "https://github.com/prometheus/client_golang")
                        (commit (string-append "v" version))))
                 (file-name (git-file-name name version))
                 (sha256
@@ -998,7 +1076,7 @@ language.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                       (url "https://github.com/flynn-archive/go-shlex.git")
+                       (url "https://github.com/flynn-archive/go-shlex")
                        (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -1021,7 +1099,7 @@ quoting, commenting, and escaping.")
       (origin
         (method git-fetch)
         (uri (git-reference
-               (url "https://github.com/AudriusButkevicius/pfilter.git")
+               (url "https://github.com/AudriusButkevicius/pfilter")
                (commit version)))
         (file-name (git-file-name name version))
         (sha256
@@ -1046,7 +1124,7 @@ virtual connections from a single physical connection.")
         (origin
           (method git-fetch)
           (uri (git-reference
-                 (url "https://github.com/ccding/go-stun.git")
+                 (url "https://github.com/ccding/go-stun")
                  (commit commit)))
           (file-name (git-file-name name version))
           (sha256

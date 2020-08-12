@@ -3,7 +3,7 @@
 ;;; Copyright © 2014 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
-;;; Copyright © 2016, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Federico Beffa <beffa@fbengineering.ch>
 ;;; Copyright © 2016 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
@@ -11,7 +11,7 @@
 ;;; Copyright © 2017, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Danny Milosavljevic <dannym+a@scratchpost.org>
-;;; Copyright © 2018 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2018, 2020 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -33,9 +33,10 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix download)
-  #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system perl)
+  #:use-module (guix build-system python)
+  #:use-module (guix build-system qt)
   #:use-module (guix build-system trivial)
   #:use-module (guix build-system texlive)
   #:use-module (guix utils)
@@ -3093,7 +3094,7 @@ this bundle for use independent of ConTeXt.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/lualatex/luaotfload.git")
+                    (url "https://github.com/lualatex/luaotfload")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -6005,22 +6006,30 @@ other things it comes with full Unicode support.")
 (define-public rubber
   (package
     (name "rubber")
-    (version "1.1")
+    (version "1.5.1")
     (source (origin
-             (method url-fetch)
-             (uri (list (string-append "https://launchpad.net/rubber/trunk/"
-                                       version "/+download/rubber-"
-                                       version ".tar.gz")
-                        (string-append "http://ebeffara.free.fr/pub/rubber-"
-                                       version ".tar.gz")))
-             (sha256
-              (base32
-               "1xbkv8ll889933gyi2a5hj7hhh216k04gn8fwz5lfv5iz8s34gbq"))))
-    (build-system gnu-build-system)
-    (arguments '(#:tests? #f))                    ; no `check' target
+              (method url-fetch)
+              (uri (list (string-append "https://launchpad.net/rubber/trunk/"
+                                        version "/+download/rubber-"
+                                        version ".tar.gz")
+                         (string-append "http://ebeffara.free.fr/pub/rubber-"
+                                        version ".tar.gz")))
+              (sha256
+               (base32
+                "178dmrp0mza5gqjiqgk6dqs0c10s0c517pk6k9pjbam86vf47a1p"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:tests? #f ; no `check' target
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'build)
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; texlive is required to build the PDF documentation; do not
+             ;; build it.
+             (invoke "python" "setup.py" "build" "--pdf=False" "install"
+                     (string-append "--prefix=" (assoc-ref outputs "out"))))))))
     (native-inputs `(("texinfo" ,texinfo)))
-    (inputs `(("python" ,python-2) ; incompatible with Python 3 (print syntax)
-              ("which" ,which)))
     (home-page "https://launchpad.net/rubber")
     (synopsis "Wrapper for LaTeX and friends")
     (description
@@ -6116,75 +6125,49 @@ and Karl Berry.")
 (define-public lyx
   (package
     (name "lyx")
-    (version "2.3.3")
+    (version "2.3.5.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://ftp.lyx.org/pub/lyx/stable/"
                                   (version-major+minor version) ".x/"
-                                  "lyx-" version ".tar.gz"))
+                                  "lyx-" version ".tar.xz"))
               (sha256
                (base32
-                "0j3xincwmsscfgv13g3z6h4kx1qfzgg8x71fs393akcdxsh2g07c"))
+                "0mv32s26igm0pd8vs7d2mk1240dpr83y0a2wyh3xz6b67ph0w157"))
               (modules '((guix build utils)))
               (snippet
                '(begin
                   (delete-file-recursively "3rdparty")
                   #t))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (arguments
      `(#:configure-flags `("-DLYX_USE_QT=QT5"
                            "-DLYX_EXTERNAL_BOOST=1"
                            "-DLYX_INSTALL=1"
                            "-DLYX_RELEASE=1"
+                           "-DLYX_PROGRAM_SUFFIX=OFF"
                            ,(string-append "-DLYX_INSTALL_PREFIX="
-                                           (assoc-ref %outputs "out")
-                                           ;; Exact name and level is necessary.
-                                           "/lyx" ,(version-major+minor version)))
+                                           (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
-         ;; See ;; https://www.lyx.org/trac/changeset/3a123b90af838b08680471d87170c38e56787df9/lyxgit
-         (add-after 'unpack 'fix-compilation-with-boost-1.69
-           (lambda _
-             (substitute* "src/support/FileName.cpp"
-               (("^template struct boost::detail::crc_table_t.*") ""))
-             #t))
          (add-after 'unpack 'patch-python
            (lambda* (#:key inputs #:allow-other-keys)
-             (substitute* '("src/support/os.cpp")
+             (substitute* '("lib/configure.py"
+                            "src/support/ForkedCalls.cpp"
+                            "src/support/Systemcall.cpp"
+                            "src/support/os.cpp"
+                            "src/support/filetools.cpp")
                (("\"python ")
                 (string-append "\""
                                (assoc-ref inputs "python")
-                               "/bin/python ")))
+                               "/bin/python3 ")))
              #t))
-         (add-after 'patch-python 'patch-desktop-file
-           (lambda* (#:key outputs #:allow-other-keys)
-             (substitute* "lib/lyx.desktop.in"
-               (("Exec=")
-                (string-append "Exec="
-                               (assoc-ref outputs "out")
-                               "/")))
-             #t))
-         (add-before 'check 'setenv-check
+         (add-after 'unpack 'add-missing-test-file
            (lambda _
              ;; Create missing file that would cause tests to fail.
-             (with-output-to-file (string-append "../lyx-"
-                                                 ,version
-                                                 "/src/tests/check_layout.cmake")
+             (with-output-to-file "src/tests/check_layout.cmake"
                (const #t))
-             (setenv (string-append "LYX_DIR_"
-                                    (string-join
-                                      (string-split
-                                        ,(version-major+minor version) #\-)) "x")
-                     (string-append (getcwd) "/../lyx-" ,version "/lib"))
-             #t))
-         (add-after 'install 'install-symlinks
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
-               (mkdir-p (string-append out "/bin"))
-               (symlink (string-append "../lyx" ,(version-major+minor version)
-                                       "/bin/lyx" ,(version-major+minor version))
-                        (string-append out "/bin/lyx" ,(version-major+minor version)))
-               #t))))))
+             #t)))))
     (inputs
      `(("boost" ,boost)
        ("hunspell" ,hunspell)           ; Note: Could also use aspell instead.

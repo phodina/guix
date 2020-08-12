@@ -60,7 +60,7 @@
         ("rust-locale" ,rust-locale-0.2)
         ("rust-log" ,rust-log-0.4)
         ("rust-natord" ,rust-natord-1.0)
-        ("rust-num-cpus" ,rust-num-cpus-1.11)
+        ("rust-num-cpus" ,rust-num-cpus-1)
         ("rust-number-prefix" ,rust-number-prefix-0.3)
         ("rust-scoped-threadpool" ,rust-scoped-threadpool-0.1)
         ("rust-term-grid" ,rust-term-grid-0.1)
@@ -134,7 +134,7 @@ also knows about symlinks, extended attributes, and Git.")
 (define-public fd
   (package
     (name "fd")
-    (version "7.4.0")
+    (version "8.1.1")
     (source
      (origin
        (method url-fetch)
@@ -143,24 +143,27 @@ also knows about symlinks, extended attributes, and Git.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "147m872zff0srwq9vaxkkbab06g3fkklbk1g2lx90vdhgs37f5xj"))))
+         "124a5r8hpk2phs1288jybh34d48yxy44wr7gv5ggchs272gs2jam"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
        (("rust-ansi-term" ,rust-ansi-term-0.12)
+        ("rust-anyhow" ,rust-anyhow-1.0)
         ("rust-atty" ,rust-atty-0.2)
         ("rust-clap" ,rust-clap-2)
         ("rust-ctrlc" ,rust-ctrlc-3.1)
+        ("rust-dirs" ,rust-dirs-2.0)
         ("rust-globset" ,rust-globset-0.4)
-        ("rust-humantime" ,rust-humantime-1.3)
+        ("rust-humantime" ,rust-humantime-2)
         ("rust-ignore" ,rust-ignore-0.4)
         ("rust-jemallocator" ,rust-jemallocator-0.3)
         ("rust-lazy-static" ,rust-lazy-static-1)
         ("rust-libc" ,rust-libc-0.2)
-        ("rust-lscolors" ,rust-lscolors-0.6)
-        ("rust-num-cpus" ,rust-num-cpus-1.10)
-        ("rust-regex" ,rust-regex-1.3)
+        ("rust-lscolors" ,rust-lscolors-0.7)
+        ("rust-num-cpus" ,rust-num-cpus-1)
+        ("rust-regex" ,rust-regex-1)
         ("rust-regex-syntax" ,rust-regex-syntax-0.6)
+        ("rust-users" ,rust-users-0.10)
         ("rust-version-check" ,rust-version-check-0.9))
        #:cargo-development-inputs
        (("rust-diff" ,rust-diff-0.1)
@@ -204,7 +207,7 @@ provides defaults for 80% of the use cases.")
 (define-public ripgrep
   (package
     (name "ripgrep")
-    (version "11.0.2")
+    (version "12.1.1")
     (source
      (origin
        (method url-fetch)
@@ -213,7 +216,7 @@ provides defaults for 80% of the use cases.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0vqjr96s2rs45715hzf0g0wjahig4zjyiqfijmzzg4jyh9ni80yr"))))
+         "1grfi0j9zczzipipc21lkdbqmd2lvy2wlqy65fy4sckqvix5amdr"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
@@ -224,13 +227,13 @@ provides defaults for 80% of the use cases.")
         ("rust-jemallocator" ,rust-jemallocator-0.3)
         ("rust-lazy-static" ,rust-lazy-static-1)
         ("rust-log" ,rust-log-0.4)
-        ("rust-num-cpus" ,rust-num-cpus-1.10)
-        ("rust-regex" ,rust-regex-1.1)
-        ("rust-serde-json" ,rust-serde-json-1.0)
-        ("rust-termcolor" ,rust-termcolor-1.0))
+        ("rust-num-cpus" ,rust-num-cpus-1)
+        ("rust-regex" ,rust-regex-1)
+        ("rust-serde-json" ,rust-serde-json-1)
+        ("rust-termcolor" ,rust-termcolor-1))
        #:cargo-development-inputs
-       (("rust-serde" ,rust-serde-1.0)
-        ("rust-serde-derive" ,rust-serde-derive-1.0))
+       (("rust-serde" ,rust-serde-1)
+        ("rust-serde-derive" ,rust-serde-derive-1))
        #:modules ((ice-9 match)
                   (guix build cargo-build-system)
                   (guix build utils))
@@ -245,18 +248,8 @@ provides defaults for 80% of the use cases.")
                 (install-file manpage (string-append
                                         (assoc-ref outputs "out")
                                         "/share/man/man1"))))
-             #t))
-         (replace 'install
-           ;; Adapted from (guix build cargo-build-system). The flags need to
-           ;; be passed to `cargo install' too, as otherwise it will build
-           ;; another binary, without the features.
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
-               (mkdir-p out)
-               (setenv "CARGO_TARGET_DIR" "./target")
-               (invoke "cargo" "install" "--path" "." "--root" out
-                       "--features" "pcre2")))))
-       #:cargo-build-flags '("--release" "--features" "pcre2")))
+             #t)))
+       #:features '("pcre2")))
     (native-inputs
      `(("asciidoc" ,asciidoc)
        ("pcre2" ,pcre2)
@@ -272,7 +265,7 @@ gitignore rules.")
 (define-public rust-cbindgen
   (package
     (name "rust-cbindgen")
-    (version "0.13.1")
+    (version "0.13.2")
     (source
       (origin
         (method url-fetch)
@@ -280,18 +273,18 @@ gitignore rules.")
         (file-name (string-append name "-" version ".crate"))
         (sha256
          (base32
-          "0w70bnwwqyf9fr6z3rcs7m7ad791fmfmhxy828va0dkfwvamp59c"))))
+          "0673pq96hs7waavkv58v2pakpxpsfyjvbraa5kyl2b44phgdzcid"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
        (("clap" ,rust-clap-2)
         ("log" ,rust-log-0.4)
-        ("proc-macro2" ,rust-proc-macro2-1.0)
-        ("quote" ,rust-quote-1.0)
-        ("serde" ,rust-serde-1.0)
-        ("serde-json" ,rust-serde-json-1.0)
-        ("syn" ,rust-syn-1.0)
-        ("tempfile" ,rust-tempfile-3.1)
+        ("proc-macro2" ,rust-proc-macro2-1)
+        ("quote" ,rust-quote-1)
+        ("serde" ,rust-serde-1)
+        ("serde-json" ,rust-serde-json-1)
+        ("syn" ,rust-syn-1)
+        ("tempfile" ,rust-tempfile-3)
         ("toml" ,rust-toml-0.5))))
     (home-page "https://github.com/eqrion/cbindgen/")
     (synopsis "Tool for generating C bindings to Rust code")
@@ -339,11 +332,11 @@ gitignore rules.")
         ("rust-hex" ,rust-hex-0.4)
         ("rust-ignore" ,rust-ignore-0.4)
         ("rust-log" ,rust-log-0.4)
-        ("rust-rayon" ,rust-rayon-1.3)
-        ("rust-serde" ,rust-serde-1.0)
+        ("rust-rayon" ,rust-rayon-1)
+        ("rust-serde" ,rust-serde-1)
         ("rust-serde-cbor" ,rust-serde-cbor-0.10)
-        ("rust-serde-derive" ,rust-serde-derive-1.0)
-        ("rust-serde-json" ,rust-serde-json-1.0)
+        ("rust-serde-derive" ,rust-serde-derive-1)
+        ("rust-serde-json" ,rust-serde-json-1)
         ("rust-serde-yaml" ,rust-serde-yaml-0.8)
         ("rust-term-size" ,rust-term-size-0.3)
         ("rust-toml" ,rust-toml-0.5))
@@ -352,9 +345,9 @@ gitignore rules.")
         ("rust-handlebars" ,rust-handlebars-2.0)
         ("rust-ignore" ,rust-ignore-0.4)
         ("rust-lazy-static" ,rust-lazy-static-1)
-        ("rust-regex" ,rust-regex-1.3)
-        ("rust-serde-json" ,rust-serde-json-1.0)
-        ("rust-tempfile" ,rust-tempfile-3.0))
+        ("rust-regex" ,rust-regex-1)
+        ("rust-serde-json" ,rust-serde-json-1)
+        ("rust-tempfile" ,rust-tempfile-3))
        #:phases
        (modify-phases %standard-phases
          (add-after 'configure 'unvendor-libraries-from-crates
@@ -375,10 +368,74 @@ show number of files, total lines within those files and code, comments, and
 blanks grouped by language.")
     (license (list license:expat license:asl2.0))))
 
+(define-public watchexec
+  (package
+    (name "watchexec")
+    (version "1.14.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "watchexec" version))
+       (file-name
+        (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0bwgqb5fvyqbf2lf0005fxzpbpbwbszc7144g3kg2cmzy5cbrf0w"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-completions
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (zsh (string-append out "/share/zsh/site-functions/_watchexec"))
+                    (doc (string-append out "/share/doc/watchexec-" ,version)))
+               (mkdir-p (dirname zsh))
+               (copy-file "completions/zsh" zsh)
+               (install-file "README.md" doc)
+               #t))))
+       #:cargo-inputs
+       (("rust-clap" ,rust-clap-2)
+        ("rust-derive-builder" ,rust-derive-builder-0.9)
+        ("rust-env-logger" ,rust-env-logger-0.7)
+        ("rust-glob" ,rust-glob-0.3)
+        ("rust-globset" ,rust-globset-0.4)
+        ("rust-lazy-static" ,rust-lazy-static-1)
+        ("rust-log" ,rust-log-0.4)
+        ("rust-nix" ,rust-nix-0.17)
+        ("rust-notify" ,rust-notify-4)
+        ("rust-walkdir" ,rust-walkdir-2)
+        ("rust-winapi" ,rust-winapi-0.3))))
+    (home-page "https://github.com/watchexec/watchexec")
+    (synopsis "Executes commands in response to file modifications")
+    (description
+     "@command{watchexec} is a simple, standalone tool that watches a path and runs
+a command whenever it detects modifications.
+
+Example use cases:
+@itemize @bullet
+@item Automatically run unit tests
+@item Run linters/syntax checkers
+@end itemize
+
+Features:
+@itemize @bullet
+@item Coalesces multiple filesystem events into one, for editors that
+use swap/backup files during saving
+@item By default, uses @code{.gitignore} and @code{.ignore} to determine which
+files to ignore notifications for
+@item Supports watching files with a specific extension
+@item Supports filtering/ignoring events based on glob patterns
+@item Launches child processes in a new process group
+@item Sets environment variables that allow the executed program to learn
+the details of how it was triggered.
+@end itemize")
+    (license license:asl2.0)))
+
 (define-public rust-cargo-c
   (package
     (name "rust-cargo-c")
-    (version "0.5.2")
+    (version "0.5.3")
     (source
       (origin
         (method url-fetch)
@@ -387,19 +444,19 @@ blanks grouped by language.")
          (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
-          "1is72jm0r73pqx2g3h1n6lvrcirwd91mmajsmb3jjg4jnayfkp0w"))))
+          "0hsag5g4qngm8alfil2dyvl5sagpqi5nb40c7bhwng2z8mv9r41k"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-cbindgen" ,rust-cbindgen-0.12)
-        ("rust-pretty-env-logger" ,rust-pretty-env-logger-0.3)
+       (("rust-cbindgen" ,rust-cbindgen)
+        ("rust-pretty-env-logger" ,rust-pretty-env-logger-0.4)
         ("rust-structopt" ,rust-structopt-0.3)
         ("rust-log" ,rust-log-0.4)
         ("rust-toml" ,rust-toml-0.5)
         ("rust-cargo-metadata" ,rust-cargo-metadata-0.9)
-        ("rust-serde" ,rust-serde-1.0)
-        ("rust-serde-derive" ,rust-serde-derive-1.0)
-        ("rust-regex" ,rust-regex-1.3))))
+        ("rust-serde" ,rust-serde-1)
+        ("rust-serde-derive" ,rust-serde-derive-1)
+        ("rust-regex" ,rust-regex-1))))
     (home-page "https://github.com/lu-zero/cargo-c")
     (synopsis "Build and install C-compatible libraries")
     (description

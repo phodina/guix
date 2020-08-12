@@ -9,6 +9,7 @@
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018, 2019 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2020 Chris Marusich <cmmarusich@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -40,6 +41,8 @@
   #:use-module (guix upstream)
   #:use-module (guix utils)
   #:use-module (guix memoization)
+  #:use-module (guix profiles)
+  #:use-module (guix monads)
   #:use-module (guix scripts)
   #:use-module ((guix ui) #:select (texi->plain-text fill-paragraph))
   #:use-module (guix gnu-maintenance)
@@ -83,6 +86,7 @@
             check-for-updates
             check-formatting
             check-archival
+            check-profile-collisions
 
             lint-warning
             lint-warning?
@@ -664,18 +668,28 @@ patch could not be found."
               ;; Use %make-warning, as condition-mesasge is already
               ;; translated.
               (%make-warning package (condition-message c)
-                             #:field 'patch-file-names))))
+                             #:field 'patch-file-names)))
+            ((formatted-message? c)
+             (list (%make-warning package
+                                  (apply format #f
+                                         (G_ (formatted-message-string c))
+                                         (formatted-message-arguments c))))))
     (define patches
-      (or (and=> (package-source package) origin-patches)
-          '()))
+      (match (package-source package)
+        ((? origin? origin) (origin-patches origin))
+        (_ '())))
+
+    (define (starts-with-package-name? file-name)
+      (and=> (string-contains file-name (package-name package))
+             zero?))
 
     (append
      (if (every (match-lambda        ;patch starts with package name?
                   ((? string? patch)
-                   (and=> (string-contains (basename patch)
-                                           (package-name package))
-                          zero?))
-                  (_  #f))     ;must be an <origin> or something like that.
+                   (starts-with-package-name? (basename patch)))
+                  ((? origin? patch)
+                   (starts-with-package-name? (origin-actual-file-name patch)))
+                  (_  #f))     ;must be some other file-like object
                 patches)
          '()
          (list
@@ -780,30 +794,39 @@ descriptions maintained upstream."
            (#t
             ;; We found a working URL, so stop right away.
             '())
+           (#f
+            ;; Unsupported URL or other error, skip.
+            (loop rest warnings))
            ((? lint-warning? warning)
             (loop rest (cons warning warnings))))))))
 
   (let ((origin (package-source package)))
-    (if (and origin
-             (eqv? (origin-method origin) url-fetch))
-        (let* ((uris     (append-map (cut maybe-expand-mirrors <> %mirrors)
-                                     (map string->uri (origin-uris origin))))
-               (warnings (warnings-for-uris uris)))
+    (if (origin? origin)
+        (cond
+         ((eq? (origin-method origin) url-fetch)
+          (let* ((uris     (append-map (cut maybe-expand-mirrors <> %mirrors)
+                                       (map string->uri (origin-uris origin))))
+                 (warnings (warnings-for-uris uris)))
 
-          ;; Just make sure that at least one of the URIs is valid.
-          (if (= (length uris) (length warnings))
-              ;; When everything fails, report all of WARNINGS, otherwise don't
-              ;; report anything.
-              ;;
-              ;; XXX: Ideally we'd still allow warnings to be raised if *some*
-              ;; URIs are unreachable, but distinguish that from the error case
-              ;; where *all* the URIs are unreachable.
-              (cons*
-               (make-warning package
-                             (G_ "all the source URIs are unreachable:")
-                             #:field 'source)
-               warnings)
-              '()))
+            ;; Just make sure that at least one of the URIs is valid.
+            (if (= (length uris) (length warnings))
+                ;; When everything fails, report all of WARNINGS, otherwise don't
+                ;; report anything.
+                ;;
+                ;; XXX: Ideally we'd still allow warnings to be raised if *some*
+                ;; URIs are unreachable, but distinguish that from the error case
+                ;; where *all* the URIs are unreachable.
+                (cons*
+                 (make-warning package
+                               (G_ "all the source URIs are unreachable:")
+                               #:field 'source)
+                 warnings)
+                '())))
+         ((git-reference? (origin-uri origin))
+          (warnings-for-uris
+           (list (string->uri (git-reference-url (origin-uri origin))))))
+         (else
+          '()))
         '())))
 
 (define (check-source-file-name package)
@@ -820,7 +843,7 @@ descriptions maintained upstream."
            (not (string-match (string-append "^v?" version) file-name)))))
 
   (let ((origin (package-source package)))
-    (if (or (not origin) (origin-file-name-valid? origin))
+    (if (or (not (origin? origin)) (origin-file-name-valid? origin))
         '()
         (list
          (make-warning package
@@ -940,7 +963,14 @@ descriptions maintained upstream."
                    (make-warning package
                                  (G_ "failed to create ~a derivation: ~a")
                                  (list system
-                                       (condition-message c)))))
+                                       (condition-message c))))
+                  ((formatted-message? c)
+                   (let ((str (apply format #f
+                                     (formatted-message-string c)
+                                     (formatted-message-arguments c))))
+                     (make-warning package
+                                   (G_ "failed to create ~a derivation: ~a")
+                                   (list system str)))))
           (parameterize ((%graft? #f))
             (package-derivation store package system #:graft? #f)
 
@@ -964,6 +994,38 @@ descriptions maintained upstream."
   (or (and=> store check-with-store)
       (with-store store
         (check-with-store store))))
+
+(define* (check-profile-collisions package #:key store)
+  "Check for collisions that would occur when installing PACKAGE as a result
+of the propagated inputs it pulls in."
+  (define (do-check store)
+    (guard (c ((profile-collision-error? c)
+               (let ((first  (profile-collision-error-entry c))
+                     (second (profile-collision-error-conflict c)))
+                 (define format
+                   (if (string=? (manifest-entry-version first)
+                                 (manifest-entry-version second))
+                       manifest-entry-item
+                       (lambda (entry)
+                         (string-append (manifest-entry-name entry) "@"
+                                        (manifest-entry-version entry)))))
+
+                 (list (make-warning package
+                                     (G_ "propagated inputs ~a and ~a collide")
+                                     (list (format first)
+                                           (format second)))))))
+      ;; Disable grafts to avoid building PACKAGE and its dependencies.
+      (parameterize ((%graft? #f))
+        (run-with-store store
+          (mbegin %store-monad
+            (check-for-collisions (packages->manifest (list package))
+                                  (%current-system))
+            (return '()))))))
+
+  (if store
+      (do-check store)
+      (with-store store
+        (do-check store))))
 
 (define (check-license package)
   "Warn about type errors of the 'license' field of PACKAGE."
@@ -1168,7 +1230,7 @@ Heritage")
                     '())))
                '()))))
       (match-lambda*
-        ((key url method response)
+        (('swh-error url method response)
          (response->warning url method response))
         ((key . args)
          (if (eq? key skip-key)
@@ -1343,6 +1405,11 @@ or a list thereof")
      (name            'derivation)
      (description     "Report failure to compile a package to a derivation")
      (check           check-derivation)
+     (requires-store? #t))
+   (lint-checker
+     (name            'profile-collisions)
+     (description     "Report collisions that would occur due to propagated inputs")
+     (check           check-profile-collisions)
      (requires-store? #t))
    (lint-checker
     (name        'patch-file-names)

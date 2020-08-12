@@ -6,7 +6,7 @@
 ;;; Copyright © 2015, 2016 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2014, 2015, 2016 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2016, 2019 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2015, 2018 Kyle Meyer <kyle@kyleam.com>
 ;;; Copyright © 2015, 2017, 2018, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
@@ -17,7 +17,7 @@
 ;;; Copyright © 2017 André <eu@euandre.org>
 ;;; Copyright © 2017, 2018, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Stefan Reichör <stefan@xsteve.at>
-;;; Copyright © 2017 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2017, 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018 Sou Bunnbu <iyzsong@member.fsf.org>
 ;;; Copyright © 2018 Christopher Baines <mail@cbaines.net>
 ;;; Copyright © 2018 Timothy Sample <samplet@ngyro.com>
@@ -29,6 +29,7 @@
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 John D. Boy <jboy@bius.moe>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -54,6 +55,7 @@
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system go)
+  #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
   #:use-module (gnu packages apr)
@@ -72,6 +74,7 @@
   #:use-module (gnu packages flex)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages gl)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages groff)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages image)
@@ -154,14 +157,14 @@ as well as the classic centralized workflow.")
 (define-public git
   (package
    (name "git")
-   (version "2.26.2")
+   (version "2.28.0")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://kernel.org/software/scm/git/git-"
                                 version ".tar.xz"))
             (sha256
              (base32
-              "0j685w6pzkn926z5nf5r8fij4ziipvw4c9yb0wc577nzf4j16rbd"))))
+              "17a311vzimqn1glc9d7x82rhb1mb81m5rr4g8xji8idaafid39fz"))))
    (build-system gnu-build-system)
    (native-inputs
     `(("native-perl" ,perl)
@@ -178,7 +181,7 @@ as well as the classic centralized workflow.")
                 version ".tar.xz"))
           (sha256
            (base32
-            "0rb4f4jc31zrcg4gyjg4fi07dw7nggkjg2nqfiq5p1aayw2f2ga3"))))
+            "1dvwq0py8a2ywmgc5pzdlsj3608s7r9wyba292728fcs3yj7ynk6"))))
       ;; For subtree documentation.
       ("asciidoc" ,asciidoc-py3)
       ("docbook-xsl" ,docbook-xsl)
@@ -302,12 +305,12 @@ as well as the classic centralized workflow.")
                 ;; specified in the XML, unlike the above substitution.  Instead it
                 ;; uses a hard-coded URL.  Work around it here, but if this is
                 ;; common perhaps we should hardcode this path in xmlto itself.
-                (("\\$\\(XMLTO\\) -m \\$\\(MANPAGE_XSL\\) man")
+                (("\\$\\(XMLTO\\) -m \\$\\(MANPAGE_XSL\\)")
                  (string-append "$(XMLTO) -x "
                                 (string-append (assoc-ref inputs "docbook-xsl")
                                                "/xml/xsl/docbook-xsl-"
                                                ,(package-version docbook-xsl))
-                                "/manpages/docbook.xsl -m $(MANPAGE_XSL) man")))
+                                "/manpages/docbook.xsl -m $(MANPAGE_XSL)")))
               (invoke "make")
               (invoke "make" "install")
               (invoke "make" "install-doc")
@@ -631,6 +634,26 @@ indistinguishable from Git's.  You (or other contributors) can always fall back
 on @command{git}, and use any regular Git hosting service.")
     (license license:expat)))
 
+(define-public git-cal
+  (package
+    (name "git-cal")
+    (version "0.9.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/k4rthik/git-cal")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "08s9sif3qlk5n2dqpzq5yjczggnqlnxldljspjdqgpfydb2dqg3z"))))
+    (build-system perl-build-system)
+    (home-page "https://github.com/k4rthik/git-cal/")
+    (synopsis "GitHub like contributions calendar for terminal")
+    (description "@code{git-cal} is a script to view commits calendar similar
+to GitHub contributions calendar.")
+    (license license:expat)))
+
 (define-public libgit2
   (package
     (name "libgit2")
@@ -723,7 +746,7 @@ write native speed custom Git applications in any language with bindings.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/AGWA/git-crypt.git")
+             (url "https://github.com/AGWA/git-crypt")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -971,7 +994,7 @@ repository")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/davisp/ghp-import.git")
+             (url "https://github.com/davisp/ghp-import")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -1102,7 +1125,7 @@ either a pure Python implementation, or the faster, but more resource intensive
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/kward/shflags.git")
+                     (url "https://github.com/kward/shflags")
                      (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -1185,7 +1208,7 @@ lot easier.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ctmarinas/stgit.git")
+             (url "https://github.com/ctmarinas/stgit")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1237,7 +1260,7 @@ manipulate them in various ways.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/RichiH/vcsh.git")
+             (url "https://github.com/RichiH/vcsh")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1312,7 +1335,7 @@ also walk each side of a merge and test those changes individually.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/sitaramc/gitolite.git")
+             (url "https://github.com/sitaramc/gitolite")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1417,6 +1440,118 @@ also walk each side of a merge and test those changes individually.")
      "Gitolite is an access control layer on top of Git, providing fine access
 control to Git repositories.")
     (license license:gpl2)))
+
+(define-public pre-commit
+  (package
+    (name "pre-commit")
+    (version "2.6.0")
+    (source
+     (origin
+       ;; No tests in the PyPI tarball.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/pre-commit/pre-commit")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "144hcnz8vz07nkx7hk8a3ac822186ardwxa8jnl6s8qvm5ip92f2"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'check 'set-up-git
+           (lambda _
+             ;; Change from /homeless-shelter to /tmp for write permission.
+             (setenv "HOME" "/tmp")
+             ;; Environment variables used in the tests.
+             (setenv "GIT_AUTHOR_NAME" "Your Name")
+             (setenv "GIT_COMMITTER_NAME" "Your Name")
+             (setenv "GIT_AUTHOR_EMAIL" "you@example.com")
+             (setenv "GIT_COMMITTER_EMAIL" "you@example.com")
+             (invoke "git" "config" "--global" "user.name" "Your Name")
+             (invoke "git" "config" "--global" "user.email" "you@example.com")
+           #t))
+         (replace 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (invoke "pytest" "tests" "-k"
+                     (string-append
+                     ;; Disable conda tests.
+                      "not test_conda_hook"
+                      " and not test_conda_with_additional_dependencies_hook"
+                      " and not test_local_conda_additional_dependencies"
+                      ;; Disable cpan tests.
+                      " and not test_local_perl_additional_dependencies"
+                      " and not test_perl_hook"
+                      ;; Disable Ruby tests.
+                      " and not test_additional_ruby_dependencies_installed"
+                      " and not test_install_rbenv"
+                      " and not test_install_rbenv_with_version"
+                      " and not test_run_a_ruby_hook"
+                      " and not test_run_ruby_hook_with_disable_shared_gems"
+                      " and not test_run_versioned_ruby_hook"
+                      ;; Disable Cargo tests
+                      " and not test_additional_rust_cli_dependencies_installed"
+                      " and not test_additional_rust_lib_dependencies_installed"
+                      " and not test_local_rust_additional_dependencies"
+                      " and not test_rust_hook"
+                      ;; Disable python2 test.
+                      " and not test_switch_language_versions_doesnt_clobber"
+                      ;; These tests try to open a network socket.
+                      " and not test_additional_golang_dependencies_installed"
+                      " and not test_additional_node_dependencies_installed"
+                      " and not test_golang_hook"
+                      " and not test_golang_hook_still_works_when_gobin_is_set"
+                      " and not test_local_golang_additional_dependencies"
+                      " and not test_main"
+                      " and not test_node_hook_with_npm_userconfig_set"
+                      " and not test_run_a_node_hook"
+                      " and not test_run_versioned_node_hook"
+                      ;; Tests failing with a permission error.
+                      ;; They try to write to the filesystem.
+                      " and not test_autoupdate_hook_disappearing_repo"
+                      " and not test_hook_disppearing_repo_raises"
+                      " and not test_img_conflict"
+                      " and not test_img_something_unstaged"
+                      " and not test_installed_from_venv"
+                      " and not test_too_new_version"
+                      " and not test_try_repo_uncommitted_changes"
+                      " and not test_versions_ok"
+                      ;; This test tries to activate a virtualenv
+                      " and not test_healthy_venv_creator"
+                      ;; Fatal error: Not a Git repository.
+                      " and not test_all_cmds"
+                      " and not test_try_repo"
+                      ;; No module named 'pip._internal.cli.main'
+                      " and not test_additional_dependencies_roll_forward"
+                      ; Assertion errors
+                      " and not test_install_existing_hooks_no_overwrite"
+                      " and not test_uninstall_restores_legacy_hooks"))))
+         (add-before 'reset-gzip-timestamps 'make-files-writable
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; Make sure .gz files are writable so that the
+             ;; 'reset-gzip-timestamps' phase can do its work.
+             (let ((out (assoc-ref outputs "out")))
+               (for-each make-file-writable
+                         (find-files out "\\.gz$"))
+               #t))))))
+    (native-inputs
+     `(("git" ,git)
+       ("python-pytest" ,python-pytest)))
+    (inputs
+     `(("python-cfgv" ,python-cfgv)
+       ("python-identify" ,python-identify)
+       ("python-nodeenv" ,python-nodeenv)
+       ("python-pyyaml" ,python-pyyaml)
+       ("python-toml" ,python-toml)
+       ("python-virtualenv" ,python-virtualenv)))
+    (home-page "https://pre-commit.com/")
+    (synopsis "Framework for managing and maintaining multi-language pre-commit hooks")
+    (description
+     "Pre-commit is a multi-language package manager for pre-commit hooks.  You
+specify a list of hooks you want and pre-commit manages the installation and
+execution of any hook written in any language before every commit.")
+    (license license:expat)))
 
 (define (mercurial-patch name revision hash)
   (origin
@@ -1569,18 +1704,14 @@ following features:
 (define-public subversion
   (package
     (name "subversion")
-    (version "1.10.6")
+    (version "1.14.0")
     (source (origin
              (method url-fetch)
-             (uri
-               (list
-                 (string-append "https://archive.apache.org/dist/subversion/"
-                                "subversion-" version ".tar.bz2")
-                 (string-append "https://www-eu.apache.org/dist/subversion/"
-                                "subversion-" version ".tar.bz2")))
+             (uri (string-append "mirror://apache/subversion/"
+                                 "subversion-" version ".tar.bz2"))
              (sha256
               (base32
-               "19zc215mhpnm92mlyl5jbv57r5zqp6cavr3s2g9yglp6j4kfgj0q"))))
+               "00i1f88snlpcnsycpn6r315h6792l5nkr2p5k6kq6yprz4cf5a3b"))))
     (build-system gnu-build-system)
     (arguments
      '(#:parallel-tests? #f             ; TODO Seems to cause test failures on
@@ -2062,7 +2193,7 @@ output of the @code{git} command.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/0-wiz-0/findnewest.git")
+             (url "https://github.com/0-wiz-0/findnewest")
              (commit (string-append "findnewest-" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -2134,7 +2265,7 @@ Mercurial, Bazaar, Darcs, CVS, Fossil, and Veracity.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/DanielDent/git-annex-remote-rclone.git")
+             (url "https://github.com/DanielDent/git-annex-remote-rclone")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -2403,7 +2534,7 @@ how information about the merge is displayed.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mhagger/git-imerge.git")
+             (url "https://github.com/mhagger/git-imerge")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -2521,3 +2652,57 @@ package is provided for users who need to recover @code{tla} repositories and
 for historians.")
     (home-page "https://www.gnu.org/software/gnu-arch/")
     (license license:gpl2)))                      ;version 2 only
+
+(define-public go-github-go-git
+  (package
+    (name "go-github-go-git")
+    (version "5.1.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/go-git/go-git")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1vkcmhh2qq8c38sjbnzf0wvg2rzr19wssaq177bsvrjwj1xz1qbs"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:tests? #f ;requires network connection
+       #:import-path "github.com/go-git/go-git/v5"
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'setup
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let* ((git (assoc-ref inputs "git"))
+                    (git-bin (string-append (assoc-ref inputs "git") "/bin"))
+                    (git-exe (string-append git-bin "/git")))
+               (setenv "GIT_DIST_PATH=" git)
+               (setenv "GIT_EXEC_PATH=" git-bin)
+               (setenv "HOME" (getcwd))
+               (invoke git-exe "config" "--global" "user.email" "gha@example.com")
+               (invoke git-exe "config" "--global" "user.name" "GitHub Actions")
+               #t)
+             #t)))))
+    (native-inputs
+     `(("go-github-com-emirpasic-gods" ,go-github-com-emirpasic-gods)
+       ("go-github-com-go-git-gcfg" ,go-github-com-go-git-gcfg)
+       ("go-github-com-go-git-go-billy" ,go-github-com-go-git-go-billy)
+       ("go-github-com-imdario-mergo" ,go-github-com-imdario-mergo)
+       ("go-github-com-jbenet-go-context" ,go-github-com-jbenet-go-context)
+       ("go-github-com-kevinburke-ssh-config" ,go-github-com-kevinburke-ssh-config)
+       ("go-github-com-mitchellh-go-homedir" ,go-github-com-mitchellh-go-homedir)
+       ("go-github-com-sergi-go-diff" ,go-github-com-sergi-go-diff)
+       ("go-github-com-xanzy-ssh-agentf" ,go-github-com-xanzy-ssh-agent)
+       ("go-golang-org-x-crypto" ,go-golang-org-x-crypto)
+       ("go-golang-org-x-net" ,go-golang-org-x-net)
+       ("go-gopkg-in-warnings" ,go-gopkg-in-warnings)
+       ("go-github-com-go-git-go-git-fixtures" ,go-github-com-go-git-go-git-fixtures)
+       ("go-gopkg-in-check-v1" ,go-gopkg-in-check-v1)
+       ("go-github-com-alcortesm-tgz" ,go-github-com-alcortesm-tgz)
+       ("go-golang-org-x-text" ,go-golang-org-x-text)
+       ("git" ,git)))
+    (home-page "https://github.com/go-git/")
+    (synopsis "Git implementation library")
+    (description "This package provides a Git implementation library.")
+    (license license:asl2.0)))

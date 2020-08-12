@@ -7,6 +7,7 @@
 ;;; Copyright © 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Robert Smith <robertsmith@posteo.net>
 ;;; Copyright © 2020 Guy Fleury Iteriteka <gfleury@disroot.org>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -39,6 +40,7 @@
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
   #:use-module (gnu packages javascript)
@@ -68,6 +70,7 @@
   #:use-module (guix utils)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system python)
   #:use-module (guix build-system qt)
   #:use-module (guix build-system trivial)
@@ -271,16 +274,16 @@ easy.")
 (define-public snap
   (package
     (name "snap")
-    (version "5.4.5")
+    (version "6.1.4")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/jmoenig/Snap.git")
+             (url "https://github.com/jmoenig/Snap")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1z6dbcsgvxxs40p23qysfsk4vzpg8jlrr5pqfnjf8q3kpz1xvzxf"))))
+        (base32 "0qvnm5jg2hlf32say531m8nmp3aib93mqnllw1g289s58fzk5li6"))))
     (build-system trivial-build-system)
     (arguments
      `(#:modules ((guix build utils))
@@ -609,14 +612,14 @@ Portuguese, Spanish and Italian.")
 (define-public fet
   (package
     (name "fet")
-    (version "5.44.8")
+    (version "5.45.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.lalescu.ro/liviu/fet/download/"
                            "fet-" version ".tar.bz2"))
        (sha256
-        (base32 "1i59xpkdnrd3qzgqs11vsws57g33zvkad5q3an56vd94aw7z3kpw"))))
+        (base32 "1pg47jk6fw46fr7m32l1ypm1zyjfz1ik5f333ynqqr705f1c0ij5"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -755,6 +758,13 @@ adjust the level of difficulty.")
                   (ice-9 match))
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'disable-update-check
+           ;; Don't ‘phone home’ unasked to check for updates.
+           (lambda _
+             (substitute* "aqt/update.py"
+               (("requests\\.post")
+                "throw.an.exception.instead"))
+             #t))
          (delete 'configure)            ;no configure script
          (add-after 'install 'wrap
            (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -978,3 +988,36 @@ comparison flags, input-output devices, and a set of binary instructions.
 The package includes a compiler, a virtual machine, a GUI for the virtual
 machine, and more.")
     (license license:gpl3+)))
+
+(define-public exercism
+  (package
+    (name "exercism")
+    (version "3.0.13")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/exercism/cli")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "17gvz9a0sn4p36hf4l77bxhhfipf4x998iay31layqwbnzmb4xy7"))
+       (patches (search-patches "exercism-disable-self-update.patch"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/exercism/cli/exercism"
+       #:unpack-path "github.com/exercism/cli"
+       #:install-source? #f))
+    (inputs
+     `(("github.com/blang/semver" ,go-github-com-blang-semver)
+       ("github.com/spf13/cobra" ,go-github-com-spf13-cobra)
+       ("github.com/spf13/pflag" ,go-github-com-spf13-pflag)
+       ("github.com/spf13/viper" ,go-github-com-spf13-viper)
+       ("golang.org/x/net" ,go-golang-org-x-net)
+       ("golang.org/x/text" ,go-golang-org-x-text)))
+    (home-page "https://exercism.io")
+    (synopsis "Mentored learning for programming languages")
+    (description "Commandline client for exercism.io, a free service providing
+mentored learning for programming languages.")
+    (license license:expat)))

@@ -8,6 +8,8 @@
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 André Batista <nandre@riseup.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -27,6 +29,7 @@
 (define-module (gnu packages tor)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
+  #:use-module (guix utils)
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
@@ -51,14 +54,14 @@
 (define-public tor
   (package
     (name "tor")
-    (version "0.4.3.5")
+    (version "0.4.3.6")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://dist.torproject.org/tor-"
                                  version ".tar.gz"))
              (sha256
               (base32
-               "0s6qspi102drn1nk3gfxs51x992xarc44gkfsi8y3l48wr50wsk1"))))
+               "0qmcrkjip0ywq77232m73pjwqiaj0q2klwklqlpbw575shvhcbba"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -85,11 +88,37 @@ location.  Tor works with many of your existing applications, including
 web browsers, instant messaging clients, remote login, and other
 applications based on the TCP protocol.
 
+This package is the full featured @code{tor} which is needed for running
+relays, bridges or directory authorities. If you just want to access the Tor
+network or to setup an onion service you may install @code{tor-client}
+instead.")
+    (license license:bsd-3)))
+
+(define-public tor-client
+  (package
+    (inherit tor)
+    (name "tor-client")
+    (arguments
+     (substitute-keyword-arguments (package-arguments tor)
+       ((#:configure-flags flags)
+        (append flags
+                '("--disable-module-relay")))))
+    (synopsis "Client to the anonymous Tor network")
+    (description
+     "Tor protects you by bouncing your communications around a distributed
+network of relays run by volunteers all around the world: it prevents
+somebody watching your Internet connection from learning what sites you
+visit, and it prevents the sites you visit from learning your physical
+location.  Tor works with many of your existing applications, including
+web browsers, instant messaging clients, remote login, and other
+applications based on the TCP protocol.
+
 To @code{torify} applications (to take measures to ensure that an application,
 which has not been designed for use with Tor such as ssh, will use only Tor for
 internet connectivity, and also ensures that there are no leaks from DNS, UDP or
-the application layer) you need to install @code{torsocks}.")
-    (license license:bsd-3)))
+the application layer) you need to install @code{torsocks}.
+
+This package only provides a client to the Tor Network.")))
 
 (define-public torsocks
   (package
@@ -141,8 +170,28 @@ rejects UDP traffic from the application you're using.")
        ;; $out/etc/privoxy.
        #:configure-flags (list (string-append "--sysconfdir="
                                               (assoc-ref %outputs "out")
-                                              "/etc/privoxy"))
-       #:tests? #f))
+                                              "/etc/privoxy")
+                               "--localstatedir=/var")
+       #:tests? #f                      ; no test suite
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-default-logging
+           (lambda _
+             (with-fluids ((%default-port-encoding "ISO-8859-1"))
+               ;; Do not create /var/run nor /var/log/privoxy/logfile.
+               (substitute* "GNUmakefile.in"
+                 (("(logfile \\|\\| exit )1" _ match)
+                  (string-append match "0"))
+                 (("(\\$\\(DESTDIR\\)\\$\\(SHARE_DEST\\)) \\\\" _ match)
+                  match)
+                 ((".*\\$\\(LOG_DEST\\) \\$\\(DESTDIR\\)\\$\\(PID_DEST\\).*")
+                  ""))
+               ;; Disable logging in the default configuration to allow for
+               ;; non-root users using it as is.
+               (substitute* "config"
+                 (("^logdir") "#logdir")
+                 (("^logfile") "#logfile")))
+             #t)))))
     (inputs
      `(("w3m" ,w3m)
        ("pcre" ,pcre)
@@ -169,7 +218,7 @@ networks.")
       (origin
         (method git-fetch)
         (uri (git-reference
-              (url "https://github.com/micahflee/onionshare.git")
+              (url "https://github.com/micahflee/onionshare")
               (commit (string-append "v" version))))
         (file-name (git-file-name name version))
         (sha256

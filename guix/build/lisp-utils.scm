@@ -186,13 +186,17 @@ asdf:system-depends-on.  First load the system's ASD-FILE."
       (_ system))))
 
 (define* (generate-system-definition system
-                                     #:key version dependencies)
+                                     #:key version dependencies component?)
   `(asdf:defsystem
     ,(normalize-string system)
-    :class asdf/bundle:prebuilt-system
+    ,@(if component?
+          '(:class asdf/bundle:prebuilt-system)
+          '())
     :version ,version
     :depends-on ,dependencies
-    :components ((:compiled-file ,(compiled-system system)))
+    ,@(if component?
+          `(:components ((:compiled-file ,(compiled-system system))))
+          '())
     ,@(if (string=? "ecl" (%lisp-type))
           `(:lib ,(string-append system ".a"))
           '())))
@@ -311,14 +315,24 @@ system to find its dependencies, as described by GENERATE-DEPENDENCY-LINKS."
                            lisp-input-map)
                 (map dependency-name dependencies)))
 
+  ;; Ensure directory exists, which might not be the case for an .asd without components.
+  (mkdir-p (dirname asd-file))
   (call-with-output-file asd-file
     (lambda (port)
       (display
        (replace-escaped-macros
         (format #f "~y~%~y~%"
-                (generate-system-definition system
-                                            #:version version
-                                            #:dependencies dependencies)
+                (generate-system-definition
+                 system
+                 #:version version
+                 #:dependencies dependencies
+                 ;; Some .asd don't have components, and thus they don't generate any .fasl.
+                 #:component? (match (%lisp-type)
+                                ("sbcl" (pair? (find-files (dirname asd-file)
+                                                           "--system\\.fasl$")))
+                                ("ecl" (pair? (find-files (dirname asd-file)
+                                                          "\\.fasb$")))
+                                (_ (error "The LISP provided is not supported at this time."))))
                 (generate-dependency-links registry system)))
        port))))
 

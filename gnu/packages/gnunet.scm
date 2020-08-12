@@ -1,15 +1,16 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013, 2014, 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2014 Sree Harsha Totakura <sreeharsha@totakura.in>
-;;; Copyright © 2015, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2015, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2017, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016, 2017, 2018, 2019 Nikita <nikita@n0.is>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Nikita <nikita@n0.is>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2019 Brett Gilio <brettg@gnu.org>
 ;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,6 +33,7 @@
   #:use-module (gnu packages aidc)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
@@ -72,24 +74,22 @@
 (define-public libextractor
   (package
    (name "libextractor")
-   (version "1.9")
+   (version "1.10")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/libextractor/libextractor-"
                                 version ".tar.gz"))
             (sha256
              (base32
-              "1zz2zvikvfibxnk1va3kgzs7djsmiqy7bmk8y01vbsf54ryjb3zh"))
-            (patches (search-patches "libextractor-exiv2.patch"))))
+              "0mr38g7kfn3p050hd3hckbcz2yd3za6dwl1c26x2kjf7vnsi3vcy"))))
    (build-system gnu-build-system)
    ;; WARNING: Checks require /dev/shm to be in the build chroot, especially
    ;; not to be a symbolic link to /run/shm.
    ;; FIXME:
    ;; The following dependencies are all optional, but should be
    ;; available for maximum coverage:
-   ;; * libmagic (file)
    ;; * librpm (rpm)    ; investigate failure
-   ;; * libgif (giflib) ; investigate failure
+   ;; * libtidy-html (tidy-html) ; investigate failure
    (inputs
     `(("exiv2" ,exiv2)
       ("bzip2" ,bzip2)
@@ -97,6 +97,7 @@
       ("ffmpeg" ,ffmpeg)
       ("file" ,file)                           ;libmagic, for the MIME plug-in
       ("glib" ,glib)
+      ("giflib" ,giflib)
       ("gstreamer" ,gstreamer)
       ("gst-plugins-base" ,gst-plugins-base)
       ("gtk+" ,gtk+)
@@ -107,7 +108,6 @@
       ("libmpeg2" ,libmpeg2)
       ("libmp4v2" ,libmp4v2)
       ("libsmf" ,libsmf)
-      ("tidy-html" ,tidy-html)
       ("libogg" ,libogg)
       ("libtiff" ,libtiff)
       ("libvorbis" ,libvorbis)
@@ -119,12 +119,18 @@
    (arguments
     `(#:configure-flags
       (list (string-append "--with-ltdl="
-                           (assoc-ref %build-inputs "libltdl"))
-            (string-append "--with-tidy="
-                           (assoc-ref %build-inputs "tidy-html")))
+                           (assoc-ref %build-inputs "libltdl")))
       #:parallel-tests? #f
       #:phases
       (modify-phases %standard-phases
+        (add-after 'configure 'fix-exiv2-tests
+          ;; exiv2>=0.27.3 rounds geolocation
+          ;; https://github.com/Exiv2/exiv2/pull/1107/commits/db1be4ae8e1077949fcb6a960e93069d6a41b395#diff-f3f55183ccbe956c720c86e61f708d9f
+          (lambda _
+            (substitute* "src/plugins/test_exiv2.c"
+              (("17.585\\\\\" ") "18\\\"")
+              (("21.713\\\\\" ") "22\\\""))
+            #t))
         (add-after 'install 'move-static-libraries
           (lambda* (#:key outputs #:allow-other-keys)
             ;; Move static libraries to the "static" output.
@@ -180,13 +186,13 @@ authentication and support for SSL3 and TLS.")
 (define-public gnurl
   (package
    (name "gnurl")
-   (version "7.69.1")
+   (version "7.70.0")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/gnunet/gnurl-" version ".tar.gz"))
             (sha256
              (base32
-              "0x8m26y3klndis6a28j8i0b7ab04d38q3rmlvgaqa65bjhlfdrp0"))))
+              "0px9la8v4bj1dzxb95fx3yxk0rcjqjrxpj733ga27cza45wwzkqa"))))
    (build-system gnu-build-system)
    (outputs '("out"
               "doc"))                             ; 1.8 MiB of man3 pages
@@ -245,12 +251,12 @@ supports HTTP, HTTPS and GnuTLS.")
                                   "See COPYING in the distribution."))
    (properties '((ftp-server . "ftp.gnu.org")
                  (ftp-directory . "/gnunet")))
-   (home-page "https://gnunet.org/gnurl")))
+   (home-page "https://gnunet.org/en/gnurl.html")))
 
 (define-public gnunet
   (package
    (name "gnunet")
-   (version "0.12.2")
+   (version "0.13.1")
    (source
     (origin
       (method url-fetch)
@@ -258,7 +264,7 @@ supports HTTP, HTTPS and GnuTLS.")
                           ".tar.gz"))
       (sha256
        (base32
-        "1mwcy7fj1rpd39w7j7k3jdwlil5s889b2qlhfdggqmhigl28na5c"))))
+        "15jnca5zxng7r6m3qzq9lr73xxq0v6mvcp0lny3zrlkz5s2nmmq3"))))
    (build-system gnu-build-system)
    (inputs
     `(("bluez" ,bluez)
@@ -274,6 +280,7 @@ supports HTTP, HTTPS and GnuTLS.")
       ("libltdl" ,libltdl)
       ("libmicrohttpd" ,libmicrohttpd)
       ("libogg" ,libogg)
+      ("libsodium" ,libsodium)
       ("libunistring" ,libunistring)
       ("miniupnpc" ,miniupnpc)
       ("opus" ,opus)
@@ -282,7 +289,8 @@ supports HTTP, HTTPS and GnuTLS.")
       ("zbar" ,zbar)
       ("zlib" ,zlib)))
    (native-inputs
-    `(("pkg-config" ,pkg-config)
+    `(("curl" ,curl)
+      ("pkg-config" ,pkg-config)
       ("python" ,python)
       ("xxd" ,xxd)
       ("which" ,(@ (gnu packages base) which))))
@@ -293,17 +301,6 @@ supports HTTP, HTTPS and GnuTLS.")
         (add-after 'configure 'remove-failing-tests
           ;; These tests fail in Guix's building environment.
           (lambda _
-            (substitute* "src/cadet/Makefile"
-              (("test_cadet_2_reopen\\$\\(EXEEXT\\) \\\\\n") "test_cadet_2_reopen$(EXEEXT)")
-              (("test_cadet_5_forward\\$\\(EXEEXT\\) \\\\\n") "")
-              (("test_cadet_5_signal\\$\\(EXEEXT\\) \\\\\n") "")
-              (("test_cadet_5_keepalive\\$\\(EXEEXT\\) \\\\\n") "")
-              (("test_cadet_5_speed\\$\\(EXEEXT\\) \\\\\n") "")
-              (("test_cadet_5_speed_ack\\$\\(EXEEXT\\) \\\\\n") "")
-              (("test_cadet_5_speed_reliable\\$\\(EXEEXT\\) \\\\\n") "")
-              (("test_cadet_5_speed_reliable_backwards\\$\\(EXEEXT\\) \\\\\n") "")
-              (("test_cadet_5_speed_backwards\\$\\(EXEEXT\\) \\\\\n") "")
-              (("test_cadet_5_reopen\\$\\(EXEEXT\\)") ""))
             (substitute* "src/transport/Makefile"
               (("\\$\\(am__EXEEXT_15\\)") "") ; test_transport_api_https
               (("test_transport_api_manipulation_cfg\\$\\(EXEEXT\\) \\\\\n") "")
@@ -311,8 +308,9 @@ supports HTTP, HTTPS and GnuTLS.")
               (("test_transport_blacklisting_multiple_plugins\\$\\(EXEEXT\\) \\\\\n") ""))
             (substitute* "src/testbed/Makefile"
               (("test_testbed_api_2peers_1controller\\$\\(EXEEXT\\) \\\\\n") "")
-              (("test_testbed_api_test\\$\\(EXEEXT\\) \\\\\n") "")
               (("test_testbed_api_statistics\\$\\(EXEEXT\\) \\\\\n") "")
+              (("test_testbed_api_test\\$\\(EXEEXT\\) \\\\\n") "")
+              (("test_testbed_api_test_timeout\\$\\(EXEEXT\\) \\\\\n") "")
               (("test_testbed_api_topology\\$\\(EXEEXT\\) \\\\\n") "")
               (("test_testbed_api_topology_clique\\$\\(EXEEXT\\) \\\\\n") ""))
             (substitute* "src/topology/Makefile"
@@ -388,14 +386,14 @@ services.")
 (define-public gnunet-gtk
   (package (inherit gnunet)
     (name "gnunet-gtk")
-    (version "0.12.0")
+    (version "0.13.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/gnunet/gnunet-gtk-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "08a43ayv1rhajdklfcv78w2h76jfaz64kgp5krqgj1w1sq8xm6fb"))))
+                "1zdzgq16h77w6ybwg3lqjsjr965np6iqvncqvkbj07glqd4wss0j"))))
     (arguments
      `(#:configure-flags
        (list "--with-libunique"

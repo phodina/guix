@@ -35,6 +35,8 @@
 ;;; Copyright © 2020 Raghav Gururajan <raghavgururajan@disroot.org>
 ;;; Copyright © 2020 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2020 Zhu Zihao <all_but_last@163.com>
+;;; Copyright © 2020 Simen Endsjø <simendsjo@gmail.com>
+;;; Copyright © 2020 Tim Van den Langenbergh <tmt_vdl@gmx.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -63,6 +65,7 @@
   #:use-module (guix build-system meson)
   #:use-module (guix build-system trivial)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages gettext)
@@ -382,6 +385,35 @@ Biolinum is available in both Regular and Bold weights.")
     ;; The fonts are released under either of these licenses.
     (license (list license:gpl2+ license:silofl1.1))))
 
+(define-public font-libertinus
+  (package
+    (name "font-libertinus")
+    (version "6.12")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/alerque/libertinus/releases"
+                           "/download/v" version "/libertinus-" version
+                           ".zip"))
+       (sha256
+        (base32 "06pcsd5pijjid7xjxak35jla089krm5hqnbglv8ldncq475q7kb2"))))
+    (build-system font-build-system)
+    (home-page "https://github.com/alerque/libertinus")
+    (synopsis "Font family based on Linux Libertine")
+    (description
+     "The Libertinus font family is a fork of Linux Libertine that addresses
+many bugs in the unmaintained original and adds a new mathematical companion
+font for use with OpenType math-capable applications like LuaTex or XeTeX.
+
+The unified Libertinus family consists of:
+@enumerate
+@item Libertinus Serif, forked from Linux Libertine;
+@item Libertinus Sans Serif, forked from Linux Biolinum;
+@item Libertinus Mono, forked from Linux Libertine Mono; and
+@item Libertinus Math, an original matching OpenType math font.
+@end enumerate\n")
+    (license license:silofl1.1)))
+
 (define-public font-terminus
   (package
     (name "font-terminus")
@@ -429,7 +461,7 @@ for long periods of working with computers (8 or more hours per day).")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/adobe-fonts/source-han-sans.git")
+                     (url "https://github.com/adobe-fonts/source-han-sans")
                      (commit (string-append version "R"))))
               (file-name (git-file-name name version))
               (sha256
@@ -678,7 +710,7 @@ for use at smaller text sizes")))
 (define-public font-gnu-unifont
   (package
     (name "font-gnu-unifont")
-    (version "13.0.02")
+    (version "13.0.03")
     (source
      (origin
        (method url-fetch)
@@ -688,7 +720,7 @@ for use at smaller text sizes")))
              (string-append "mirror://gnu/unifont/unifont-"
                             version "/unifont-" version ".tar.gz")))
        (sha256
-        (base32 "1fg908qadh14kfbpzqfj3vgzlxgx68sdlwhl2prz7arq5r45dami"))))
+        (base32 "04l2sbg6il78qsj3jxqfbz5k1xzihvw8vdlckgkp4zfr0nh2q7h7"))))
     (build-system gnu-build-system)
     (outputs '("out"   ; TrueType version
                "pcf"   ; PCF (bitmap) version
@@ -815,7 +847,7 @@ It contains the following fonts and styles:
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/belluzj/fantasque-sans.git")
+             (url "https://github.com/belluzj/fantasque-sans")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -898,7 +930,7 @@ Powerline support.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/adobe-fonts/source-code-pro.git")
+             (url "https://github.com/adobe-fonts/source-code-pro")
              (commit (regexp-substitute/global
                       ;; The upstream tag uses "/" between the roman and italic
                       ;; versions, so substitute our "-" separator here.
@@ -923,7 +955,7 @@ designed to work well in user interface environments.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/adobe-fonts/source-sans-pro.git")
+             (url "https://github.com/adobe-fonts/source-sans-pro")
              (commit (regexp-substitute/global
                       ;; The upstream tag uses "/" between the roman and italic
                       ;; versions, so substitute our "-" separator here.
@@ -948,7 +980,7 @@ work well in user interface (UI) environments.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/adobe-fonts/source-serif-pro.git")
+             (url "https://github.com/adobe-fonts/source-serif-pro")
              (commit (regexp-substitute/global
                       ;; The upstream tag uses "/" between the roman and italic
                       ;; versions, so substitute our "-" separator here.
@@ -991,7 +1023,7 @@ Sans Pro family.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/mozilla/Fira.git")
+                     (url "https://github.com/mozilla/Fira")
                      (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -1036,7 +1068,7 @@ correct spacing.")
    (source (origin
             (method git-fetch)
             (uri (git-reference
-                   (url "https://github.com/FortAwesome/Font-Awesome.git")
+                   (url "https://github.com/FortAwesome/Font-Awesome")
                    (commit (string-append "v" version))))
             (file-name (git-file-name name version))
             (sha256
@@ -1073,7 +1105,7 @@ vector graphics.")
      (origin
        (method git-fetch)
        (uri (git-reference
-              (url "https://github.com/sunaku/tamzen-font.git")
+              (url "https://github.com/sunaku/tamzen-font")
               (commit (string-append "Tamzen-" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1170,7 +1202,7 @@ typeface, by mimicking Comic Sans while fixing its most obvious shortcomings.")
   (package
     (name "font-iosevka")
     ;; When updating, also update the hash of the Iosevka variant(s) below.
-    (version "2.3.3")
+    (version "3.2.2")
     (source
      (origin
        (method url-fetch/zipbomb)
@@ -1178,7 +1210,7 @@ typeface, by mimicking Comic Sans while fixing its most obvious shortcomings.")
                            "/releases/download/v" version
                            "/ttc-iosevka-" version ".zip"))
        (sha256
-        (base32 "0jkv5rkg5hi0avhwyhcjiqzjslp6zjj77f09vxx2gj9l93byz731"))))
+        (base32 "16iqr4zjlshrgzcs3sjp3gz777gpi069r7p7scqi6vap9acqjvph"))))
     (build-system font-build-system)
     (home-page "https://be5invis.github.io/Iosevka/")
     (synopsis "Coders' typeface, built from code")
@@ -1201,7 +1233,7 @@ programming.  Iosevka is completely generated from its source code.")
                            "/releases/download/v" version
                            "/ttc-iosevka-slab-" version ".zip"))
        (sha256
-        (base32 "1rkmgi08kknc1fg54zpa6w92m3b3v7pc8cpwygz22kgd2h0mdrr8"))))))
+        (base32 "0knsb1b0wqv50r7f9128xvq344x7hnvgm7kh1dxaahlck910z62x"))))))
 
 (define-public font-iosevka-term
   (package
@@ -1213,10 +1245,10 @@ programming.  Iosevka is completely generated from its source code.")
        (method url-fetch/zipbomb)
        (uri (string-append "https://github.com/be5invis/Iosevka"
                            "/releases/download/v" version
-                           "/02-iosevka-term-" version ".zip"))
+                           "/ttf-iosevka-term-" version ".zip"))
        (sha256
         (base32
-         "1mxlb3qf64nykjd0x4gjfvib3k5kyv9ssv9iyzxxgk2z80bydz00"))))
+         "0nyq6iq9xjn9nqwh1fh4v0pvblycmm8ssw7y3vcjv1ymbkdqfqhr"))))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -1235,10 +1267,10 @@ programming.  Iosevka is completely generated from its source code.")
        (method url-fetch/zipbomb)
        (uri (string-append "https://github.com/be5invis/Iosevka"
                            "/releases/download/v" version
-                           "/06-iosevka-term-slab-" version ".zip"))
+                           "/ttf-iosevka-term-slab-" version ".zip"))
        (sha256
         (base32
-         "1gc16hih157qy6vpa8f88psq0fnksiigi3msqazc75zsm3z4kzqj"))))
+         "1blhhbnk2hyaxjrz88icd2gwyniq5idxd0h6rqx6vjcack6094z0"))))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -1247,10 +1279,52 @@ programming.  Iosevka is completely generated from its source code.")
              (for-each make-file-writable (find-files "." ".*"))
              #t)))))))
 
+(define-public font-iosevka-aile
+  (package
+    (inherit font-iosevka)
+    (name "font-iosevka-aile")
+    (version (package-version font-iosevka))
+    (source
+     (origin
+       (method url-fetch/zipbomb)
+       (uri (string-append "https://github.com/be5invis/Iosevka"
+                           "/releases/download/v" version
+                           "/ttc-iosevka-aile-" version ".zip"))
+       (sha256
+        (base32 "1zg0gn4gcf3w8n8jzf93y9ninyn3bci31c5zss3mxzz1lzfm8zd5"))))))
+
+(define-public font-iosevka-etoile
+  (package
+    (inherit font-iosevka)
+    (name "font-iosevka-etoile")
+    (version (package-version font-iosevka))
+    (source
+     (origin
+       (method url-fetch/zipbomb)
+       (uri (string-append "https://github.com/be5invis/Iosevka"
+                           "/releases/download/v" version
+                           "/ttc-iosevka-etoile-" version ".zip"))
+       (sha256
+        (base32 "1061yaf35f19dcym4k552q1yzbsbc98r3glm9frslirra9f33sl2"))))))
+
+(define-public font-iosevka-sparkle
+  (package
+    (inherit font-iosevka)
+    (name "font-iosevka-sparkle")
+    (version (package-version font-iosevka))
+    (source
+     (origin
+       (method url-fetch/zipbomb)
+       (uri (string-append "https://github.com/be5invis/Iosevka"
+                           "/releases/download/v" version
+                           "/ttc-iosevka-sparkle-" version ".zip"))
+       (sha256
+        (base32 "1c1s9j6qgyhn4md0kql0x2201nbs5jx3612jf8q020gm484xqq03"))))))
+
 (define-public font-sarasa-gothic
   (package
     (name "font-sarasa-gothic")
-    (version "0.12.6")
+    (version "0.12.7")
     (source
      (origin
        (method url-fetch)
@@ -1258,7 +1332,7 @@ programming.  Iosevka is completely generated from its source code.")
                            "/releases/download/v" version
                            "/sarasa-gothic-ttc-" version ".7z"))
        (sha256
-        (base32 "1g6k9d5lajchbhsh3g12fk5cgilyy6yw09fals9vc1f9wsqvac86"))))
+        (base32 "09v65k00g8m953s6riz9xjzb2jgr6v5pdhcllalzzl7c1cn2xl3k"))))
     (build-system font-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
@@ -1314,7 +1388,7 @@ monospace, slab-serif fonts.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/google/material-design-icons.git")
+                     (url "https://github.com/google/material-design-icons")
                      (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -1584,7 +1658,7 @@ formatting.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/uswds/public-sans.git")
+             (url "https://github.com/uswds/public-sans")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1667,7 +1741,7 @@ This package provides the TrueType fonts.")
 (define-public font-jetbrains-mono
   (package
     (name "font-jetbrains-mono")
-    (version "1.0.3")
+    (version "2.001")
     (source
      (origin
        (method url-fetch)
@@ -1675,8 +1749,17 @@ This package provides the TrueType fonts.")
         (string-append "https://download.jetbrains.com/fonts/"
                        "JetBrainsMono-" version ".zip"))
        (sha256
-        (base32 "0zvhwmpdwpm4vywmm6i9a4najz0c7vfi411yikgkd66l5hwd1p6f"))))
+        (base32 "0r3dk3kn536rik4mvpcjin9mwmifl3v8mawvb4a5l59pww0vcxzq"))))
     (build-system font-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'install-license-files
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (string-append out "/share/doc/" ,name "-" ,version)))
+               (install-file "../LICENSE" doc)
+               #t))))))
     (home-page "https://www.jetbrains.com/lp/mono/")
     (synopsis "Mono typeface for developers")
     (description
@@ -1795,3 +1878,85 @@ characteristic so that they sit smoothly with the Tamil glyphs.")
 to write people's name, or for formal business situations where it is necessary
 to have a detailed and proper character style.")
     (license license:ipa)))
+
+(define-public font-fontna-yasashisa-antique
+  (package
+    (name "font-fontna-yasashisa-antique")
+    (version "0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://flop.sakura.ne.jp/font/fontna-op/"
+                                  "YasashisaAntiqueFont.zip"))
+              (sha256
+               (base32
+                "1hl2qk3lzmh9h2vv5647vhlslkn3vqbq9rqgp4wzybajafx8c6nj"))))
+    (build-system font-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         ;; encoding issues cause many phases to fail
+         (add-after 'unpack 'fix-encoding
+           (lambda _
+             ;; This directory, TrueType（サポート外）, is not properly encoded,
+             ;; which makes rename-file fail. Instead, use shell globbing to
+             ;; select and rename the directory.
+             (invoke "sh" "-c" "mv TrueType* TrueType")
+             #t)))))
+    (native-inputs
+     `(("bash" ,bash-minimal)
+       ("coreutils" ,coreutils)))
+    (home-page "http://www.fontna.com/blog/1122/")
+    (synopsis "Mix font of gothic kanji and minchou kana")
+    (description "Antique is a font that is popular to write manga bubbles,
+dictionary headwords and picture books.  This font reduces the thickness
+differences in characters compared to other antique fonts.")
+    (license (list license:ipa
+                   (license:non-copyleft "mplus-TESTFLIGHT-057/LICENSE_E")))))
+
+(define-public font-mplus-testflight
+  (package
+    (name "font-mplus-testflight")
+    (version "063a")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://osdn.net/frs/redir.php?"
+                                  "m=gigenet&f=mplus-fonts%2F62344%2Fmplus-TESTFLIGHT-"
+                                  version ".tar.xz"))
+              (file-name (string-append name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "0yfx9i77638yrgclnwwl4af79ri3vifi1nslwi6mgzva9cxrgss4"))))
+    (build-system font-build-system)
+    (home-page "https://mplus-fonts.osdn.jp/index.html")
+    (synopsis "Japanese font collection")
+    (description "M+ is a collection of Japanese fonts with all Latin glyph
+sets, with Basic Latin, Latin-1 Supplement, Latin Extended-A, and IPA
+Extensions.  In addition to European letters used in many Western European
+languages, it contains Japanese characters, including Kana glyphs and more
+than 5,300 Kanji glyphs, as well major international phonetic symbols,
+operators and special symbols.")
+    (license (license:non-copyleft "file:///LICENSE_E"))))
+
+(define-public font-catamaran
+  (let ((commit "7559b4906f9c9148fb22c6f89508c3053a78a296")
+        (revision "1"))
+    (package
+      (name "font-catamaran")
+      (version (git-version "0.0.0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/VanillaandCream/Catamaran-Tamil")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "1wpp41l7j2kpgnyavhgxcc5wp852a4wqsnwravn39gp980s84yxw"))))
+      (build-system font-build-system)
+      (home-page "https://github.com/VanillaandCream/Catamaran-Tamil")
+      (synopsis "9 weight Tamil and Latin type")
+      (description "Catamaran is a 9 weight Tamil and Latin type.  Catamaran
+is a stylish type with a polished yet relaxed feel.  Its versatility makes it
+suitable for a wide range of uses.")
+      (license license:silofl1.1))))

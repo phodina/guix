@@ -10,6 +10,9 @@
 ;;; Copyright © 2020 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
+;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -80,6 +83,42 @@ strings, configuration, bit streams, threading, translation, and cross-platform
 operating system functions.")
     (license license:zlib)))
 
+(define-public rttr
+  (package
+    (name "rttr")
+    (version "0.9.6")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/rttrorg/rttr/")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "1yxad8sj40wi75hny8w6imrsx8wjasjmsipnlq559n4b6kl84ijp"))
+       (file-name (git-file-name name version))))
+    (build-system cmake-build-system)
+    (arguments
+     '(;; No check target. Setting test-target to "unit_test" runs it twice.
+       #:tests? #f
+       #:configure-flags
+       '("-DBUILD_DOCUMENTATION=OFF" "-DBUILD_EXAMPLES=OFF")
+       #:phases
+       (modify-phases %standard-phases
+         ;; library_test fails in chroot.
+         (add-after 'unpack 'skip-library-test
+           (lambda _
+             (substitute* "src/unit_tests/unit_tests.cmake"
+               (("misc/library_test.cpp") ""))
+             #t)))))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (home-page "https://github.com/rttrorg/rttr/")
+    (synopsis "C++ Reflection Library")
+    (description
+     "RTTR stands for Run Time Type Reflection.  It describes the ability of a
+computer program to introspect and modify an object at runtime.  It is also
+the name of the library itself, which is written in C++.")
+    (license license:expat)))
+
 (define-public rct
   (let* ((commit "b3e6f41d9844ef64420e628e0c65ed98278a843a")
          (revision "2"))
@@ -122,7 +161,7 @@ operating system functions.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/aseba-community/dashel.git")
+             (url "https://github.com/aseba-community/dashel")
              (commit version)))
        (sha256
         (base32 "0anks2l2i2qp0wlzqck1qgpq15a3l6dg8lw2h8s4nsj7f61lffwy"))
@@ -147,7 +186,7 @@ combination of these streams.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/QuantStack/xsimd.git")
+             (url "https://github.com/QuantStack/xsimd")
              (commit version)))
        (sha256
         (base32 "1ny2qin1j4h35mljivh8z52kwdyjxf4yxlzb8j52ji91v2ccc88j"))
@@ -165,6 +204,37 @@ library authors.  Namely, it enables manipulation of batches of numbers with
 the same arithmetic operators as for single values.  It also provides
 accelerated implementation of common mathematical functions operating on
 batches.")
+    (license license:bsd-3)))
+
+(define-public chaiscript
+  (package
+    (name "chaiscript")
+    (version "6.1.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/ChaiScript/ChaiScript")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0i1c88rn1wwz8nf3dpapcdkk4w623m3nksfy5yjai10k9irkzy3c"))))
+    (build-system cmake-build-system)
+    (home-page "https://chaiscript.com/")
+    (synopsis "Embedded scripting language designed for C++")
+    (description
+     "ChaiScript is one of the only embedded scripting language designed from
+the ground up to directly target C++ and take advantage of modern C++
+development techniques.  Being a native C++ application, it has some advantages
+over existing embedded scripting languages:
+
+@enumerate
+@item Uses a header-only approach, which makes it easy to integrate with
+existing projects.
+@item Maintains type safety between your C++ application and the user scripts.
+@item Supports a variety of C++ techniques including callbacks, overloaded
+functions, class methods, and stl containers.
+@end enumerate\n")
     (license license:bsd-3)))
 
 (define-public fifo-map
@@ -214,7 +284,7 @@ as ordering relation.")
 (define-public json-modern-cxx
   (package
     (name "json-modern-cxx")
-    (version "3.7.3")
+    (version "3.9.1")
     (home-page "https://github.com/nlohmann/json")
     (source
      (origin
@@ -222,8 +292,7 @@ as ordering relation.")
        (uri (git-reference (url home-page)
                            (commit (string-append "v" version))))
        (sha256
-        (base32
-         "04rry1xzis71z5gj1ylcj8b4li5q18zxhcwaviwvi3hx0frzxl9w"))
+        (base32 "0ar4mzp53lskxw3vdzw07f47njcshl3lwid9jfq6l7yx6ds2nyjc"))
        (file-name (git-file-name name version))
        (modules '((guix build utils)))
        (snippet
@@ -246,12 +315,40 @@ as ordering relation.")
                   (string-append
                    "#include <fifo_map/" fifo-map-hpp ">")))))
            #t))))
+    (build-system cmake-build-system)
+    (arguments
+     '(#:configure-flags
+       (list (string-append "-DJSON_TestDataDirectory="
+                            (assoc-ref %build-inputs "json_test_data")))
+       #:phases (modify-phases %standard-phases
+                  ;; XXX: When tests are enabled, the install phase will cause
+                  ;; a needless rebuild without the given configure flags,
+                  ;; ultimately creating both $out/lib and $out/lib64.  Move
+                  ;; the check phase after install to work around it.
+                  (delete 'check)
+                  (add-after 'install 'check
+                    (lambda* (#:key tests? #:allow-other-keys)
+                      (if tests?
+                          ;; Some tests need git and a full checkout, skip those.
+                          (invoke "ctest" "-LE" "git_required")
+                          (format #t "test suite not run~%"))
+                      #t)))))
     (native-inputs
      `(("amalgamate" ,amalgamate)
-       ("doctest" ,doctest)))
+       ("doctest" ,doctest)
+       ("json_test_data"
+        ,(let ((version "3.0.0"))
+           (origin
+             (method git-fetch)
+             (uri (git-reference
+                   (url "https://github.com/nlohmann/json_test_data")
+                   (commit (string-append "v" version))))
+             (file-name (git-file-name "json_test_data" version))
+             (sha256
+              (base32
+               "0nzsjzlvk14dazwh7k2jb1dinb0pv9jbx5jsyn264wvva0y7daiv")))))))
     (inputs
      `(("fifo-map" ,fifo-map)))
-    (build-system cmake-build-system)
     (synopsis "JSON parser and printer library for C++")
     (description "JSON for Modern C++ is a C++ JSON library that provides
 intuitive syntax and trivial integration.")
@@ -263,16 +360,16 @@ intuitive syntax and trivial integration.")
 (define-public xtl
   (package
     (name "xtl")
-    (version "0.6.13")
+    (version "0.6.15")
     (source (origin
               (method git-fetch)
               (uri
                (git-reference
-                (url "https://github.com/QuantStack/xtl.git")
+                (url "https://github.com/QuantStack/xtl")
                 (commit version)))
               (sha256
                (base32
-                "0py70lm2i3sxzpgca2cic8zfn6dn18q837h76a5fchl2c0kpxm91"))
+                "0kq88cbcsvgq4hinrzxirqfpfnm3c5a0x0n2309l9zawh8vm33j4"))
               (file-name (git-file-name name version))))
     (native-inputs
      `(("googletest" ,googletest)
@@ -328,7 +425,7 @@ maintained anymore.")
 (define-public gperftools
   (package
     (name "gperftools")
-    (version "2.7")
+    (version "2.8")
     (source
      (origin
        (method git-fetch)
@@ -336,14 +433,14 @@ maintained anymore.")
              (url "https://github.com/gperftools/gperftools")
              (commit (string-append "gperftools-" version))))
        (sha256
-        (base32 "0amvwrzn5qc0b0jpxpy5g6zkmj97zjh4hhjrd130hsg2lwwcwhy1"))
+        (base32 "1rnc53kaxlljgbpsff906vdsry9jl9gcvcnmxgkprwzxq1wipyd0"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
        ("libtool" ,libtool)
-       ;; For tests:
+       ;; For tests.
        ("perl" ,perl)))
     (home-page "https://github.com/gperftools/gperftools")
     (synopsis "Multi-threaded malloc() and performance analysis tools for C++")
@@ -404,7 +501,7 @@ and make @code{cpplint} usable in wider contexts.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/Stiffstream/sobjectizer.git")
+             (url "https://github.com/Stiffstream/sobjectizer")
              (commit (string-append "v." version))))
        (sha256
         (base32 "0jfai7sqxnnjkms38krm7mssj5l79nb3pllkbyj4j581a7l5j6l5"))
@@ -435,7 +532,7 @@ development of concurrent and multithreaded applications in C++.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mobius3/tweeny.git")
+             (url "https://github.com/mobius3/tweeny")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -462,7 +559,7 @@ point and then, after each tween step, plugging back the result.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/abseil/abseil-cpp.git")
+                    (url "https://github.com/abseil/abseil-cpp")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -506,7 +603,7 @@ Google's C++ code base.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/taocpp/PEGTL.git")
+                    (url "https://github.com/taocpp/PEGTL")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256

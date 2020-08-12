@@ -13,6 +13,127 @@
 (channel-news
  (version 0)
 
+ (entry (commit "a98712785e0b042a290420fd74e5a4a5da4fc68f")
+        (title (en "New @command{guix git authenticate} command")
+               (de "Neuer Befehl @command{guix git authenticate}")
+               (fr "Nouvelle commande @command{guix git authenticate}"))
+        (body
+         (en "The new @command{guix git authenticate} command authenticates a
+Git repository by verifying commit signatures and ensuring they all come from
+authorized parties, exactly like @command{guix pull} now does.
+
+This command is primarily useful to developers of channels.  It allows them to
+ensure, before pushing, that the channel only contains commits signed with
+authorized keys.  But this command is also useful anytime you use Git and want
+to allow people to authenticate code fetched from your repository.
+
+Run @command{info \"(guix) Invoking guix git authenticate\"} for more info,
+and see @uref{https://guix.gnu.org/blog/2020/securing-updates/} for details on
+these mechanisms.")
+         (de "Mit dem neuen Befehl @command{guix git authenticate} können Sie
+ein Git-Repository authentifizieren. Dazu werden alle Commit-Signaturen
+verifiziert und geprüft, dass jede von einer autorisierten Quelle kommt, genau
+wie es @command{guix pull} nun tut.
+
+Dieser Befehl hilft in erster Linie den Entwicklern von Kanälen. Mit ihm kann
+vor einem Push sichergestellt werden, dass der Kanal nur Commits enthält, die
+mit autorisierten Schlüsseln signiert worden sind. Aber der Befehl kann auch
+helfen, wann immer Sie Git verwenden und ermöglichen wollen, dass Nutzer von
+Ihrem Repository geladenen Code authentifizieren können.
+
+Führen Sie @command{info \"(guix) Invoking guix git authenticate\"} aus, um
+mehr Informationen zu erhalten, und lesen Sie
+@uref{https://guix.gnu.org/blog/2020/securing-updates/} für die Details dieser
+Mechanismen.")
+         (fr "La nouvelle commande @command{guix git authenticate} authentifie
+un dépôt Git en vérifiant les signatures sur les changements (@i{commits}) et
+en s'assurant qu'elles sont autorisées, exactement comme @command{guix pull}
+le fait désormais.
+
+Cette commande est avant tout utile aux personnes développant un canal.  Elle
+leur permet de s'assurer, avant de pousser des changements, que le canal ne
+contient que des changements signés par des clefs autorisées.  Mais cette
+commande peut aussi s'avérer utile dès que tu veux utiliser Git et permettre
+aux autres d'authentifier le code récupéré depuis ton dépôt.
+
+Lance @command{info \"(guix.fr) Invoking guix git authenticate\"} pour plus
+d'informations.  Voir @uref{https://guix.gnu.org/blog/2020/securing-updates/}
+pour en savoir plus sur ces mécanismes.")))
+
+ (entry (commit "43badf261f4688c8a7a7a9004a4bff8acb205835")
+        (title (en "@command{guix pull} authenticates channels")
+               (de "@command{guix pull} authentifiziert Kanäle")
+               (fr "@command{guix pull} authentifie les canaux"))
+        (body
+         (en "The @command{guix pull} and @command{guix time-machine} commands
+now authenticate the source code that they pull, unless the new
+@option{--disable-authentication} option is passed.  What this means is that
+Guix ensures that each commit received is cryptographically signed by an
+authorized developer.  This protects you from attempts to tamper with the Guix
+repository and from attempts to ship malicious code to users.
+
+This feature is currently limited to the @code{guix} channel but will soon be
+available to third-party channel authors.")
+         (de "Die Befehle @command{guix pull} und @command{guix time-machine}
+prüfen nun die Authentizität des heruntergeladenen Quellcodes, außer wenn die
+neue Befehlszeilenoption @option{--disable-authentication} angegeben
+wurde. Das bedeutet, Guix stellt sicher, dass jeder empfangene Commit durch
+einen autorisierten Entwickler kryptografisch signiert wurde. Das schützt Sie
+vor Versuchen, das Guix-Repository zu manipulieren oder bösartigen Code an die
+Nutzer auszuliefern.
+
+Diese Funktionalität ist auf den @code{guix}-Kanal beschränkt, sie wird jedoch
+bald auch Autoren dritter Kanäle zur Verfügung stehen.")
+         (fr "Les commandes @command{guix pull} et @command{guix time-machine}
+authentifient dorénavant le code source qu'elles obtiennent, à moins que la
+nouvelle option @option{--disable-authentication} soit utilisée.  Cela
+signifie que Guix s'assure que chaque soumission (@i{commit}) récupéré dispose
+d'une signature cryptographique par un·e développeur·euse autorisé·e.  Cela te
+protège de tentatives de modifications du dépôt Guix et de tentatives de
+livrer du code malintentionné.
+
+Cette fonctionnalité n'est actuellement disponible que pour le canal
+@code{guix} mais le sera bientôt pour les canaux tiers.")))
+
+ (entry (commit "c924e541390f9595d819edc33c19d979917c15ec")
+        (title (en "@command{guix repl} adds support for running Guile scripts")
+               (de "@command{guix repl} kann Guile-Skripte ausführen")
+               (fr "@command{guix repl} permet d'exécuter des scripts en langage Guile"))
+        (body
+         (en "The @command{guix repl} command can now be used to run
+Guile scripts.  Compared to just launching the @command{guile} command,
+@command{guix repl} guarantees that all the Guix modules and all its
+dependencies are available in the search path.  Scripts are run like this:
+
+@example
+guix repl -- my-script,scm --option1 --option2=option-arg arg1 arg2
+@end example
+
+Run @command{info \"(guix) Invoking guix repl\"} for more information.")
+         (de "Der Befehl @command{guix repl} kann jetzt zur Ausführung von
+Guile-Skripten verwendet werden.  Im Vergleich zum Befehl
+@command{guile} garantiert @command{guix repl}, dass alle Guix-Module und
+alle seine Abhängigkeiten im Suchpfad verfügbar sind.  Skripte werden wie
+folgt ausgeführt:
+
+@example
+guix repl -- my-script,scm --option1 --option2 --option2=option-arg arg1 arg2
+@end example
+
+Weitere Informationen erhalten Sie mit
+@command{info \"(guix.de) Aufruf von guix repl\"}.")
+         (fr "La commande @command{guix repl} peut maintenant être utilisée
+pour exécuter des scripts en langage Guile.  Par rapport au simple lancement
+de la commande @command{guile}, @command{guix repl} garantit que tous les
+modules Guix et toutes ses dépendances sont disponibles dans le chemin
+de recherche.  Les scripts sont exécutés comme ceci :
+
+@example
+guix repl -- my-script,scm --option1 --option2=option-arg arg1 arg2
+@end example
+
+Exécutez @command{info \"(guix.fr) Invoquer guix repl\"} pour plus d'informations.")))
+
  (entry (commit "b460ba7992a0b4af2ddb5927dcf062784539ef7b")
         (title (en "Add support to boot from a Btrfs subvolume")
                (de "Unterstützung für Systemstart von einem

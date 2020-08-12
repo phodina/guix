@@ -98,7 +98,7 @@ like Gnome, Unity, Budgie, Pantheon, XFCE, Mate and others.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/madmaxms/iconpack-delft.git")
+             (url "https://github.com/madmaxms/iconpack-delft")
              (commit (string-append "v" version))))
        (sha256
         (base32
@@ -244,7 +244,7 @@ easier to keep track of apps running in the backround.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/micheleg/dash-to-dock.git")
+                    (url "https://github.com/micheleg/dash-to-dock")
                     (commit (string-append "extensions.gnome.org-v"
                                            version))))
               (sha256
@@ -419,15 +419,15 @@ currently focused application in the top panel of the GNOME shell.")
 (define-public gnome-shell-extension-dash-to-panel
   (package
     (name "gnome-shell-extension-dash-to-panel")
-    (version "26")
+    (version "37")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/home-sweet-gnome/dash-to-panel.git")
+                    (url "https://github.com/home-sweet-gnome/dash-to-panel")
                     (commit (string-append "v" version))))
               (sha256
                (base32
-                "1phfx2pblygpcvsppsqqqflm7qnz46mqkw29hj0nv2dn69hf4xbc"))
+                "0c8p8cmwjh6rpj7jwj1lccpdv5l0bazwywg8hpwgnqy9f4rxmrz3"))
               (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
@@ -462,7 +462,7 @@ into a single panel, similar to that found in KDE Plasma and Windows 7+.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/BjoernDaase/noannoyance.git")
+                    (url "https://github.com/BjoernDaase/noannoyance")
                     (commit "e37b5b3c31f577b4698bc6659bc9fec5ea9ac5d4")))
               (sha256
                (base32
@@ -485,7 +485,7 @@ It uses ES6 syntax and claims to be more actively maintained than others.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/paperwm/PaperWM.git")
+                    (url "https://github.com/paperwm/PaperWM")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -522,7 +522,7 @@ notebooks and tiling window managers.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/numixproject/numix-gtk-theme.git")
+                    (url "https://github.com/numixproject/numix-gtk-theme")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -555,8 +555,8 @@ dark elements.  It supports GNOME, Unity, Xfce, and Openbox.")
 
 (define-public papirus-icon-theme
   (let ((version "0.0.0") ;; The package does not use semver
-        (revision "1")
-        (tag "20200430"))
+        (revision "2")
+        (tag "20200602"))
     (package
       (name "papirus-icon-theme")
       (version (git-version version revision tag))
@@ -564,11 +564,11 @@ dark elements.  It supports GNOME, Unity, Xfce, and Openbox.")
        (origin
          (method git-fetch)
          (uri (git-reference
-               (url "https://github.com/PapirusDevelopmentTeam/papirus-icon-theme.git")
+               (url "https://github.com/PapirusDevelopmentTeam/papirus-icon-theme")
                (commit tag)))
          (sha256
           (base32
-           "19dfiifc7cjwy0nb1hgzryzaijszsyix303xsgk5xbmhpwrv92hq"))
+           "0yv19kl8jr2jmh9018b1qmnq68alw84vrmb35jm462qd3qzzdgah"))
          (file-name (git-file-name name version))))
       (build-system gnu-build-system)
     (arguments
@@ -597,7 +597,7 @@ and a few extra features.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/benwaffle/vala-language-server.git")
+                    (url "https://github.com/benwaffle/vala-language-server")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256

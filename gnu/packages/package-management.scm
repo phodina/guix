@@ -14,6 +14,7 @@
 ;;; Copyright © 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2020 Jesse Gibbons <jgibbons2357+guix@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -118,8 +119,8 @@
   ;; Note: the 'update-guix-package.scm' script expects this definition to
   ;; start precisely like this.
   (let ((version "1.1.0")
-        (commit "141b5c162048f5cb52e8c90ff7c16a2e98babcfb")
-        (revision 10))
+        (commit "218a67dfabcdf592325a8f8c49b86478f69ff589")
+        (revision 18))
     (package
       (name "guix")
 
@@ -135,7 +136,7 @@
                       (commit commit)))
                 (sha256
                  (base32
-                  "1j3vag994kj05b09a7w4lyas991a19hbbslcm9xvn5k2ilf4qskz"))
+                  "0zjpfagd377i977xv1ljzl0cj4vlrk4qpyqmlhclcdkjfbbachaq"))
                 (file-name (string-append "guix-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
@@ -319,7 +320,7 @@ $(prefix)/etc/init.d\n")))
 
                        ;; Guile libraries are needed here for
                        ;; cross-compilation.
-                       ("guile" ,guile-3.0)
+                       ("guile" ,guile-3.0-latest) ;for faster builds
                        ("gnutls" ,gnutls)
                        ("guile-gcrypt" ,guile-gcrypt)
                        ("guile-json" ,guile-json-4)
@@ -346,7 +347,7 @@ $(prefix)/etc/init.d\n")))
          ("sqlite" ,sqlite)
          ("libgcrypt" ,libgcrypt)
 
-         ("guile" ,guile-3.0)
+         ("guile" ,guile-3.0-latest)
 
          ;; Some of the tests use "unshare" when it is available.
          ("util-linux" ,util-linux)
@@ -486,9 +487,10 @@ the Nix package manager.")
    (package
      (inherit guix)
      (name "guix-minimal")
-     (inputs
-      `(("guile" ,guile-2.2)
-        ,@(alist-delete "guile" (package-inputs guix))))
+     (native-inputs
+      (fold alist-delete
+            (package-native-inputs guix)
+            '("guile-ssh")))
      (propagated-inputs
       (fold alist-delete
             (package-propagated-inputs guix)
@@ -542,15 +544,30 @@ out) and returning a package that uses that as its 'source'."
 (define-public nix
   (package
     (name "nix")
-    (version "2.3.5")
+    (version "2.3.6")
     (source (origin
              (method url-fetch)
              (uri (string-append "http://nixos.org/releases/nix/nix-"
                                  version "/nix-" version ".tar.xz"))
              (sha256
               (base32
-               "1hbqsrp1ii2sfq8x2mahjrl2182qck76n8blrl1jfz3xq99m6i15"))))
+               "128xf2as0y7hr28x575pbf9lkjpxr9hsxknbavv4p7ywr4lhbs85"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "--sysconfdir=/etc")
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'install
+           ;; Don't try & fail to create subdirectories in /etc, but keep them
+           ;; in the output as examples.
+           (lambda* (#:key (make-flags '()) outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (etc (string-append out "/etc")))
+               (apply invoke "make" "install"
+                      (string-append "sysconfdir=" etc)
+                      (string-append "profiledir=" etc "/profile.d")
+                      make-flags)))))))
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs `(("boost" ,boost)
               ("brotli" ,brotli)
@@ -882,7 +899,7 @@ written entirely in Python.")))
        ("texinfo" ,texinfo)
        ("graphviz" ,graphviz)))
     (inputs
-     `(("guile" ,guile-3.0)))
+     `(("guile" ,@(assoc-ref (package-native-inputs guix) "guile"))))
     (propagated-inputs
      `(("guix" ,guix)
        ("guile-commonmark" ,guile-commonmark)
@@ -966,7 +983,7 @@ environments.")
                          "-s")
                    "\",\n\t\t\""))
                  (("guix-jupyter-kernel.scm")
-                  (string-append out "/share/guile/site/2.2/"
+                  (string-append out "/share/guile/site/3.0/"
                                  "guix-jupyter-kernel.scm")))
                #t))))))
     (native-inputs
@@ -980,7 +997,7 @@ environments.")
        ("python-ipykernel" ,python-ipykernel)))
     (inputs
      `(("guix" ,guix)
-       ("guile" ,guile-3.0)))
+       ("guile" ,@(assoc-ref (package-native-inputs guix) "guile"))))
     (propagated-inputs
      `(("guile-json" ,guile-json-4)
        ("guile-simple-zmq" ,guile-simple-zmq)
@@ -1060,7 +1077,7 @@ for packaging and deployment of cross-compiled Windows applications.")
 (define-public libostree
   (package
     (name "libostree")
-    (version "2020.3")
+    (version "2020.4")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1068,7 +1085,7 @@ for packaging and deployment of cross-compiled Windows applications.")
                     (version-major+minor version) "/libostree-" version ".tar.xz"))
               (sha256
                (base32
-                "01cch4as23xspq6pck59al7x5jj60wl21g8p3iqbdxcjl1p3jxsq"))))
+                "0s13cjrpx5r1dc9j9c9924zak45wl9nlbg9hiwgpsal80l92c39n"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
@@ -1114,15 +1131,14 @@ the boot loader configuration.")
 (define-public flatpak
   (package
    (name "flatpak")
-   (version "1.6.3")
+   (version "1.8.1")
    (source
     (origin
      (method url-fetch)
      (uri (string-append "https://github.com/flatpak/flatpak/releases/download/"
                          version "/flatpak-" version ".tar.xz"))
      (sha256
-      (base32
-       "17s8nqdxd4xdy7ag9bw06adxccha78jmlsa3zpqnl3qh92pg0hji"))))
+      (base32 "1bcymiv0yzs05rplbyzpimb1k17s345a95y0dhw7jh56z5k4p4b6"))))
 
    ;; Wrap 'flatpak' so that GIO_EXTRA_MODULES is set, thereby allowing GIO to
    ;; find the TLS backend in glib-networking.
@@ -1137,7 +1153,9 @@ the boot loader configuration.")
        (string-append "--with-system-bubblewrap="
                       (assoc-ref %build-inputs "bubblewrap")
                       "/bin/bwrap")
-       "--with-system-dbus-proxy")
+       (string-append "--with-system-dbus-proxy="
+                      (assoc-ref %build-inputs "xdg-dbus-proxy")
+                      "/bin/xdg-dbus-proxy"))
       #:phases
       (modify-phases %standard-phases
         (add-after 'unpack 'fix-tests
@@ -1172,6 +1190,7 @@ cp -r /tmp/locale/*/en_US.*")))
       ("libcap" ,libcap)
       ("pkg-config" ,pkg-config)
       ("python" ,python)
+      ("python-pyparsing" ,python-pyparsing)
       ("socat" ,socat)
       ("which" ,which)))
    (propagated-inputs `(("glib-networking" ,glib-networking)

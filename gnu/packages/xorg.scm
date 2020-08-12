@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013, 2014 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2014, 2015, 2017, 2018 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2014, 2015, 2017, 2018, 2020 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2015 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Eric Dvorsak <eric@dvorsak.fr>
@@ -16,7 +16,7 @@
 ;;; Copyright © 2017, 2020 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2018 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2018, 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018 Benjamin Slade <slade@jnanam.net>
 ;;; Copyright © 2019 nee <nee@cock.li>
 ;;; Copyright © 2019 Yoshinori Arai <kumagusu08@gmail.com>
@@ -528,10 +528,10 @@ Resources file.")
 (define-public font-alias
   (package
     (name "font-alias")
-    (version "1.0.3")
+    (version "1.0.4")
     (source (xorg-font-origin
              name version
-             "16ic8wfwwr3jicaml7b5a0sk6plcgc1kg84w02881yhwmqm3nicb"))
+             "0xjjjindczv3g7m1597l0x19zz75xy70wh5garghz61fpzl1l4gk"))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (arguments
@@ -701,10 +701,10 @@ For example: @code{6x10}, @code{9x15bold}, etc.")
 (define-public font-misc-ethiopic
   (package
     (name "font-misc-ethiopic")
-    (version "1.0.3")
+    (version "1.0.4")
     (source (xorg-font-origin
              name version
-             "19cq7iq0pfad0nc2v28n681fdq3fcw1l1hzaq0wpkgpx7bc1zjsk"))
+             "1q2azkdwc4x3kh53xclwpf9q654k70lhiyns1cjq594wvxnhz339"))
     (build-system gnu-build-system)
     (inputs
       `(("mkfontdir" ,mkfontdir)
@@ -2405,7 +2405,7 @@ DRI (Direct Rendering Infrastructure) drivers.")
 (define-public xev
   (package
     (name "xev")
-    (version "1.2.3")
+    (version "1.2.4")
     (source
       (origin
         (method url-fetch)
@@ -2415,7 +2415,7 @@ DRI (Direct Rendering Infrastructure) drivers.")
                ".tar.bz2"))
         (sha256
           (base32
-            "02ddsdx138g7szhwklpbzi0cxr34871iay3k28kdcihrz8f4zg36"))))
+            "1ql592pdhddhkipkrsxn929y9l2nn02a5fh2z3dx47kmzs5y006p"))))
     (build-system gnu-build-system)
     (inputs
       `(("libxrender" ,libxrender)
@@ -2556,7 +2556,7 @@ including most mice, keyboards, tablets and touchscreens.")
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (inputs
-     `(("libinput" ,libinput)
+     `(("libinput" ,libinput-minimal)
        ("xorg-server" ,xorg-server)))
     (home-page "https://www.x.org/wiki/")
     (synopsis "Input driver for X server based on libinput")
@@ -2827,10 +2827,26 @@ X server.")
 X server.")
     (license license:x11)))
 
-
-;; non-free license
-;; (define-public xf86-video-dummy
-
+(define-public xf86-video-dummy
+  (package
+    (name "xf86-video-dummy")
+    (version "0.3.8")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://xorg/individual/driver/"
+                           "xf86-video-dummy-" version ".tar.bz2"))
+       (sha256
+        (base32 "1fcm9vwgv8wnffbvkzddk4yxrh3kc0np6w65wj8k88q7jf3bn4ip"))))
+    (build-system gnu-build-system)
+    (inputs `(("xorg-server" ,xorg-server)))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (home-page "https://www.x.org/wiki/")
+    (synopsis "Dummy video driver for X server")
+    (description
+     "Virtual/offscreen frame buffer driver for the Xorg X server.")
+    ;; per https://lists.freedesktop.org/archives/xorg/2020-June/060316.html
+    (license license:x11)))
 
 (define-public xf86-video-fbdev
   (package
@@ -3012,8 +3028,8 @@ X server.")
 
 
 (define-public xf86-video-intel
-  (let ((commit "f66d39544bb8339130c96d282a80f87ca1606caf")
-        (revision "15"))
+  (let ((commit "5ca3ac1a90af177eb111a965e9b4dd8a27cc58fc")
+        (revision "16"))
     (package
       (name "xf86-video-intel")
       (version (git-version "2.99.917" revision commit))
@@ -3026,7 +3042,7 @@ X server.")
                (commit commit)))
          (sha256
           (base32
-           "14rwbbn06l8qpx7s5crxghn80vgcx8jmfc7qvivh72d81r0kvywl"))
+           "1y1v6cp3r3isq3bc7mypkvypwjygi205k06slmidx2q3sz4h4mjc"))
          (file-name (git-file-name name version))))
       (build-system gnu-build-system)
       (inputs `(("mesa" ,mesa)
@@ -3540,7 +3556,7 @@ X server.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mjanusz/v86d.git")
+             (url "https://github.com/mjanusz/v86d")
              (commit (string-append name "-" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -5310,16 +5326,16 @@ over Xlib, including:
 (define-public xorg-server
   (package
     (name "xorg-server")
-    (version "1.20.7")
+    (version "1.20.8")
+    (replacement xorg-server/fixed)
     (source
       (origin
         (method url-fetch)
-        (uri (string-append
-              "mirror://xorg/individual/xserver/"
-              "xorg-server-" version ".tar.bz2"))
+        (uri (string-append "mirror://xorg/individual/xserver/"
+                            "xorg-server-" version ".tar.bz2"))
         (sha256
          (base32
-          "18bfl04ihw1jr3h0fs522nnxxq5ixjay77y9dcymnkzk23q8cndx"))
+          "0ih15m7gh1z1ly6z7g82bkni719yisqmbk61a1wgp82bxrmn8yyi"))
         (patches
          (list
           ;; See:
@@ -5435,17 +5451,35 @@ communicates with the user via graphical controls such as buttons and
 draggable titlebars and borders.")
     (license license:x11)))
 
+(define xorg-server/fixed  ; Fixes CVE-2020-14347
+  (package
+    (inherit xorg-server)
+    (source
+     (origin
+       (inherit (package-source xorg-server))
+       (patches
+        (append (origin-patches (package-source xorg-server))
+                (search-patches "xorg-server-CVE-2020-14347.patch")))))))
+
 ;; This package is intended to be used when building GTK+.
 ;; Note: It's currently marked as "hidden" to avoid having two non-eq?
 ;; packages with the same name and version.
+;; TODO: Update this in the next rebuild cycle.
 (define-public xorg-server-for-tests
   (hidden-package
    (package
-     (inherit xorg-server))))
+     (inherit xorg-server)
+     (version "1.20.7")
+     (source (origin
+               (inherit (package-source xorg-server))
+               (uri (string-append "mirror://xorg/individual/xserver/"
+                                   "xorg-server-" version ".tar.bz2"))
+               (sha256
+                (base32
+                 "18bfl04ihw1jr3h0fs522nnxxq5ixjay77y9dcymnkzk23q8cndx")))))))
 
 (define-public xorg-server-xwayland
-  (package
-    (inherit xorg-server)
+  (package/inherit xorg-server
     (name "xorg-server-xwayland")
     (inputs
      `(("wayland" ,wayland)
@@ -5468,6 +5502,7 @@ draggable titlebars and borders.")
   (package
     (name "libx11")
     (version "1.6.9")
+    (replacement libx11/fixed)
     (source
       (origin
         (method url-fetch)
@@ -5504,6 +5539,19 @@ draggable titlebars and borders.")
     (synopsis "Xorg Core X11 protocol client library")
     (description "Xorg Core X11 protocol client library.")
     (license license:x11)))
+
+(define libx11/fixed  ; Fixes CVE-2020-14344
+  (package
+    (inherit libx11)
+    (version "1.6.A")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append
+               "mirror://xorg/individual/lib/libX11-1.6.10.tar.bz2"))
+        (sha256
+          (base32
+            "09k2pqmqbn2m1bpgl7jfxyqxaaxsnzbnp2bp8ycmqldqi5ln4j5g"))))))
 
 ;; packages of height 5 in the propagated-inputs tree
 
@@ -5623,17 +5671,15 @@ Intrinsics (Xt) Library.")
 (define-public twm
   (package
     (name "twm")
-    (version "1.0.10")
+    (version "1.0.11")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append
-             "mirror://xorg/individual/app/" name "-"
-             version
-             ".tar.bz2"))
+       (uri (string-append "mirror://xorg/individual/app/twm-"
+                           version ".tar.xz"))
        (sha256
         (base32
-         "1ms5cj1w3g26zg6bxdv1j9hl0pxr4300qnv003cz1q3cl7ffljb4"))))
+         "1iv8kdb18n9vk3is5fyh6l40ipq9mkgx8ppj86byf464vr1ais7l"))))
     (build-system gnu-build-system)
     (inputs
      `(("libxt" ,libxt)
@@ -6067,7 +6113,7 @@ to answer a question.  Xmessage can also exit after a specified time.")
 (define-public xterm
   (package
     (name "xterm")
-    (version "353")
+    (version "358")
     (source (origin
               (method url-fetch)
               (uri (list
@@ -6077,7 +6123,7 @@ to answer a question.  Xmessage can also exit after a specified time.")
                                    "xterm-" version ".tgz")))
               (sha256
                (base32
-                "0s5pkfn4r8iy09s1q1y78zhnr9f3sm6wgbqir7azaqggkppd68g5"))))
+                "0yxzdwchfvkq784qadxalnbnxr4k2hdgli9w1dq9j2lic9li1nvw"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--enable-wide-chars" "--enable-load-vt-fonts"
@@ -6095,6 +6141,7 @@ to answer a question.  Xmessage can also exit after a specified time.")
        ("libICE" ,libice)
        ("libSM" ,libsm)
        ("libX11" ,libx11)
+       ("libXcursor" ,libxcursor)
        ("libXext" ,libxext)
        ("libXt" ,libxt)
        ("xorgproto" ,xorgproto)
@@ -6260,93 +6307,115 @@ basic eye-candy effects.")
 (define-public xpra
   (package
     (name "xpra")
-    (version "2.5.3")
+    (version "4.0.3")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.xpra.org/src/xpra-"
                            version ".tar.xz"))
        (sha256
-        (base32
-         "1ys35lj28903alccks9p055psy1fsk1nxi8ncchvw8bfxkkkvbys"))))
+        (base32 "05afdspf51fbya6jg6971i3ddqn8p4mg3v3aaqyi3chx4q1807rp"))
+       (patches (search-patches "xpra-4.0.1-systemd-run.patch"))))
     (build-system python-build-system)
-    (inputs `(("ffmpeg" ,ffmpeg)
-              ("flac" ,flac)
-              ("gtk+-2" ,gtk+-2) ;; no full GTK3 support yet
+    ;; see also http://xpra.org/trac/wiki/Dependencies
+    (inputs `(
+              ;; Essential dependencies.
               ("libjpeg" ,libjpeg-turbo)
-              ("libpng" ,libpng)
-              ("libvpx" ,libvpx)
-              ("libx264" ,libx264)
-              ("libxcomposite" ,libxcomposite)
-              ("libxdamage" ,libxdamage)
-              ("libxi" ,libxi)
-              ("libxkbfile" ,libxkbfile)
+              ("libwebp" ,libwebp)
+              ("ffmpeg" ,ffmpeg)
+              ("libx11" ,libx11)
               ("libxrandr" ,libxrandr)
               ("libxtst" ,libxtst)
-              ("lzo" ,lzo)
-              ("python2-cryptography" ,python2-cryptography)
-              ("python2-dbus" ,python2-dbus)
-              ("python2-lz4" ,python2-lz4)
-              ("python2-lzo" ,python2-lzo)
-              ("python2-netifaces" ,python2-netifaces)
-              ("python2-numpy" ,python2-numpy)
-              ("python2-pillow" ,python2-pillow)
-              ("python2-pycairo" ,python2-pycairo)
-              ("python2-pycrypto" ,python2-pycrypto)
-              ("python2-pygobject" ,python2-pygobject)
-              ("python2-pyopengl" ,python2-pyopengl)
-              ("python2-pyopengl-accelerate" ,python2-pyopengl-accelerate)
-              ("python2-pygtk" ,python2-pygtk)
-              ("python2-rencode" ,python2-rencode)
-              ("xorg-server" ,xorg-server)))
+              ("libxfixes" ,libxfixes)
+              ("libxkbfile" ,libxkbfile)
+              ("libxcomposite" ,libxcomposite)
+              ("libxdamage" ,libxdamage)
+              ("libxext" ,libxext)
+              ("gtk+" ,gtk+)
+              ("python-pycairo" ,python-pycairo)
+              ("python-pygobject" ,python-pygobject)
+              ("xauth" ,xauth)
+              ("xorg-server" ,xorg-server)
+              ("xf86-video-dummy" ,xf86-video-dummy)
+              ("xf86-input-mouse" ,xf86-input-mouse)
+              ("xf86-input-keyboard" ,xf86-input-keyboard)
+              ("python-pillow" ,python-pillow)
+              ;; Optional dependencies.
+              ("python-rencode" ,python-rencode) ; For speed.
+              ("python-numpy", python-numpy)
+              ("python-pyopengl" ,python-pyopengl) ; Drawing acceleration.
+              ("python-pyopengl-accelerate" ,python-pyopengl-accelerate) ; Same.
+              ("python-paramiko" ,python-paramiko) ; Tunneling over SSH.
+              ("python-dbus" ,python-dbus) ; For desktop notifications.
+              ("dbus" ,dbus)               ; For dbus-launch command.
+              ("python-lz4" ,python-lz4) ; Faster compression than zlib.
+              ("python-netifaces" ,python-netifaces)))
     (native-inputs `(("pkg-config" ,pkg-config)
-                     ("python2-cython" ,python2-cython)))
+                     ("python-cython" ,python-cython)))
     (arguments
-     `(#:python ,python-2 ;; no full Python 3 support yet
-       #:configure-flags '("--with-tests"
-                           "--with-bundle_tests"
-                           "--without-Xdummy" ;; We use Xvfb instead.
-                           "--without-Xdummy_wrapper"
-                           "--without-strict")
+     `(#:configure-flags '("--without-Xdummy"
+						   "--without-Xdummy_wrapper"
+                           "--with-opengl"
+                           "--without-debug"
+                           "--without-strict") ; Ignore compiler warnings.
        #:modules ((guix build python-build-system)
                   (guix build utils))
-
+       #:tests? #f ; Do not run test-cases. This would rebuild all modules and
+                                        ; they seem to require python2.
        #:phases
        (modify-phases %standard-phases
+         ;; built by 'install phase
          (delete 'build)
-         (delete 'check) ;; There's no test suite at the moment.
-
-         ;; Remove BUILD_CPU, BUILD_DATE, BUILD_TIME from build info to
-         ;; prevent deterministic issues.  Also correct some directories and
-         ;; use the xvfb binary instead of xorg-server (which doesn't seem to
-         ;; work).
-         (add-before 'install 'remove-timestamps&set-file-names
+         (add-before 'install 'fix-paths
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (substitute* "add_build_info.py"
-               ((".*\"BUILD_CPU\", get_cpuinfo.*") ""))
-             (substitute* "add_build_info.py"
-               ((".*\"BUILD_DATE\", datetime.*") ""))
-             (substitute* "add_build_info.py"
-               ((".*\"BUILD_TIME\", datetime.*") ""))
-             (substitute* "setup.py"
-               (("/etc/init.d/")
-                (string-append (assoc-ref outputs "out")
-                               "/etc/init.d/")))
-             (substitute* "setup.py"
-               (("/usr/lib/")
-                (string-append (assoc-ref outputs "out") "/lib/")))
-             ;; Use Xvfb with '-nolisten local' to disable abstract X11 sockets.
-             (substitute* "./xpra/scripts/config.py"
-               ((":.*join.*xvfb.*")
-                (string-append ": \"" (assoc-ref inputs "xorg-server")
-                               "/bin/Xvfb +extension Composite"
-                               " -screen 0 5760x2560x24+32 -dpi 96 -nolisten"
-                               " tcp -nolisten local -noreset -auth"
-                               " $XAUTHORITY\",\n")))
+             ;; Fix binary paths.
+             (substitute* '("xpra/scripts/config.py" "xpra/x11/vfb_util.py")
+               (("\"Xvfb\"")
+                (string-append "\"" (assoc-ref inputs "xorg-server") "/bin/Xvfb\""))
+               (("\"Xorg\"")
+                (string-append "\"" (assoc-ref inputs "xorg-server") "/bin/Xorg\""))
+               (("\"xauth\"")
+                (string-append "\"" (assoc-ref inputs "xauth") "/bin/xauth\"")))
+             ;; Fix directory of config files.
+             (substitute* '("xpra/scripts/config.py" "xpra/platform/xposix/paths.py")
+               (("\"/etc/xpra/?\"")
+                (string-append "\"" (assoc-ref outputs "out") "/etc/xpra/\"")))
+             ;; XXX: Stolen from (gnu packages linux)
+             (define (append-to-file name body)
+               (let ((file (open-file name "a")))
+                 (display body file)
+                 (close-port file)))
+             ;; Add Xorg module paths.
+             (append-to-file
+              "etc/xpra/xorg.conf"
+              (string-append "\nSection \"Files\"\nModulePath \""
+                             (assoc-ref inputs "xf86-video-dummy") "/lib/xorg/modules,"
+                             (assoc-ref inputs "xf86-input-mouse") "/lib/xorg/modules,"
+                             (assoc-ref inputs "xf86-input-keyboard") "/lib/xorg/modules,"
+                             (assoc-ref inputs "xorg-server") "/lib/xorg/modules\"\n"
+                             "EndSection\n\n"))
+             (substitute* '("xpra/scripts/config.py"
+                            "etc/xpra/conf.d/60_server.conf.in"
+                            "unittests/unit/server/mixins/notification_test.py")
+               ;; The trailing -- is intentional, so we only replace it inside
+               ;; a command line.
+               (("dbus-launch --")
+                (string-append (assoc-ref inputs "dbus") "/bin/dbus-launch --")))
+             ;; /run/user does not exist on guix system
              (substitute* "./xpra/scripts/config.py"
                (("socket-dir.*: \"\",")
                 "socket-dir\"        : \"~/.xpra\","))
-             #t)))))
+             #t))
+         ;; GTK3 will not be found, if GI can’t find its typelibs.
+         (add-after
+             'install 'wrap-program
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((prog (string-append (assoc-ref outputs "out")
+                                        "/bin/xpra")))
+               ;; XXX: only export typelibs in inputs
+               (wrap-program prog
+                 `("GI_TYPELIB_PATH" = (,(getenv "GI_TYPELIB_PATH"))))
+               #t))))))
     (home-page "https://www.xpra.org/")
     (synopsis "Remote access to individual applications or full desktops")
     (description "Xpra is a persistent remote display server and client for
@@ -6525,46 +6594,32 @@ cursor to any point on the screen with a few key strokes.  It also simulates
 mouse click.  You can do everything mouse can do with a keyboard.")
     (license license:bsd-3)))
 
-(define-public transset-df
+(define-public transset
   (package
-    (name "transset-df")
-    (version "6")
+    (name "transset")
+    (version "1.0.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://forchheimer.se/" name "/" name "-" version
-                                  ".tar.gz"))
+              (uri (string-append "https://www.x.org/releases/individual/app/"
+                                  name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1vnykwwrv75miigbhmcwxniw8xnhsdyzhqydip2m9crxi2lwhqs5"))))
+                "0rya202y87dwl35jnmq8hs3arzdrv5z4vf1xmi0py4rnmhdpszaw"))))
     (build-system gnu-build-system)
-    (arguments
-     '(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'setenv
-           (lambda _
-             (setenv "CC" (which "gcc"))
-             #t))
-         (delete 'configure)
-         (delete 'check)
-         (replace 'install
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
-                    (bin (string-append out "/bin")))
-               (install-file "transset-df" bin)
-               #t))))))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (inputs `(("libxcomposite" ,libxcomposite)
-              ("libxdamager" ,libxdamage)
+              ("libxdamage" ,libxdamage)
               ("libxrender" ,libxrender)))
     (synopsis "Set the transparency of X11 windows")
-    (description "The @command{transset-df} command allows you to set the
-opacity of X11 windows.  This patched version of X.Org's @command{transset}
-adds functionality, including: selecting window by clicking (as transset),
-selecting windows by pointing select actual focused X11 window, selecting by
-window name or id, forcing toggle, increase or decrease opacity.")
-    (home-page "https://forchheimer.se/transset-df/")
+    (description "@command{transset} is a simple program for X servers
+supporting the XFIXES, DAMAGE, and COMPOSITE extensions.  It lets the
+user set the transparency on a window.")
+    (home-page "https://gitlab.freedesktop.org/xorg/app/transset")
     (license license:x11)))
+
+(define-public transset-df
+  (deprecated-package "transset-df" transset))
 
 (define-public bdfresize
   (package
@@ -6615,15 +6670,15 @@ output.")
 (define-public console-setup
   (package
     (name "console-setup")
-    (version "1.195")
+    (version "1.196")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
              (url "https://salsa.debian.org/installer-team/console-setup.git")
-             (commit "38512eb9a97f57ead1f87f6aee6df455f721c645"))) ; no tag
+             (commit version)))
        (sha256
-        (base32 "0d0xagigs5k3appzz5lzxdjncvnkgz4amz6ks7imiq8kkjixvmfy"))
+        (base32 "0c79rycgpna8910as6blw3z3sajzzakz4qlvr6js2yr8zq2d0ylg"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
@@ -6698,7 +6753,7 @@ Thai).")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/eworm-de/xcur2png.git")
+             (url "https://github.com/eworm-de/xcur2png")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -6736,3 +6791,33 @@ that Make knows which object files must be recompiled when a dependency has
 changed.")
     (home-page "https://gitlab.freedesktop.org/xorg/util/gccmakedep")
     (license license:x11)))
+
+(define-public xdialog
+  (package
+    (name "xdialog")
+    (version "2.3.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://xdialog.free.fr/Xdialog-"
+                                  version ".tar.bz2"))
+              (sha256
+               (base32
+                "16jqparb33lfq4cvd9l3jgd7fq86fk9gv2ixc8vgqibid6cnhi0x"))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("glib" ,glib)
+       ("gettext" ,gettext-minimal)
+       ("gtk" ,gtk+-2)))
+    (arguments
+     `(#:configure-flags '("--with-gtk2")))
+    (build-system gnu-build-system)
+    (home-page "http://xdialog.free.fr/")
+    (synopsis "Convert a terminal program into a program with an X interface")
+    (description "X11 replacement for the text util dialog Xdialog is designed
+to be a drop-in replacement for the dialog and cdialog programs.  It converts
+any terminal-based program into a program with an X interface.  The dialogs
+are easier to see and use, and Xdialog adds more functionality such as a help
+button and box, a treeview, an editbox, file and directory selectors, a range
+box, and a calendar.  It uses GTK+, and will match your desktop theme.")
+    (license license:gpl2+)))

@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2019 Clément Lassieur <clement@lassieur.org>
@@ -64,7 +64,7 @@
       (origin
         (method git-fetch)
         (uri (git-reference
-              (url "https://github.com/meganz/MEGAcmd.git")
+              (url "https://github.com/meganz/MEGAcmd")
               (commit (string-append version "_Linux"))
               (recursive? #t)))
         (sha256
@@ -266,7 +266,7 @@ their folder.
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/axkibe/lsyncd.git")
+             (url "https://github.com/axkibe/lsyncd")
              (commit (string-append "release-" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -360,14 +360,14 @@ over the Internet in an HTTP and CDN friendly way;
 (define-public rclone
   (package
     (name "rclone")
-    (version "1.52.0")
+    (version "1.52.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/rclone/rclone/releases/download/"
                            "v" version "/rclone-v" version ".tar.gz"))
        (sha256
-        (base32 "06zkxnz0ggv8k4ayv3a8jx6ch0hclgs613wagskklqm15zv0dkdq"))))
+        (base32 "1y0ysdbqqb1dj8daziwwhz531c7kfr7f9fsvc7xyg4ysppz1qxfq"))))
     ;; FIXME: Rclone bundles some libraries Guix already provides.  Need to
     ;; un-bundle them.
     (build-system go-build-system)

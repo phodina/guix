@@ -18,6 +18,8 @@
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 Ekaitz Zarraga <ekaitz@elenq.tech>
+;;; Copyright © 2020 B. Wilson <elaexuotee@wilsonb.com>
+;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -54,6 +56,7 @@
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages bdw-gc)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
@@ -61,6 +64,7 @@
   #:use-module (gnu packages commencement)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
+  #:use-module (gnu packages dejagnu)
   #:use-module (gnu packages digest)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages flex)
@@ -85,11 +89,15 @@
   #:use-module (gnu packages imagemagick)
   #:use-module (gnu packages libevent)
   #:use-module (gnu packages linux)               ;FIXME: for pcb
+  #:use-module (gnu packages lisp)
   #:use-module (gnu packages m4)
   #:use-module (gnu packages maths)
+  #:use-module (gnu packages man)
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages mpi)
   #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages parallel)
+  #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
@@ -103,8 +111,10 @@
   #:use-module (gnu packages tls)
   #:use-module (gnu packages tex)
   #:use-module (gnu packages version-control)
+  #:use-module (gnu packages web)
   #:use-module (gnu packages wxwidgets)
   #:use-module (gnu packages xml)
+  #:use-module (gnu packages openkinect)
   #:use-module (gnu packages xorg))
 
 (define-public librecad
@@ -260,14 +270,14 @@ utilities.")
   (package
     (inherit geda-gaf)
     (name "lepton-eda")
-    (version "1.9.9-20191003")
+    (version "1.9.11-20200604")
     (home-page "https://github.com/lepton-eda/lepton-eda")
     (source (origin
               (method git-fetch)
               (uri (git-reference (url home-page) (commit version)))
               (sha256
                (base32
-                "08cc3zfk84qq9mrkc9pp4r9jlavvm01wwy0yd9frql68w2zw6mip"))
+                "091y8h7wcr9smwhb1wf12sj27n5jrannbj3y6qq3q2gwiifiz8sd"))
               (file-name (git-file-name name version))))
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -416,14 +426,14 @@ optimizer; and it can produce photorealistic and design review images.")
 (define-public pcb-rnd
   (package (inherit pcb)
     (name "pcb-rnd")
-    (version "1.1.3")
+    (version "2.2.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://repo.hu/projects/pcb-rnd/releases/"
                                   "pcb-rnd-" version ".tar.gz"))
               (sha256
                (base32
-                "0pycynla60b96jkb6fh6f4sx663pqbzjwnixhw5ym8sym2absm09"))))
+                "0j650498d87b4xsggzc0xlk73k0hhj43wfy45qz2lcn0xc3bks1m"))))
     (arguments
      `(#:tests? #f ; no check target
        #:phases
@@ -599,7 +609,7 @@ multipole-accelerated algorithm.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/fritzing/fritzing-app.git")
+                    (url "https://github.com/fritzing/fritzing-app")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -648,7 +658,7 @@ multipole-accelerated algorithm.")
         ,(origin
            (method git-fetch)
            (uri (git-reference
-                 (url "https://github.com/fritzing/fritzing-parts.git")
+                 (url "https://github.com/fritzing/fritzing-parts")
                  (commit version)))
            (file-name (git-file-name "fritzing-parts" version))
            (sha256
@@ -706,7 +716,7 @@ as well as pick-place files.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/erichVK5/translate2geda.git")
+                      (url "https://github.com/erichVK5/translate2geda")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -775,7 +785,7 @@ fonts to gEDA.")
              (lambda* (#:key inputs #:allow-other-keys)
                (setenv "CPLUS_INCLUDE_PATH"
                        (string-append (assoc-ref inputs "catch")
-                                      "/include/catch:"
+                                      "/include/catch2:"
                                       (or (getenv "CPLUS_INCLUDE_PATH") "")))
                #t)))))
       (native-inputs
@@ -926,7 +936,7 @@ translations for KiCad.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/KiCad/kicad-symbols.git")
+                    (url "https://github.com/KiCad/kicad-symbols")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -955,7 +965,7 @@ libraries.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/KiCad/kicad-footprints.git")
+                    (url "https://github.com/KiCad/kicad-footprints")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -972,7 +982,7 @@ libraries.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/KiCad/kicad-packages3d.git")
+                    (url "https://github.com/KiCad/kicad-packages3d")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -989,7 +999,7 @@ libraries.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/KiCad/kicad-templates.git")
+                    (url "https://github.com/KiCad/kicad-templates")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -1026,15 +1036,14 @@ the 'showing the effect of'-style of operation.")
 (define-public volk
   (package
     (name "volk")
-    (version "2.2.1")
+    (version "2.3.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.libvolk.org/releases/volk-"
                            version ".tar.gz"))
        (sha256
-        (base32
-         "1wz5nhmw6np8ka30pgy1qnima3rk2ksln4klfhrj7wah3fian0k9"))))
+        (base32 "1pjxz3piwy49njj5y2zk437prwkv9lfs5g48577jj3kcsg766vi3"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases
@@ -1057,16 +1066,45 @@ the 'showing the effect of'-style of operation.")
                    (,(string-append python "/bin:")))))
              #t)))))
     (inputs
-     `(("boost" ,boost)))
-    (native-inputs
-     `(("python" ,python-wrapper)
+     `(("boost" ,boost)
+       ("python" ,python-wrapper)
        ("python-mako" ,python-mako)))
     (home-page "https://www.libvolk.org/")
     (synopsis "Vector-Optimized Library of Kernels")
     (description
-     "@code{volk} contains procedures with machine-specific optimizations
-for mathematical functions.  It also provides an machine-independent
-interface to select the best such procedures to use on a given system.")
+     "@acronym{VOLK, Vector-Optimized Library of Kernels} contains procedures
+with machine-specific optimizations for mathematical functions.  It also
+provides a machine-independent interface to select the best such procedures to
+use on a given system.")
+    (license license:gpl3+)))
+
+(define-public libredwg
+  (package
+    (name "libredwg")
+    (version "0.11")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://gnu/libredwg/libredwg-"
+             version ".tar.xz"))
+       (sha256
+        (base32 "1vd7ii32k5447z7k4w9s005hv1ffpj6dyf1w40x6c53qksrblny2"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags '("--disable-bindings")))
+    (native-inputs
+     `(("libxml2" ,libxml2)
+       ("parallel" ,parallel)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python)
+       ("python-libxml2" ,python-libxml2)))
+    (inputs
+     `(("pcre2" ,pcre2)))
+    (home-page "https://www.gnu.org/software/libredwg/")
+    (synopsis "C library to handle DWG (CAD-related) files")
+    (description
+     "GNU LibreDWG is a C library to handle DWG files.  It aims to be a free
+replacement for the OpenDWG libraries.")
     (license license:gpl3+)))
 
 (define-public minicom
@@ -1075,25 +1113,36 @@ interface to select the best such procedures to use on a given system.")
     (version "2.7.1")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://alioth.debian.org/frs/download.php/"
-                           "file/4215/" name "-" version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://salsa.debian.org/minicom-team/minicom.git")
+             (commit (string-append "v" version))))
        (sha256
-        (base32
-         "1wa1l36fa4npd21xa9nz60yrqwkk5cq713fa3p5v0zk7g9mq6bsk"))))
+        (base32 "0f36wv015zpz1x895qv0z6marlynzyh0d5mfkyd7lfyy2xd1i2w0"))
+       (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--enable-lock-dir=/var/lock")
        #:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'patch-lock-check
+         (replace 'bootstrap
+           ;; autogen.sh needlessly hard-codes aclocal-1.14.
+           (lambda _
+             (invoke "autoreconf" "-vif")
+             #t))
+         (add-before 'configure 'patch-lock-check
            (lambda _
              (substitute* "configure"
                (("test -d [$]UUCPLOCK") "true"))
              #t)))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("gettext" ,gettext-minimal)
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("ncurses" ,ncurses)))
-    (home-page "https://alioth.debian.org/projects/minicom/")
+    (home-page "https://salsa.debian.org/minicom-team/minicom")
     (synopsis "Serial terminal emulator")
     (description "@code{minicom} is a serial terminal emulator.")
     (license license:gpl2+)))
@@ -2103,7 +2152,7 @@ editors.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/markwal/GPX.git")
+                    (url "https://github.com/markwal/GPX")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -2224,7 +2273,7 @@ engineers for reverse engineers.")
     (source
      (origin
       (method git-fetch)
-      (uri (git-reference (url "https://github.com/3MFConsortium/lib3mf.git")
+      (uri (git-reference (url "https://github.com/3MFConsortium/lib3mf")
                           (commit (string-append "v" version))))
       (file-name (git-file-name name version))
       (sha256
@@ -2329,7 +2378,7 @@ full programmatic control over your models.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/FreeCAD/FreeCAD.git")
+             (url "https://github.com/FreeCAD/FreeCAD")
              (commit version)))
        (modules '((guix build utils)))
        (snippet
@@ -2472,7 +2521,7 @@ interpolation toolkit.")
       (source
        (origin
          (method git-fetch)
-         (uri (git-reference (url "https://github.com/Heeks/libarea.git")
+         (uri (git-reference (url "https://github.com/Heeks/libarea")
                              (commit commit)))
          (file-name (git-file-name name version))
          (sha256
@@ -2513,7 +2562,7 @@ operations.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/FreeSpacenav/libspnav.git")
+                    (url "https://github.com/FreeSpacenav/libspnav")
                     (commit (string-append "libspnav-" version))))
               (sha256
                (base32
@@ -2619,3 +2668,122 @@ accessible through a simple API")
 model files.  Its main goal is to simplify the creation of 3DS import and
 export filters.")
     (license license:lgpl2.1+)))
+
+(define-public meshlab
+  (package
+    (name "meshlab")
+    (version "2020.06")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/cnr-isti-vclab/meshlab")
+                    (commit (string-append "Meshlab-" version))
+                    (recursive? #t)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32 "1cgx24wxh2ah5pff51rcrk6x8qcdjpkxcdak7s4cfzmxvjlshydd"))))
+    (build-system cmake-build-system)
+    (inputs
+     `(("qtbase" ,qtbase)
+       ("qtscript" ,qtscript)
+       ("qtxmlpatterns" ,qtxmlpatterns)
+       ("mesa" ,mesa)
+       ("glu" ,glu)
+       ("glew" ,glew)
+       ("muparser" ,muparser)
+       ("gmp" ,gmp)
+       ("eigen" ,eigen)
+       ("libfreenect" ,libfreenect)
+       ("lib3ds" ,lib3ds)
+       ("openctm" ,openctm)
+       ;; FIXME: Compilation fails with system qhull:
+       ;; https://github.com/cnr-isti-vclab/meshlab/issues/678
+       ;; ("qhull" ,qhull)
+       ))
+    (arguments
+     `(#:tests? #f                                ; Has no tests
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'go-to-source-dir
+           (lambda _ (chdir "src") #t))
+         (add-after 'install 'move-files
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((lib (string-append (assoc-ref outputs "out")
+                                       "/lib")))
+               (rename-file
+                (string-append lib "/meshlab/libmeshlab-common.so")
+                (string-append lib "/libmeshlab-common.so"))
+               #t))))))
+    (synopsis "3D triangular mesh processing and editing software")
+    (home-page "https://www.meshlab.net/")
+    (description "MeshLab is a system for the processing and
+editing of unstructured large 3D triangular meshes.  It is aimed to help the
+processing of the typical not-so-small unstructured models arising in 3D
+scanning, providing a set of tools for editing, cleaning, healing, inspecting,
+rendering and converting this kind of meshes.  These tools include MeshLab
+proper, a versatile program with a graphical user interface, and meshlabserver,
+a program that can perform mesh processing tasks in batch mode, without a
+GUI.")
+    (license license:gpl3+)))
+
+(define-public poke
+  ;; Upstream has yet to tag any releases.
+  (let ((commit "d33317a46e3b7c48130a471a48cbfea1abab70d8")
+        (revision "0"))
+    (package
+      (name "poke")
+      (version (git-version "0.0.0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "git://git.savannah.gnu.org/poke.git")
+               (commit commit)
+               (recursive? #t)))
+         (sha256
+          (base32 "1dd0r1x123bqi78lrsk58rvg9c9wka0kywdyzn7g3i4hkh54xb7d"))
+         (file-name (git-file-name name version))))
+      (build-system gnu-build-system)
+      ;; The GUI, which we elide, requires tcl and tk.
+      (native-inputs `(("autoconf" ,autoconf)
+                       ("automake" ,automake)
+                       ;; Requires bison 3.6+ but we currently only have 3.5.
+                       ;; Bison 3.6 will be available in the next core update.
+                       ("bison-3.6" ,bison-3.6)
+                       ("clisp" ,clisp)
+                       ("dejagnu" ,dejagnu)
+                       ("flex" ,flex)
+                       ("gettext" ,gettext-minimal)
+                       ("help2man" ,help2man)
+                       ("libtool" ,libtool)
+                       ("perl" ,perl)
+                       ("pkg-config" ,pkg-config)
+                       ("python-2" ,python-2)
+                       ("python-3" ,python-3)
+                       ("texinfo" ,texinfo)))
+      ;; FIXME: Enable NBD support by adding `libnbd' (currently unpackaged).
+      ;; FIXME: A "hyperlinks-capable" `libtexststyle' needed for the hserver.
+      (inputs `(("json-c" ,json-c)
+                ("libgc" ,libgc)
+                ("readline" ,readline)))
+      (arguments
+       ;; To build the GUI, add the `--enable-gui' configure flag.
+       ;; To enable the "hyperlink server", add the `--enable-hserver' flag.
+       `(#:configure-flags '("--enable-mi")
+         #:phases (modify-phases %standard-phases
+                    ;; This is a non-trivial bootstrap that needs many of the
+                    ;; native-inputs and thus must run after `patch-shebangs'.
+                    (delete 'bootstrap)
+                    (add-after 'patch-source-shebangs 'bootstrap
+                      (lambda _
+                        (invoke "./bootstrap" "--no-git"
+                                "--no-bootstrap-sync"
+                                "--gnulib-srcdir=gnulib")
+                        #t)))))
+      (home-page "http://jemarch.net/poke.html")
+      (synopsis "Interactive, extensible editor for binary data")
+      (description "GNU poke is an interactive, extensible editor for binary
+  data.  Not limited to editing basic entities such as bits and bytes, it
+  provides a full-fledged procedural, interactive programming language designed
+  to describe data structures and to operate on them.")
+      (license license:gpl3+))))

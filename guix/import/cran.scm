@@ -141,9 +141,9 @@ package definition."
 (define %cran-url "https://cran.r-project.org/web/packages/")
 (define %bioconductor-url "https://bioconductor.org/packages/")
 
-;; The latest Bioconductor release is 3.10.  Bioconductor packages should be
+;; The latest Bioconductor release is 3.11.  Bioconductor packages should be
 ;; updated together.
-(define %bioconductor-version "3.10")
+(define %bioconductor-version "3.11")
 
 (define* (bioconductor-packages-list-url #:optional type)
   (string-append "https://bioconductor.org/packages/"
@@ -661,12 +661,7 @@ s-expression corresponding to that package, or #f on failure."
        ;; Check if the upstream name can be extracted from package uri.
        (package->upstream-name package)
        ;; Check if package uri(s) are prefixed by "mirror://cran".
-       (match (and=> (package-source package) origin-uri)
-         ((? string? uri)
-          (string-prefix? "mirror://cran" uri))
-         ((? list? uris)
-          (any (cut string-prefix? "mirror://cran" <>) uris))
-         (_ #f))))
+       ((url-predicate (cut string-prefix? "mirror://cran" <>)) package)))
 
 (define (bioconductor-package? package)
   "Return true if PACKAGE is an R package from Bioconductor."
@@ -680,12 +675,7 @@ s-expression corresponding to that package, or #f on failure."
                           ;; Experiment packages are in a separate repository.
                           (not (string-contains uri "/data/experiment/"))))))
     (and (string-prefix? "r-" (package-name package))
-         (match (and=> (package-source package) origin-uri)
-           ((? string? uri)
-            (predicate uri))
-           ((? list? uris)
-            (any predicate uris))
-           (_ #f)))))
+         ((url-predicate predicate) package))))
 
 (define (bioconductor-data-package? package)
   "Return true if PACKAGE is an R data package from Bioconductor."
@@ -693,12 +683,7 @@ s-expression corresponding to that package, or #f on failure."
                      (and (string-prefix? "https://bioconductor.org" uri)
                           (string-contains uri "/data/annotation/")))))
     (and (string-prefix? "r-" (package-name package))
-         (match (and=> (package-source package) origin-uri)
-           ((? string? uri)
-            (predicate uri))
-           ((? list? uris)
-            (any predicate uris))
-           (_ #f)))))
+         ((url-predicate predicate) package))))
 
 (define (bioconductor-experiment-package? package)
   "Return true if PACKAGE is an R experiment package from Bioconductor."
@@ -706,12 +691,7 @@ s-expression corresponding to that package, or #f on failure."
                      (and (string-prefix? "https://bioconductor.org" uri)
                           (string-contains uri "/data/experiment/")))))
     (and (string-prefix? "r-" (package-name package))
-         (match (and=> (package-source package) origin-uri)
-           ((? string? uri)
-            (predicate uri))
-           ((? list? uris)
-            (any predicate uris))
-           (_ #f)))))
+         ((url-predicate predicate) package))))
 
 (define %cran-updater
   (upstream-updater

@@ -2,12 +2,13 @@
 ;;; Copyright © 2015 David Thompson <davet@gnu.org>
 ;;; Copyright © 2015, 2016, 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Troy Sankey <sankeytms@gmail.com>
 ;;; Copyright © 2016 Stefan Reichoer <stefan@xsteve.at>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com
 ;;; Copyright © 2020 Brendan Tildesley <mail@brendan.scot>
+;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -45,6 +46,7 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages qt)
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages time)
@@ -63,7 +65,7 @@
        (origin
          (method git-fetch)
          (uri (git-reference
-               (url "https://github.com/HowardHinnant/date.git")
+               (url "https://github.com/HowardHinnant/date")
                (commit "9a0ee2542848ab8625984fc8cdbfb9b5414c0082")))
          (file-name (git-file-name name version))
          (sha256
@@ -110,7 +112,7 @@ the <tz.h> library for handling time zones and leap seconds.")
 (define-public libical
   (package
     (name "libical")
-    (version "3.0.7")
+    (version "3.0.8")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -118,22 +120,7 @@ the <tz.h> library for handling time zones and leap seconds.")
                     version "/libical-" version ".tar.gz"))
               (sha256
                (base32
-                "1z33wzaazbd7drl6qbh1750whd78xl2cg0gjnxyya9m83vgndgha"))
-              (patches
-               ;; Add a patch slated for 3.0.8 which preserves backwards-
-               ;; compatibility in the icalattach_new_from_data() function,
-               ;; which accidentally changed in 3.0.7 and could break some uses.
-               ;; https://gitlab.gnome.org/GNOME/evolution-data-server/issues/185
-               ;; http://lists.infradead.org/pipermail/libical-devel/2020-January/000907.html
-               (list (origin
-                       (method url-fetch)
-                       (uri (string-append
-                             "https://github.com/libical/libical/commit/"
-                             "ae394010c889e4c185160da5e81527849f9de350.patch"))
-                       (file-name "libical-3.0.7-preserve-icalattach-api.patch")
-                       (sha256
-                        (base32
-                         "0v8qcxn8a6sh78grzxd61j9478928dx38l5mf8mkdrbxv47vmvvp")))))))
+                "0vr8s7hn8204lyc4ys5bs3j5qss4lmc9ffly2m1a59avyz5cmzh9"))))
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f ; test suite appears broken
@@ -209,6 +196,12 @@ data units.")
             (install-file
              "doc/build/man/khal.1"
              (string-append (assoc-ref outputs "out") "/share/man/man1"))
+            #t))
+        (add-before 'check 'fix-tests
+          (lambda _
+            ;; Reported upstream: <https://github.com/pimutils/khal/issues/947>.
+            (substitute* "tests/cli_test.py"
+             (("Invalid value for \"\\[ICS\\]\"") "Invalid value for \\'[ICS]\\'"))
             #t))
         (replace 'check
           (lambda* (#:key inputs #:allow-other-keys)
@@ -290,3 +283,59 @@ of day, written in C, and including bindings for C++, pascal, perl, php, python,
 and ruby.  It includes two illustrative command-line programs, @code{hcal} and
 @code{hdate}, and some snippets and scripts written in the binding languages.")
     (license license:gpl3+)))
+
+(define-public confclerk
+  (package
+    (name "confclerk")
+    (version "0.6.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append "https://www.toastfreeware.priv.at/tarballs/"
+                            "confclerk/confclerk-" version ".tar.gz"))
+        (sha256
+         (base32
+          "10rhg44px4nvbkd3p341cmp2ds43jn8r4rvgladda9v8zmsgr2b3"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               ;; Install directory is currently hard-coded.
+               (substitute* "src/app/app.pro"
+                 (("PREFIX = /usr/bin")
+                  (string-append "PREFIX =" out "/bin")))
+               (invoke "qmake"))))
+         (add-after 'install 'install-docs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out   (assoc-ref outputs "out"))
+                    (share (string-append out "/share")))
+               (install-file "data/confclerk.1"
+                             (string-append share "/man/man1"))
+               (install-file "data/confclerk.desktop"
+                             (string-append share "/applications"))
+               (install-file "data/confclerk.svg"
+                             (string-append share "/icons/hicolor/scalable/apps"))
+               #t))))
+       #:tests? #f)) ; no tests
+    (native-inputs
+     `(("perl" ,perl))) ; pod2man
+    (inputs
+     `(("qtbase" ,qtbase)))
+    (home-page "https://www.toastfreeware.priv.at/confclerk")
+    (synopsis "Offline conference schedule application")
+    (description
+     "ConfClerk is an application written in Qt, which makes conference schedules
+available offline.  It displays the conference schedule from various views,
+support searches on various items (speaker, speech topic, location, etc.) and
+enables you to select favorite events and create your own schedule.
+
+At the moment ConfClerk is able to import schedules in XML format created by
+the PentaBarf conference management system (or frab) used by e.g. FOSDEM,
+DebConf, FrOSCon, Grazer LinuxTage, and the CCC congresses.
+
+ConfClerk is targeted at mobile devices but works on any system running Qt.")
+    (license (list license:gpl2+
+                   license:lgpl3)))) ; or cc-by3.0 for src/icons/*

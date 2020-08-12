@@ -23,7 +23,8 @@
   #:use-module (guix monads)
   #:use-module (guix grafts)
   #:use-module ((guix gexp) #:select (local-file local-file-file))
-  #:use-module ((guix utils)
+  #:use-module (guix utils)
+  #:use-module ((guix diagnostics)
                 ;; Rename the 'location' binding to allow proper syntax
                 ;; matching when setting the 'location' field of a package.
                 #:renamer (lambda (name)
@@ -524,6 +525,32 @@
     (build-derivations %store (list drv))
     (call-with-input-file output get-string-all)))
 
+(test-equal "package-source-derivation, origin, sha3-512"
+  "hello, sha3"
+  (let* ((bash    (search-bootstrap-binary "bash" (%current-system)))
+         (builder (add-text-to-store %store "my-fixed-builder.sh"
+                                     "echo -n hello, sha3 > $out" '()))
+         (method  (lambda* (url hash-algo hash #:optional name
+                                #:rest rest)
+                    (and (eq? hash-algo 'sha3-512)
+                         (raw-derivation name bash (list builder)
+                                         #:sources (list builder)
+                                         #:hash hash
+                                         #:hash-algo hash-algo))))
+         (source  (origin
+                    (method method)
+                    (uri "unused://")
+                    (file-name "origin-sha3")
+                    (hash (content-hash
+                           (gcrypt:bytevector-hash (string->utf8 "hello, sha3")
+                                                   (gcrypt:lookup-hash-algorithm
+                                                    'sha3-512))
+                           sha3-512))))
+         (drv    (package-source-derivation %store source))
+         (output (derivation->output-path drv)))
+    (build-derivations %store (list drv))
+    (call-with-input-file output get-string-all)))
+
 (unless (network-reachable?) (test-skip 1))
 (test-equal "package-source-derivation, snippet"
   "OK"
@@ -591,12 +618,11 @@
          (string=? (derivation->output-path drv)
                    (package-output %store package "out")))))
 
-(test-assert "patch not found yields a run-time error"
-  (guard (c ((condition-has-type? c &message)
-             (and (string-contains (condition-message c)
-                                   "does-not-exist.patch")
-                  (string-contains (condition-message c)
-                                   "not found"))))
+(test-equal "patch not found yields a run-time error"
+  '("~a: patch not found\n" "does-not-exist.patch")
+  (guard (c ((formatted-message? c)
+             (cons (formatted-message-string c)
+                   (formatted-message-arguments c))))
     (let ((p (package
                (inherit (dummy-package "p"))
                (source (origin
@@ -900,6 +926,30 @@
                                                          (replacement #f))))
                     (replacement (package-derivation %store new)))))))
 
+(test-assert "package-grafts, dependency on several outputs"
+  ;; Make sure we get one graft per output; see <https://bugs.gnu.org/41796>.
+  (letrec* ((p0  (dummy-package "p0"
+                   (version "1.0")
+                   (replacement p0*)
+                   (arguments '(#:implicit-inputs? #f))
+                   (outputs '("out" "lib"))))
+            (p0* (package (inherit p0) (version "1.1")))
+            (p1  (dummy-package "p1"
+                   (arguments '(#:implicit-inputs? #f))
+                   (inputs `(("p0" ,p0)
+                             ("p0:lib" ,p0 "lib"))))))
+    (lset= equal? (pk (package-grafts %store p1))
+           (list (graft
+                   (origin (package-derivation %store p0))
+                   (origin-output "out")
+                   (replacement (package-derivation %store p0*))
+                   (replacement-output "out"))
+                 (graft
+                   (origin (package-derivation %store p0))
+                   (origin-output "lib")
+                   (replacement (package-derivation %store p0*))
+                   (replacement-output "lib"))))))
+
 (test-assert "replacement also grafted"
   ;; We build a DAG as below, where dotted arrows represent replacements and
   ;; solid arrows represent dependencies:
@@ -1059,6 +1109,20 @@
     (match (assoc "dep" inputs)
       (("dep" package)
        (eq? package dep)))))
+
+(test-assert "package->bag, sensitivity to %current-system"
+  (let* ((dep (dummy-package "dep"
+                (propagated-inputs (if (string=? (%current-system)
+                                                 "i586-gnu")
+                                       `(("libxml2" ,libxml2))
+                                       '()))))
+         (pkg (dummy-package "foo"
+                (native-inputs `(("dep" ,dep)))))
+         (bag (package->bag pkg (%current-system) "i586-gnu")))
+    (equal? (parameterize ((%current-system "x86_64-linux"))
+              (bag-transitive-inputs bag))
+            (parameterize ((%current-system "i586-gnu"))
+              (bag-transitive-inputs bag)))))
 
 (test-assert "package->bag, sensitivity to %current-target-system"
   (let* ((dep (dummy-package "dep"

@@ -7,6 +7,7 @@
 ;;; Copyright © 2017, 2019 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -309,7 +310,7 @@ This package contains the binary.")
 (define-public mpg123
   (package
     (name "mpg123")
-    (version "1.26.1")
+    (version "1.26.3")
     (source
      (origin
        (method url-fetch)
@@ -319,7 +320,7 @@ This package contains the binary.")
                    "https://www.mpg123.org/download/mpg123-"
                    version ".tar.bz2")))
        (sha256
-        (base32 "0cp01wdy77ggzqzzasxd5jd9iypcly5m4c89idc9mpgknyd65mkl"))))
+        (base32 "0vkcfdx0mqq6lmpczsmpa2jsb0s6dryx3i7gvr32i3w9b9w9ij9h"))))
     (build-system gnu-build-system)
     (arguments '(#:configure-flags '("--with-default-audio=pulse")))
     (native-inputs
@@ -505,7 +506,7 @@ command-line tool.")
 (define-public chromaprint
   (package
     (name "chromaprint")
-    (version "1.4.3")
+    (version "1.5.0")
     (source (origin
       (method url-fetch)
       (uri (string-append
@@ -513,7 +514,7 @@ command-line tool.")
             version "/chromaprint-" version ".tar.gz"))
       (sha256
        (base32
-        "10kz8lncal4s2rp2rqpgc6xyjp0jzcrihgkx7chf127vfs5n067a"))))
+        "0sknmyl5254rc55bvkhfwpl4dfvz45xglk1rq8zq5crmwq058fjp"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f ; tests require googletest *sources*

@@ -11,7 +11,7 @@
 ;;; Copyright © 2018 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2018 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2018 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2019 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2019, 2020 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2019 Carlo Zancanaro <carlo@zancanaro.id.au>
 ;;; Copyright © 2019 Steve Sprang <scs@stevesprang.com>
 ;;; Copyright © 2019 John Soo <jsoo1@asu.edu>
@@ -49,6 +49,7 @@
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages datastructures)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages fonts)
@@ -160,7 +161,7 @@ objects!")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/autotrace/autotrace.git")
+                      (url "https://github.com/autotrace/autotrace")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -206,14 +207,14 @@ with the @command{autotrace} utility or as a C library, @code{libautotrace}.")
 (define-public blender
   (package
     (name "blender")
-    (version "2.83.0")
+    (version "2.83.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://download.blender.org/source/"
                                   "blender-" version ".tar.xz"))
               (sha256
                (base32
-                "07rzm4xaj94pjxy2vlqfhi1adsqpshfkrzrq8kljmcbnw22vrqhl"))))
+                "18m27abp4j3xv48dr6ddr2mqcvx2vkjffr487z90059yv9k0yh2p"))))
     (build-system cmake-build-system)
     (arguments
       (let ((python-version (version-major+minor (package-version python))))
@@ -294,6 +295,102 @@ compositing and motion tracking, even video editing and game creation.  The
 application can be customized via its API for Python scripting.")
     (license license:gpl2+)))
 
+(define-public blender-2.79
+  (package
+    (name "blender")
+    (version "2.79b")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://download.blender.org/source/"
+                                  "blender-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1g4kcdqmf67srzhi3hkdnr4z1ph4h9sza1pahz38mrj998q4r52c"))
+              (patches (search-patches "blender-2.79-newer-ffmpeg.patch"
+                                       "blender-2.79-oiio2.patch"
+                                       ;; The following patches may be
+                                       ;; needed when the default GCC is
+                                       ;; updated:
+                                       ;;   "blender-2.79-gcc8.patch"
+                                       ;;   "blender-2.79-gcc9.patch"
+                                       "blender-2.79-python-3.7-fix.patch"
+                                       "blender-2.79-python-3.8-fix.patch"))))
+    (build-system cmake-build-system)
+    (arguments
+      (let ((python-version (version-major+minor (package-version python))))
+       `(;; Test files are very large and not included in the release tarball.
+         #:tests? #f
+         #:configure-flags
+         (list "-DWITH_CODEC_FFMPEG=ON"
+               "-DWITH_CODEC_SNDFILE=ON"
+               "-DWITH_CYCLES=ON"
+               "-DWITH_DOC_MANPAGE=ON"
+               "-DWITH_FFTW3=ON"
+               "-DWITH_GAMEENGINE=ON"
+               "-DWITH_IMAGE_OPENJPEG=ON"
+               "-DWITH_INPUT_NDOF=ON"
+               "-DWITH_INSTALL_PORTABLE=OFF"
+               "-DWITH_JACK=ON"
+               "-DWITH_MOD_OCEANSIM=ON"
+               "-DWITH_PLAYER=ON"
+               "-DWITH_PYTHON_INSTALL=OFF"
+               "-DWITH_PYTHON_INSTALL=OFF"
+               "-DWITH_SYSTEM_OPENJPEG=ON"
+               (string-append "-DPYTHON_LIBRARY=python" ,python-version)
+               (string-append "-DPYTHON_LIBPATH=" (assoc-ref %build-inputs "python")
+                              "/lib")
+               (string-append "-DPYTHON_INCLUDE_DIR=" (assoc-ref %build-inputs "python")
+                              "/include/python" ,python-version)
+               (string-append "-DPYTHON_VERSION=" ,python-version))
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'fix-broken-import
+             (lambda _
+               (substitute* "release/scripts/addons/io_scene_fbx/json2fbx.py"
+                 (("import encode_bin") "from . import encode_bin"))
+               #t))
+           (add-after 'set-paths 'add-ilmbase-include-path
+             (lambda* (#:key inputs #:allow-other-keys)
+               ;; OpenEXR propagates ilmbase, but its include files do not appear
+               ;; in the CPATH, so we need to add "$ilmbase/include/OpenEXR/" to
+               ;; the CPATH to satisfy the dependency on "half.h".
+               (setenv "CPATH"
+                       (string-append (assoc-ref inputs "ilmbase")
+                                      "/include/OpenEXR"
+                                      ":" (or (getenv "CPATH") "")))
+               #t))))))
+    (inputs
+     `(("boost" ,boost)
+       ("jemalloc" ,jemalloc)
+       ("libx11" ,libx11)
+       ("openimageio" ,openimageio)
+       ("openexr" ,openexr)
+       ("ilmbase" ,ilmbase)
+       ("openjpeg" ,openjpeg)
+       ("libjpeg" ,libjpeg-turbo)
+       ("libpng" ,libpng)
+       ("libtiff" ,libtiff)
+       ("ffmpeg" ,ffmpeg)
+       ("fftw" ,fftw)
+       ("jack" ,jack-1)
+       ("libsndfile" ,libsndfile)
+       ("freetype" ,freetype)
+       ("glew" ,glew)
+       ("openal" ,openal)
+       ("python" ,python)
+       ("zlib" ,zlib)))
+    (home-page "https://blender.org/")
+    (synopsis "3D graphics creation suite")
+    (description
+     "Blender is a 3D graphics creation suite.  It supports the entirety of
+the 3D pipeline—modeling, rigging, animation, simulation, rendering,
+compositing and motion tracking, even video editing and game creation.  The
+application can be customized via its API for Python scripting.
+
+NOTE: This older version of Blender is the last release that does not require
+OpenGL 3.  It is retained for use with older computers.")
+    (license license:gpl2+)))
+
 (define-public assimp
   (package
     (name "assimp")
@@ -301,7 +398,7 @@ application can be customized via its API for Python scripting.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/assimp/assimp.git")
+                    (url "https://github.com/assimp/assimp")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -359,7 +456,7 @@ many more.")
 (define-public ilmbase
   (package
     (name "ilmbase")
-    (version "2.5.0")
+    (version "2.5.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -368,9 +465,8 @@ many more.")
               (file-name (git-file-name "ilmbase" version))
               (sha256
                (base32
-                "1k50cvi3sk6gf6w713lkk2gv5cvs74vkc7s7k4z6nmyhi4g89w4y"))
-              (patches (search-patches "ilmbase-fix-tests.patch"
-                                       "ilmbase-fix-test-arm.patch"))))
+                "1vf8bqld2bpcdi99jbr043y6vp01cp3fvbiasrn66xn91mf6imbn"))
+              (patches (search-patches "ilmbase-fix-tests.patch"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
@@ -390,8 +486,8 @@ exception-handling library.")
 
 (define-public lib2geom
   ;; Use the latest master commit, as the 1.0 release suffer build problems.
-  (let ((revision "1")
-        (commit "42e119d94934a9514c61571cfb6b4af503ece082"))
+  (let ((revision "3")
+        (commit "17e0d21f0afc8489656f9184bff7ad024a42394a"))
     (package
       (name "lib2geom")
       (version (git-version "1.0" revision commit))
@@ -403,11 +499,11 @@ exception-handling library.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "195rs0kdbs8w62irha1nwy83bccz04wglmk578qrj1mky7fc4rjv"))
+                  "0waskrmdrrdjw8pr5cvlkrxywgf376viggpc2jzdqxxpy2k78fpr"))
                 (patches
                  ;; Patch submitted to upstream (see:
-                 ;; https://gitlab.com/inkscape/lib2geom/merge_requests/17).
-                 (search-patches "lib2geom-enable-assertions.patch"))
+                 ;; https://gitlab.com/inkscape/lib2geom/-/merge_requests/32).
+                 (search-patches "lib2geom-fix-tests.patch"))
                 (modules '((guix build utils)))
                 (snippet
                  '(begin
@@ -510,7 +606,7 @@ other vector formats such as:
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/OGRECave/ogre.git")
+             (url "https://github.com/OGRECave/ogre")
              (commit (string-append "v" version))
              (recursive? #t)))          ;for Dear ImGui submodule
        (file-name (git-file-name name version))
@@ -587,11 +683,15 @@ graphics.")
            (lambda _
              (chdir "OpenEXR")
              #t))
-         (add-before 'check 'increase-test-timeout
+         (add-after 'change-directory 'increase-test-timeout
            (lambda _
              ;; On armhf-linux, we need to override the CTest default
              ;; timeout of 1500 seconds for the OpenEXR.IlmImf test.
-             (setenv "CTEST_TEST_TIMEOUT" "2000")
+             (substitute* "IlmImfTest/CMakeLists.txt"
+               (("add_test\\(NAME OpenEXR\\.IlmImf.*" all)
+                (string-append
+                 all
+                 "set_tests_properties(OpenEXR.IlmImf PROPERTIES TIMEOUT 2000)")))
              #t))
          ,@(if (not (target-64bit?))
                `((add-after 'change-directory 'disable-broken-test
@@ -619,16 +719,16 @@ storage of the \"EXR\" file format for storing 16-bit floating-point images.")
 (define-public openimageio
   (package
     (name "openimageio")
-    (version "1.8.17")
+    (version "2.0.13")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/OpenImageIO/oiio.git")
+                    (url "https://github.com/OpenImageIO/oiio")
                     (commit (string-append "Release-" version))))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0zq34szprgkrrayg5sl3whrsx2l6lr8nw4hdrnwv2qhn70jbi2w2"))))
+                "0czcls82v71wkw1syib16ncg7463hx0py0xclycsiv4w6i3wlkzz"))))
     (build-system cmake-build-system)
     ;; FIXME: To run all tests successfully, test image sets from multiple
     ;; third party sources have to be present.  For details see
@@ -645,7 +745,9 @@ storage of the \"EXR\" file format for storing 16-bit floating-point images.")
        ("giflib" ,giflib)
        ("openexr" ,openexr)
        ("ilmbase" ,ilmbase)
-       ("python" ,python-2)
+       ("python" ,python-wrapper)
+       ("pybind11" ,pybind11)
+       ("robin-map" ,robin-map)
        ("zlib" ,zlib)))
     (synopsis "C++ library for reading and writing images")
     (description
@@ -943,7 +1045,7 @@ output.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/wdas/brdf.git")
+                      (url "https://github.com/wdas/brdf")
                       (commit commit)))
                 (sha256
                  (base32
@@ -1212,7 +1314,7 @@ and GPU architectures.")
        (origin
          (method git-fetch)
          (uri (git-reference
-               (url "https://github.com/floriankirsch/OpenCSG.git")
+               (url "https://github.com/floriankirsch/OpenCSG")
                (commit (string-append "opencsg-"
                                       (string-map dot-to-dash version)
                                       "-release"))))

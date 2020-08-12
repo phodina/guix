@@ -59,7 +59,7 @@
 (define-public cups-filters
   (package
     (name "cups-filters")
-    (version "1.27.1")
+    (version "1.27.4")
     (source(origin
               (method url-fetch)
               (uri
@@ -67,7 +67,7 @@
                               "cups-filters-" version ".tar.xz"))
               (sha256
                (base32
-                "0dpn4rkmrdprkhlnpih5dzrn4fxzj20k42d516kx4qx0g5l74lrm"))
+                "110b1xhb5vfpcx0zq9kkas7pj281skx5dpnnr22idx509jfdzj8b"))
               (modules '((guix build utils)))
               (snippet
                ;; install backends, banners and filters to cups-filters output
@@ -125,12 +125,6 @@
                           (("/usr/local/lib/cups/filter")
                            (string-append out "/lib/cups/filter")))
                         #t)))
-                  (add-after 'unpack 'patch-for-poppler
-                    (lambda _
-                      (substitute* "filter/pdf.cxx"
-                        (("GooString \\*field_name;" m)
-                         (string-append "const " m)))
-                      #t))
                   (add-after 'install 'wrap-filters
                     (lambda* (#:key inputs outputs #:allow-other-keys)
                       ;; Some filters expect to find 'gs' in $PATH.  We cannot
@@ -187,9 +181,8 @@ filters for the PDF-centric printing workflow introduced by OpenPrinting.")
 ;; satisfy this dependency.
 (define-public cups-minimal
   (package
-    (replacement cups-minimal-2.3.3)
     (name "cups-minimal")
-    (version "2.3.1")
+    (version "2.3.3")
     (source
      (origin
        (method url-fetch)
@@ -197,7 +190,7 @@ filters for the PDF-centric printing workflow introduced by OpenPrinting.")
                            version "/cups-" version "-source.tar.gz"))
        (sha256
         (base32
-         "1kkpmj17205j8w9hdff2bfpk6lwdmr3gx0j4r35nhgvya24rvjhv"))))
+         "1vpk0b2vq830f8fvf9z8qjsm5k141i7pi8djbinpnr78pi4dj7r6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -249,19 +242,6 @@ describe printer capabilities and features, and a wide variety of generic and
 device-specific programs to convert and print many types of files.")
     ;; CUPS is Apache 2.0 with exceptions, see the NOTICE file.
     (license license:asl2.0)))
-
-(define-public cups-minimal-2.3.3
-  (package
-    (inherit cups-minimal)
-    (version "2.3.3")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (string-append "https://github.com/apple/cups/releases/download/v"
-                           version "/cups-" version "-source.tar.gz"))
-       (sha256
-        (base32
-         "1vpk0b2vq830f8fvf9z8qjsm5k141i7pi8djbinpnr78pi4dj7r6"))))))
 
 (define-public cups
   (package/inherit cups-minimal
@@ -435,14 +415,14 @@ should only be used as part of the Guix cups-pk-helper service.")
 (define-public hplip
   (package
     (name "hplip")
-    (version "3.20.5")
+    (version "3.20.6")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/hplip/hplip/" version
                                   "/hplip-" version ".tar.gz"))
               (sha256
                (base32
-                "0nj79r61fzddwwzf8kcc0qkp4y9qx46v15iarz6h6y3v91wbsjq0"))
+                "083w58wpvvm6sir6rf5dwx3r0rman9sv1zpl26chl0a88crjsjy6"))
               (modules '((guix build utils)))
               (patches (search-patches "hplip-remove-imageprocessor.patch"))
               (snippet
@@ -701,14 +681,14 @@ printer/driver specific, but spooler-independent PPD file.")
 (define-public foo2zjs
   (package
     (name "foo2zjs")
-    (version "20200426")
+    (version "20200610")
     (source (origin
               (method url-fetch)
               ;; XXX: This is an unversioned URL!
               (uri "http://foo2zjs.rkkda.com/foo2zjs.tar.gz")
               (sha256
                (base32
-                "0wwh29ddd59q18r1jpi3166lgnwr8zn9lry82vahc2g96l97isp7"))))
+                "11ddx6wf8b5ksl4fqw6fnyz9m3y470lryyrskkya2bsch2bvj9lg"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases

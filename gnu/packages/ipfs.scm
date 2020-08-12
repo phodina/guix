@@ -1,6 +1,8 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2018 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2019, 2020 Martin Becze <mjbecze@riseup.net>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -36,7 +38,7 @@
         (origin
           (method git-fetch)
           (uri (git-reference
-                 (url "https://github.com/ipfs/go-ipfs-cmdkit.git")
+                 (url "https://github.com/ipfs/go-ipfs-cmdkit")
                  (commit commit)))
           (file-name (git-file-name name version))
           (sha256
@@ -64,7 +66,7 @@ that are shared between @command{go-ipfs/commands} and its rewrite
        (origin
          (method git-fetch)
          (uri (git-reference
-               (url "https://github.com/ipfs/go-ipfs-api.git")
+               (url "https://github.com/ipfs/go-ipfs-api")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
@@ -109,7 +111,7 @@ that are shared between @command{go-ipfs/commands} and its rewrite
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/whyrusleeping/gx.git")
+             (url "https://github.com/whyrusleeping/gx")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -212,7 +214,7 @@ written in Go.")
 (define-public go-ipfs
   (package
     (name "go-ipfs")
-    (version "0.4.23")
+    (version "0.6.0")
     (source
      (origin
        (method url-fetch/tarbomb)
@@ -220,7 +222,7 @@ written in Go.")
              "https://dist.ipfs.io/go-ipfs/v" version
              "/go-ipfs-source.tar.gz"))
        (sha256
-        (base32 "191ir4h6c76xcnbwx9fj8j2lzzqyp10inmqd8sa393b5y0jmhi5a"))
+        (base32 "14bgq2j2bjjy0pspy2lsj5dm3w9rmfha0l8kyq5ig86yhc4nzn80"))
        (file-name (string-append name "-" version "-source"))))
     (build-system go-build-system)
     (arguments

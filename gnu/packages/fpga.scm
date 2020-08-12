@@ -127,7 +127,7 @@ For synthesis, the compiler generates netlists in the desired format.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/cliffordwolf/yosys.git")
+                    (url "https://github.com/cliffordwolf/yosys")
                     (commit (string-append "yosys-" version))
                     (recursive? #t))) ; for the ‘iverilog’ submodule
               (sha256
@@ -223,7 +223,7 @@ For synthesis, the compiler generates netlists in the desired format.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/cliffordwolf/icestorm.git")
+                     (url "https://github.com/cliffordwolf/icestorm")
                      (commit commit)))
               (file-name (git-file-name name version))
               (sha256
@@ -260,40 +260,40 @@ Includes the actual FTDI connector.")
     (license license:isc))))
 
 (define-public nextpnr-ice40
-  (let [(commit "c192ba261d77ad7f0a744fb90b01e4a5b63938c4")
-        (revision "0")]
-  (package
-    (name "nextpnr-ice40")
-    (version (git-version "0.0.0" revision commit))
-    (source
-      (origin
-        (method git-fetch)
-        (uri (git-reference
-               (url "git://github.com/YosysHQ/nextpnr")
-               (commit commit)))
-        (file-name (git-file-name name version))
-        (sha256
-          (base32
-            "0g2ar1z89b31qw5vgqj2rrcv9rzncs94184dgcsrz19p866654mf"))))
-    (inputs
-      `(("qtbase" ,qtbase)
-        ("boost" ,boost-with-python3)
-        ("yosys" ,yosys)
-        ("eigen" ,eigen)
-        ("python" ,python)
-        ("icestorm" ,icestorm)))
-    (build-system cmake-build-system)
-    (arguments
-      `(#:configure-flags `("-DARCH=ice40"
-                            ,(string-append "-DICEBOX_ROOT="
-                                            (assoc-ref %build-inputs "icestorm")
-                                            "/share/icebox"))
-        #:tests? #f))
-    (synopsis "Place-and-Route tool for FPGAs")
-    (description "Nextpnr aims to be a vendor neutral, timing driven,
+  (let [(commit "fbe486df459909065d6852a7495a212dfd2accef")
+        (revision "1")]
+    (package
+      (name "nextpnr-ice40")
+      (version (git-version "0.0.0" revision commit))
+      (source
+        (origin
+          (method git-fetch)
+          (uri (git-reference
+                 (url "git://github.com/YosysHQ/nextpnr")
+                 (commit commit)))
+          (file-name (git-file-name name version))
+          (sha256
+           (base32
+            "1fmxsywgs45g88ra7ips5s2niiiwrkyxdcy742ws18dfk2y4vi9c"))))
+      (inputs
+       `(("boost" ,boost)
+         ("eigen" ,eigen)
+         ("icestorm" ,icestorm)
+         ("python" ,python)
+         ("qtbase" ,qtbase)
+         ("yosys" ,yosys)))
+      (build-system cmake-build-system)
+      (arguments
+       `(#:configure-flags `("-DARCH=ice40"
+                             ,(string-append "-DICEBOX_ROOT="
+                                             (assoc-ref %build-inputs "icestorm")
+                                             "/share/icebox"))
+         #:tests? #f))
+      (synopsis "Place-and-Route tool for FPGAs")
+      (description "Nextpnr aims to be a vendor neutral, timing driven,
 FOSS FPGA place and route tool.")
-    (home-page "https://github.com/YosysHQ/nextpnr")
-    (license license:expat))))
+      (home-page "https://github.com/YosysHQ/nextpnr")
+      (license license:expat))))
 
 (define-public arachne-pnr
   (let ((commit "840bdfdeb38809f9f6af4d89dd7b22959b176fdd")
@@ -304,7 +304,7 @@ FOSS FPGA place and route tool.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                     (url "https://github.com/YosysHQ/arachne-pnr.git")
+                     (url "https://github.com/YosysHQ/arachne-pnr")
                      (commit commit)))
               (file-name (git-file-name name version))
               (sha256

@@ -26,7 +26,7 @@
 ;;; Copyright © 2018, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018, 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018 Pierre Neidhardt <mail@ambrevar.xyz>
-;;; Copyright © 2019 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2019, 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2019 Vasile Dumitrascu <va511e@yahoo.com>
 ;;; Copyright © 2019 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2019 Timotej Lazar <timotej.lazar@araneo.si>
@@ -38,6 +38,7 @@
 ;;; Copyright © 2019 Diego N. Barbato <dnbarbato@posteo.de>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -63,6 +64,7 @@
   #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system go)
+  #:use-module (guix build-system meson)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
@@ -85,6 +87,7 @@
   #:use-module (gnu packages curl)
   #:use-module (gnu packages cyrus-sasl)
   #:use-module (gnu packages dejagnu)
+  #:use-module (gnu packages docbook)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages freedesktop)
@@ -296,6 +299,82 @@ or, more generally, MAC addresses of the same category of hardware.")
 specification, which provides IPv6 Internet connectivity to IPv6 enabled hosts
 residing in IPv4-only networks, even when they are behind a NAT device.")
     (license license:gpl2+)))
+
+(define-public ndisc6
+  (package
+    (name "ndisc6")
+    (version "1.0.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://www.remlab.net/files/ndisc6/ndisc6-"
+                                  version ".tar.bz2"))
+              (sha256
+               (base32
+                "07swyar1hl83zxmd7fqwb2q0c0slvrswkcfp3nz5lknrk15dmcdb"))))
+    (build-system gnu-build-system)
+    (home-page "https://www.remlab.net/ndisc6/")
+    (synopsis "IPv6 diagnostic tools")
+    (description
+     "NDisc6 is a collection of tools for IPv6 networking diagnostics.
+It includes the following programs:
+
+@itemize
+@item @command{ndisc6}: ICMPv6 Neighbor Discovery tool.
+@item @command{rdisc6}: ICMPv6 Router Discovery tool.
+@item @command{tcptraceroute6}: IPv6 traceroute over TCP.
+@item @command{traceroute6}: IPv6 traceroute over UDP.
+@item @command{rdnssd}: Recursive DNS Servers discovery daemon.
+@end itemize")
+    ;; The user can choose version 2 or 3 of the GPL, not later versions.
+    (license (list license:gpl2 license:gpl3))))
+
+(define-public parprouted
+  (package
+    (name "parprouted")
+    (version "0.7")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://www.hazard.maks.net/parprouted/"
+                                  "parprouted-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1z6yg28i0pv20jivyy82pxb38hsryj95inhj27bs6ja1bp4l6dnn"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ;no tests
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'insert-absolute-iproute-reference
+                    (lambda* (#:key inputs #:allow-other-keys)
+                      (let* ((iproute (assoc-ref inputs "iproute"))
+                             (ip (string-append iproute "/sbin/ip")))
+                        (substitute* "parprouted.c"
+                          (("/sbin/ip") ip))
+                        #t)))
+                  (replace 'configure
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out"))
+                             (sbin (string-append out "/sbin"))
+                             (man8 (string-append out "/share/man/man8")))
+                        ;; No configure script; hijack the phase to make
+                        ;; the necessary arrangements.
+                        (setenv "CC" ,(cc-for-target))
+                        (for-each mkdir-p (list sbin man8))
+                        (substitute* "Makefile"
+                          (("/usr/local/sbin") sbin)
+                          (("/usr/local/man/man8") man8))
+                        #t))))))
+    (inputs
+     `(("iproute" ,iproute)))
+    (home-page "https://www.hazard.maks.net/parprouted/")
+    (synopsis "Proxy ARP requests to other interfaces")
+    (description
+     "@command{parprouted} is a daemon for transparent IP (Layer@tie{}3)
+proxy ARP bridging.  Unlike standard bridging, proxy ARP bridging can bridge
+Ethernet networks behind wireless nodes.  Normal layer@tie{}2 bridging does
+not work between wireless nodes because wireless does not know about MAC
+addresses used in the wired Ethernet networks.  This daemon can also be
+useful for making transparent firewalls.")
+    (license license:gpl2)))
 
 (define-public socat
   (package
@@ -536,7 +615,7 @@ written in the C programming language.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/edenhill/librdkafka.git")
+                    (url "https://github.com/edenhill/librdkafka")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -572,13 +651,13 @@ containing both Producer and Consumer support.")
     (version "1.7")
     (source (origin
               (method url-fetch)
-              (uri (string-append "http://libndp.org/files/"
-                                  name "-" version ".tar.gz"))
+              (uri (string-append "https://libndp.org/files/"
+                                  "libndp-" version ".tar.gz"))
               (sha256
                (base32
                 "1dlinhl39va00v55qygjc9ap77yqf7xvn4rwmvdr49xhzzxhlj1c"))))
     (build-system gnu-build-system)
-    (home-page "http://libndp.org/")
+    (home-page "https://libndp.org/")
     (synopsis "Library for Neighbor Discovery Protocol")
     (description
      "libndp contains a library which provides a wrapper for IPv6 Neighbor
@@ -589,14 +668,14 @@ receiving NDP messages.")
 (define-public ethtool
   (package
     (name "ethtool")
-    (version "5.6")
+    (version "5.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://kernel.org/software/network/"
                                   "ethtool/ethtool-" version ".tar.xz"))
               (sha256
                (base32
-                "159r0hwax0qs5diayw2glxshqxrigk0v67hgmbq56ldddm91n3ya"))))
+                "0ikmz36bdfwxscsfcgjmyzg70hwr8i3wpdhcp1vmk3q4ip858frg"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -652,6 +731,76 @@ needed/wanted real-time traffic statistics of multiple network
 interfaces, with a simple and efficient view on the command line.  It is
 intended as a substitute for the PPPStatus and EthStatus projects.")
     (license license:gpl2+)))
+
+(define-public iputils
+  (package
+    (name "iputils")
+    (version "20190709")
+    (home-page "https://github.com/iputils/iputils")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference (url home-page)
+                                  (commit (string-append "s" version))))
+              (file-name (git-file-name name version))
+              (patches (search-patches "iputils-libcap-compat.patch"))
+              (sha256
+               (base32
+                "04bp4af15adp79ipxmiakfp0ij6hx5qam266flzbr94pr8z8l693"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:configure-flags '("-DBUILD_RARPD=true")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-docbook-url
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let* ((docbook-xsl (assoc-ref inputs "docbook-xsl"))
+                    (uri (string-append docbook-xsl "/xml/xsl/docbook-xsl-"
+                                        ,(package-version docbook-xsl))))
+               (for-each
+                (lambda (file)
+                  (substitute* file
+                    (("http://docbook\\.sourceforge\\.net/release/xsl-ns/current")
+                     uri)))
+                (cons "doc/meson.build"
+                      (find-files "doc" "\\.xsl$")))
+               #t))))))
+    (native-inputs
+     `(("gettext" ,gettext-minimal)
+       ("pkg-config" ,pkg-config)
+       ("docbook-xsl" ,docbook-xsl)
+       ("docbook-xml" ,docbook-xml-5)
+       ("libxml2" ,libxml2)          ;for XML_CATALOG_FILES
+       ("xsltproc" ,libxslt)))
+    (inputs
+     `(("libcap" ,libcap)
+       ("libidn2" ,libidn2)
+       ("openssl" ,openssl)))
+    (synopsis "Collection of network utilities")
+    (description
+     "This package contains a variety of tools for dealing with network
+configuration, troubleshooting, or servers.  Utilities included are:
+
+@itemize @bullet
+@item @command{arping}: Ping hosts using the @dfn{Address Resolution Protocol}.
+@item @command{clockdiff}: Compute time difference between network hosts
+using ICMP TSTAMP messages.
+@item @command{ninfod}: Daemon that responds to IPv6 Node Information Queries.
+@item @command{ping}: Use ICMP ECHO messages to measure round-trip delays
+and packet loss across network paths.
+@item @command{rarpd}: Answer RARP requests from clients.
+@item @command{rdisc}: Populate network routing tables with information from
+the ICMP router discovery protocol.
+@item @command{tftpd}: Trivial file transfer protocol server.
+@item @command{tracepath}: Trace network path to an IPv4 or IPv6 address and
+discover MTU along the way.
+@end itemize")
+    ;; The various utilities are covered by different licenses, see LICENSE
+    ;; for details.
+    (license (list license:gpl2+  ;arping, rarpd, tracepath
+                   license:bsd-3  ;clockdiff, ninfod, ping, tftpd
+                   (license:non-copyleft
+                    "https://spdx.org/licenses/Rdisc.html"
+                    "Sun Microsystems license, see rdisc.c for details")))))
 
 (define-public nload
   (package
@@ -767,14 +916,14 @@ of the same name.")
 (define-public wireshark
   (package
     (name "wireshark")
-    (version "3.2.4")
+    (version "3.2.5")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.wireshark.org/download/src/wireshark-"
                            version ".tar.xz"))
        (sha256
-        (base32 "1amqgn94g6h6cfnsccm2zb4c73pfv1qmzi1i6h1hnbcyhhg4czfi"))))
+        (base32 "0h69m9maq6w5gik4gamv4kfqrr37hmi4kpwh225y1k36awm0b2dx"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases
@@ -836,25 +985,26 @@ network frames.")
 (define-public fping
   (package
     (name "fping")
-    (version "4.2")
+    (version "5.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://fping.org/dist/fping-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0jmnf4vmr43aiwk3h2b5qdsb95gxar8gz1yli8fswnm9nrs9ccvx"))))
+        (base32 "1f2prmii4fyl44cfykp40hp4jjhicrhddh9v3dfs11j6nsww0f7d"))))
     (build-system gnu-build-system)
     (home-page "https://fping.org/")
     (synopsis "Send ICMP ECHO_REQUEST packets to network hosts")
     (description
-     "fping is a ping like program which uses the Internet Control Message
-Protocol (ICMP) echo request to determine if a target host is responding.
-fping differs from ping in that you can specify any number of targets on the
-command line, or specify a file containing the lists of targets to ping.
-Instead of sending to one target until it times out or replies, fping will
-send out a ping packet and move on to the next target in a round-robin
-fashion.")
+     "fping is a ping-like program which uses @acronym{ICMP, Internet Control
+Message Protocol} echo requests to determine if a target host is responding.
+
+@command{fping} differs from @command{ping} in that you can specify any number
+of targets on the command line, or specify a file containing the lists of
+targets to ping.  Instead of sending to one target until it times out or
+replies, fping will send out a ping packet and move on to the next target in a
+round-robin fashion.")
     (license license:expat)))
 
 (define-public gandi.cli
@@ -915,7 +1065,7 @@ virtual machines, and certificates.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/vishvananda/netns.git")
+                      (url "https://github.com/vishvananda/netns")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -941,7 +1091,7 @@ handling network namespaces in Go.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/ishidawataru/sctp.git")
+                      (url "https://github.com/ishidawataru/sctp")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -1026,15 +1176,14 @@ TCP connection, TLS handshake and so on) in the terminal.")
 (define-public squid
   (package
     (name "squid")
-    (version "4.11")
+    (version "4.12")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://www.squid-cache.org/Versions/v4/squid-"
                            version ".tar.xz"))
        (sha256
-        (base32
-          "0z986kykx539wjqd7mr8y0abf3z6hz8byf8fmmbky9hh4ihlgnaf"))))
+        (base32 "05z34ysy2zn7as11vd365xxhh36bm1ysiwcbr0i0f0nwng406apl"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
@@ -1073,7 +1222,7 @@ reusing frequently-requested web pages.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/vgropp/bwm-ng.git")
+             (url "https://github.com/vgropp/bwm-ng")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1343,13 +1492,13 @@ definitions and structure manipulators for Perl.")
 (define-public perl-net-dns-resolver-programmable
  (package
   (name "perl-net-dns-resolver-programmable")
-  (version "v0.003")
+  (version "0.003")
   (source
     (origin
       (method url-fetch)
       (uri (string-append
              "mirror://cpan/authors/id/J/JM/JMEHNLE/net-dns-resolver-programmable/"
-             "Net-DNS-Resolver-Programmable-" version ".tar.gz"))
+             "Net-DNS-Resolver-Programmable-v" version ".tar.gz"))
       (sha256
         (base32
           "1v3nl2kaj4fs55n1617n53q8sa3mir06898vpy1rq98zjih24h4d"))
@@ -1630,16 +1779,16 @@ library remains flexible, portable, and easily embeddable.")
 (define-public sslh
   (package
     (name "sslh")
-    (version "1.20")
+    (version "1.21c")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/yrutschle/sslh.git")
+             (url "https://github.com/yrutschle/sslh")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "18zhkqlwfh6f5dg1a41a4p7p9g94dgb9nwls1ksy9r5yz174i2fx"))))
+        (base32 "19h32dn0076p3s7dn35qi5yp2xvnxw9sqphppmn72vyb8caxvw1z"))))
     (build-system gnu-build-system)
     (native-inputs
      `(;; Test dependencies.
@@ -1765,12 +1914,12 @@ gone wild and are suddenly taking up your bandwidth.")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://github.com/nzbget/nzbget/archive/v"
-                           version ".tar.gz"))
-       (file-name (string-append name "-" version ".tar.gz"))
+       (uri (string-append "https://github.com/nzbget/nzbget/releases"
+                           "/download/v" version
+                           "/nzbget-" version "-src.tar.gz"))
        (sha256
         (base32
-         "0l3dzxz7d7jf6cyach41zirvsx1x0vs4nh053c0miycv7zjyrly7"))
+         "0lwd0pfrs4a5ms193hgz2qiyf7grrc925dw6y0nfc0gkp27db9b5"))
        (modules '((guix build utils)))
        (snippet
         ;; Reported upstream as <https://github.com/nzbget/nzbget/pull/414>.
@@ -1807,7 +1956,7 @@ procedure calls (RPCs).")
 (define-public openvswitch
   (package
     (name "openvswitch")
-    (version "2.12.0")
+    (version "2.13.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1815,7 +1964,7 @@ procedure calls (RPCs).")
                     version ".tar.gz"))
               (sha256
                (base32
-                "1y78ix5inhhcvicbvyy2ij38am1215nr55vydhab3d4065q45z8k"))))
+                "0cd5vmfr6zwgcnkwys6rag6cmz68v0librpaplianv734xs74pyx"))))
     (build-system gnu-build-system)
     (arguments
      '(;; FIXME: many tests fail with:
@@ -1842,11 +1991,9 @@ procedure calls (RPCs).")
     (native-inputs
      `(("perl" ,perl)
        ("pkg-config" ,pkg-config)
-       ("python" ,python-2)
+       ("python" ,python-wrapper)
        ;; for testing
        ("util-linux" ,util-linux)))
-    (propagated-inputs
-     `(("python-six" ,python2-six)))
     (inputs
      `(("libcap-ng" ,libcap-ng)
        ("openssl" ,openssl)))
@@ -1936,13 +2083,14 @@ enabled due to license conflicts between the BSD advertising clause and the GPL.
     (version "3.0.19")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://github.com/ptrrkssn/pidentd/archive/"
-                           "v" version ".tar.gz"))
-       (file-name (string-append name "-" version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+              (url "https://github.com/ptrrkssn/pidentd")
+              (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
         (base32
-         "0y3kd1bkydqkpc1qdff24yswysamsqivvadjy0468qri5730izgc"))))
+         "1k4rr0b4ygxssbnsykzjvz4hjhazzz4j5arlilyc1iq7b1wzsk7i"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f)) ; No tests are included
@@ -1951,7 +2099,7 @@ enabled due to license conflicts between the BSD advertising clause and the GPL.
     (home-page "https://www.lysator.liu.se/~pen/pidentd/")
     (synopsis "Small Ident Daemon")
     (description
-     "@dfn{Pidentd} (Peter's Ident Daemon) is a identd, which implements a
+     "@dfn{Pidentd} (Peter's Ident Daemon) is an identd, which implements a
 identification server.  Pidentd looks up specific TCP/IP connections and
 returns the user name and other information about the connection.")
     (license license:public-domain)))
@@ -2047,7 +2195,7 @@ updates to the zebra daemon.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                       (url "https://github.com/vanhauser-thc/thc-ipv6.git")
+                       (url "https://github.com/vanhauser-thc/thc-ipv6")
                        (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -2121,33 +2269,28 @@ interface and a programmable text output for scripting.")
 (define-public libnet
   (package
     (name "libnet")
-    (version "1.2-rc3")
+    (version "1.2")
     (source
      (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/sam-github/libnet")
-             (commit (string-append "libnet-" version))))
-       (file-name (git-file-name name version))
+       (method url-fetch)
+       (uri (string-append "https://github.com/libnet/libnet/releases/download"
+                           "/v" version "/libnet-" version ".tar.gz"))
        (sha256
         (base32
-         "0cy8w4g5rv963v4p6iq3333kxgdddx2lywp70xf62553a25xhhs4"))))
+         "19ys9vxk6fg70yzzdxsphfr0rwzgxxhr9b3ykhpg7rfray0qd96a"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'chdir
-           (lambda _ (chdir "libnet") #t))
          (add-before 'build 'build-doc
            (lambda* (#:key make-flags #:allow-other-keys)
              (apply invoke "make" "-C" "doc" "doc"
                     make-flags))))))
     (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("libtool" ,libtool)
-       ("doxygen" ,doxygen)))
-    (home-page "https://sourceforge.net/projects/libnet-dev/")
+     `(;; To build the documentation, Doxygen and Perl is required.
+       ("doxygen" ,doxygen)
+       ("perl" ,perl)))
+    (home-page "https://github.com/libnet/libnet")
     (synopsis "Framework for low-level network packet construction")
     (description
      "Libnet provides a fairly portable framework for network packet
@@ -2356,19 +2499,43 @@ networks using zeromq.  It has these key characteristics:
     (home-page "https://github.com/zeromq/zyre")
     (license license:mpl2.0)))
 
-(define-public can-utils
+(define-public libsocketcan
   (package
-    (name "can-utils")
-    (version "2018.02.0")
+    (name "libsocketcan")
+    (version "0.0.11")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/linux-can/can-utils.git")
+                    (url "https://git.pengutronix.de/cgit/tools/libsocketcan")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0r0zkm67bdcmbfypjr7z041d4zp0xzb379dyl8cvhmflh12fd2jb"))))
+                "17z2y2r9xkixhr9bxr50m77fh710afl30s7jdhbxrvf56vmal2jr"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)))
+    (home-page "https://git.pengutronix.de/cgit/tools/libsocketcan")
+    (synopsis "SocketCAN user-space library")
+    (description "This library allows controlling basic functions in SocketCAN
+from user-space.  It requires a kernel built with SocketCAN support.")
+    (license license:lgpl2.1+)))
+
+(define-public can-utils
+  (package
+    (name "can-utils")
+    (version "2020.02.04")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/linux-can/can-utils")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1a3j1mmnb7pvgc8r7zzp6sdp7903in2hna6bmpraxln7cwlzn4l6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; No tests exist.
@@ -2544,7 +2711,7 @@ SNMP v3 using both IPv4 and IPv6.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/GNS3/ubridge.git")
+             (url "https://github.com/GNS3/ubridge")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -2583,7 +2750,7 @@ Ethernet and TAP interfaces is supported.  Packet capture is also supported.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ZerBea/hcxtools.git")
+             (url "https://github.com/ZerBea/hcxtools")
              (commit version)))
        (sha256
         (base32 "0k2qlq9hz5zc21nyc6yrnfqzga7hydn5mm0x3rpl2fhkwl81lxcn"))
@@ -2617,7 +2784,7 @@ packets from wireless devices for use with hashcat or John the Ripper.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/ZerBea/hcxdumptool.git")
+             (url "https://github.com/ZerBea/hcxdumptool")
              (commit version)))
        (sha256
         (base32 "1b4d543y64ib92w9gcmiyjn5hz2vyjqmxk3f3yr1zk04fhw16gmf"))
@@ -2731,7 +2898,7 @@ communication over HTTP.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/Stiffstream/restinio.git")
+                    (url "https://github.com/Stiffstream/restinio")
                     (commit (string-append "v." version))))
               (file-name (git-file-name name version))
               (sha256
@@ -2769,33 +2936,34 @@ and targeted primarily for asynchronous processing of HTTP-requests.")
 (define-public opendht
   (package
     (name "opendht")
-    (version "2.0.0")
+    (version "2.1.4")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/savoirfairelinux/opendht.git")
+                    (url "https://github.com/savoirfairelinux/opendht")
                     (commit version)))
               (file-name (git-file-name name version))
+              (patches (search-patches "opendht-fix-jami.patch"))
               (sha256
                (base32
-                "1q1fwk8wwk9r6bp0indpr60ql668lsk16ykslacyhrh7kg97kvhr"))))
+                "1ax26ri1ifb6s8ppd28jmanka9yf8mw3np65q2h4djhhik0phhal"))))
     ;; Since 2.0, the gnu-build-system does not seem to work anymore, upstream bug?
     (build-system cmake-build-system)
     (inputs
-     `(("gnutls" ,gnutls)
+     `(("argon2" ,argon2)
        ("nettle" ,nettle)
        ("readline" ,readline)
        ("jsoncpp" ,jsoncpp)
-       ("openssl" ,openssl)
+       ("openssl" ,openssl)             ;required for the DHT proxy
        ("fmt" ,fmt)))
     (propagated-inputs
-     `(("argon2" ,argon2)  ; TODO: Needed for the pkg-config .pc file to work?
+     `(("gnutls" ,gnutls)               ;included in opendht/crypto.h
        ("msgpack" ,msgpack)))           ;included in several installed headers
     (native-inputs
      `(("autoconf" ,autoconf)
-       ("pkg-config" ,pkg-config)
-       ("restinio" ,restinio)
        ("automake" ,automake)
+       ("pkg-config" ,pkg-config)
+       ("restinio" ,restinio)           ;headers only library
        ("libtool" ,libtool)
        ("cppunit" ,cppunit)))
     (arguments
@@ -2937,16 +3105,16 @@ module @code{batman-adv}, for Layer 2.")
 (define-public pagekite
   (package
     (name "pagekite")
-    (version "1.5.0.200327")
+    (version "1.5.2.200603")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/pagekite/PyPagekite.git")
+             (url "https://github.com/pagekite/PyPagekite")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1vw7kjwxqd3qvm7kpxgjzl6797y0i1f16yfkfad84qpx2ij0gvdm"))))
+        (base32 "08rcyr54dssnpand6y26f8x9cjmd91hr44my08kxw70s5iqiwizv"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -3106,7 +3274,7 @@ cables.")
 (define-public haproxy
   (package
     (name "haproxy")
-    (version "2.1.5")
+    (version "2.1.7")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.haproxy.org/download/"
@@ -3114,7 +3282,7 @@ cables.")
                                   "/src/haproxy-" version ".tar.gz"))
               (sha256
                (base32
-                "188ff33610jj11knjwjqwxci4p0i63n9k0l8bdb47ckahg2ll5s2"))))
+                "0fd3c1znid5a9w3gcf77b85hm2a2558w9s02c4b7xzkmivqnqbir"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
@@ -3192,3 +3360,49 @@ CDP.  The goal of LLDP is to provide an inter-vendor compatible mechanism to
 deliver Link-Layer notifications to adjacent network devices.  @code{lldpd} is
 an implementation of LLDP.  It also supports some proprietary protocols.")
     (license license:isc)))
+
+(define-public hashcash
+  (package
+    (name "hashcash")
+    (version "1.22")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://www.hashcash.org/source/hashcash-"
+                           version ".tgz"))
+       (sha256
+        (base32
+         "15kqaimwb2y8wvzpn73021bvay9mz1gqqfc40gk4hj6f84nz34h1"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:make-flags (list (string-append "CC=" ,(cc-for-target)))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         ;; No tests available.
+         (delete 'check)
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((outdir (assoc-ref outputs "out"))
+                    (bindir (string-append outdir "/bin"))
+                    (mandir (string-append outdir "/share/man/man1"))
+                    (docdir (string-append outdir "/share/doc/hashcash-" ,version)))
+               ;; Install manually, as we don't need the `sha1' binary
+               (install-file "hashcash" bindir)
+               (install-file "hashcash.1" mandir)
+               (install-file "README" docdir)
+               (install-file "LICENSE" docdir)
+               (install-file "CHANGELOG" docdir)
+               #t))))))
+    (home-page "https://www.hashcash.org/")
+    (synopsis "Denial-of-service countermeasure")
+    (description "Hashcash is a proof-of-work algorithm, which has been used
+as a denial-of-service countermeasure technique in a number of systems.
+
+A hashcash stamp constitutes a proof-of-work which takes a parametrizable
+amount of work to compute for the sender.  The recipient can verify received
+hashcash stamps efficiently.
+
+This package contains a command-line tool for computing and verifying hashcash
+stamps.")
+    (license license:public-domain)))

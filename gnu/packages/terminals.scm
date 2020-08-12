@@ -94,7 +94,7 @@
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/lanoxx/tilda.git")
+                    (url "https://github.com/lanoxx/tilda")
                     (commit (string-append "tilda-" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -365,7 +365,7 @@ combining, and so on, with a simple interface.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/npat-efault/picocom.git")
+                    (url "https://github.com/npat-efault/picocom")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
@@ -407,7 +407,7 @@ to all types of devices that provide serial consoles.")
              ;; unmaintained for some time, and vulnerable to at least two CVEs:
              ;; https://github.com/johnath/beep/issues/11#issuecomment-454056858
              ;; Use this maintained fork instead.
-             (url "https://github.com/spkr-beep/beep.git")
+             (url "https://github.com/spkr-beep/beep")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -438,7 +438,7 @@ has no notion of what's interesing, but it's very good at that notifying part.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/mauke/unibilium.git")
+             (url "https://github.com/mauke/unibilium")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -468,7 +468,7 @@ should be thread-safe.")
 (define-public libvterm
   (package
     (name "libvterm")
-    (version "0.1.1")
+    (version "0.1.3")
     (source
      (origin
        (method url-fetch)
@@ -476,7 +476,7 @@ should be thread-safe.")
                            "libvterm-" version ".tar.gz"))
        (sha256
         (base32
-         "1n5maylann2anfifjy576vzyar9q5m1kzpyiz2hca2pacxy8xf4v"))))
+         "0awfszvhc3cjsrqyx66fdmrc09k0wbm5mz78jpqf0n26d93285z4"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
@@ -708,7 +708,7 @@ desktop installed to have a decent terminal emulator.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/nsf/termbox-go.git")
+                      (url "https://github.com/nsf/termbox-go")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -766,7 +766,7 @@ usable with any list--including files, command history, processes and more.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/howeyc/gopass.git")
+                      (url "https://github.com/howeyc/gopass")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -902,7 +902,7 @@ per-line fullscreen terminal rendering, and keyboard input event reporting.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/tmate-io/tmate.git")
+             (url "https://github.com/tmate-io/tmate")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -934,7 +934,7 @@ tmux.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/kovidgoyal/kitty.git")
+             (url "https://github.com/kovidgoyal/kitty")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1041,7 +1041,7 @@ comfortably in a pager or editor.
       (origin
         (method git-fetch)
         (uri (git-reference
-               (url "https://github.com/MisterTea/EternalTerminal.git")
+               (url "https://github.com/MisterTea/EternalTerminal")
                (commit (string-append "et-v" version))))
         (file-name (git-file-name name version))
        (sha256
@@ -1081,7 +1081,7 @@ while also supporting native scrolling and @command{tmux} control mode
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/majestrate/wterm.git")
+             (url "https://github.com/majestrate/wterm")
              (commit "0ae42717c08a85a6509214e881422c7fbe7ecc45")))
        (sha256
          (base32
@@ -1137,7 +1137,7 @@ made by suckless.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/jwilm/alacritty.git")
+             (url "https://github.com/jwilm/alacritty")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1155,9 +1155,9 @@ made by suckless.")
         ("rust-log" ,rust-log-0.4)
         ("rust-time" ,rust-time-0.1)
         ("rust-env-logger" ,rust-env-logger-0.7)
-        ("rust-serde" ,rust-serde-1.0)
+        ("rust-serde" ,rust-serde-1)
         ("rust-serde-yaml" ,rust-serde-yaml-0.8)
-        ("rust-serde-json" ,rust-serde-json-1.0)
+        ("rust-serde-json" ,rust-serde-json-1)
         ("rust-glutin" ,rust-glutin-0.22) ; adjust 'patch-glutin-libgl-path as needed
         ("rust-notify" ,rust-notify-4)
         ("rust-libc" ,rust-libc-0.2)
@@ -1171,7 +1171,7 @@ made by suckless.")
         ("rust-winapi" ,rust-winapi-0.3)
         ("rust-base64" ,rust-base64-0.11)
         ("rust-bigflags" ,rust-bitflags-1)
-        ("rust-fnv" ,rust-fnv-1.0)
+        ("rust-fnv" ,rust-fnv-1)
         ("rust-mio" ,rust-mio-0.6)
         ("rust-mio-extras" ,rust-mio-extras-2)
         ("rust-terminfo" ,rust-terminfo-0.6)
@@ -1207,7 +1207,7 @@ made by suckless.")
         ("rust-embed-resource" ,rust-embed-resource-1.3)
         ("rust-http-req" ,rust-http-req-0.5)
         ("rust-zip" ,rust-zip-0.5)
-        ("rust-tempfile" ,rust-tempfile-3.1)
+        ("rust-tempfile" ,rust-tempfile-3)
         ("rust-named-pipe" ,rust-named-pipe-0.4)
         ("rust-winapi" ,rust-winapi-0.3))
        #:phases
@@ -1236,21 +1236,29 @@ made by suckless.")
          (replace 'install
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out   (assoc-ref outputs "out"))
+                    (bin   (string-append out "/bin"))
                     (share (string-append out "/share"))
                     (icons (string-append share "/icons/hicolor/scalable/apps"))
                     (tic   (string-append (assoc-ref inputs "ncurses") "/bin/tic"))
                     (man   (string-append share "/man/man1"))
                     (alacritty-bin "target/release/alacritty"))
 
-               ;; Install binary
-               (install-file alacritty-bin (string-append out "/bin"))
+               ;; Install and wrap the binary.
+               (install-file alacritty-bin bin)
+               (wrap-program (string-append bin "/alacritty")
+                 ;; Both libraries are dlopen()d by cargo dependencies above
+                 ;; when running Alacritty on pure Wayland.
+                 ;; XXX Find out how to patch these at the source.
+                 `("LD_LIBRARY_PATH" ":" prefix
+                   (,(string-append (assoc-ref inputs "libxkbcommon") "/lib:"
+                                    (assoc-ref inputs "wayland") "/lib"))))
 
-               ;; Install man pages
+               ;; Install man pages.
                (mkdir-p man)
                (copy-file "extra/alacritty.man"
                           (string-append man "/alacritty.1"))
 
-               ;; Install desktop file
+               ;; Install desktop file.
                (install-file "extra/linux/alacritty.desktop"
                              (string-append share "/applications"))
 
@@ -1259,7 +1267,7 @@ made by suckless.")
                (copy-file "extra/logo/alacritty-term.svg"
                           (string-append icons "/Alacritty.svg"))
 
-               ;; Install terminfo
+               ;; Install terminfo.
                (mkdir-p (string-append share "/terminfo"))
                ;; We don't compile alacritty-common entry because
                ;; it's being used only for inheritance.
@@ -1267,7 +1275,7 @@ made by suckless.")
                        "-o" (string-append share "/terminfo/")
                        "extra/alacritty.info")
 
-               ;; Install completions
+               ;; Install completions.
                (install-file
                  "extra/completions/alacritty.bash"
                  (string-append out "/etc/bash_completion.d"))

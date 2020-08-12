@@ -90,7 +90,7 @@
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/graeme-hill/crossguid.git")
+                      (url "https://github.com/graeme-hill/crossguid")
                       (commit commit)))
                 (file-name (string-append name "-" version "-checkout"))
                 (sha256
@@ -140,7 +140,7 @@ generator library for C++.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/xbmc/libdvdnav.git")
+                      (url "https://github.com/xbmc/libdvdnav")
                       (commit commit)))
                 (file-name (string-append name "-" version "-checkout"))
                 (sha256
@@ -175,7 +175,7 @@ generator library for C++.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/xbmc/libdvdread.git")
+                      (url "https://github.com/xbmc/libdvdread")
                       (commit commit)))
                 (file-name (string-append name "-" version "-checkout"))
                 (sha256
@@ -210,7 +210,7 @@ generator library for C++.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/xbmc/libdvdcss.git")
+                      (url "https://github.com/xbmc/libdvdcss")
                       (commit commit)))
                 (file-name (string-append name "-" version "-checkout"))
                 (sha256
@@ -269,16 +269,16 @@ alternatives. In compilers, this can reduce the cascade of secondary errors.")
 (define-public kodi
   (package
     (name "kodi")
-    (version "18.7")
+    (version "18.7.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/xbmc/xbmc.git")
+                    (url "https://github.com/xbmc/xbmc")
                     (commit (string-append version "-Leia"))))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "082cpih84j7v29w55qhj0rdia7hdjpwi81qywiwawd4vlyimpv2h"))
+                "1ypn29yhy49mz9x4xqh2zfdrsbfwm1b4canvh9zvy9c1irjwf419"))
               (patches (search-patches "kodi-skip-test-449.patch"
                                        "kodi-increase-test-timeout.patch"
                                        "kodi-set-libcurl-ssl-parameters.patch"))

@@ -137,12 +137,6 @@ USERS."
   "Remove the store overlay and the bind-mount on /tmp created by the
 cow-store service.  This procedure is very fragile and a better approach would
 be much appreciated."
-
-  ;; Remove when integrated in (gnu services herd).
-  (define (restart-service name)
-    (with-shepherd-action name ('restart) result
-      result))
-
   (catch #t
     (lambda ()
       (let ((tmp-dir "/remove"))
@@ -155,6 +149,8 @@ be much appreciated."
         ;; restart it.
         (restart-service 'guix-daemon)
 
+        (syslog "Killing cow users.")
+
         ;; Kill all processes started while the cow-store was active (logins
         ;; on other TTYs for instance).
         (kill-cow-users tmp-dir)
@@ -162,6 +158,7 @@ be much appreciated."
         ;; Try to umount the store overlay. Some process such as udevd
         ;; workers might still be active, so do some retries.
         (let loop ((try 5))
+          (syslog "Umount try ~a~%" (- 5 try))
           (sleep 1)
           (let ((umounted? (false-if-exception (umount tmp-dir))))
             (if (and (not umounted?) (> try 0))

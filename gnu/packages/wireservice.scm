@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2019 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -67,7 +68,7 @@
    (source (origin
              (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/wireservice/leather.git")
+                   (url "https://github.com/wireservice/leather")
                    (commit version)))
              (file-name (git-file-name name version))
              (sha256
@@ -93,7 +94,7 @@ charts now and don't care if they're perfect.")))
    (source (origin
              (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/wireservice/agate.git")
+                   (url "https://github.com/wireservice/agate")
                    (commit version)))
              (file-name (git-file-name name version))
              (sha256
@@ -126,7 +127,7 @@ code.  Agate was previously known as journalism.")))
    (source (origin
              (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/wireservice/agate-sql.git")
+                   (url "https://github.com/wireservice/agate-sql")
                    (commit version)))
              (file-name (git-file-name name version))
              (sha256
@@ -152,7 +153,7 @@ support to all @code{agate.Table} instances.")))
    (source (origin
              (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/wireservice/agate-dbf.git")
+                   (url "https://github.com/wireservice/agate-dbf")
                    (commit version)))
              (file-name (git-file-name name version))
              (sha256
@@ -177,7 +178,7 @@ for dbf files support to all @code{agate.Table} instances.")))
    (source (origin
              (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/wireservice/agate-excel.git")
+                   (url "https://github.com/wireservice/agate-excel")
                    (commit version)))
              (file-name (git-file-name name version))
              (sha256
@@ -215,7 +216,8 @@ for xls and xlsx files support to all @code{agate.Table} instances.")))
      `(("python-agate-dbf" ,python-agate-dbf)
        ("python-agate-excel" ,python-agate-excel)
        ("python-agate-sql" ,python-agate-sql)
-       ("python-six" ,python-six)))
+       ("python-six" ,python-six)
+       ("python-text-unidecode" ,python-text-unidecode)))
     (arguments
      `(#:phases
        (modify-phases %standard-phases

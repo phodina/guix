@@ -8,6 +8,8 @@
 ;;; Copyright © 2019 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
+;;; Copyright @ 2020 Katherine Cox-Buday <cox.katherine.e@gmail.com>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -41,6 +43,7 @@
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages pkg-config)
@@ -308,7 +311,7 @@ any other grammar rules.")
 (define-public sparse
   (package
     (name "sparse")
-    (version "0.6.1")
+    (version "0.6.2")
     (source (origin
               (method url-fetch)
               (uri
@@ -316,7 +319,7 @@ any other grammar rules.")
                               "sparse-"  version ".tar.xz"))
               (sha256
                (base32
-                "0qavyryxmhd1rf11akgn1nq3r15k11bqa3qajaq36a56r225rc7x"))))
+                "1z11chawwcmf5xxx5v52cj7wrr3warz6q5wlcjvxpif1jbga172i"))))
     (build-system gnu-build-system)
     (inputs `(("perl" ,perl)))
     (arguments
@@ -339,3 +342,134 @@ address space pointers point to, or what locks a function acquires or
 releases.")
     (home-page "https://sparse.wiki.kernel.org/index.php/Main_Page")
     (license license:expat)))
+
+(define-public libestr
+  (package
+    (name "libestr")
+    (version "0.1.11")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/rsyslog/libestr")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1ca4rj90c0dn7kqpbcchkflxjw88a7rxcnwbr0gply4a28i01nd8"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         ;; autogen.sh calls configure at the end of the script.
+         (replace 'bootstrap
+           (lambda _ (invoke "autoreconf" "-vfi"))))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)
+       ("libtool" ,libtool)))
+    (home-page "https://github.com/rsyslog/libestr")
+    (synopsis "Helper functions for handling strings")
+    (description
+     "This C library contains some essential string manipulation functions and
+more, like escaping special characters.")
+    (license license:lgpl2.1+)))
+
+(define-public libfastjson
+  (package
+    (name "libfastjson")
+    (version "0.99.8")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/rsyslog/libfastjson")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0qhs0g9slj3p0v2z4s3cnsx44msrlb4k78ljg7714qiziqbrbwyl"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)))
+    (home-page "https://github.com/rsyslog/libfastjson")
+    (synopsis "Fast JSON library for C")
+    (description
+     "libfastjson is a fork from json-c aiming to provide: a small library
+with essential JSON handling functions, sufficiently good JSON support (not
+100% standards compliant), and very fast processing.")
+    (license license:expat)))
+
+(define-public liblogging
+  (package
+    (name "liblogging")
+    (version "1.0.6")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/rsyslog/liblogging")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1l32m0y65svf5vxsgw935jnqs6842rcqr56dmzwqvr00yfrjhjkp"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         ;; autogen.sh calls configure at the end of the script.
+         (replace 'bootstrap
+           (lambda _ (invoke "autoreconf" "-vfi"))))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)
+       ("libtool" ,libtool)
+       ;; For rst2man.py
+       ("python-docutils" ,python-docutils)))
+    (home-page "https://github.com/rsyslog/liblogging")
+    (synopsis "Easy to use and lightweight signal-safe logging library")
+    (description
+     "Liblogging is an easy to use library for logging.  It offers an enhanced
+replacement for the syslog() call, but retains its ease of use.")
+    (license license:bsd-2)))
+
+(define-public unifdef
+  (package
+    (name "unifdef")
+    (version "2.12")
+    (source (origin
+              (method url-fetch)
+              ;; https://dotat.at/prog/unifdef/unifdef-2.12.tar.xz
+              (uri (string-append "https://dotat.at/prog/" name "/"
+                                  name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "00647bp3m9n01ck6ilw6r24fk4mivmimamvm4hxp5p6wxh10zkj3"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin (delete-file-recursively "FreeBSD")
+                       (delete-file-recursively "win32")
+                       #t))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (delete 'configure))
+       #:make-flags (list "CC=gcc" (string-append "prefix=" %output))
+       #:tests? #f))                    ;no test suite
+    (native-inputs
+     `(("perl" ,perl)))
+    (home-page "https://dotat.at/prog/unifdef/")
+    (synopsis "Utility to selectively processes conditional C preprocessor")
+    (description "The @command{unifdef} utility selectively processes
+conditional C preprocessor @code{#if} and @code{#ifdef} directives.  It
+removes from a file both the directives and the additional text that they
+delimit, while otherwise leaving the file alone.  It can be useful for
+avoiding distractions when studying code that uses @code{#ifdef} heavily for
+portability.")
+    (license (list license:bsd-2        ;all files except...
+                   license:bsd-3))))    ;...the unidef.1 manual page

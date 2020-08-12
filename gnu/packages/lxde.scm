@@ -87,7 +87,7 @@
     (synopsis "File management support (core library)")
     (description "LibFM provides file management functions built on top of
 Glib/GIO giving a higher-level API.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public libfm-extra
@@ -120,7 +120,7 @@ libFM file management library.")))
     (synopsis "LXDE GTK+ theme switcher")
     (description "LXAppearance is a desktop-independent GTK+ theme switcher
 able to change themes, icons, and fonts used by GTK+ applications.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public lxrandr
@@ -137,7 +137,19 @@ able to change themes, icons, and fonts used by GTK+ applications.")
                (base32
                 "04n3vgh3ix12p8jfs4w0dyfq3anbjy33h7g53wbbqqc0f74xyplb"))))
     (build-system gnu-build-system)
-    (inputs `(("gtk+" ,gtk+-2)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'xrandr-absolutely
+           ;; lxrandr is useless without xrandr and gives an unhelpful error
+           ;; message if it's not in $PATH, so make it a hard dependency.
+           (lambda* (#:key input #:allow-other-keys)
+             (substitute* "src/lxrandr.c"
+               (("(\"|')xrandr\"" _ match)
+                (string-append match (which "xrandr") "\"")))
+             #t)))))
+    (inputs `(("gtk+" ,gtk+-2)
+              ("xrandr" ,xrandr)))
     (native-inputs `(("intltool"   ,intltool)
                      ("pkg-config" ,pkg-config)))
     (synopsis "LXDE monitor configuration tool")
@@ -146,7 +158,7 @@ relies on the X11 resize-and-rotate (RandR) extension but doesn't aim to be a
 full frontend of it.  LXRandR only gives you some easy and quick options which
 are intuitive.  It's suitable for laptop users who frequently uses projectors
 or external monitor.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public lxtask
@@ -170,7 +182,7 @@ or external monitor.")
     (description "LXTask is a lightweight task manager derived from Xfce task
 manager with all dependencies on Xfce removed.  LXTask is based on the GTK+
 toolkit.  It allows users to monitor and control of running processes.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public lxterminal
@@ -195,7 +207,7 @@ toolkit.  It allows users to monitor and control of running processes.")
 multiple tabs and has only minimal dependencies thus being completely
 desktop-independent.  In order to reduce memory usage and increase the
 performance, all instances of the terminal are sharing a single process.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public menu-cache
@@ -217,7 +229,7 @@ performance, all instances of the terminal are sharing a single process.")
     (synopsis "LXDE implementation of the freedesktop menu's cache")
     (description "Menu-cache is a library creating and utilizing caches to
 speed up the access to freedesktop.org defined application menus.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:lgpl2.1+)))
 
 (define-public pcmanfm
@@ -245,7 +257,7 @@ speed up the access to freedesktop.org defined application menus.")
     (synopsis "LXDE file manager")
     (description "PCMan is a lightweight GTK+ based file manager, compliant
 with freedesktop.org standard.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public spacefm
@@ -258,7 +270,7 @@ with freedesktop.org standard.")
        (method git-fetch)
        (uri
         (git-reference
-         (url "https://github.com/IgnorantGuru/spacefm.git")
+         (url "https://github.com/IgnorantGuru/spacefm")
          (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -428,7 +440,7 @@ customizable menu system, and Bash integration.")
     (description
      "Lxmenu-data provides files required to build freedesktop.org
 menu spec-compliant desktop menus for LXDE.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:lgpl2.1+)))
 
 (define-public lxde-icon-theme
@@ -449,7 +461,7 @@ menu spec-compliant desktop menus for LXDE.")
     (synopsis "LXDE default icon theme based on nuoveXT2")
     (description
      "Lxde-icon-theme provides an default icon theme for LXDE.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:lgpl3)))
 
 (define-public lxde-common
@@ -488,7 +500,7 @@ menu spec-compliant desktop menus for LXDE.")
     (synopsis "Common files of the LXDE Desktop")
     (description
      "Lxde-common provides common files of the LXDE Desktop.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public lxinput
@@ -513,7 +525,7 @@ menu spec-compliant desktop menus for LXDE.")
     (description
      "Lxinput provides a small program to configure keyboard and mouse
 in LXDE.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public lxsession
@@ -566,7 +578,7 @@ in LXDE.")
     (synopsis "Lightweight X11 session manager")
     (description
      "Lxsession provides an lightweight X11 session manager.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public lxpanel
@@ -617,7 +629,7 @@ in LXDE.")
     (synopsis "X11 Desktop panel for LXDE")
     (description
      "Lxpanel provides an X11 desktop panel for LXDE.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+)))
 
 (define-public lxde
@@ -656,7 +668,7 @@ user friendly and slim, while keeping the resource usage low.  LXDE uses
 less RAM and less CPU while being a feature rich desktop environment.  Unlike
 other tightly integrated desktops LXDE strives to be modular, so each
 component can be used independently with few dependencies.")
-    (home-page "https://lxde.org")
+    (home-page "https://lxde.github.io")
     (license license:gpl2+))) ; And others.
 
 ;;; lxde.scm ends here

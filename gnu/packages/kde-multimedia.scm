@@ -1,5 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017, 2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
+;;; Copyright © 2020 Timotej Lazar <timotej.lazar@araneo.si>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -46,14 +47,14 @@
 (define-public audiocd-kio
   (package
     (name "audiocd-kio")
-    (version "19.08.3")
+    (version "20.04.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/applications/" version
+       (uri (string-append "mirror://kde/stable/release-service/" version
                            "/src/audiocd-kio-" version ".tar.xz"))
        (sha256
-        (base32 "1924w7li16qkmqsvbgfihjd7id6mb00m9k3acfwkkf32yzg3dn4q"))))
+        (base32 "0qlnxxbayqhz25jbvzis27jw2zbw1pmacp8rv7v5wa7zfqn3kmyk"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -86,14 +87,14 @@ This package is part of the KDE multimedia module.")
 (define-public dragon
   (package
     (name "dragon")
-    (version "19.08.3")
+    (version "20.04.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/applications/" version
+       (uri (string-append "mirror://kde/stable/release-service/" version
                            "/src/dragon-" version ".tar.xz"))
        (sha256
-        (base32 "02l16k4sgrxbczxp8rlnxbylb5fmjh4zhl4xw55qxkvmvxnjy5zr"))))
+        (base32 "1sssg20a1vpwk816lp5jgwahilaswb9f3hgfqvc73il4g11ky1xj"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -201,14 +202,14 @@ its own database.  You can build and play your own playlist.")
 (define-public ffmpegthumbs
   (package
     (name "ffmpegthumbs")
-    (version "19.08.3")
+    (version "20.04.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/applications/" version
+       (uri (string-append "mirror://kde/stable/release-service/" version
                            "/src/ffmpegthumbs-" version ".tar.xz"))
        (sha256
-        (base32 "1w6070ng40nf99wpl6p5s8nx0icfx2c26vvnz4f9fx7l7pldh6n9"))))
+        (base32 "17l50z33a1h5zkrrfkb261yi2hms66qj36l1mndq7mvs97y2ggmc"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -232,14 +233,14 @@ This package is part of the KDE multimedia module.")
 (define-public juk
   (package
     (name "juk")
-    (version "19.08.3")
+    (version "20.04.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/applications/" version
+       (uri (string-append "mirror://kde/stable/release-service/" version
                            "/src/juk-" version ".tar.xz"))
        (sha256
-        (base32 "0c1hrd1n4ah7qm8xr7bfswgbcmbvnnhai4bfawx6v6ab3frl7wvf"))))
+        (base32 "06vsh7knyhcbcbf632jhldbqpzfkdyils2l8dbcdw5nj5hhgzzmr"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)))
@@ -287,21 +288,48 @@ This package is part of the KDE multimedia module.")
 (define-public k3b
   (package
     (name "k3b")
-    (version "19.08.3")
+    (version "20.04.2")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/applications/" version
+       (uri (string-append "mirror://kde/stable/release-service/" version
                            "/src/k3b-" version ".tar.xz"))
        (sha256
-        (base32 "08rbiy1hz650srdksr7ciq8dpcz20wczs22613pghrpgm5zsczhr"))))
+        (base32 "15wm987hz6rfs9ds9l1gbs6gdsardj1ywvk6zmpvj2i2190y4b3q"))))
     (build-system qt-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'set-absolute-library-paths
+           (lambda _
+             ;; Set absolute paths for dlopened libraries. We can’t use k3b’s
+             ;; runpath as they are loaded by the Qt library.
+             (let ((libcdio-paranoia (assoc-ref %build-inputs "libcdio-paranoia"))
+                   (libdvdcss (assoc-ref %build-inputs "libdvdcss")))
+               (substitute* "libk3b/tools/k3bcdparanoialib.cpp"
+                 (("\"(cdio_cdda|cdio_paranoia)\"" _ library)
+                  (string-append "\"" libcdio-paranoia "/lib/" library "\"")))
+               (substitute* "libk3b/tools/k3blibdvdcss.cpp"
+                 (("\"(dvdcss)\"" _ library)
+                  (string-append "\"" libdvdcss "/lib/" library "\""))))
+             #t))
+         (add-after 'qt-wrap 'wrap-path
+           (lambda _
+             ;; Set paths to backend programs.
+             (wrap-program (string-append (assoc-ref %outputs "out") "/bin/k3b")
+               `("PATH" ":" prefix
+                 ,(map (lambda (input)
+                         (string-append (assoc-ref %build-inputs input) "/bin"))
+                       '("cdrdao" "dvd+rw-tools" "libburn" "sox"))))
+             #t)))))
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("pkg-config" ,pkg-config)
        ("kdoctools" ,kdoctools)))
     (inputs
-     `(("ffmpeg" ,ffmpeg)
+     `(("cdrdao" ,cdrdao)
+       ("dvd+rw-tools" ,dvd+rw-tools)
+       ("ffmpeg" ,ffmpeg)
        ("flac" ,flac)
        ("karchive" ,karchive)
        ("kcmutils" ,kcmutils)
@@ -319,6 +347,9 @@ This package is part of the KDE multimedia module.")
        ("kwidgetsaddons" ,kwidgetsaddons)
        ("kxmlgui" ,kxmlgui)
        ("lame" ,lame)
+       ("libburn" ,libburn)
+       ("libcdio-paranoia" ,libcdio-paranoia)
+       ("libdvdcss" ,libdvdcss)
        ("libdvdread" ,libdvdread)
        ;; TODO: LibFuzzer
        ("libiconv" ,libiconv)
@@ -334,13 +365,17 @@ This package is part of the KDE multimedia module.")
        ("qtwebkit" ,qtwebkit)
        ("shared-mime-info" ,shared-mime-info)
        ("solid" ,solid)
+       ("sox" ,sox)
        ("taglib" ,taglib)))
     (home-page "https://kde.org/applications/multimedia/org.kde.k3b")
     (synopsis "Sophisticated CD/DVD burning application")
     (description "K3b is CD-writing software which intends to be feature-rich
 and provide an easily usable interface.  Features include burning audio CDs
 from .WAV and .MP3 audio files, configuring external programs and configuring
-devices.")
+devices.
+
+The @code{udisks-service} should be enabled for @command{k3b} to discover the
+available CD drives.")
     (license ;; GPL for programs, FDL for documentation
      (list license:gpl2+ license:fdl1.2+))))
 
@@ -400,14 +435,14 @@ autoloading of subtitle files for use while playing video.")
 (define-public kamoso
   (package
     (name "kamoso")
-    (version "19.08.3")
+    (version "20.04.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/applications/" version
+       (uri (string-append "mirror://kde/stable/release-service/" version
                            "/src/kamoso-" version ".tar.xz"))
        (sha256
-        (base32 "0j0lr2gwaxwchgfp54dashm1b39gsaw4ly9p8ybavwwzhjkdqza3"))))
+        (base32 "0c47j315kjfikd3b6x18786k3gqymicjjslpm0a58zdxl3wpqfay"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -447,14 +482,14 @@ camera.  Use it to take pictures and make videos to share.")
 (define-public kmix
   (package
     (name "kmix")
-    (version "19.08.3")
+    (version "20.04.1")
     (source
      (origin
       (method url-fetch)
-      (uri (string-append "mirror://kde/stable/applications/" version
+      (uri (string-append "mirror://kde/stable/release-service/" version
                           "/src/kmix-" version ".tar.xz"))
       (sha256
-       (base32 "1g42hlmpdf0rrgqapps6v47z9cnwpkfzpwgavaq26m5k3bpanwfg"))))
+       (base32 "1na52ypp57wqrc6pl1khinx9i6fidv1k97nnxcy8zb4l7d5sh1nd"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -560,14 +595,14 @@ Some features:
 (define-public kwave
   (package
     (name "kwave")
-    (version "19.08.3")
+    (version "20.04.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/applications/" version
+       (uri (string-append "mirror://kde/stable/release-service/" version
                           "/src/kwave-" version ".tar.xz"))
        (sha256
-        (base32 "1vv3m3h9mvjr9sxajccqnvcgvz901n3qxhki0g7vsljvh31x5s5x"))))
+        (base32 "0ysa873pc2gip95cxr8yv7ifd9qql5zg6h67i9n9q3iqa6v58iyw"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -637,14 +672,14 @@ Its features include:
 (define-public libkcddb
   (package
     (name "libkcddb")
-    (version "19.08.3")
+    (version "20.04.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/applications/" version
+       (uri (string-append "mirror://kde/stable/release-service/" version
                            "/src/libkcddb-" version ".tar.xz"))
        (sha256
-        (base32 "1rla9sfzpdfiki0p265ga6d1axqpq37825maaw85hm84mg7hkzjn"))))
+        (base32 "1fwryaj8ldmsqhl5qxjda8by9i7xlb97r8p9rqzckw697hkfhs0h"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -668,14 +703,14 @@ Its features include:
 (define-public libkcompactdisc
   (package
     (name "libkcompactdisc")
-    (version "19.08.3")
+    (version "20.04.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/applications/" version
+       (uri (string-append "mirror://kde/stable/release-service/" version
                            "/src/libkcompactdisc-" version ".tar.xz"))
        (sha256
-        (base32 "09gl2dww5i50rpj92ryw4vq5ryy96cv9kflg6yqgdbznmmdqhawi"))))
+        (base32 "0iy4i0hxqsrnndd4iqkww7v1rqry7kvi5paxdw5qjfffwn8kcsbx"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)))
