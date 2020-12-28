@@ -1589,50 +1589,57 @@ ac_cv_c_float_format='IEEE (little-endian)'
                  #t)))))))))
 
 (define gcc-mesboot0
-  (package
-    (inherit gcc-core-mesboot0)
-    (name "gcc-mesboot0")
-    (native-inputs `(("boot-patch" ,(search-patch "gcc-boot-2.95.3.patch"))
-                     ;; Packages are given in an order that's relevant for
-                     ;; #include_next purposes.
-                     ("libc" ,glibc-mesboot0)
-                     ("kernel-headers" ,%bootstrap-linux-libre-headers)
-                     ,@(%boot-mesboot-core-inputs)))
-    (arguments
-     (substitute-keyword-arguments (package-arguments gcc-core-mesboot0)
-       ((#:phases phases)
-        `(modify-phases ,phases
-           (replace 'setenv
-             (lambda _
-               (setenv "CONFIG_SHELL" (which "sh"))
-               (with-output-to-file "config.cache"
-                 (lambda _
-                   (display "
+  (let ((triplet (match (%current-system)
+                   ((or "armhf-linux" "aarch64-linux")
+                    "arm-unknown-linux-gnu")
+                   ((or "i686-linux" "x86_64-linux")
+                    "i686-unknown-linux-gnu"))))
+    (package
+      (inherit gcc-core-mesboot0)
+      (name "gcc-mesboot0")
+      (native-inputs `(("boot-patch" ,(search-patch "gcc-boot-2.95.3.patch"))
+                       ("arm-patch" ,(search-patch "gcc-boot-2.95.3-arm.patch"))
+                       ;; Packages are given in an order that's relevant for
+                       ;; #include_next purposes.
+                       ("libc" ,glibc-mesboot0)
+                       ("kernel-headers" ,%bootstrap-linux-libre-headers)
+                       ,@(%boot-mesboot-core-inputs)))
+      (arguments
+       (substitute-keyword-arguments (package-arguments gcc-core-mesboot0)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             (replace 'setenv
+               (lambda _
+                 (setenv "CONFIG_SHELL" (which "sh"))
+                 (with-output-to-file "config.cache"
+                   (lambda _
+                     (display "
 ac_cv_c_float_format='IEEE (little-endian)'
 ")))
-               #t))
-           (replace 'install2
-             (lambda* (#:key outputs #:allow-other-keys)
-               (let* ((out (assoc-ref outputs "out"))
-                      (gcc-dir (string-append
-                                out "/lib/gcc-lib/i686-unknown-linux-gnu/2.95.3")))
-                 (and
-                  (mkdir-p "tmp")
-                  (zero? (system (string-append "set -x; cd tmp && ar x ../gcc/libgcc2.a")))
-                  (zero? (system (string-append "set -x; cd tmp && ar r " gcc-dir "/libgcc.a *.o")))
-                  (copy-file "gcc/libgcc2.a" (string-append out "/lib/libgcc2.a"))))))))
-       ((#:configure-flags configure-flags)
-        `(let ((out (assoc-ref %outputs "out")))
-           `("--disable-shared"
-             "--disable-werror"
-             "--build=i686-unknown-linux-gnu"
-             "--host=i686-unknown-linux-gnu"
-             ,(string-append "--prefix=" out))))
-       ((#:make-flags make-flags)
-        `(let ((gcc (assoc-ref %build-inputs "gcc")))
-           `("RANLIB=true"
-             ,(string-append "LIBGCC2_INCLUDES=-I " gcc "/include")
-             "LANGUAGES=c")))))))
+                 #t))
+             (replace 'install2
+               (lambda* (#:key outputs #:allow-other-keys)
+                 (let* ((out (assoc-ref outputs "out"))
+                        (gcc-dir (string-append
+                                  out "/lib/gcc-lib/" triplet "/2.95.3")))
+                   (and
+                    (mkdir-p "tmp")
+                    (zero? (system (string-append "set -x; cd tmp && ar x ../gcc/libgcc2.a")))
+                    (zero? (system (string-append "set -x; cd tmp && ar r " gcc-dir "/libgcc.a *.o")))
+                    (copy-file "gcc/libgcc2.a" (string-append out "/lib/libgcc2.a"))))))))
+         ((#:configure-flags configure-flags)
+          `(let ((out (assoc-ref %outputs "out")))
+             (list
+              "--disable-shared"
+              "--disable-werror"
+              (string-append "--build=" ,triplet)
+              (string-append "--host=" ,triplet)
+              (string-append "--prefix=" out))))
+         ((#:make-flags make-flags)
+          `(let ((gcc (assoc-ref %build-inputs "gcc")))
+             `("RANLIB=true"
+               ,(string-append "LIBGCC2_INCLUDES=-I " gcc "/include")
+               "LANGUAGES=c"))))))))
 
 (define (%boot-mesboot0-inputs)
   `(("gcc" ,gcc-mesboot0)
