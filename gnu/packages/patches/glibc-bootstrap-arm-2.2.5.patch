@@ -1,0 +1,599 @@
+Not presented upstream.
+
+From 64b051208f2f1687f3dac9d32622facec7c380ca Mon Sep 17 00:00:00 2001
+From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
+Date: Sun, 10 Jan 2021 15:01:05 +0100
+Subject: [PATCH] Guard __NR_sigaction, __NR_sigpending, __NR_sigprocmask,
+ __NR_sigreturn, __NR_sigsuspend.
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+
+This fixes building on armhf-linux.
+
+* sysdeps/unix/sysv/linux/arm/sigaction.c (__libc_sigaction): Avoid
+using undefined __NR_sigaction.
+* sysdeps/unix/sysv/linux/arm/sigrestorer.S: Avoid using undefined
+__NR_sigreturn.
+* sysdeps/unix/sysv/linux/sigpending.c (sigpending): Avoid using
+undefined __NR_sigpending.
+* sysdeps/unix/sysv/linux/sigprocmask.c (__sigprocmask): Avoid using
+undefined __NR_sigprocmask.
+* sysdeps/unix/sysv/linux/sigsuspend.c (__sigsuspend): Avoid using
+undefined __NR_sigsuspend.
+---
+ sysdeps/unix/sysv/linux/arm/sigaction.c   | 2 ++
+ sysdeps/unix/sysv/linux/arm/sigrestorer.S | 2 ++
+ sysdeps/unix/sysv/linux/sigpending.c      | 2 ++
+ sysdeps/unix/sysv/linux/sigprocmask.c     | 2 ++
+ sysdeps/unix/sysv/linux/sigsuspend.c      | 2 ++
+ 5 files changed, 10 insertions(+)
+
+diff --git a/sysdeps/unix/sysv/linux/arm/sigaction.c b/sysdeps/unix/sysv/linux/arm/sigaction.c
+index f39665f..acc19ce 100644
+--- a/sysdeps/unix/sysv/linux/arm/sigaction.c
++++ b/sysdeps/unix/sysv/linux/arm/sigaction.c
+@@ -134,9 +134,11 @@ __libc_sigaction (sig, act, oact)
+ 	}
+ #endif
+     }
++# ifdef __NR_sigaction
+   result = INLINE_SYSCALL (sigaction, 3, sig,
+ 			   act ? __ptrvalue (&k_sigact) : NULL,
+ 			   oact ? __ptrvalue (&k_osigact) : NULL);
++# endif
+   if (oact && result >= 0)
+     {
+       oact->sa_handler = k_osigact.k_sa_handler;
+diff --git a/sysdeps/unix/sysv/linux/arm/sigrestorer.S b/sysdeps/unix/sysv/linux/arm/sigrestorer.S
+index 98e33cb..a4769ca 100644
+--- a/sysdeps/unix/sysv/linux/arm/sigrestorer.S
++++ b/sysdeps/unix/sysv/linux/arm/sigrestorer.S
+@@ -22,8 +22,10 @@
+    one of these.  This avoids the need for the kernel to synthesise a return
+    instruction on the stack, which would involve expensive cache flushes. */
+ 
++#ifdef __NR_sigreturn
+ ENTRY(__default_sa_restorer)
+ 	swi	SYS_ify(sigreturn)
++#endif
+ 
+ #ifdef __NR_rt_sigreturn
+ 
+diff --git a/sysdeps/unix/sysv/linux/sigpending.c b/sysdeps/unix/sysv/linux/sigpending.c
+index a5404e5..5ff5918 100644
+--- a/sysdeps/unix/sysv/linux/sigpending.c
++++ b/sysdeps/unix/sysv/linux/sigpending.c
+@@ -61,6 +61,8 @@ sigpending (set)
+     }
+ # endif
+ 
++# ifdef __NR_sigpending
+   return INLINE_SYSCALL (sigpending, 1, CHECK_SIGSET (set));
++# endif
+ #endif
+ }
+diff --git a/sysdeps/unix/sysv/linux/sigprocmask.c b/sysdeps/unix/sysv/linux/sigprocmask.c
+index 7a73d9c..fbcc5a1 100644
+--- a/sysdeps/unix/sysv/linux/sigprocmask.c
++++ b/sysdeps/unix/sysv/linux/sigprocmask.c
+@@ -67,8 +67,10 @@ __sigprocmask (how, set, oset)
+     }
+ # endif
+ 
++# ifdef __NR_sigprocmask
+   return INLINE_SYSCALL (sigprocmask, 3, how, CHECK_SIGSET_NULL_OK (set),
+ 			 CHECK_SIGSET_NULL_OK (oset));
++# endif
+ #endif
+ }
+ weak_alias (__sigprocmask, sigprocmask)
+diff --git a/sysdeps/unix/sysv/linux/sigsuspend.c b/sysdeps/unix/sysv/linux/sigsuspend.c
+index bd66a51..952cf52 100644
+--- a/sysdeps/unix/sysv/linux/sigsuspend.c
++++ b/sysdeps/unix/sysv/linux/sigsuspend.c
+@@ -61,7 +61,9 @@ __sigsuspend (set)
+     }
+ # endif
+ 
++# ifdef __NR_sigsuspend
+   return INLINE_SYSCALL (sigsuspend, 3, 0, 0, set->__val[0]);
++# endif
+ #endif
+ }
+ weak_alias (__sigsuspend, sigsuspend)
+-- 
+Jan Nieuwenhuizen <janneke@gnu.org> | GNU LilyPond http://lilypond.org
+Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
+
+==========================================================================================================
+diff --git a/misc/sys/cdefs.h b/misc/sys/cdefs.h
+index 45d2ac3..1a56375 100644
+--- a/misc/sys/cdefs.h
++++ b/misc/sys/cdefs.h
+@@ -223,4 +223,7 @@
+ # endif
+ #endif
+ 
++#undef __restrict_arr
++#define __restrict_arr
++
+ #endif	 /* sys/cdefs.h */
+diff --git a/posix/spawn.h b/posix/spawn.h
+index 92ee940..0601e42 100644
+--- a/posix/spawn.h
++++ b/posix/spawn.h
+@@ -63,6 +63,10 @@ __BEGIN_DECLS
+ 
+ /* Spawn a new process executing PATH with the attributes describes in *ATTRP.
+    Before running the process perform the actions described in FILE-ACTIONS. */
++#if __arm__
++#undef __restrict_arr
++#define __restrict_arr
++#endif
+ extern int posix_spawn (pid_t *__restrict __pid,
+ 			__const char *__restrict __path,
+ 			__const posix_spawn_file_actions_t *__restrict
+diff --git a/resolv/netdb.h b/resolv/netdb.h
+index c3e0772..8a12fcc 100644
+--- a/resolv/netdb.h
++++ b/resolv/netdb.h
+@@ -494,6 +494,10 @@ extern int getnameinfo (__const struct sockaddr *__restrict __sa,
+ /* Enqueue ENT requests from the LIST.  If MODE is GAI_WAIT wait until all
+    requests are handled.  If WAIT is GAI_NOWAIT return immediately after
+    queueing the requests and signal completion according to SIG.  */
++#if __arm__
++#undef __restrict_arr
++#define __restrict_arr
++#endif
+ extern int getaddrinfo_a (int __mode, struct gaicb *__list[__restrict_arr],
+ 			  int __ent, struct sigevent *__restrict __sig)
+      __THROW;
+diff --git a/sysdeps/posix/euidaccess.c b/sysdeps/posix/euidaccess.c
+index 8a2d826..3d29dcc 100644
+--- a/sysdeps/posix/euidaccess.c
++++ b/sysdeps/posix/euidaccess.c
+@@ -149,7 +149,7 @@ euidaccess (path, mode)
+ 
+   mode &= (X_OK | W_OK | R_OK);	/* Clear any bogus bits. */
+ #if R_OK != S_IROTH || W_OK != S_IWOTH || X_OK != S_IXOTH
+-  ?error Oops, portability assumptions incorrect.
++  #warning Oops, portability assumptions incorrect.
+ #endif
+ 
+   if (mode == F_OK)
+diff --git a/sysdeps/unix/syscall.S b/sysdeps/unix/syscall.S
+index 8b685cf..4f1aea0 100644
+--- a/sysdeps/unix/syscall.S
++++ b/sysdeps/unix/syscall.S
+@@ -18,6 +18,10 @@
+ 
+ #include <sysdep.h>
+ 
++#ifndef __NR_syscall
++#define __NR_syscall 113
++#endif
++
+ #ifndef SYS_syscall
+ #define SYS_syscall	0
+ #endif
+diff --git a/sysdeps/unix/sysv/linux/arm/asm/page.h b/sysdeps/unix/sysv/linux/arm/asm/page.h
+new file mode 100644
+index 0000000..237343a
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/arm/asm/page.h
+@@ -0,0 +1,3 @@
++#ifndef __ASM_ARM_PAGE_H
++#define __ASM_ARM_PAGE_H
++#endif /*  __ASM_ARM_PAGE_H */
+diff --git a/sysdeps/unix/sysv/linux/arm/ioperm.c b/sysdeps/unix/sysv/linux/arm/ioperm.c
+index 40ac8e6..0d34ac5 100644
+--- a/sysdeps/unix/sysv/linux/arm/ioperm.c
++++ b/sysdeps/unix/sysv/linux/arm/ioperm.c
+@@ -95,6 +95,10 @@ static struct platform {
+  *    values.
+  */
+ 
++#ifndef BUS_ISA
++#define BUS_ISA 0
++#endif
++
+ static int
+ init_iosys (void)
+ {
+diff --git a/sysdeps/unix/sysv/linux/arm/linux/const.h b/sysdeps/unix/sysv/linux/arm/linux/const.h
+new file mode 100644
+index 0000000..ce002d5
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/arm/linux/const.h
+@@ -0,0 +1,3 @@
++#ifndef __LINUX_CONST_H
++#define __LINUX_CONST_H
++#endif /*  __LINUX_CONST_H */
+diff --git a/sysdeps/unix/sysv/linux/arm/profil-counter.h b/sysdeps/unix/sysv/linux/arm/profil-counter.h
+index 5d8be9d..e67ba74 100644
+--- a/sysdeps/unix/sysv/linux/arm/profil-counter.h
++++ b/sysdeps/unix/sysv/linux/arm/profil-counter.h
+@@ -23,10 +23,12 @@
+ void
+ profil_counter (int signo, int _a2, int _a3, int _a4, union k_sigcontext sc)
+ {
++#if 0
+   void *pc;
+   if (sc.v20.magic == SIGCONTEXT_2_0_MAGIC)
+     pc = (void *) sc.v20.reg.ARM_pc;
+   else
+     pc = (void *) sc.v21.arm_pc;
+   profil_count (pc);
++#endif
+ }
+diff --git a/sysdeps/unix/sysv/linux/arm/sigaction.c b/sysdeps/unix/sysv/linux/arm/sigaction.c
+index acc19ce..19d9d39 100644
+--- a/sysdeps/unix/sysv/linux/arm/sigaction.c
++++ b/sysdeps/unix/sysv/linux/arm/sigaction.c
+@@ -39,17 +39,24 @@ int __libc_missing_rt_sigs;
+ 
+ #define SA_RESTORER	0x04000000
+ 
++#ifdef __NR_sigreturn
+ extern void __default_sa_restorer(void);
++#endif
++#ifdef __NR_rt_sigreturn
+ extern void __default_rt_sa_restorer(void);
++#endif
+ 
+ /* When RT signals are in use we need to use a different return stub.  */
+-#ifdef __NR_rt_sigreturn
++#if defined (__NR_sigreturn) && defined (__NR_rt_sigreturn)
+ #define choose_restorer(flags)					\
+   (flags & SA_SIGINFO) ? __default_rt_sa_restorer		\
+   : __default_sa_restorer
+-#else
++#elif defined (__NR_sigreturn)
+ #define choose_restorer(flags)					\
+   __default_sa_restorer
++#elif defined (__NR_rt_sigreturn)
++#define choose_restorer(flags)					\
++  __default_rt_sa_restorer
+ #endif
+ 
+ /* If ACT is not NULL, change the action for SIG to *ACT.
+diff --git a/sysdeps/unix/sysv/linux/arm/socket.S b/sysdeps/unix/sysv/linux/arm/socket.S
+index a672413..c8143a2 100644
+--- a/sysdeps/unix/sysv/linux/arm/socket.S
++++ b/sysdeps/unix/sysv/linux/arm/socket.S
+@@ -71,7 +71,9 @@ ENTRY (__socket)
+         /* Do the system call trap.  */
+ 	mov a1, $P(SOCKOP_,socket)
+ 	mov a2, sp
++#ifdef __NR_socketcall
+ 	swi SYS_ify(socketcall)
++#endif
+ 
+ 	/* Pop args off the stack */
+ 	P(POPARGS_,NARGS)
+diff --git a/sysdeps/unix/sysv/linux/i386/msgctl.c b/sysdeps/unix/sysv/linux/i386/msgctl.c
+index 3e95d85..0cb5fef 100644
+--- a/sysdeps/unix/sysv/linux/i386/msgctl.c
++++ b/sysdeps/unix/sysv/linux/i386/msgctl.c
+@@ -65,8 +65,10 @@ extern int __libc_missing_32bit_uids;
+ int
+ __old_msgctl (int msqid, int cmd, struct __old_msqid_ds *buf)
+ {
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_msgctl,
+ 			 msqid, cmd, 0, CHECK_1 (buf));
++#endif
+ }
+ compat_symbol (libc, __old_msgctl, msgctl, GLIBC_2_0);
+ #endif
+@@ -75,8 +77,10 @@ int
+ __new_msgctl (int msqid, int cmd, struct msqid_ds *buf)
+ {
+ #if __ASSUME_32BITUIDS > 0
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_msgctl,
+ 			 msqid, cmd | __IPC_64, 0, CHECK_1 (buf));
++#endif
+ #else
+   switch (cmd) {
+     case MSG_STAT:
+@@ -84,8 +88,10 @@ __new_msgctl (int msqid, int cmd, struct msqid_ds *buf)
+     case IPC_SET:
+       break;
+     default:
++#ifdef __NR_ipc
+       return INLINE_SYSCALL (ipc, 5, IPCOP_msgctl,
+ 			     msqid, cmd, 0, CHECK_1 (buf));
++#endif
+   }
+ 
+   {
+@@ -109,8 +115,10 @@ __new_msgctl (int msqid, int cmd, struct msqid_ds *buf)
+ 	  }
+ 	if (__libc_missing_32bit_uids <= 0)
+ 	  {
++#ifdef __NR_ipc
+ 	    result = INLINE_SYSCALL (ipc, 5, IPCOP_msgctl,
+ 				     msqid, cmd | __IPC_64, 0, CHECK_1 (buf));
++#endif
+ 	    return result;
+ 	  }
+       }
+@@ -129,8 +137,10 @@ __new_msgctl (int msqid, int cmd, struct msqid_ds *buf)
+ 	    return -1;
+ 	  }
+       }
++#ifdef __NR_ipc
+     result = INLINE_SYSCALL (ipc, 5, IPCOP_msgctl,
+ 			     msqid, cmd, 0, __ptrvalue (&old));
++#endif
+     if (result != -1 && cmd != IPC_SET)
+       {
+ 	memset(buf, 0, sizeof(*buf));
+diff --git a/sysdeps/unix/sysv/linux/i386/semctl.c b/sysdeps/unix/sysv/linux/i386/semctl.c
+index 8d41d7f..821728d 100644
+--- a/sysdeps/unix/sysv/linux/i386/semctl.c
++++ b/sysdeps/unix/sysv/linux/i386/semctl.c
+@@ -82,8 +82,10 @@ __old_semctl (int semid, int semnum, int cmd, ...)
+ 
+   va_end (ap);
+ 
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_semctl, semid, semnum, cmd,
+ 			 CHECK_SEMCTL (&arg, semid, cmd));
++#endif
+ }
+ compat_symbol (libc, __old_semctl, semctl, GLIBC_2_0);
+ #endif
+@@ -102,8 +104,10 @@ __new_semctl (int semid, int semnum, int cmd, ...)
+   va_end (ap);
+ 
+ #if __ASSUME_32BITUIDS > 0
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_semctl, semid, semnum, cmd | __IPC_64,
+ 			 CHECK_SEMCTL (&arg, semid, cmd | __IPC_64));
++#endif
+ #else
+   switch (cmd) {
+     case SEM_STAT:
+@@ -111,8 +115,10 @@ __new_semctl (int semid, int semnum, int cmd, ...)
+     case IPC_SET:
+       break;
+     default:
++#ifdef __NR_ipc
+       return INLINE_SYSCALL (ipc, 5, IPCOP_semctl, semid, semnum, cmd,
+ 			     CHECK_SEMCTL (&arg, semid, cmd));
++#endif
+   }
+ 
+   {
+@@ -137,8 +143,10 @@ __new_semctl (int semid, int semnum, int cmd, ...)
+ 	  }
+ 	if (__libc_missing_32bit_uids <= 0)
+ 	  {
++#ifdef __NR_ipc
+ 	    result = INLINE_SYSCALL (ipc, 5, IPCOP_semctl, semid, semnum, cmd | __IPC_64,
+ 				     CHECK_SEMCTL (&arg, semid, cmd | __IPC_64));
++#endif
+ 	    return result;
+ 	  }
+       }
+@@ -158,8 +166,10 @@ __new_semctl (int semid, int semnum, int cmd, ...)
+ 	    return -1;
+ 	  }
+       }
++#ifdef __NR_ipc
+     result = INLINE_SYSCALL (ipc, 5, IPCOP_semctl, semid, semnum, cmd,
+ 			     CHECK_SEMCTL (&arg, semid, cmd));
++#endif
+     if (result != -1 && cmd != IPC_SET)
+       {
+ 	memset(buf, 0, sizeof(*buf));
+diff --git a/sysdeps/unix/sysv/linux/i386/shmctl.c b/sysdeps/unix/sysv/linux/i386/shmctl.c
+index 8fa6ff0..08b7cc4 100644
+--- a/sysdeps/unix/sysv/linux/i386/shmctl.c
++++ b/sysdeps/unix/sysv/linux/i386/shmctl.c
+@@ -72,8 +72,10 @@ int __new_shmctl (int, int, struct shmid_ds *);
+ int
+ __old_shmctl (int shmid, int cmd, struct __old_shmid_ds *buf)
+ {
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_shmctl,
+ 			 shmid, cmd, 0, CHECK_1 (buf));
++#endif
+ }
+ compat_symbol (libc, __old_shmctl, shmctl, GLIBC_2_0);
+ #endif
+@@ -82,8 +84,10 @@ int
+ __new_shmctl (int shmid, int cmd, struct shmid_ds *buf)
+ {
+ #if __ASSUME_32BITUIDS > 0
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_shmctl,
+ 			 shmid, cmd | __IPC_64, 0, CHECK_1 (buf));
++#endif
+ #else
+   switch (cmd) {
+     case SHM_STAT:
+@@ -94,8 +98,10 @@ __new_shmctl (int shmid, int cmd, struct shmid_ds *buf)
+ # endif
+       break;
+     default:
++#ifdef __NR_ipc
+       return INLINE_SYSCALL (ipc, 5, IPCOP_shmctl,
+ 			     shmid, cmd, 0, CHECK_1 (buf));
++#endif
+   }
+ 
+   {
+@@ -118,8 +124,10 @@ __new_shmctl (int shmid, int cmd, struct shmid_ds *buf)
+ 	    __set_errno(save_errno);
+ 	  }
+ 	if (__libc_missing_32bit_uids <= 0)
++#ifdef __NR_ipc
+ 	  return INLINE_SYSCALL (ipc, 5, IPCOP_shmctl,
+ 				 shmid, cmd | __IPC_64, 0, CHECK_1 (buf));
++#endif
+       }
+ # endif
+ 
+@@ -135,8 +143,10 @@ __new_shmctl (int shmid, int cmd, struct shmid_ds *buf)
+ 	    return -1;
+ 	  }
+       }
++#ifdef __NR_ipc
+     result = INLINE_SYSCALL (ipc, 5, IPCOP_shmctl,
+ 			     shmid, cmd, 0, __ptrvalue (&old));
++#endif
+     if (result != -1 && (cmd == SHM_STAT || cmd == IPC_STAT))
+       {
+ 	memset(buf, 0, sizeof(*buf));
+diff --git a/sysdeps/unix/sysv/linux/llseek.c b/sysdeps/unix/sysv/linux/llseek.c
+index fa83f10..ae68fb6 100644
+--- a/sysdeps/unix/sysv/linux/llseek.c
++++ b/sysdeps/unix/sysv/linux/llseek.c
+@@ -34,9 +34,11 @@ __llseek (int fd, loff_t offset, int whence)
+ {
+   loff_t result;
+ 
++#ifdef __NR__llseek
+   return (loff_t) (INLINE_SYSCALL (_llseek, 5, fd, (off_t) (offset >> 32),
+ 				   (off_t) (offset & 0xffffffff),
+ 				   __ptrvalue (&result), whence) ?: result);
++#endif
+ }
+ weak_alias (__llseek, llseek)
+ strong_alias (__llseek, __libc_lseek64)
+diff --git a/sysdeps/unix/sysv/linux/msgget.c b/sysdeps/unix/sysv/linux/msgget.c
+index a4a8290..1076764 100644
+--- a/sysdeps/unix/sysv/linux/msgget.c
++++ b/sysdeps/unix/sysv/linux/msgget.c
+@@ -33,5 +33,7 @@ msgget (key, msgflg)
+      key_t key;
+      int msgflg;
+ {
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_msgget, key, msgflg, 0, NULL);
++#endif
+ }
+diff --git a/sysdeps/unix/sysv/linux/msgrcv.c b/sysdeps/unix/sysv/linux/msgrcv.c
+index ab43792..83b93d4 100644
+--- a/sysdeps/unix/sysv/linux/msgrcv.c
++++ b/sysdeps/unix/sysv/linux/msgrcv.c
+@@ -50,5 +50,7 @@ msgrcv (msqid, msgp, msgsz, msgtyp, msgflg)
+   tmp.msgp = CHECK_N (msgp, msgsz);
+   tmp.msgtyp = msgtyp;
+ 
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_msgrcv, msqid, msgsz, msgflg, __ptrvalue (&tmp));
++#endif
+ }
+diff --git a/sysdeps/unix/sysv/linux/msgsnd.c b/sysdeps/unix/sysv/linux/msgsnd.c
+index f4df5da..20ffb69 100644
+--- a/sysdeps/unix/sysv/linux/msgsnd.c
++++ b/sysdeps/unix/sysv/linux/msgsnd.c
+@@ -33,6 +33,8 @@ msgsnd (msqid, msgp, msgsz, msgflg)
+      size_t msgsz;
+      int msgflg;
+ {
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_msgsnd, msqid, msgsz,
+ 			 msgflg, (void *) CHECK_N (msgp, msgsz));
++#endif
+ }
+diff --git a/sysdeps/unix/sysv/linux/semget.c b/sysdeps/unix/sysv/linux/semget.c
+index 639bb02..d5fd0cb 100644
+--- a/sysdeps/unix/sysv/linux/semget.c
++++ b/sysdeps/unix/sysv/linux/semget.c
+@@ -34,5 +34,7 @@ semget (key, nsems, semflg)
+      int nsems;
+      int semflg;
+ {
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_semget, key, nsems, semflg, NULL);
++#endif
+ }
+diff --git a/sysdeps/unix/sysv/linux/semop.c b/sysdeps/unix/sysv/linux/semop.c
+index 4bf2976..528f6d7 100644
+--- a/sysdeps/unix/sysv/linux/semop.c
++++ b/sysdeps/unix/sysv/linux/semop.c
+@@ -33,6 +33,8 @@ semop (semid, sops, nsops)
+      struct sembuf *sops;
+      size_t nsops;
+ {
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_semop,
+ 			 semid, (int) nsops, 0, CHECK_N (sops, nsops));
++#endif
+ }
+diff --git a/sysdeps/unix/sysv/linux/shmat.c b/sysdeps/unix/sysv/linux/shmat.c
+index d6dead1..c698612 100644
+--- a/sysdeps/unix/sysv/linux/shmat.c
++++ b/sysdeps/unix/sysv/linux/shmat.c
+@@ -47,9 +47,11 @@ shmat (shmid, shmaddr, shmflg)
+     length = shmds.shm_segsz;
+ #endif
+ 
++#ifdef __NR_ipc
+   result = (void *__unbounded) INLINE_SYSCALL (ipc, 5, IPCOP_shmat, shmid, shmflg,
+ 					       (long int) __ptrvalue (&raddr),
+ 					       __ptrvalue (shmaddr));
++#endif
+   if ((unsigned long) result <= -(unsigned long) SHMLBA)
+     result = raddr;
+ 
+diff --git a/sysdeps/unix/sysv/linux/shmdt.c b/sysdeps/unix/sysv/linux/shmdt.c
+index 413c852..c298c9b 100644
+--- a/sysdeps/unix/sysv/linux/shmdt.c
++++ b/sysdeps/unix/sysv/linux/shmdt.c
+@@ -31,5 +31,7 @@ int
+ shmdt (shmaddr)
+      const void *shmaddr;
+ {
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_shmdt, 0, 0, 0, __ptrvalue ((void *) shmaddr));
++#endif
+ }
+diff --git a/sysdeps/unix/sysv/linux/shmget.c b/sysdeps/unix/sysv/linux/shmget.c
+index c8d509f..1c32df7 100644
+--- a/sysdeps/unix/sysv/linux/shmget.c
++++ b/sysdeps/unix/sysv/linux/shmget.c
+@@ -34,5 +34,7 @@ shmget (key, size, shmflg)
+      size_t size;
+      int shmflg;
+ {
++#ifdef __NR_ipc
+   return INLINE_SYSCALL (ipc, 5, IPCOP_shmget, key, size, shmflg, NULL);
++#endif
+ }
+diff --git a/sysdeps/unix/sysv/linux/umount.S b/sysdeps/unix/sysv/linux/umount.S
+index e18463e..2944030 100644
+--- a/sysdeps/unix/sysv/linux/umount.S
++++ b/sysdeps/unix/sysv/linux/umount.S
+@@ -4,7 +4,7 @@
+ #include <sysdep.h>
+ #ifdef __NR_oldumount
+ PSEUDO (__umount, oldumount, 1)
+-#else
++#elif defined (__NR_umount)
+ PSEUDO (__umount, umount, 1)
+ #endif
+ 	ret
+diff --git a/sysdeps/generic/setfpucw.c b/sysdeps/generic/setfpucw.c
+index cb50f9f..03a627a 100644
+--- a/sysdeps/generic/setfpucw.c
++++ b/sysdeps/generic/setfpucw.c
+@@ -23,6 +23,7 @@
+ void
+ __setfpucw (fpu_control_t set)
+ {
++#if !__arm__
+   fpu_control_t cw;
+ 
+   /* Fetch the current control word.  */
+@@ -34,4 +35,5 @@ __setfpucw (fpu_control_t set)
+   cw |= set & ~_FPU_RESERVED;
+ 
+   _FPU_SETCW (cw);
++#endif
+ }

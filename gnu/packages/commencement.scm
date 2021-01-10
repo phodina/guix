@@ -1514,6 +1514,7 @@ ac_cv_c_float_format='IEEE (little-endian)'
       (propagated-inputs '())
       (native-inputs `(("boot-patch" ,(search-patch "glibc-boot-2.2.5.patch"))
                        ("system-patch" ,(search-patch "glibc-bootstrap-system-2.2.5.patch"))
+                       ("arm-patch" ,(search-patch "glibc-bootstrap-arm-2.2.5.patch"))
                        ("headers" ,mesboot-headers)
                        ,@(%boot-mesboot-core-inputs)))
       (outputs '("out"))
@@ -1546,11 +1547,13 @@ ac_cv_c_float_format='IEEE (little-endian)'
             (string-append "--prefix=" out)))
          #:phases
          (modify-phases %standard-phases
-           (add-after 'unpack 'apply-boot-patch
+           (add-after 'unpack 'apply-boot-patches
              (lambda* (#:key inputs #:allow-other-keys)
                (and (let ((patch (assoc-ref inputs "boot-patch")))
                       (invoke "patch" "--force" "-p1" "-i" patch))
                     (let ((patch (assoc-ref inputs "system-patch")))
+                      (invoke "patch" "--force" "-p1" "-i" patch))
+                    (let ((patch (assoc-ref inputs "arm-patch")))
                       (invoke "patch" "--force" "-p1" "-i" patch)))))
            (add-before 'configure 'setenv
              (lambda* (#:key outputs #:allow-other-keys)
