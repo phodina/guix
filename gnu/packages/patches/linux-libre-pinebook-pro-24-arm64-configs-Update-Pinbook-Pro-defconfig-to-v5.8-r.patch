@@ -1,7 +1,7 @@
-From f644f660a561538b622d26b2afc5374f4a240cee Mon Sep 17 00:00:00 2001
+From 4116a1941d454e9a629f689b73154549832af5d6 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Tue, 16 Jun 2020 10:11:10 +0200
-Subject: [PATCH 25/26] arm64: configs: Update Pinbook Pro defconfig to
+Subject: [PATCH 24/25] arm64: configs: Update Pinbook Pro defconfig to
  v5.8-rc1
 
 ---
@@ -160,5 +160,5 @@ index bc7bcee200e4..2977cea49142 100644
  CONFIG_CRYPTO_LRW=m
  CONFIG_CRYPTO_OFB=m
 -- 
-2.28.0
+2.30.0
 
