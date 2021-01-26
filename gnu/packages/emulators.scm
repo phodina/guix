@@ -5,13 +5,14 @@
 ;;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2015, 2018 David Thompson <dthompson2@worcester.edu>
 ;;; Copyright © 2016 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
-;;; Copyright © 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017, 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
-;;; Copyright © 2017, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2020, 2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017, 2018, 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2019 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2019 David Wilson <david@daviwil.com>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Christopher Howard <christopher@librehacker.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -39,6 +40,7 @@
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages assembly)
   #:use-module (gnu packages audio)
+  #:use-module (gnu packages autogen)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages boost)
@@ -53,6 +55,7 @@
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages fribidi)
   #:use-module (gnu packages game-development)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
@@ -60,7 +63,6 @@
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
-  #:use-module (gnu packages imagemagick)
   #:use-module (gnu packages libedit)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
@@ -279,6 +281,64 @@ SoundBlaster/Gravis Ultra Sound card for excellent sound compatibility with
 older games.")
     (license license:gpl2+)))
 
+(define-public qtmips
+  (package
+    (name "qtmips")
+    (version "0.7.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/cvut/QtMips")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1khvwgqz4h6q6mhbbq0yx43ajz8gx9wmwzs8784vmfrglndbxgax"))))
+    (build-system cmake-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (invoke "qmake"
+                     (string-append "PREFIX=" (assoc-ref outputs "out"))
+                     "qtmips.pro")))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (substitute* "tests/test.sh"
+               (("qtchooser.*") ""))
+             (substitute* '("tests/cpu_trap/test.sh"
+                            "tests/registers/test.sh")
+               (("sub-qtmips_cli") "qtmips_cli"))
+             (if tests?
+               (invoke "tests/run-all.sh")
+               #t)))
+         (replace 'install
+           ;; There is no install target.
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin"))
+                    (apps (string-append out "/share/applications"))
+                    (icons (string-append out "/share/icons/hicolor")))
+               (install-file "qtmips_gui/qtmips_gui" bin)
+               (install-file "qtmips_cli/qtmips_cli" bin)
+               (install-file "data/qtmips.desktop" apps)
+               (install-file "data/icons/qtmips_gui.svg"
+                             (string-append icons "/scalable/apps"))
+               (install-file "data/icons/qtmips_gui.png"
+                             (string-append icons "/48x48/apps"))
+               #t))))
+       #:tests? #f))    ; test suite wants mips toolchain
+    (inputs
+     `(("elfutils" ,elfutils)
+       ("qtbase" ,qtbase)))
+    (home-page "https://github.com/cvut/QtMips")
+    (synopsis "MIPS CPU emulator")
+    (description "This package contains a MIPS CPU emulator.  The simulator
+accepts ELF statically linked executables compiled for 32-bit big-endian
+MIPS target, targeting mips-linux-gnu or mips-elf.")
+    (license license:gpl2+)))   ; License file says GPL3
+
 (define-public emulation-station
   ;; No release for a long time, new commits fix build issues
   (let ((commit "9cc42adff67946175d2b7e25c6ae69cc374e98a0")
@@ -418,14 +478,14 @@ V2.")
 (define-public mednafen
   (package
     (name "mednafen")
-    (version "1.24.3")
+    (version "1.26.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://mednafen.github.io/releases/files/"
                            "mednafen-" version ".tar.xz"))
        (sha256
-        (base32 "03zplcfvmnnv7grhacmr1zy789pb2wda36wylmzmar23g0zqbsix"))))
+        (base32 "1x7xhxjhwsdbak8l0iyb497f043xkhibk73w96xck4j2bk10fac4"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -479,7 +539,7 @@ The following systems are supported:
 (define-public mgba
   (package
     (name "mgba")
-    (version "0.8.3")
+    (version "0.8.4")
     (source
      (origin
        (method git-fetch)
@@ -488,7 +548,7 @@ The following systems are supported:
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0rwlfjdr0rzbq4kaplvwsgyb8xq6nrzxss2c8xrgw9hqw3ymx4s3"))
+        (base32 "0nqj4bnn5c2z1bq4bnbw1wznc0wpmq4sy3w8pipd6n6620b9m4qq"))
        (modules '((guix build utils)))
        (snippet
         ;; Make sure we don't use the bundled software.
@@ -508,7 +568,6 @@ The following systems are supported:
     (native-inputs `(("pkg-config" ,pkg-config)
                      ("qttools" ,qttools)))
     (inputs `(("ffmpeg" ,ffmpeg)
-              ("imagemagick" ,imagemagick)
               ("libedit" ,libedit)
               ("libelf" ,libelf)
               ("libepoxy" ,libepoxy)
@@ -535,7 +594,7 @@ and Game Boy Color games.")
 (define-public sameboy
   (package
     (name "sameboy")
-    (version "0.13.5")
+    (version "0.13.6")
     (source
      (origin
        (method git-fetch)
@@ -544,7 +603,7 @@ and Game Boy Color games.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1v070w519l58wfyj2gpaghkaar4c0mpr8rhbkdmpnhb9rp2iajaz"))))
+        (base32 "04w8lybi7ssnax37ka4qw7pmcm7cgnmk90p9m73zbyp5chgpqqzc"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("rgbds" ,rgbds)
@@ -1269,34 +1328,20 @@ multi-system game/emulator system.")
 (define-public scummvm
   (package
     (name "scummvm")
-    (version "2.1.2")
+    (version "2.2.0")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://www.scummvm.org/frs/scummvm/" version
+       (uri (string-append "https://downloads.scummvm.org/frs/scummvm/" version
                            "/scummvm-" version ".tar.xz"))
        (sha256
-        (base32 "1c4fz1nfg0nqnqx9iipayhzcsiqdmfxm2i95nw9dbhshhsdnrhf4"))))
+        (base32 "11vknasm5dna2vqr6gk343qynh7nhsq3kf60zayarn1vb5z6as8l"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                                 ;require "git"
        #:configure-flags (list "--enable-release") ;for optimizations
        #:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'fix-build
-           ;; XXX: The following works around a build failure introduced when
-           ;; Fluidsynth was updated to version 2.1.  It has been applied
-           ;; upstream as 68758a879e0c8ecc0d40962516d4e808aa4e15e5 and can be
-           ;; removed once this commit makes it into a release.
-           (lambda _
-             (substitute* "audio/softsynth/fluidsynth.cpp"
-               (("#include <fluidsynth.h>") "")
-               (("#include \"common/scummsys.h\"") "#include \"config.h\"")
-               (("#include \"common/config-manager.h\"" line)
-                (string-append "#include <fluidsynth.h>\n"
-                               "#include \"common/scummsys.h\"\n"
-                               line)))
-             #t))
          (replace 'configure
            ;; configure does not work followed by both "SHELL=..." and
            ;; "CONFIG_SHELL=..."; set environment variables instead
@@ -1316,6 +1361,7 @@ multi-system game/emulator system.")
        ("faad2" ,faad2)
        ("fluidsynth" ,fluidsynth)
        ("freetype" ,freetype)
+       ("fribidi" ,fribidi)
        ("liba52" ,liba52)
        ("libflac" ,flac)
        ("libjpeg-turbo" ,libjpeg-turbo)
@@ -1336,10 +1382,177 @@ just replaces the executables shipped with the games, allowing you to
 play them on systems for which they were never designed!")
     (license license:gpl2+)))
 
+(define-public libticables2
+  (package
+    (name "libticables2")
+    (version "1.3.5")
+    (source (origin
+              (method url-fetch)
+              (uri "https://www.ticalc.org/pub/unix/tilibs.tar.gz")
+              (sha256
+               (base32
+                "07cfwwlidgx4fx88whnlch6y1342x16h15lkvkkdlp2y26sn2yxg"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags (list "--enable-libusb10")
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'unpack
+           (lambda* (#:key source #:allow-other-keys)
+             (invoke "tar" "xvkf" source)
+             (invoke "tar" "xvkf"
+                     (string-append "tilibs2/libticables2-"
+                                    ,version ".tar.bz2"))
+             (chdir (string-append "libticables2-" ,version))
+             #t)))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("autogen" ,autogen)
+       ("automake" ,automake)
+       ("gettext" ,gnu-gettext)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("glib" ,glib)
+       ("libusb" ,libusb)))
+    (synopsis "Link cable library for TI calculators")
+    (description
+     "This package contains libticables, a library for operations on
+@acronym{TI, Texas Instruments} calculator link cables.
+
+This is a part of the TiLP project.")
+    (home-page "http://lpg.ticalc.org/prj_tilp/")
+    (license license:gpl2+)))
+
+(define-public libticonv
+  (package
+    (name "libticonv")
+    (version "1.1.5")
+    (source (origin
+              (method url-fetch)
+              (uri "https://www.ticalc.org/pub/unix/tilibs.tar.gz")
+              (sha256
+               (base32
+                "07cfwwlidgx4fx88whnlch6y1342x16h15lkvkkdlp2y26sn2yxg"))))
+    (build-system gnu-build-system)
+    (arguments
+     ;; build fails with out --enable-iconv (...?)
+     `(#:configure-flags (list "--enable-iconv")
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'unpack
+           (lambda* (#:key source #:allow-other-keys)
+             (invoke "tar" "xvkf" source)
+             (invoke "tar" "xvkf"
+                     (string-append "tilibs2/libticonv-"
+                                    ,version ".tar.bz2"))
+             (chdir (string-append "libticonv-" ,version))
+             #t)))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("glib" ,glib)))
+    (synopsis "Character conversion library for TI calculators")
+    (description
+     "This package contains libticonv, a library to support working with
+@acronym{TI, Texas Instruments} calculator charsets.
+
+This is a part of the TiLP project.")
+    (home-page "http://lpg.ticalc.org/prj_tilp/")
+    (license license:gpl2+)))
+
+(define-public libtifiles2
+  (package
+    (name "libtifiles2")
+    (version "1.1.7")
+    (source (origin
+              (method url-fetch)
+              (uri "https://www.ticalc.org/pub/unix/tilibs.tar.gz")
+              (sha256
+               (base32
+                "07cfwwlidgx4fx88whnlch6y1342x16h15lkvkkdlp2y26sn2yxg"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'unpack
+           (lambda* (#:key source #:allow-other-keys)
+             (invoke "tar" "xvkf" source)
+             (invoke "tar" "xvkf"
+                     (string-append "tilibs2/libtifiles2-"
+                                    ,version ".tar.bz2"))
+             (chdir (string-append "libtifiles2-" ,version))
+             #t)))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("gettext" ,gnu-gettext)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("glib" ,glib)
+       ("libarchive" ,libarchive)
+       ("libticonv" ,libticonv)))
+    (synopsis "File functions library for TI calculators")
+    (description
+     "This package contains libticonv, a library to support working with
+@acronym{TI, Texas Instruments} calculator files.
+
+This is a part of the TiLP project.")
+    (home-page "http://lpg.ticalc.org/prj_tilp/")
+    (license license:gpl2+)))
+
+(define-public libticalcs2
+  (package
+    (name "libticalcs2")
+    (version "1.1.9")
+    (source (origin
+              (method url-fetch)
+              (uri "https://www.ticalc.org/pub/unix/tilibs.tar.gz")
+              (sha256
+               (base32
+                "07cfwwlidgx4fx88whnlch6y1342x16h15lkvkkdlp2y26sn2yxg"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'unpack
+           (lambda* (#:key source #:allow-other-keys)
+             (invoke "tar" "xvkf" source)
+             (invoke "tar" "xvkf"
+                     (string-append "tilibs2/libticalcs2-"
+                                    ,version ".tar.bz2"))
+             (chdir (string-append "libticalcs2-" ,version))
+             #t)))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("gettext" ,gnu-gettext)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("glib" ,glib)
+       ("libarchive" ,libarchive)
+       ("libticables2" ,libticables2)
+       ("libticonv" ,libticonv)
+       ("libtifiles2" ,libtifiles2)))
+    (synopsis "Support library for TI calculators")
+    (description
+     "This project aims to develop a multi-platform linking program for use
+with all @acronym{TI, Texas Instruments} graphing calculators (TI73 to
+V200PLT).
+
+This is a part of the TiLP project.")
+    (home-page "http://lpg.ticalc.org/prj_tilp/")
+    (license license:gpl2+)))
+
 (define-public mame
   (package
     (name "mame")
-    (version "0.222")
+    (version "0.227")
     (source
      (origin
        (method git-fetch)
@@ -1348,7 +1561,7 @@ play them on systems for which they were never designed!")
              (commit (apply string-append "mame" (string-split version #\.)))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1bfnwfxsnmza4s77ca0cyx4b290dwadkbbc2lyd7xa0yqrh7vvlx"))
+        (base32 "0p7xhsahmkr5hh3j6hc1mpgi5z4navy77v4k35i0sgpdv1ax4y2l"))
        (modules '((guix build utils)))
        (snippet
         ;; Remove bundled libraries.
@@ -1844,7 +2057,7 @@ framework based on QEMU.")
 (define-public ppsspp
   (package
     (name "ppsspp")
-    (version "1.10")
+    (version "1.10.3")
     (source
      (origin
        (method git-fetch)
@@ -1852,7 +2065,7 @@ framework based on QEMU.")
              (url "https://github.com/hrydgard/ppsspp")
              (commit (string-append "v" version))))
        (sha256
-        (base32 "02yx1w0ygclnmdl0imsvgj24lkzi55wvxkf47q617j0jgrqhy8yl"))
+        (base32 "0znxlbj6cfw7gn0naay0mzhc0k5saw8nrwpspcn7gap1023p06w2"))
        (file-name (git-file-name name version))
        (patches
         (search-patches "ppsspp-disable-upgrade-and-gold.patch"))
@@ -1903,7 +2116,7 @@ framework based on QEMU.")
                              " spirv-cross-reflect spirv-cross-util")))
            (substitute* "ext/CMakeLists.txt"
              (("add_subdirectory\\(glew\\)") "")
-             (("add_subdirectory\\(glslang\\)") "")
+             (("add_subdirectory\\(glslang( [A-Z_]*)*\\)") "")
              (("add_subdirectory\\(snappy\\)") "")
              (("add_subdirectory\\(SPIRV-Cross-build\\)") ""))
            ;; Finally, we can delete the bundled sources.
@@ -1946,14 +2159,14 @@ framework based on QEMU.")
        ;; TODO: unbundle armips.
        ("armips-source" ,(package-source armips))
        ("lang"
-        ,(let ((commit "d184ba2b607a03435be579406b816c90add334e6"))
+        ,(let ((commit "1c64b8fbd3cb6bd87935eb53f302f7de6f86e209"))
            (origin
              (method git-fetch)
              (uri (git-reference
                    (url "https://github.com/hrydgard/ppsspp-lang")
                    (commit commit)))
              (sha256
-              (base32 "0s003x6247nx09qd6a1jz1l2hsk5d6k1zmh8mg3m6hjjhvbvd9j9"))
+              (base32 "0rprn3yd8xfrvi0fm62sgpqa8n73jk7zmlscp8cp0h2fawqpiamd"))
              (file-name (git-file-name "ppsspp-lang" commit)))))
        ("tests"
         ,(let ((commit "328b839c7243e7f733f9eae88d059485e3d808e7"))

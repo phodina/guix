@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014 Mark H Weaver <mhw@netris.org>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -27,6 +27,7 @@
   ;; (guix store) since this is "daemon-side" code.
   #:use-module (guix store)
   #:use-module (guix store database)
+  #:use-module ((guix store deduplication) #:select (dump-file/deduplicate))
   #:use-module ((guix build store-copy) #:select (store-info))
 
   #:use-module (guix i18n)
@@ -114,8 +115,8 @@ held."
           ;; Install the new TARGET.
           (rename-file source target)
 
-          ;; Register TARGET.  As a side effect, it resets the timestamps of all
-          ;; its files, recursively, and runs a deduplication pass.
+          ;; Register TARGET.  The 'restore-file' call took care of
+          ;; deduplication, timestamps, and permissions.
           (register-items db
                           (list (store-info target deriver references))))
 
@@ -156,7 +157,8 @@ protected from GC."
 (define* (restore-one-item port
                            #:key acl (verify-signature? #t) (lock? #t)
                            (log-port (current-error-port)))
-  "Restore one store item from PORT; return its file name on success."
+  "Restore one store item of a nar bundle read from PORT; return its file name
+on success."
 
   (define (assert-valid-signature signature hash file)
     ;; Bail out if SIGNATURE, which must be a string as produced by
@@ -209,7 +211,8 @@ s-expression"))
   (let-values (((port get-hash)
                 (open-sha256-input-port port)))
     (with-temporary-store-file temp
-      (restore-file port temp)
+      (restore-file port temp
+                    #:dump-file dump-file/deduplicate)
 
       (let ((magic (read-int port)))
         (unless (= magic %export-magic)
@@ -251,11 +254,11 @@ a signature"))
 (define* (restore-file-set port
                            #:key (verify-signature? #t) (lock? #t)
                            (log-port (current-error-port)))
-  "Restore the file set read from PORT to the store.  The format of the data
-on PORT must be as created by 'export-paths'---i.e., a series of Nar-formatted
-archives with interspersed meta-data joining them together, possibly with a
-digital signature at the end.  Log progress to LOG-PORT.  Return the list of
-files restored.
+  "Restore the file set (\"nar bundle\") read from PORT to the store.  The
+format of the data on PORT must be as created by 'export-paths'---i.e., a
+series of Nar-formatted archives with interspersed meta-data joining them
+together, possibly with a digital signature at the end.  Log progress to
+LOG-PORT.  Return the list of files restored.
 
 When LOCK? is #f, assume locks for the files to be restored are already held.
 This is the case when the daemon calls a build hook.

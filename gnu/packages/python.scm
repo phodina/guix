@@ -395,7 +395,39 @@ data types.")
                 " --exclude test_mmap"
                 ;; test_socket may hang and eventually run out of memory
                 ;; on some systems: <https://bugs.python.org/issue34587>.
-                " test_socket")))
+                " test_socket"
+                ,@(if (hurd-target?)
+                      '(" test_posix"      ;multiple errors
+                        " test_time"
+                        " test_pty"
+                        " test_shutil"
+                        " test_tempfile"   ;chflags: invalid argument:
+                                           ;  tbv14c9t/dir0/dir0/dir0/test0.txt
+                        " test_asyncio"    ;runs over 10min
+                        " test_os"         ;stty: 'standard input':
+                                           ;  Inappropriate ioctl for device
+                        " test_openpty"    ;No such file or directory
+                        " test_selectors"  ;assertEqual(NUM_FDS // 2, len(fds))
+                                           ;  32752 != 4
+                        " test_compileall" ;multiple errors
+                        " test_poll"       ;list index out of range
+                        " test_subprocess" ;runs over 10min
+                        " test_asyncore"   ;multiple errors
+                        " test_threadsignals"
+                        " test_eintr"      ;Process return code is -14
+                        " test_io"         ;multiple errors
+                        " test_logging"
+                        " test_signal"
+                        " test_threading"  ;runs over 10min
+                        " test_flags"      ;ERROR
+                        " test_bidirectional_pty"
+                        " test_create_unix_connection"
+                        " test_unix_sock_client_ops"
+                        " test_open_unix_connection"
+                        " test_open_unix_connection_error"
+                        " test_read_pty_output"
+                        " test_write_pty")
+                      '()))))
        ((#:phases phases)
        `(modify-phases ,phases
           ,@(if (hurd-system?)
@@ -487,6 +519,31 @@ data types.")
             (files (list (string-append "lib/python"
                                         (version-major+minor version)
                                         "/site-packages"))))))))
+
+(define-public python-3.9
+  (package (inherit python-3.8)
+    (name "python-next")
+    (version "3.9.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://www.python.org/ftp/python/"
+                                  version "/Python-" version ".tar.xz"))
+              (patches (search-patches
+                        "python-3.9-fix-tests.patch"
+                        "python-3-deterministic-build-info.patch"
+                        "python-3-search-paths.patch"))
+              (sha256
+               (base32
+                "1zq3k4ymify5ig739zyvx9s2ainvchxb1zpy139z74krr653y74r"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Delete the bundled copy of libexpat.
+                  (delete-file-recursively "Modules/expat")
+                  (substitute* "Modules/Setup"
+                    ;; Link Expat instead of embedding the bundled one.
+                    (("^#pyexpat.*") "pyexpat pyexpat.c -lexpat\n"))
+                  #t))))))
 
 ;; Current 3.x version.
 (define-public python-3 python-3.8)
@@ -581,7 +638,9 @@ for more information.")))
     (description
      "This package provides wrappers for the commands of Python@tie{}3.x such
 that they can be invoked under their usual name---e.g., @command{python}
-instead of @command{python3}.")))
+instead of @command{python3} or @command{pip} instead of @command{pip3}.
+To function properly, this package should not be installed together with the
+@command{python} package.")))
 
 (define-public python-wrapper (wrap-python3 python))
 (define-public python-minimal-wrapper (wrap-python3 python-minimal))
@@ -589,7 +648,7 @@ instead of @command{python3}.")))
 (define-public micropython
   (package
     (name "micropython")
-    (version "1.12")
+    (version "1.13")
     (source
       (origin
         (method url-fetch)
@@ -597,8 +656,7 @@ instead of @command{python3}.")))
                             "releases/download/v" version
                             "/micropython-" version ".tar.gz"))
         (sha256
-         (base32
-          "1fl1dm2aay23hyqbarnv69qj7z2wljcvkwmvfwfac8yadcv05zcq"))
+         (base32 "0lfl7dv5v9rqckslrjqy5swjri29x1nj5d79wxnjys4sq6r2xcws"))
       (modules '((guix build utils)))
       (snippet
        '(begin

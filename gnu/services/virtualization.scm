@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017 Ryan Moe <ryan.moe@gmail.com>
-;;; Copyright © 2018 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2018, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2020,2021 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -23,6 +23,8 @@
   #:use-module (gnu bootloader grub)
   #:use-module (gnu image)
   #:use-module (gnu packages admin)
+  #:use-module (gnu packages gdb)
+  #:use-module (gnu packages package-management)
   #:use-module (gnu packages ssh)
   #:use-module (gnu packages virtualization)
   #:use-module (gnu services base)
@@ -34,11 +36,11 @@
   #:use-module (gnu system file-systems)
   #:use-module (gnu system hurd)
   #:use-module (gnu system image)
-  #:use-module (gnu system images hurd)
   #:use-module (gnu system shadow)
   #:use-module (gnu system)
   #:use-module (guix derivations)
   #:use-module (guix gexp)
+  #:use-module (guix modules)
   #:use-module (guix monads)
   #:use-module (guix packages)
   #:use-module (guix records)
@@ -61,7 +63,10 @@
             hurd-vm-configuration-options
             hurd-vm-configuration-id
             hurd-vm-configuration-net-options
+            hurd-vm-configuration-secrets
+
             hurd-vm-disk-image
+            hurd-vm-port
             hurd-vm-net-options
             hurd-vm-service-type
 
@@ -712,7 +717,7 @@ potential infinite waits blocking libvirt."))
   (platforms   qemu-binfmt-configuration-platforms
                (default '()))                     ;safest default
   (guix-support? qemu-binfmt-configuration-guix-support?
-                 (default #f)))
+                 (default #t)))
 
 (define (qemu-platform->binfmt qemu platform)
   "Return a gexp that evaluates to a binfmt string for PLATFORM, using the
@@ -806,6 +811,45 @@ functionality of the kernel Linux.")))
 
 
 ;;;
+;;; Secrets for guest VMs.
+;;;
+
+(define (secret-service-activation port)
+  "Return an activation snippet that fetches sensitive material at local PORT,
+over TCP.  Reboot upon failure."
+  (with-imported-modules '((gnu build secret-service)
+                           (guix build utils))
+    #~(begin
+        (use-modules (gnu build secret-service))
+        (let ((sent (secret-service-receive-secrets #$port)))
+          (unless sent
+            (sleep 3)
+            (reboot))))))
+
+(define secret-service-type
+  (service-type
+   (name 'secret-service)
+   (extensions (list (service-extension activation-service-type
+                                        secret-service-activation)))
+   (description
+    "This service fetches secret key and other sensitive material over TCP at
+boot time.  This service is meant to be used by virtual machines (VMs) that
+can only be accessed by their host.")))
+
+(define (secret-service-operating-system os)
+  "Return an operating system based on OS that includes the secret-service,
+that will be listening to receive secret keys on port 1004, TCP."
+  (operating-system
+    (inherit os)
+    ;; Arrange so that the secret service activation snippet shows up before
+    ;; the OpenSSH and Guix activation snippets.  That way, we receive OpenSSH
+    ;; and Guix keys before the activation snippets try to generate fresh keys
+    ;; for nothing.
+    (services (append (operating-system-user-services os)
+                      (list (service secret-service-type 1004))))))
+
+
+;;;
 ;;; The Hurd in VM service: a Childhurd.
 ;;;
 
@@ -818,6 +862,9 @@ functionality of the kernel Linux.")))
                  (bootloader grub-minimal-bootloader)
                  (target "/dev/vda")
                  (timeout 0)))
+    (packages (cons* gdb-minimal
+                     (operating-system-packages
+                      %hurd-default-operating-system)))
     (services (cons*
                (service openssh-service-type
                         (openssh-configuration
@@ -827,7 +874,16 @@ functionality of the kernel Linux.")))
                          (permit-root-login #t)
                          (allow-empty-passwords? #t)
                          (password-authentication? #t)))
-               %base-services/hurd))))
+
+               ;; By default, the secret service introduces a pre-initialized
+               ;; /etc/guix/acl file in the childhurd.  Thus, clear
+               ;; 'authorize-key?' so that it's not overridden at activation
+               ;; time.
+               (modify-services %base-services/hurd
+                 (guix-service-type config =>
+                                    (guix-configuration
+                                     (inherit config)
+                                     (authorize-key? #f))))))))
 
 (define-record-type* <hurd-vm-configuration>
   hurd-vm-configuration make-hurd-vm-configuration
@@ -849,27 +905,43 @@ functionality of the kernel Linux.")))
                (default #f))
   (net-options hurd-vm-configuration-net-options        ;list of string
                (thunked)
-               (default (hurd-vm-net-options this-record))))
+               (default (hurd-vm-net-options this-record)))
+  (secret-root hurd-vm-configuration-secret-root        ;string
+               (default "/etc/childhurd")))
 
 (define (hurd-vm-disk-image config)
-  "Return a disk-image for the Hurd according to CONFIG."
-  (let ((os (hurd-vm-configuration-os config))
-        (disk-size (hurd-vm-configuration-disk-size config)))
+  "Return a disk-image for the Hurd according to CONFIG.  The secret-service
+is added to the OS specified in CONFIG."
+  (let* ((os        (secret-service-operating-system
+                     (hurd-vm-configuration-os config)))
+         (disk-size (hurd-vm-configuration-disk-size config))
+         (type      (lookup-image-type-by-name 'hurd-qcow2))
+         (os->image (image-type-constructor type)))
     (system-image
-     (image
-      (inherit hurd-disk-image)
-      (size disk-size)
-      (operating-system os)))))
+     (image (inherit (os->image os))
+            (size disk-size)))))
+
+(define (hurd-vm-port config base)
+  "Return the forwarded vm port for this childhurd config."
+  (let ((id (or (hurd-vm-configuration-id config) 0)))
+    (+ base (* 1000 id))))
+(define %hurd-vm-secrets-port 11004)
+(define %hurd-vm-ssh-port 10022)
+(define %hurd-vm-vnc-port 15900)
 
 (define (hurd-vm-net-options config)
-  (let ((id (or (hurd-vm-configuration-id config) 0)))
-    (define (qemu-vm-port base)
-      (number->string (+ base (* 1000 id))))
-    `("--device" "rtl8139,netdev=net0"
-      "--netdev" ,(string-append
-                   "user,id=net0"
-                   ",hostfwd=tcp:127.0.0.1:" (qemu-vm-port 10022) "-:2222"
-                   ",hostfwd=tcp:127.0.0.1:" (qemu-vm-port 15900) "-:5900"))))
+  `("--device" "rtl8139,netdev=net0"
+    "--netdev"
+    ,(string-append "user,id=net0"
+                    ",hostfwd=tcp:127.0.0.1:"
+                    (number->string (hurd-vm-port config %hurd-vm-secrets-port))
+                    "-:1004"
+                    ",hostfwd=tcp:127.0.0.1:"
+                    (number->string (hurd-vm-port config %hurd-vm-ssh-port))
+                    "-:2222"
+                    ",hostfwd=tcp:127.0.0.1:"
+                    (number->string (hurd-vm-port config %hurd-vm-vnc-port))
+                    "-:5900")))
 
 (define (hurd-vm-shepherd-service config)
   "Return a <shepherd-service> for a Hurd in a Virtual Machine with CONFIG."
@@ -883,13 +955,19 @@ functionality of the kernel Linux.")))
         (provisions  '(hurd-vm childhurd)))
 
     (define vm-command
-      #~(list
-         (string-append #$qemu "/bin/qemu-system-i386")
-         #$@(if (file-exists? "/dev/kvm") '("--enable-kvm") '())
-         "-m" (number->string #$memory-size)
-         #$@net-options
-         #$@options
-         "--hda" #+image))
+      #~(append (list #$(file-append qemu "/bin/qemu-system-i386")
+                      "-m" (number->string #$memory-size)
+                      #$@net-options
+                      #$@options
+                      "--hda" #+image
+
+                      ;; Cause the service to be respawned if the guest
+                      ;; reboots (it can reboot for instance if it did not
+                      ;; receive valid secrets, or if it crashed.)
+                      "--no-reboot")
+                (if (file-exists? "/dev/kvm")
+                    '("--enable-kvm")
+                    '())))
 
     (list
      (shepherd-service
@@ -900,15 +978,125 @@ functionality of the kernel Linux.")))
                             (string->symbol (number->string id)))
                       provisions)
                      provisions))
-      (requirement '(networking))
-      (start #~(make-forkexec-constructor #$vm-command))
+      (requirement '(loopback networking user-processes))
+      (start
+       (with-imported-modules
+           (source-module-closure '((gnu build secret-service)
+                                    (guix build utils)))
+         #~(lambda ()
+             (let ((pid  (fork+exec-command #$vm-command
+                                            #:user "childhurd"
+                                            ;; XXX TODO: use "childhurd" after
+                                            ;; updating Shepherd
+                                            #:group "kvm"
+                                            #:environment-variables
+                                            ;; QEMU tries to write to /var/tmp
+                                            ;; by default.
+                                            '("TMPDIR=/tmp")))
+                   (port #$(hurd-vm-port config %hurd-vm-secrets-port))
+                   (root #$(hurd-vm-configuration-secret-root config)))
+               (catch #t
+                 (lambda _
+                   ;; XXX: 'secret-service-send-secrets' won't complete until
+                   ;; the guest has booted and its secret service server is
+                   ;; running, which could take 20+ seconds during which PID 1
+                   ;; is stuck waiting.
+                   (if (secret-service-send-secrets port root)
+                       pid
+                       (begin
+                         (kill (- pid) SIGTERM)
+                         #f)))
+                 (lambda (key . args)
+                   (kill (- pid) SIGTERM)
+                   (apply throw key args)))))))
+      (modules `((gnu build secret-service)
+                 (guix build utils)
+                 ,@%default-modules))
       (stop  #~(make-kill-destructor))))))
+
+(define %hurd-vm-accounts
+  (list (user-group (name "childhurd") (system? #t))
+        (user-account
+         (name "childhurd")
+         (group "childhurd")
+         (supplementary-groups '("kvm"))
+         (comment "Privilege separation user for the childhurd")
+         (home-directory "/var/empty")
+         (shell (file-append shadow "/sbin/nologin"))
+         (system? #t))))
+
+(define (initialize-hurd-vm-substitutes)
+  "Initialize the Hurd VM's key pair and ACL and store it on the host."
+  (define run
+    (with-imported-modules '((guix build utils))
+      #~(begin
+          (use-modules (guix build utils)
+                       (ice-9 match))
+
+          (define host-key
+            "/etc/guix/signing-key.pub")
+
+          (define host-acl
+            "/etc/guix/acl")
+
+          (match (command-line)
+            ((_ guest-config-directory)
+             (setenv "GUIX_CONFIGURATION_DIRECTORY"
+                     guest-config-directory)
+             (invoke #+(file-append guix "/bin/guix") "archive"
+                     "--generate-key")
+
+             (when (file-exists? host-acl)
+               ;; Copy the host ACL.
+               (copy-file host-acl
+                          (string-append guest-config-directory
+                                         "/acl")))
+
+             (when (file-exists? host-key)
+               ;; Add the host key to the childhurd's ACL.
+               (let ((key (open-fdes host-key O_RDONLY)))
+                 (close-fdes 0)
+                 (dup2 key 0)
+                 (execl #+(file-append guix "/bin/guix")
+                        "guix" "archive" "--authorize"))))))))
+
+  (program-file "initialize-hurd-vm-substitutes" run))
+
+(define (hurd-vm-activation config)
+  "Return a gexp to activate the Hurd VM according to CONFIG."
+  (with-imported-modules '((guix build utils))
+    #~(begin
+        (use-modules (guix build utils))
+
+        (define secret-directory
+          #$(hurd-vm-configuration-secret-root config))
+
+        (define ssh-directory
+          (string-append secret-directory "/etc/ssh"))
+
+        (define guix-directory
+          (string-append secret-directory "/etc/guix"))
+
+        (unless (file-exists? ssh-directory)
+          ;; Generate SSH host keys under SSH-DIRECTORY.
+          (mkdir-p ssh-directory)
+          (invoke #$(file-append openssh "/bin/ssh-keygen")
+                  "-A" "-f" secret-directory))
+
+        (unless (file-exists? guix-directory)
+          (invoke #$(initialize-hurd-vm-substitutes)
+                  guix-directory)))))
 
 (define hurd-vm-service-type
   (service-type
    (name 'hurd-vm)
    (extensions (list (service-extension shepherd-root-service-type
-                                        hurd-vm-shepherd-service)))
+                                        hurd-vm-shepherd-service)
+                     (service-extension account-service-type
+                                        (const %hurd-vm-accounts))
+                     (service-extension activation-service-type
+                                        hurd-vm-activation)))
    (default-value (hurd-vm-configuration))
    (description
-    "Provide a Virtual Machine running the GNU/Hurd.")))
+    "Provide a virtual machine (VM) running GNU/Hurd, also known as a
+@dfn{childhurd}.")))

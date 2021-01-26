@@ -6,6 +6,8 @@
 ;;; Copyright © 2017, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2020 Prafulla Giri <pratheblackdiamond@gmail.com>
+;;; Copyright © 2020 Christopher Lam <christopher.lck@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -24,6 +26,7 @@
 
 (define-module (gnu packages gnucash)
   #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (guix utils)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix build-system gnu)
@@ -48,6 +51,8 @@
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages python)
+  #:use-module (gnu packages swig)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages web)
   #:use-module (gnu packages webkit)
@@ -58,30 +63,30 @@
   ;; directory.
   (package
     (name "gnucash")
-    (version "3.8")
+    (version "4.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/gnucash/gnucash%20%28stable%29/"
-                           version "/gnucash-" version "b" ".tar.bz2"))
+                           version "/gnucash-" version ".tar.bz2"))
        (sha256
         (base32
-         "0dvzm3bib7jcj685sklpzyy9mrak9mxyvih2k9fk4sl3v21wlphg"))))
+         "020k1mm909dcgs52ls4v7xx3yn8gqazi9awyr81l6y7pkq1spn2n"))))
     (build-system cmake-build-system)
     (inputs
-     `(("guile" ,guile-2.2)
+     `(("guile" ,guile-3.0)
        ("boost" ,boost)
        ("icu4c" ,icu4c)
        ("glib" ,glib)
        ("gtk" ,gtk+)
        ("libdbi" ,libdbi)
        ("libdbi-drivers" ,libdbi-drivers)
-       ("libgnomecanvas" ,libgnomecanvas)
        ("libofx" ,libofx)
        ("libxml2" ,libxml2)
        ("libxslt" ,libxslt)
        ("webkitgtk" ,webkitgtk)
        ("aqbanking" ,aqbanking)
+       ("python" ,python)
        ("perl-date-manip" ,perl-date-manip)
        ("perl-finance-quote" ,perl-finance-quote)
        ("tzdata" ,tzdata-for-tests)))
@@ -91,13 +96,15 @@
        ("googlemock" ,(package-source googletest))
        ("googletest" ,googletest)
        ("gnucash-docs" ,gnucash-docs)
+       ("swig" ,swig)
        ("pkg-config" ,pkg-config)))
     (propagated-inputs
      ;; dconf is required at runtime according to README.dependencies.
      `(("dconf" ,dconf)))
-    (outputs '("out" "doc" "debug"))
+    (outputs '("out" "doc" "debug" "python"))
     (arguments
      `(#:test-target "check"
+       #:configure-flags '("-DWITH_PYTHON=ON")
        #:make-flags '("GUILE_AUTO_COMPILE=0")
        #:modules ((guix build cmake-build-system)
                   ((guix build glib-or-gtk-build-system) #:prefix glib-or-gtk:)
@@ -129,8 +136,8 @@
          ;; execute them with perl, so execute them directly instead.
          (add-after 'unpack 'fix-finance-quote-check
            (lambda _
-             (substitute* "libgnucash/scm/price-quotes.scm"
-               (("\"perl\" \"-w\" ") ""))
+             (substitute* "gnucash/price-quotes.scm"
+                (("\"perl\" \"-w\" ") ""))
              #t))
          ;; The qof test requires the en_US, en_GB, and fr_FR locales.
          (add-before 'check 'install-locales
@@ -149,6 +156,20 @@
                (symlink (string-append docs "/share/gnome")
                         (string-append doc-output "/share/gnome"))
                #t)))
+         (add-after 'install 'split-python-bindings
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (python-output (assoc-ref outputs "python"))
+                    (python-bindings (string-append
+                                      "lib/python"
+                                      ,(version-major+minor
+                                        (package-version python)))))
+               (mkdir-p (string-append python-output "/" python-bindings))
+               (copy-recursively
+                (string-append out "/" python-bindings)
+                (string-append python-output "/" python-bindings))
+               (delete-file-recursively
+                (string-append out "/" python-bindings)))))
          (add-after 'install-docs 'wrap-programs
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (for-each (lambda (prog)
@@ -211,7 +232,7 @@ installed as well as Yelp, the Gnome help browser.")
                              version "/gnucash-docs-" version revision ".tar.gz"))
          (sha256
           (base32
-           "19v6kchda724xkkgwlw5rg21jcpirhch12j9sr6ibnv61sd4ql52"))))
+           "1p1rbv0gyi07nh5pzhk3xm46w66kjyaipb6rpaq9yb9gil1nl7q5"))))
       (build-system gnu-build-system)
       ;; These are native-inputs because they are only required for building the
       ;; documentation.
@@ -293,7 +314,7 @@ applications and libraries.  It is used by AqBanking.")
        ("gnutls" ,gnutls)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
-       ("gettext-minimal", gettext-minimal)
+       ("gettext-minimal" ,gettext-minimal)
        ("libltdl" ,libltdl)))
     (home-page "https://www.aquamaniac.de/sites/aqbanking/index.php")
     (synopsis "Interface for online banking tasks")

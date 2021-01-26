@@ -28,6 +28,7 @@
   #:use-module ((guix progress) #:hide (dump-port*))
   #:use-module (guix serialization)
   #:use-module (guix scripts substitute)
+  #:use-module (guix narinfo)
   #:use-module (rnrs bytevectors)
   #:autoload   (guix http-client) (http-fetch)
   #:use-module ((guix build syscalls) #:select (terminal-columns))
@@ -210,6 +211,7 @@ taken since we do not import the archives."
                         (cons `(,file ,type ,(port-sha256* port size))
                               result))))
                     ('directory result)
+                    ('directory-complete result)
                     ('symlink
                      (cons `(,file ,type ,contents) result))))
                 '()
@@ -475,7 +477,10 @@ Challenge the substitutes for PACKAGE... provided by one or more servers.\n"))
 ;;; Entry point.
 ;;;
 
-(define (guix-challenge . args)
+(define-command (guix-challenge . args)
+  (category packaging)
+  (synopsis "challenge substitute servers, comparing their binaries")
+
   (with-error-handling
     (let* ((opts     (parse-command-line args %options (list %default-options)
                                          #:build-options? #f))

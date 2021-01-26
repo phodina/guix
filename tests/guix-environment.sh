@@ -1,5 +1,5 @@
 # GNU Guix --- Functional package management for GNU
-# Copyright © 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+# Copyright © 2015, 2016, 2017, 2018, 2019, 2021 Ludovic Courtès <ludo@gnu.org>
 #
 # This file is part of GNU Guix.
 #
@@ -60,7 +60,7 @@ guix environment --bootstrap --ad-hoc guile-bootstrap --pure	\
 grep '^PATH=' "$tmpdir/a"
 grep '^GUIX_TEST_ABC=' "$tmpdir/a"
 grep '^GUIX_TEST_DEF=' "$tmpdir/a"
-if grep '^GUIX_TEST_XYZ=' "$tmpdir/a"; then false; else true; fi
+! grep '^GUIX_TEST_XYZ=' "$tmpdir/a"
 
 # Make sure the exit value is preserved.
 if guix environment --bootstrap --ad-hoc guile-bootstrap --pure \
@@ -120,6 +120,12 @@ guix environment --bootstrap -r "$gcroot" --ad-hoc guile-bootstrap \
      -- guile -c 1
 test `readlink "$gcroot"` = "$expected"
 rm "$gcroot"
+
+# Try '-r' with a relative file name.
+(cd "$tmpdir"; mkdir "gc-root";
+ guix environment --bootstrap -r "gc-root/r" --ad-hoc guile-bootstrap \
+      -- guile -c 1;
+ rm "gc-root/r"; rmdir "gc-root")
 
 # Same with an absolute file name.
 guix environment --bootstrap -r "$PWD/$gcroot" --ad-hoc guile-bootstrap \
@@ -194,8 +200,7 @@ then
     done
 
     # 'make-boot0' itself must not be listed.
-    if guix gc --references "$profile" | grep make-boot0
-    then false; else true; fi
+    ! guix gc --references "$profile" | grep make-boot0
 
     # Make sure that the shell spawned with '--exec' sees the same environment
     # as returned by '--search-paths'.
@@ -212,8 +217,7 @@ then
     test "x$make_boot0_debug" != "x"
 
     # Make sure the "debug" output is not listed.
-    if guix gc --references "$profile" | grep "$make_boot0_debug"
-    then false; else true; fi
+    ! guix gc --references "$profile" | grep "$make_boot0_debug"
 
     # Compute the build environment for the initial GNU Make, but add in the
     # bootstrap Guile as an ad-hoc addition.

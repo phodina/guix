@@ -8,7 +8,7 @@
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2015, 2018 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2015 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016, 2018, 2020 Kei Kebreau <kkebreau@posteo.net>
@@ -40,6 +40,8 @@
 ;;; Copyright © 2020 Nicolò Balzarotti <nicolo@nixo.xyz>
 ;;; Copyright © 2020 B. Wilson <elaexuotee@wilsonb.com>
 ;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
+;;; Copyright © 2020 Simon Tournier <zimon.toutoune@gmail.com>
+;;; Copyright © 2020 Martin Becze <mjbecze@riseup.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -102,6 +104,7 @@
   #:use-module (gnu packages less)
   #:use-module (gnu packages lisp)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages llvm)
   #:use-module (gnu packages logging)
   #:use-module (gnu packages lua)
   #:use-module (gnu packages gnome)
@@ -135,7 +138,8 @@
   #:use-module (gnu packages version-control)
   #:use-module (gnu packages wxwidgets)
   #:use-module (gnu packages xml)
-  #:use-module (srfi srfi-1))
+  #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-26))
 
 (define-public aris
   (package
@@ -304,13 +308,13 @@ programming language.")
 (define-public units
   (package
    (name "units")
-   (version "2.19")
+   (version "2.21")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/units/units-" version
                                 ".tar.gz"))
             (sha256 (base32
-                     "0mk562g7dnidjgfgvkxxpvlba66fh1ykmfd9ylzvcln1vxmi6qj2"))))
+                     "1bybhqs4yrly9myb5maz3kdmf8k4fhk2m1d5cbcryn40z6lq0gkc"))))
    (build-system gnu-build-system)
    (inputs
     `(("readline" ,readline)
@@ -515,7 +519,7 @@ numbers.")
 (define-public sleef
   (package
     (name "sleef")
-    (version "3.4.1")
+    (version "3.5.1")
     (source
      (origin
        (method git-fetch)
@@ -524,7 +528,7 @@ numbers.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1gvf7cfvszmgjrsqivwmyy1jnp3hy80dmszxx827lhjz8yqq5019"))))
+        (base32 "1jybqrl2dvjxzg30xrhh847s375n2jr1pix644wi6hb5wh5mx3f7"))))
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags (list "-DCMAKE_BUILD_TYPE=Release"
@@ -559,7 +563,7 @@ It can utilize SIMD instructions that are available on modern processors.")
 (define-public glpk
   (package
     (name "glpk")
-    (version "4.65")
+    (version "5.0")
     (source
      (origin
       (method url-fetch)
@@ -567,12 +571,13 @@ It can utilize SIMD instructions that are available on modern processors.")
                           version ".tar.gz"))
       (sha256
        (base32
-        "040sfaa9jclg2nqdh83w71sv9rc1sznpnfiripjdyr48cady50a2"))))
+        "05bgxidxj8d9xdp82niy7cy36w181cxq7p8vc3y2ixshpgp1642a"))))
     (build-system gnu-build-system)
     (inputs
      `(("gmp" ,gmp)))
     (arguments
-     `(#:configure-flags '("--with-gmp")))
+     `(#:configure-flags '("--with-gmp"
+                           "--disable-static")))
     (home-page "https://www.gnu.org/software/glpk/")
     (synopsis "GNU Linear Programming Kit, supporting the MathProg language")
     (description
@@ -582,6 +587,20 @@ GNU MathProg modeling language, a subset of the AMPL language, and features a
 translator for the language.  In addition to the C library, a stand-alone
 LP/MIP solver is included in the package.")
     (license license:gpl3+)))
+
+(define-public glpk-4
+  (package
+    (inherit glpk)
+    (name "glpk")
+    (version "4.65")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append "mirror://gnu/glpk/glpk-"
+                          version ".tar.gz"))
+      (sha256
+       (base32
+        "040sfaa9jclg2nqdh83w71sv9rc1sznpnfiripjdyr48cady50a2"))))))
 
 (define-public 4ti2
   (package
@@ -640,7 +659,7 @@ computing convex hulls.")
 (define-public lrslib
   (package
     (name "lrslib")
-    (version "7.0a")
+    (version "7.1")
     (source
      (origin
        (method url-fetch)
@@ -649,7 +668,7 @@ computing convex hulls.")
                            (string-delete #\. version) ".tar.gz"))
        (sha256
         (base32
-         "034fa45r9hwx6ljmgpxk2872q34nklkalpdkc6s9hqw57rivi36k"))))
+         "05kq3hzam31dlmkccv3v358r478kpvx76mw37ka12c6ypwv5dsnk"))))
     (build-system gnu-build-system)
     (inputs
      `(("gmp" ,gmp)))
@@ -901,14 +920,14 @@ singular value problems.")
 (define-public gnuplot
   (package
     (name "gnuplot")
-    (version "5.2.7")
+    (version "5.4.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/gnuplot/gnuplot/"
                                   version "/gnuplot-"
                                   version ".tar.gz"))
        (sha256
-        (base32 "1vglp4la40f5dpj0zdj63zprrkyjgzy068p35bz5dqxjyczm1zlp"))))
+        (base32 "03jrqs5lvxmbbz2c4g17dn2hrxqwd3hfadk9q8wbkbkyas2h8sbb"))))
     (build-system gnu-build-system)
     (inputs `(("readline" ,readline)
               ("cairo" ,cairo)
@@ -920,7 +939,9 @@ singular value problems.")
        ("texlive" ,texlive-tiny)))
     (arguments `(#:configure-flags (list (string-append
                                           "--with-texdir=" %output
-                                          "/texmf-local/tex/latex/gnuplot"))))
+                                          "/texmf-local/tex/latex/gnuplot"))
+                 ;; Plot on a dumb terminal during tests.
+                 #:make-flags '("GNUTERM=dumb")))
     (home-page "http://www.gnuplot.info")
     (synopsis "Command-line driven graphing utility")
     (description "Gnuplot is a portable command-line driven graphing
@@ -1053,7 +1074,7 @@ incompatible with HDF5.")
     (synopsis
      "HDF4 without netCDF API, can be combined with the regular netCDF library")))
 
-(define-public hdf5
+(define-public hdf5-1.8
   (package
     (name "hdf5")
     (version "1.8.21")
@@ -1181,23 +1202,27 @@ extremely large and complex data collections.")
               "https://www.hdfgroup.org/ftp/HDF5/current/src/unpacked/COPYING"))))
 
 (define-public hdf5-1.10
-  (package (inherit hdf5)
-    (version "1.10.6")
+  (package/inherit hdf5-1.8
+    (version "1.10.7")
     (source
      (origin
-      (method url-fetch)
-      (uri (list (string-append "https://support.hdfgroup.org/ftp/HDF5/releases/"
-                                "hdf5-" (version-major+minor version)
-                                "/hdf5-" version "/src/hdf5-"
-                                version ".tar.bz2")
-                 (string-append "https://support.hdfgroup.org/ftp/HDF5/"
-                                "current"
-                                (apply string-append
-                                       (take (string-split version #\.) 2))
-                                "/src/hdf5-" version ".tar.bz2")))
-      (sha256
-       (base32 "1gf38x51128hn00744358w27xgzjk0ff4wra4yxh2lk804ck1mh9"))
-      (patches (search-patches "hdf5-config-date.patch"))))))
+       (method url-fetch)
+       (uri (list (string-append "https://support.hdfgroup.org/ftp/HDF5/releases/"
+                                 "hdf5-" (version-major+minor version)
+                                 "/hdf5-" version "/src/hdf5-"
+                                 version ".tar.bz2")
+                  (string-append "https://support.hdfgroup.org/ftp/HDF5/"
+                                 "current"
+                                 (apply string-append
+                                        (take (string-split version #\.) 2))
+                                 "/src/hdf5-" version ".tar.bz2")))
+       (sha256
+        (base32 "0pm5xxry55i0h7wmvc7svzdaa90rnk7h78rrjmnlkz2ygsn8y082"))
+       (patches (search-patches "hdf5-config-date.patch"))))))
+
+(define-public hdf5
+  ;; Default version of HDF5.
+  hdf5-1.10)
 
 (define-public hdf-java
   (package
@@ -1229,7 +1254,7 @@ extremely large and complex data collections.")
        ("slf4j-simple" ,java-slf4j-simple)))
     (inputs
      `(("hdf4" ,hdf4)
-       ("hdf5" ,hdf5)
+       ("hdf5" ,hdf5-1.8)
        ("zlib" ,zlib)
        ("libjpeg" ,libjpeg-turbo)
        ("slf4j-api" ,java-slf4j-api)))
@@ -1389,7 +1414,7 @@ System (Grid, Point and Swath).")
      `(("gfortran" ,gfortran)))
     (build-system gnu-build-system)
     (inputs
-     `(("hdf5" ,hdf5)
+     `(("hdf5" ,hdf5-1.8)
        ("zlib" ,zlib)
        ("gctp" ,gctp)))
     (arguments
@@ -1407,7 +1432,7 @@ Swath).")
     (license (license:non-copyleft home-page))))
 
 (define-public hdf5-parallel-openmpi
-  (package (inherit hdf5)
+  (package/inherit hdf5-1.10                      ;use the latest
     (name "hdf5-parallel-openmpi")
     (inputs
      `(("mpi" ,openmpi)
@@ -1433,7 +1458,7 @@ Swath).")
                (substitute* "testpar/Makefile"
                  (("(^TEST_PROG_PARA.*)t_pflush1(.*)" front back)
                   (string-append front back "\n")))
-               (substitute* "tools/h5diff/testph5diff.sh"
+               (substitute* "tools/test/h5diff/testph5diff.sh"
                  (("/bin/sh") (which "sh")))
                #t))))))
     (synopsis "Management suite for data with parallel IO support")))
@@ -1490,7 +1515,7 @@ Blosc-compressed datasets.")
         (base32
          "1gm76jbwhz9adbxgn14zx8cj33dmjdr2g5xcy0m9c2gakp8w59kj"))))
     (build-system gnu-build-system)
-    (inputs `(("hdf5" ,hdf5)))                 ;h5cc for tests
+    (inputs `(("hdf5" ,hdf5-1.8)))                ;h5cc for tests
     (home-page "https://www.hdfgroup.org/products/hdf5_tools/h5check.html")
     (synopsis "HDF5 format checker")
     (description "@code{h5check} is a validation tool for verifying that an
@@ -1532,17 +1557,17 @@ similar to MATLAB, GNU Octave or SciPy.")
 (define-public netcdf
   (package
     (name "netcdf")
-    (version "4.4.1.1")
+    (version "4.7.4")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "ftp://ftp.unidata.ucar.edu/pub/netcdf/"
-                           "netcdf-" version ".tar.gz"))
+       (uri (string-append
+             "https://www.unidata.ucar.edu/downloads/netcdf/ftp/"
+             "netcdf-c-" version ".tar.gz"))
        (sha256
         (base32
-         "1blc7ik5yin7i0ls2kag0a9xjk12m0dzx6v1x88az3ras3scci2d"))
-       (patches (search-patches "netcdf-date-time.patch"
-                                "netcdf-tst_h_par.patch"))))
+         "1a2fpp15a2rl1m50gcvvzd9y6bavl6vjf9zzf63sz5gdmq06yiqf"))
+       (patches (search-patches "netcdf-date-time.patch"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("m4" ,m4)
@@ -1551,6 +1576,7 @@ similar to MATLAB, GNU Octave or SciPy.")
     (inputs
      `(("hdf4" ,hdf4-alt)
        ("hdf5" ,hdf5)
+       ("curl" ,curl)
        ("zlib" ,zlib)
        ("libjpeg" ,libjpeg-turbo)))
     (arguments
@@ -1603,12 +1629,16 @@ sharing of scientific data.")
                 "--enable-parallel-tests"
                 ;; Shared libraries not supported with parallel IO.
                 "--disable-shared" "--with-pic"
-                ,flags))))))
+                ,flags))
+       ((#:phases phases '%standard-phases)
+        `(modify-phases ,phases
+           (add-after 'build 'mpi-setup
+             ,%openmpi-setup)))))))
 
 (define-public netcdf-fortran
   (package
     (name "netcdf-fortran")
-    (version "4.4.4")
+    (version "4.5.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1616,7 +1646,7 @@ sharing of scientific data.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0xaxdcg1p83zmypwml3swsnr3ccn38inwldyr1l3wa4dbwbrblxj"))))
+                "0x4acvfhbsx1q79dkkwrwbgfhm0w5ngnp4zj5kk92s1khihmqfhj"))))
     (build-system gnu-build-system)
     (arguments
      `(#:parallel-tests? #f))
@@ -1748,6 +1778,84 @@ linear and quadratic objectives.  There are limited facilities for nonlinear
 and quadratic objectives using the Simplex algorithm.")
     (license license:epl1.0)))
 
+(define-public libflame
+  (package
+    (name "libflame")
+    (version "5.2.0")
+    (outputs '("out" "static"))
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/flame/libflame")
+               (commit version)))
+        (file-name (git-file-name name version))
+        (sha256
+         (base32
+          "1n6lf0wvpp77lxqlr721h2jbfbzigphdp19wq8ajiccilcksh7ay"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       ;; Sensible defaults: https://github.com/flame/libflame/issues/28
+       (list "--enable-dynamic-build"
+             "--enable-max-arg-list-hack"
+             "--enable-lapack2flame"
+             "--enable-verbose-make-output"
+             "--enable-multithreading=pthreads" ; Openblas isn't built with openmp.
+             ,@(if (any (cute string-prefix? <> (or (%current-target-system)
+                                                    (%current-system)))
+                        '("x86_64" "i686"))
+                 '("--enable-vector-intrinsics=sse")
+                 '())
+             "--enable-supermatrix"
+             "--enable-memory-alignment=16"
+             "--enable-ldim-alignment")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-/usr/bin/env-bash
+           (lambda _
+             (substitute* "build/config.mk.in"
+               (("/usr/bin/env bash") (which "bash")))
+             #t))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (substitute* "test/Makefile"
+               (("LIBBLAS .*") "LIBBLAS = -lblas\n")
+               (("LIBLAPACK .*") "LIBLAPACK = -llapack\n"))
+             (if tests?
+               (with-directory-excursion "test"
+                 (mkdir "obj")
+                 (invoke "make")
+                 (invoke "./test_libflame.x"))
+               #t)))
+         (add-after 'install 'install-static
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out"))
+                   (static (assoc-ref outputs "static")))
+               (mkdir-p (string-append static "/lib"))
+               (rename-file (string-append out "/lib/libflame.a")
+                            (string-append static "/lib/libflame.a"))
+               (install-file (string-append out "/include/FLAME.h")
+                             (string-append static "/include"))
+               #t))))))
+    (inputs
+     `(("gfortran" ,gfortran)))
+    (native-inputs
+     `(("lapack" ,lapack)
+       ("openblas" ,openblas)
+       ("perl" ,perl)
+       ("python" ,python-wrapper)))
+    (home-page "https://github.com/flame/libflame")
+    (synopsis "High-performance object-based library for DLA computations")
+    (description "@code{libflame} is a portable library for dense matrix
+computations, providing much of the functionality present in LAPACK, developed
+by current and former members of the @acronym{SHPC, Science of High-Performance
+Computing} group in the @url{https://www.ices.utexas.edu/, Institute for
+Computational Engineering and Sciences} at The University of Texas at Austin.
+@code{libflame} includes a compatibility layer, @code{lapack2flame}, which
+includes a complete LAPACK implementation.")
+    (license license:bsd-3)))
+
 (define-public ceres
   (package
     (name "ceres-solver")
@@ -1801,7 +1909,7 @@ can solve two kinds of problems:
 (define-public octave-cli
   (package
     (name "octave-cli")
-    (version "5.2.0")
+    (version "6.1.0")
     (source
      (origin
       (method url-fetch)
@@ -1809,7 +1917,7 @@ can solve two kinds of problems:
                           version ".tar.lz"))
       (sha256
        (base32
-        "1848dq6nxzal8gwjrcp6xhi5gq96w89nss9d9rz75q408gb3mbl6"))))
+        "0355s0pi8603ccs2j08zym3nalgalslxn83s37zq8nkrrkwxrjfk"))))
     (build-system gnu-build-system)
     (inputs
      `(("alsa-lib" ,alsa-lib)
@@ -1896,8 +2004,6 @@ script files.")
 (define-public octave
   (package (inherit octave-cli)
     (name "octave")
-    (source (origin
-              (inherit (package-source octave-cli))))
     (inputs
      `(("qscintilla" ,qscintilla)
        ("qt" ,qtbase)
@@ -2071,7 +2177,7 @@ This is the certified version of the Open Cascade Technology (OCCT) library.")
 (define-public gmsh
   (package
     (name "gmsh")
-    (version "2.16.0")
+    (version "4.6.0")
     (source
      (origin
       (method git-fetch)
@@ -2083,12 +2189,11 @@ This is the certified version of the Open Cascade Technology (OCCT) library.")
                                         version)))))
       (file-name (git-file-name name version))
       (sha256
-       (base32 "08rq4jajwmlpivnm9yifz2jhaivnz065lnk0h2zv773nwl9wf162"))
+       (base32 "0m0pjxcy1bnr7a20i11lh0ih159pphq9wsvfjr3sfx4y3lginz5y"))
       (modules '((guix build utils)))
       (snippet
-       ;; Remove non-free METIS code
        '(begin
-          (delete-file-recursively "contrib/Metis")
+          (delete-file-recursively "contrib/metis")
           #t))))
     (build-system cmake-build-system)
     (propagated-inputs
@@ -2099,14 +2204,15 @@ This is the certified version of the Open Cascade Technology (OCCT) library.")
        ("lapack" ,lapack)
        ("mesa" ,mesa)
        ("glu" ,glu)
-       ("opencascade-oce" ,opencascade-oce)
+       ("metis" ,metis)
+       ("opencascade-occt" ,opencascade-occt)
        ("libx11" ,libx11)
        ("libxext" ,libxext)))
     (inputs
      `(("fontconfig" ,fontconfig)
        ("libxft" ,libxft)))
     (arguments
-     `(#:configure-flags `("-DENABLE_METIS:BOOL=OFF"
+     `(#:configure-flags `("-DENABLE_SYSTEM_CONTRIB:BOOL=ON"
                            "-DENABLE_BUILD_SHARED:BOOL=ON"
                            "-DENABLE_BUILD_DYNAMIC:BOOL=ON")))
     (home-page "http://gmsh.info/")
@@ -2118,6 +2224,70 @@ visualization capabilities.  Gmsh is built around four modules: geometry,
 mesh, solver and post-processing.  The specification of any input to these
 modules is done either interactively using the graphical user interface or in
 ASCII text files using Gmsh's own scripting language.")
+    (license license:gpl2+)))
+
+(define-public veusz
+  (package
+    (name "veusz")
+    (version "3.3.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "veusz" version))
+       (sha256
+        (base32 "1q7hi1qwwg4pgiz62isvv1pia85m13bspdpp1q3mrnwl11in0ag0"))))
+    (build-system python-build-system)
+    (arguments
+     `(;; Tests will fail because they depend on optional packages like
+       ;; python-astropy, which is not packaged.
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         ;; Veusz will append 'PyQt5' to sip_dir by default. That is not how
+         ;; the path is defined in Guix, therefore we have to change it.
+         (add-after 'unpack 'fix-sip-dir
+           (lambda _
+             (substitute* "pyqtdistutils.py"
+               (("os.path.join\\(sip_dir, 'PyQt5'\\)") "sip_dir"))
+             #t))
+         ;; Now we have to pass the correct sip_dir to setup.py.
+         (replace 'build
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; We need to tell setup.py where to locate QtCoremod.sip
+             ((@@ (guix build python-build-system) call-setuppy)
+              "build_ext"
+              (list (string-append "--sip-dir="
+                                   (assoc-ref inputs "python-pyqt")
+                                   "/share/sip"))
+              #t)))
+         ;; Ensure that icons are found at runtime.
+         (add-after 'install 'wrap-executable
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/veusz")
+                 `("QT_PLUGIN_PATH" prefix
+                   ,(list (string-append (assoc-ref inputs "qtsvg")
+                                         "/lib/qt5/plugins/"))))))))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ;;("python-astropy" ,python-astropy) ;; FIXME: Package this.
+       ("qttools" ,qttools)))
+    (inputs
+     `(("ghostscript" ,ghostscript) ;optional, for EPS/PS output
+       ("python-dbus" ,python-dbus)
+       ("python-h5py" ,python-h5py) ;optional, for HDF5 data
+       ("python-pyqt" ,python-pyqt)
+       ("qtbase" ,qtbase)
+       ("qtsvg" ,qtsvg)))
+    (propagated-inputs
+     `(("python-numpy" ,python-numpy)))
+    (home-page "https://veusz.github.io/")
+    (synopsis "Scientific plotting package")
+    (description
+     "Veusz is a scientific plotting and graphing program with a graphical
+user interface, designed to produce publication-ready 2D and 3D plots.  In
+addition it can be used as a module in Python for plotting.  It supports
+vector and bitmap output, including PDF, Postscript, SVG and EMF.")
     (license license:gpl2+)))
 
 (define-public maxflow
@@ -2319,7 +2489,18 @@ scientific applications modeled by partial differential equations.")
         (uri (pypi-uri "petsc4py" version))
         (sha256
           (base32
-            "1rm1qj5wlkhxl39by9n78lh3gbmii31wsnb8j1rr5hvfr5xgbx2q"))))
+           "1rm1qj5wlkhxl39by9n78lh3gbmii31wsnb8j1rr5hvfr5xgbx2q"))
+        (modules '((guix build utils)))
+        (snippet
+         '(begin
+            ;; Ensure source file is regenerated in the build phase.
+            (delete-file "src/petsc4py.PETSc.c")
+            ;; Remove legacy GC code.  See
+            ;; https://bitbucket.org/petsc/petsc4py/issues/125.
+            (substitute* "src/PETSc/cyclicgc.pxi"
+                         ((".*gc_refs.*") "" )
+                         ((".*PyGC_Head.*") ""))
+            #t))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -2331,6 +2512,8 @@ scientific applications modeled by partial differential equations.")
              #t))
          (add-before 'check 'mpi-setup
            ,%openmpi-setup))))
+    (native-inputs
+     `(("python-cython" ,python-cython)))
     (inputs
      `(("petsc" ,petsc-openmpi)
        ("python-numpy" ,python-numpy)))
@@ -2519,7 +2702,7 @@ bindings to almost all functions of SLEPc.")
 (define-public metamath
   (package
     (name "metamath")
-    (version "0.183")
+    (version "0.193")
     (source
      (origin
        (method git-fetch)
@@ -2528,7 +2711,7 @@ bindings to almost all functions of SLEPc.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1jjf4fy6j53i40dh0yv0f9sngnw4gs24cig99vsg3q0303pwrhg7"))))
+        (base32 "1s9hyknfvhj86g3giayyf3dxzg23iij0rs7bdvj075v9qbyhqn9b"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -2744,14 +2927,14 @@ easy-to-write markup language for mathematics.")
 (define-public superlu
   (package
     (name "superlu")
-    (version "5.2.1")
+    (version "5.2.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://portal.nersc.gov/project/sparse/superlu/"
                            "superlu_" version ".tar.gz"))
        (sha256
-        (base32 "0qzlb7cd608q62kyppd0a8c65l03vrwqql6gsm465rky23b6dyr8"))
+        (base32 "13520vk6fqspyl22cq4ak2jh3rlmhja4czq56j75fdx65fkk80s7"))
        (modules '((guix build utils)))
        (snippet
         ;; Replace the non-free implementation of MC64 with a stub adapted
@@ -2810,18 +2993,21 @@ also provides threshold-based ILU factorization preconditioners.")
 (define-public superlu-dist
   (package
     (name "superlu-dist")
-    (version "6.2.0")
+    (version "6.4.0")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://portal.nersc.gov/project/sparse/superlu/"
-                           "superlu_dist_" version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/xiaoyeli/superlu_dist")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "1ynmwqajc9sc3my2hssa5k9s58ggvizqv9rdss0j7w99pbh5mnvw"))
+        (base32 "0fa29yr72p4yq5ln4rgfsawmi5935n4qcr5niz6864bjladz4lql"))
        (modules '((guix build utils)))
        (snippet
         ;; Replace the non-free implementation of MC64 with a stub
         '(begin
+           (make-file-writable "SRC/mc64ad_dist.c")
            (call-with-output-file "SRC/mc64ad_dist.c"
              (lambda (port)
                (display "
@@ -2899,14 +3085,14 @@ implemented in ANSI C, and MPI for communications.")
 (define-public scotch
   (package
     (name "scotch")
-    (version "6.0.6")
+    (version "6.1.0")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "https://gforge.inria.fr/frs/download.php/"
                           "latestfile/298/scotch_" version ".tar.gz"))
       (sha256
-       (base32 "1ky4k9r6jvajhqaqnnx6h8fkmds2yxgp70dpr1qzwcyhi2nhqvv8"))
+       (base32 "1184fcv4wa2df8szb5lan6pjh0raarr45pk8ilpvbz23naikzg53"))
       (patches (search-patches "scotch-build-parallelism.patch"
                                "scotch-integer-declarations.patch"))))
     (build-system gnu-build-system)
@@ -2954,7 +3140,7 @@ YACC = bison -pscotchyy -y -b y
                           "COMMON_PTHREAD"
                           "COMMON_RANDOM_FIXED_SEED"
                           "INTSIZE64"             ;use 'int64_t'
-                          ;; Prevents symbolc clashes with libesmumps
+                          ;; Prevents symbol clashes with libesmumps
                           "SCOTCH_RENAME"
                           ;; XXX: Causes invalid frees in superlu-dist tests
                           ;; "SCOTCH_PTHREAD"
@@ -3319,7 +3505,7 @@ point numbers.")
 (define-public wxmaxima
   (package
     (name "wxmaxima")
-    (version "20.04.0")
+    (version "20.12.2")
     (source
      (origin
        (method git-fetch)
@@ -3328,30 +3514,29 @@ point numbers.")
              (commit (string-append "Version-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0vrjxzfgmjdzm1rgl0crz4b4badl14jwh032y3xkcdvjl5j67lp3"))))
+        (base32 "1rxnxk7yanb9ac5pxbii6k7gg3b09pbp9rmwvsvgpbrk17mg79r9"))))
     (build-system cmake-build-system)
     (native-inputs
-     `(("gettext" ,gettext-minimal)
-       ("xorg-server" ,xorg-server-for-tests)))
-    ;; TODO: Add libomp for multithreading support.
-    ;; As of right now, enabling libomp causes the imageCells.wxm test to fail.
+     `(("gettext" ,gettext-minimal)))
     (inputs
-     `(("wxwidgets" ,wxwidgets)
+     `(("libomp" ,libomp)
+       ("wxwidgets" ,wxwidgets)
        ("maxima" ,maxima)
        ;; Runtime support.
        ("adwaita-icon-theme" ,adwaita-icon-theme)
        ("gtk+" ,gtk+)
        ("shared-mime-info" ,shared-mime-info)))
     (arguments
-     `(#:test-target "test"
+     `(#:tests? #f                      ; tests fail non-deterministically
        #:phases
        (modify-phases %standard-phases
-         (add-before 'check 'pre-check
+         (add-after 'unpack 'patch-doc-path
            (lambda _
-             ;; Tests require a running X server.
-             (system "Xvfb :1 &")
-             (setenv "DISPLAY" ":1")
-             (setenv "HOME" (getcwd))
+             ;; Don't look in share/doc/wxmaxima-xx.xx.x for the
+             ;; documentation.  Only licensing information is placed there by
+             ;; Guix.
+             (substitute* "src/Dirstructure.cpp"
+               (("/doc/wxmaxima-\\%s") "/doc/wxmaxima"))
              #t))
          (add-after 'install 'wrap-program
            (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -3705,7 +3890,7 @@ Fresnel integrals, and similar related functions as well.")
 (define-public suitesparse
   (package
     (name "suitesparse")
-    (version "5.7.1")
+    (version "5.8.1")
     (source
      (origin
        (method git-fetch)
@@ -3715,7 +3900,7 @@ Fresnel integrals, and similar related functions as well.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "174p3l78kv9gaa0i5hflyai2ydwnjzh34k9938sl4aa3li0543s8"))
+         "0qjlyfxs8s48rs63c2fzspisgq1kk4bwkgnhmh125hgkdhrq2w1c"))
        (patches (search-patches "suitesparse-mongoose-cmake.patch"))
        (modules '((guix build utils)))
        (snippet
@@ -3728,7 +3913,6 @@ Fresnel integrals, and similar related functions as well.")
      '(#:tests? #f  ;no "check" target
        #:make-flags
        (list "CC=gcc"
-             "BLAS=-lblas"
              "TBB=-ltbb"
              "MY_METIS_LIB=-lmetis"
              ;; Flags for cmake (required to build GraphBLAS and Mongoose)
@@ -3738,7 +3922,8 @@ Fresnel integrals, and similar related functions as well.")
                             " -DCMAKE_C_FLAGS_RELEASE=\"$(CFLAGS) $(CPPFLAGS)\""
                             " -DCMAKE_CXX_FLAGS_RELEASE=\"$(CXXFLAGS) $(CPPFLAGS)\""
                             " -DCMAKE_SKIP_RPATH=TRUE"
-                            " -DCMAKE_BUILD_TYPE=Release")
+                            " -DCMAKE_BUILD_TYPE=Release"
+                            " -DCMAKE_INSTALL_LIBDIR=lib")
              (string-append "INSTALL_LIB="
                             (assoc-ref %outputs "out") "/lib")
              (string-append "INSTALL_INCLUDE="
@@ -3750,6 +3935,8 @@ Fresnel integrals, and similar related functions as well.")
     (inputs
      `(("tbb" ,tbb)
        ("lapack" ,lapack)
+       ("gmp" ,gmp)
+       ("mpfr" ,mpfr)
        ("metis" ,metis)))
     (native-inputs
      `(("cmake" ,cmake-minimal)
@@ -4017,7 +4204,7 @@ revised simplex and the branch-and-bound methods.")
 (define-public dealii
   (package
     (name "dealii")
-    (version "9.1.1")
+    (version "9.2.0")
     (source
      (origin
        (method url-fetch)
@@ -4025,7 +4212,7 @@ revised simplex and the branch-and-bound methods.")
                            "download/v" version "/dealii-" version ".tar.gz"))
        (sha256
         (base32
-         "0xhjv0gzswpjbc43xbrpwfc5848g508l01855nszx3g5gwzlhnzw"))
+         "0fm4xzrnb7dfn4415j24d8v3jkh0lssi86250x2f5wgi83xq4nnh"))
        (modules '((guix build utils)))
        (snippet
         ;; Remove bundled sources: UMFPACK, TBB, muParser, and boost
@@ -4366,7 +4553,7 @@ structured and unstructured grid problems.")))
 (define-public matio
   (package
     (name "matio")
-    (version "1.5.6")
+    (version "1.5.19")
     (source
      (origin
        (method url-fetch)
@@ -4374,11 +4561,11 @@ structured and unstructured grid problems.")))
                            "matio-" version ".tar.gz"))
        (sha256
         (base32
-         "0y2qymgxank8wdiwc68ap8bxdzrhvyw86i29yh3xgn4z1njfd9ir"))))
+         "0vr8c1mz1k6mz0sgh6n3scl5c3a71iqmy5fnydrgq504icj4vym4"))))
     (build-system gnu-build-system)
     (inputs
      `(("zlib" ,zlib)
-       ("hdf5" ,hdf5)))
+       ("hdf5" ,hdf5-1.8)))
     (home-page "http://matio.sourceforge.net/")
     (synopsis "Library for reading and writing MAT files")
     (description "Matio is a library for reading and writing MAT files.  It
@@ -4543,7 +4730,7 @@ as equations, scalars, vectors, and matrices.")
 (define-public z3
   (package
     (name "z3")
-    (version "4.8.8")
+    (version "4.8.9")
     (home-page "https://github.com/Z3Prover/z3")
     (source (origin
               (method git-fetch)
@@ -4552,7 +4739,7 @@ as equations, scalars, vectors, and matrices.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1rn538ghqwxq0v8i6578j8mflk6fyv0cp4hjfqynzvinjbps56da"))))
+                "1hnbzq10d23drd7ksm3c1n2611c3kd0q0yxgz8y78zaafwczvwxx"))))
     (build-system gnu-build-system)
     (arguments
      `(#:imported-modules ((guix build python-build-system)
@@ -4809,6 +4996,58 @@ terminal do calculations simply and quickly.  The formula to be calculated can
 be fed to @command{tcalc} through the command line.")
   (home-page "https://sites.google.com/site/mohammedisam2000/tcalc")
   (license license:gpl3+)))
+
+(define-public tiny-bignum
+  (let ((commit "1d7a1f9b8e77316187a6b3eae8e68d60a6f9a4d4"))
+    (package
+     (name "tiny-bignum")
+     (version (git-version "0" "0" commit))
+     (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+              (url "https://github.com/kokke/tiny-bignum-c")
+              (commit commit)))
+        (file-name (git-file-name "tiny-bignum" commit))
+        (sha256
+         (base32 "0vj71qlhlaa7d92bfar1kwqv6582dqrby8x3kdw0yzh82k2023g6"))))
+     (build-system gnu-build-system)
+     (arguments
+      `(#:phases
+        (modify-phases %standard-phases
+          (delete 'configure)
+          (add-after 'unpack 'patch-tests
+            (lambda _
+              (substitute* "scripts/test_rand.py"
+                (("\t") "  ")
+                (("\" % (\\w+)" _ symbol) (string-append "\" % int(" symbol ")")))
+              #t))
+          (replace 'check
+            (lambda* (#:key tests? #:allow-other-keys)
+              (when tests?
+                (invoke "make" "test"))
+              #t))
+          (replace 'install
+            (lambda* (#:key outputs #:allow-other-keys)
+              (let ((share (string-append (assoc-ref outputs "out") "/share"))
+                    (doc (string-append (assoc-ref outputs "out") "/doc")))
+                (mkdir-p share)
+                (install-file "bn.c" share)
+                (install-file "bn.h" share)
+                (mkdir-p doc)
+                (install-file "LICENSE" doc)
+                (install-file "README.md" doc))
+              #t)))))
+     (native-inputs
+      `(("python" ,python-wrapper)))
+     (home-page "https://github.com/kokke/tiny-bignum-c")
+     (synopsis "Small portable multiple-precision unsigned integer arithmetic in C")
+     (description
+      "This library provides portable Arbitrary-precision unsigned integer
+arithmetic in C, for calculating with large numbers.  Basic arithmetic (+, -,
+*, /, %) and bitwise operations (&, |, ^. <<, >>) plus increments, decrements
+and comparisons are supported.")
+     (license license:unlicense))))
 
 (define-public sundials
   (package
@@ -5607,10 +5846,10 @@ compiled against the nauty library.")
          "1j5aji1g2vmdvc0gqz45n2ll2l2f6czca04wiyfl5g3sm3a6vhvb"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("m4", m4)))
+     `(("m4" ,m4)))
     (inputs
      `(("glpk" ,glpk)
-       ("gmp", gmp)))
+       ("gmp" ,gmp)))
     (home-page "https://www.bugseng.com/parma-polyhedra-library")
     (synopsis
      "Parma Polyhedra Library for computations with polyhedra")

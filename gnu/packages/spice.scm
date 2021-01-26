@@ -102,7 +102,7 @@ system to use the host GPU to accelerate 3D rendering.")
 (define-public spice-protocol
   (package
     (name "spice-protocol")
-    (version "0.14.2")
+    (version "0.14.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -110,7 +110,7 @@ system to use the host GPU to accelerate 3D rendering.")
                 "spice-protocol-" version ".tar.xz"))
               (sha256
                (base32
-                "1sgi9ksb781qs47pdbw0bmnyg8dgayn5xrzj6vzdy043nv466flg"))))
+                "0yj8k7gcirrsf21w0q6146n5g4nzn2pqky4p90n5760m5ayfb1pr"))))
     (build-system meson-build-system)
     (arguments
      `(#:phases
@@ -144,11 +144,8 @@ which allows users to view a desktop computing environment.")
     (build-system gnu-build-system)
     (propagated-inputs
       `(("gstreamer" ,gstreamer)
-        ("gst-libav" ,gst-libav)
         ("gst-plugins-base" ,gst-plugins-base)
         ("gst-plugins-good" ,gst-plugins-good)
-        ("gst-plugins-bad" ,gst-plugins-bad)
-        ("gst-plugins-ugly" ,gst-plugins-ugly)
         ("spice-protocol" ,spice-protocol)
 
         ;; These are required by the pkg-config files.
@@ -264,7 +261,7 @@ Internet and from a wide variety of machine architectures.")
 (define-public spice-vdagent
   (package
     (name "spice-vdagent")
-    (version "0.17.0")
+    (version "0.20.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -272,7 +269,7 @@ Internet and from a wide variety of machine architectures.")
                 "spice-vdagent-" version ".tar.bz2"))
               (sha256
                (base32
-                "0gdkyylyg1hksg0i0anvznqfli2q39335fnrmcd6847frpc8njpi"))))
+                "0n9k2kna2gd1zi6jv45zsp2jlv439nz5l5jjijirxqaycwi74srf"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -297,6 +294,7 @@ Internet and from a wide variety of machine architectures.")
       `(("alsa-lib" ,alsa-lib)
         ("dbus" ,dbus)
         ("glib" ,glib)
+        ("libdrm" ,libdrm)
         ("libpciaccess" ,libpciaccess)
         ("libx11" ,libx11)
         ("libxext" ,libxext)
@@ -372,6 +370,7 @@ share smart cards from client system to local or remote virtual machines.")
     (build-system gnu-build-system)
     (inputs
       `(("gtk+" ,gtk+)
+        ("gtk-vnc" ,gtk-vnc)
         ("libcap" ,libcap)
         ("libxml2" ,libxml2)
         ("spice-gtk" ,spice-gtk)))

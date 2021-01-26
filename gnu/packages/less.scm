@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2012 Nikita Karetnikov <nikita@karetnikov.org>
-;;; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
@@ -33,7 +33,7 @@
 (define-public less
   (package
     (name "less")
-    (version "551")
+    (version "563")
     (source
      (origin
        (method url-fetch)
@@ -43,7 +43,7 @@
                                  version ".tar.gz")))
        (patches (search-patches "less-hurd-path-max.patch"))
        (sha256
-        (base32 "0ggyjl3yzn7c450zk1rixi9ls6asdhgqynhk34zsd0ckhmsm45pz"))))
+        (base32 "16lsvk88vwjwp5ax1wnll44wxwnzs8lb2fn90xx2si64kwmnsnyf"))))
     (build-system gnu-build-system)
     (inputs `(("ncurses" ,ncurses)))
     (home-page "https://www.gnu.org/software/less/")
@@ -59,7 +59,7 @@ text editors.")
 (define-public lesspipe
   (package
     (name "lesspipe")
-    (version "1.84")
+    (version "1.85")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -68,7 +68,7 @@ text editors.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "124ffhzrikr88ab14rk6753n8adxijpmg7q3zx7nmqc52wpkfd8q"))))
+                "1v1jdkdq1phc93gdr6mjlk98gipxrkkq4bj8kks0kfdvjgdwkdaa"))))
     (build-system gnu-build-system)
     (arguments
      '(#:tests? #f                      ; no tests
@@ -80,7 +80,17 @@ text editors.")
                         (invoke "./configure"
                                 (string-append "--prefix=" out)
                                 "--yes")
-                        #t))))))
+                        #t)))
+                  (add-before 'install 'patch-tput-and-file
+                    (lambda* (#:key inputs #:allow-other-keys)
+                      (substitute* "lesspipe.sh"
+                        (("tput colors")
+                         (string-append (assoc-ref inputs "ncurses")
+                                        "/bin/tput colors"))
+                        (("file -")
+                         (string-append (assoc-ref inputs "file")
+                                        "/bin/file -")))
+                      #t)))))
     (inputs
      `(("file" ,file)
        ("ncurses" ,ncurses)))  ; for tput

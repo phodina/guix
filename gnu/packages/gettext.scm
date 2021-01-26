@@ -9,6 +9,7 @@
 ;;; Copyright © 2017 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Miguel <rosen644835@gmail.com>
+;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -34,9 +35,11 @@
   #:use-module (guix build-system perl)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages emacs)
+  #:use-module (gnu packages hurd)
   #:use-module (gnu packages libunistring)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages perl)
+  #:use-module (gnu packages perl-check)
   #:use-module (gnu packages tex)
   #:use-module (gnu packages xml)
   #:use-module (guix utils))
@@ -106,7 +109,11 @@
                #t)))))
 
        ;; When tests fail, we want to know the details.
-       #:make-flags '("VERBOSE=yes")))
+       #:make-flags '("VERBOSE=yes"
+                      ,@(if (hurd-target?)
+                            ;; Linking to libgettextlib.so makes test-raise fail
+                            '("XFAIL_TESTS=test-raise")
+                            '()))))
     (home-page "https://www.gnu.org/software/gettext/")
     (synopsis
      "Tools and documentation for translation (used to build other packages)")
@@ -179,14 +186,14 @@ color, font attributes (weight, posture), or underlining.")
 (define-public po4a
   (package
     (name "po4a")
-    (version "0.57")
+    (version "0.61")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/mquinson/po4a/releases/download/v"
                                   version "/po4a-" version ".tar.gz"))
               (sha256
                (base32
-                "15yd27krlpdvjhcnwys6i5k1ww62ifq2yx8k1zxyxiwy84myqmdv"))))
+                "1nw61dj7ymrsjps79vvfdzp549drwd51kyj598937zvyafq4r5b2"))))
     (build-system perl-build-system)
     (arguments
      `(#:phases
@@ -219,12 +226,13 @@ color, font attributes (weight, posture), or underlining.")
              #t))
          (add-before 'check 'disable-failing-tests
            (lambda _
-             ;; FIXME: ‘Files ../t-03-asciidoc/Titles.po and Titles.po differ’.
-             (delete-file "t/03-asciidoc.t")
-
              ;; FIXME: these tests require SGMLS.pm.
              (delete-file "t/01-classes.t")
-             (delete-file "t/16-sgml.t")
+
+             (delete-file "t/add.t")
+             (delete-file "t/core-porefs.t")
+             (delete-file "t/fmt-asciidoc.t")
+             (delete-file "t/fmt-sgml.t")
 
              #t)))))
     (native-inputs
@@ -236,6 +244,7 @@ color, font attributes (weight, posture), or underlining.")
 
        ;; For tests.
        ("docbook-xml" ,docbook-xml-4.1.2)
+       ("perl-test-pod" ,perl-test-pod)
        ("perl-yaml-tiny" ,perl-yaml-tiny)
        ("texlive" ,texlive-tiny)))
     (home-page "https://po4a.org/")

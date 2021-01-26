@@ -52,13 +52,16 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages gettext)
+  #:use-module (guix i18n)
   #:use-module (guix utils)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system trivial)
+  #:use-module (ice-9 format)
   #:use-module (ice-9 match)
+  #:use-module (ice-9 optargs)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:export (glibc
@@ -324,7 +327,7 @@ used to apply commands with arbitrarily long arguments.")
              ,@(if (and (not (%current-target-system))
                         (member (%current-system)
                                 (package-supported-systems libcap)))
-             `(("libcap" ,libcap))  ;capability support in 'ls', etc.
+             `(("libcap" ,libcap-2.31))        ;capability support in 'ls', etc.
              '())))
    (native-inputs
     ;; Perl is needed to run tests in native builds, and to run the bundled
@@ -1106,9 +1109,16 @@ to the @code{share/locale} sub-directory of this package.")
                                         ,(version-major+minor
                                           (package-version glibc)))))))))))
 
-(define-public (make-glibc-utf8-locales glibc)
+(define %default-utf8-locales
+  ;; These are the locales commonly used for tests---e.g., in Guile's i18n
+  ;; tests.
+  '("de_DE" "el_GR" "en_US" "fr_FR" "tr_TR"))
+(define*-public (make-glibc-utf8-locales glibc #:key
+                                         (locales %default-utf8-locales)
+                                         (name "glibc-utf8-locales"))
+  (define default-locales? (equal? locales %default-utf8-locales))
   (package
-    (name "glibc-utf8-locales")
+    (name name)
     (version (package-version glibc))
     (source #f)
     (build-system trivial-build-system)
@@ -1142,17 +1152,22 @@ to the @code{share/locale} sub-directory of this package.")
                                  (symlink (string-append locale ".utf8")
                                           (string-append localedir "/"
                                                          locale ".UTF-8")))
-
-                               ;; These are the locales commonly used for
-                               ;; tests---e.g., in Guile's i18n tests.
-                               '("de_DE" "el_GR" "en_US" "fr_FR" "tr_TR"))
+                               ',locales)
                      #t))))
     (native-inputs `(("glibc" ,glibc)
                      ("gzip" ,gzip)))
-    (synopsis "Small sample of UTF-8 locales")
+    (synopsis (if default-locales?
+                  (P_ "Small sample of UTF-8 locales")
+                  (P_ "Customized sample of UTF-8 locales")))
     (description
-     "This package provides a small sample of UTF-8 locales mostly useful in
+     (if default-locales?
+         (P_ "This package provides a small sample of UTF-8 locales mostly useful in
 test environments.")
+         (format #f (P_ "This package provides the following UTF-8 locales:
+@itemize
+~{@item ~a~%~}
+@end itemize~%")
+                 locales)))
     (home-page (package-home-page glibc))
     (license (package-license glibc))))
 
@@ -1229,7 +1244,7 @@ command.")
 (define-public tzdata
   (package
     (name "tzdata")
-    (version "2020a")
+    (version "2020d")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -1237,10 +1252,10 @@ command.")
                    version ".tar.gz"))
              (sha256
               (base32
-               "18lrp0zh8m931jjlrv8lvjas4ka5dfkzdbwnbw5lwd2dlbn62wal"))))
+               "1wxskk9mh1x2073n99qna2mq58mgi648mbq5dxlqfcrnvrbkk0cd"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:tests? #f
+     `(#:tests? #f
        #:make-flags (let ((out (assoc-ref %outputs "out"))
                           (tmp (getenv "TMPDIR")))
                       (list (string-append "TOPDIR=" out)
@@ -1251,6 +1266,16 @@ command.")
                             ;; Likewise for the C library routines.
                             (string-append "LIBDIR=" tmp "/lib")
                             (string-append "MANDIR=" tmp "/man")
+
+                            ;; XXX: tzdata 2020b changed the on-disk format
+                            ;; of the time zone files from 'fat' to 'slim'.
+                            ;; Many packages (particularly evolution-data-server)
+                            ;; can not yet handle the latter, so we stick with
+                            ;; 'fat' for now.
+                            ,@(if (version>=? (package-version this-package)
+                                              "2020b")
+                                  '("CPPFLAGS=-DZIC_BLOAT_DEFAULT='\"fat\"'")
+                                  '())
 
                             "AWK=awk"
                             "CC=gcc"))
@@ -1287,7 +1312,7 @@ command.")
                                 version ".tar.gz"))
                           (sha256
                            (base32
-                            "0sfnlqw1p93r7klny69rwr94fh22mz632h52phgzfgg01q9gfakx"))))))
+                            "1mgsckixmmk9qxzsflfxnp3999qi3ls72bgksclk01g852x51w3c"))))))
     (home-page "https://www.iana.org/time-zones")
     (synopsis "Database of current and historical time zones")
     (description "The Time Zone Database (often called tz or zoneinfo)

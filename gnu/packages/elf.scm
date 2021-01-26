@@ -7,6 +7,7 @@
 ;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 Mark Wielaard <mark@klomp.org>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -112,14 +113,14 @@ object or archive file), @command{eu-strip} (for discarding symbols),
   (package
     (name "libabigail")
     (home-page "https://sourceware.org/libabigail/")
-    (version "1.7")
+    (version "1.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://sourceware.org/pub/libabigail/"
                                   "libabigail-" version ".tar.gz"))
               (sha256
                (base32
-                "0bf8w01l6wm7mm4clfg5rqi30m1ws11qqa4bp2vxghfwgi9ai8i7"))))
+                "0p363mkgypcklgf8iylxpbdnfgqc086a6fv7n9hzrjjci45jdgqw"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--disable-static"
@@ -214,7 +215,7 @@ static analysis of the ELF binaries at hand.")
 (define-public patchelf
   (package
     (name "patchelf")
-    (version "0.10")
+    (version "0.11")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -223,7 +224,7 @@ static analysis of the ELF binaries at hand.")
                    "/patchelf-" version ".tar.bz2"))
              (sha256
               (base32
-               "1wzwvnlyf853hw9zgqq5522bvf8gqadk8icgqa41a5n7593csw7n"))))
+               "16ms3ijcihb88j3x6cl8cbvhia72afmfcphczb9cfwr0gbc22chx"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases

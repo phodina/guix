@@ -34,11 +34,12 @@
   #:use-module (guix sets)
   #:use-module ((guix diagnostics)
                 #:select (location-file formatted-message))
-  #:use-module ((guix scripts build)
+  #:use-module ((guix transformations)
                 #:select (show-transformation-options-help
                           options->transformation
-                          %standard-build-options
                           %transformation-options))
+  #:use-module ((guix scripts build)
+                #:select (%standard-build-options))
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-34)
@@ -565,7 +566,10 @@ Emit a representation of the dependency graph of PACKAGE...\n"))
 ;;; Entry point.
 ;;;
 
-(define (guix-graph . args)
+(define-command (guix-graph . args)
+  (category packaging)
+  (synopsis "view and query package dependency graphs")
+
   (with-error-handling
     (define opts
       (parse-command-line args %options
@@ -582,11 +586,11 @@ Emit a representation of the dependency graph of PACKAGE...\n"))
                                       (('argument . (? store-path? item))
                                        item)
                                       (('argument . spec)
-                                       (transform store
-                                                  (specification->package spec)))
+                                       (transform
+                                        (specification->package spec)))
                                       (('expression . exp)
-                                       (transform store
-                                                  (read/eval-package-expression exp)))
+                                       (transform
+                                        (read/eval-package-expression exp)))
                                       (_ #f))
                                     opts)))
         (run-with-store store

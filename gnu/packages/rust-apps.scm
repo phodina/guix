@@ -1,9 +1,14 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2019, 2020 John Soo <jsoo1@asu.edu>
-;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2020 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2020 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2020 Gabriel Arazas <foo.dogsquared@gmail.com>
+;;; Copyright © 2020, 2021 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2021 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2021 Sharlatan Hellseher <sharlatanus@gmail.ccom>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -27,12 +32,107 @@
   #:use-module (guix packages)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages crates-io)
+  #:use-module (gnu packages crates-graphics)
   #:use-module (gnu packages documentation)
+  #:use-module (gnu packages fontutils)
+  #:use-module (gnu packages gtk)
   #:use-module (gnu packages jemalloc)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages version-control))
+
+(define-public bat
+  (package
+    (name "bat")
+    (version "0.17.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "bat" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1ia12774prjnm3msiaja6qdpxkpyknxswqpgkmwzj0wn9nhkc7nz"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-ansi-colours" ,rust-ansi-colours-1)
+        ("rust-ansi-term" ,rust-ansi-term-0.12)
+        ("rust-atty" ,rust-atty-0.2)
+        ("rust-clap" ,rust-clap-2)
+        ("rust-console" ,rust-console-0.13)
+        ("rust-content-inspector" ,rust-content-inspector-0.2)
+        ("rust-dirs" ,rust-dirs-3)
+        ("rust-encoding" ,rust-encoding-0.2)
+        ("rust-error-chain" ,rust-error-chain-0.12)
+        ("rust-git2" ,rust-git2-0.13)
+        ("rust-globset" ,rust-globset-0.4)
+        ("rust-lazy-static" ,rust-lazy-static-1)
+        ("rust-path-abs" ,rust-path-abs-0.5)
+        ("rust-semver" ,rust-semver-0.11)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-serde-yaml" ,rust-serde-yaml-0.8)
+        ("rust-shell-words" ,rust-shell-words-1)
+        ("rust-syntect" ,rust-syntect-4)
+        ("rust-unicode-width" ,rust-unicode-width-0.1)
+        ("rust-wild" ,rust-wild-2))
+       #:cargo-development-inputs
+       (("rust-assert-cmd" ,rust-assert-cmd-1)
+        ("rust-predicates" ,rust-predicates-1)
+        ("rust-tempdir" ,rust-tempdir-0.3))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libgit2" ,libgit2)
+       ("zlib" ,zlib)))
+    (home-page "https://github.com/sharkdp/bat")
+    (synopsis "@command{cat} clone with syntax highlighting and git integration")
+    (description
+     "@command{bat} is a drop-in @command{cat} replacement featuring syntax
+highlighting for a large number of languages, git integration, and automatic
+paging.")
+    (license (list license:expat license:asl2.0))))
+
+(define-public drill
+  (package
+    (name "drill")
+    (version "0.7.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "drill" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1m73d7rzi0p5c1hn0081d2235kcyapdza7h0vqf5jhnirpnjn793"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-async-trait" ,rust-async-trait-0.1)
+         ("rust-clap" ,rust-clap-2)
+         ("rust-colored" ,rust-colored-1)
+         ("rust-csv" ,rust-csv-1)
+         ("rust-futures" ,rust-futures-0.3)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-linked-hash-map" ,rust-linked-hash-map-0.5)
+         ("rust-num-cpus" ,rust-num-cpus-1)
+         ("rust-rand" ,rust-rand-0.7)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-reqwest" ,rust-reqwest-0.10)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-json" ,rust-serde-json-1)
+         ("rust-tokio" ,rust-tokio-0.2)
+         ("rust-url" ,rust-url-2)
+         ("rust-yaml-rust" ,rust-yaml-rust-0.4))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("openssl" ,openssl)))
+    (home-page "https://github.com/fcsonline/drill")
+    (synopsis "HTTP load testing application")
+    (description
+      "Drill is a HTTP load testing application written in Rust inspired by
+Ansible syntax.  Benchmark files can be written in YAML.")
+    (license license:gpl3)))
 
 (define-public exa
   (package
@@ -72,11 +172,6 @@
        (("rust-datetime" ,rust-datetime-0.4))
        #:phases
        (modify-phases %standard-phases
-         (add-after 'configure 'dont-vendor-sources
-           (lambda* (#:key inputs #:allow-other-keys)
-             (let ((openssl (assoc-ref inputs "openssl")))
-               (setenv "OPENSSL_DIR" openssl))
-             #t))
          ;; Ignoring failing tests.
          ;; Reported in https://github.com/ogham/exa/issues/318
          (add-before 'check 'disable-failing-tests
@@ -87,6 +182,7 @@
 
              (substitute* "src/options/view.rs"
                (("test!\\(across:.*") "")
+               (("test!\\(cr:.*") "")
                (("test!\\(empty:.*") "")
                (("test!\\(gracross:.*") "")
                (("test!\\(grid:.*") "")
@@ -148,7 +244,7 @@ also knows about symlinks, extended attributes, and Git.")
     (arguments
      `(#:cargo-inputs
        (("rust-ansi-term" ,rust-ansi-term-0.12)
-        ("rust-anyhow" ,rust-anyhow-1.0)
+        ("rust-anyhow" ,rust-anyhow-1)
         ("rust-atty" ,rust-atty-0.2)
         ("rust-clap" ,rust-clap-2)
         ("rust-ctrlc" ,rust-ctrlc-3.1)
@@ -202,6 +298,34 @@ also knows about symlinks, extended attributes, and Git.")
      "@code{fd} is a simple, fast and user-friendly alternative to @code{find}.
 While it does not seek to mirror all of find's powerful functionality, it
 provides defaults for 80% of the use cases.")
+    (license (list license:expat license:asl2.0))))
+
+(define-public hexyl
+  (package
+    (name "hexyl")
+    (version "0.8.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "hexyl" version))
+        (file-name
+         (string-append name "-" version ".tar.gz"))
+        (sha256
+         (base32
+          "0sipag77196467idbznbk5q5lwhqz85zw7y1pwg9b27jxqyk04rp"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-ansi-term" ,rust-ansi-term-0.12)
+        ("rust-atty" ,rust-atty-0.2)
+        ("rust-clap" ,rust-clap-2)
+        ("rust-libc" ,rust-libc-0.2))))
+    (home-page "https://github.com/sharkdp/hexyl")
+    (synopsis "Command-line hex viewer")
+    (description
+     "This package provides a command line hex viewer.  It uses a colored output
+for distinguishing different kinds of bytes such as NULL bytes, printable ASCII
+characters, ASCII whitespace characters, other ASCII characters and non-ASCII.")
     (license (list license:expat license:asl2.0))))
 
 (define-public ripgrep
@@ -292,6 +416,77 @@ gitignore rules.")
      "This package provides a tool for generating C/C++ bindings to Rust code.")
     (license license:mpl2.0)))
 
+(define-public rust-cbindgen-0.16
+  (package
+    (inherit rust-cbindgen)
+    (name "rust-cbindgen")
+    (version "0.16.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "cbindgen" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "049cai626nzw0km03parx4sxwaxgbr7i5ifjbjwnfxkqkj5k2i4k"))))
+    (arguments
+     `(#:tests? #false                  ;missing files
+       #:cargo-inputs
+       (("rust-clap" ,rust-clap-2)
+        ("rust-heck" ,rust-heck-0.3)
+        ("rust-indexmap" ,rust-indexmap-1)
+        ("rust-log" ,rust-log-0.4)
+        ("rust-proc-macro2" ,rust-proc-macro2-1)
+        ("rust-quote" ,rust-quote-1)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-serde-json" ,rust-serde-json-1)
+        ("rust-syn" ,rust-syn-1)
+        ("rust-tempfile" ,rust-tempfile-3)
+        ("rust-toml" ,rust-toml-0.5))
+       #:cargo-development-inputs
+       (("rust-serial-test" ,rust-serial-test-0.5))))))
+
+(define-public rust-cbindgen-0.15
+  (package
+    (inherit rust-cbindgen)
+    (name "rust-cbindgen")
+    (version "0.15.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "cbindgen" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "0dgf49zij9rxnf0lv4k5gcmx1mxcz16czkk6q63anz0xp8ds3xhx"))))
+    (arguments
+     `(#:tests? #false                  ;missing files
+       #:cargo-inputs
+       (("rust-clap" ,rust-clap-2)
+        ("rust-heck" ,rust-heck-0.3)
+        ("rust-indexmap" ,rust-indexmap-1)
+        ("rust-log" ,rust-log-0.4)
+        ("rust-proc-macro2" ,rust-proc-macro2-1)
+        ("rust-quote" ,rust-quote-1)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-serde-json" ,rust-serde-json-1)
+        ("rust-syn" ,rust-syn-1)
+        ("rust-tempfile" ,rust-tempfile-3)
+        ("rust-toml" ,rust-toml-0.5))))))
+
+(define-public rust-cbindgen-0.14
+  (package
+    (inherit rust-cbindgen)
+    (name "rust-cbindgen")
+    (version "0.14.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cbindgen" version))
+        (file-name
+         (string-append name "-" version ".tar.gz"))
+        (sha256
+         (base32
+          "1ppwqbzydxlg9a24lynzfk60xrvqw4k31mpz1wrk6lbf88zf8nxi"))))))
+
 (define-public rust-cbindgen-0.12
   (package
     (inherit rust-cbindgen)
@@ -307,58 +502,123 @@ gitignore rules.")
          (base32
           "13jzbmjz1bmmfr0i80hw6ar484mgabx3hbpb2ynhk0ddqi0yr58m"))))))
 
-(define-public tokei
+(define-public tectonic
   (package
-    (name "tokei")
-    (version "10.1.1")
+    (name "tectonic")
+    (version "0.4.1")
     (source
-      (origin
-        (method url-fetch)
-        (uri (crate-uri "tokei" version))
-        (file-name
-         (string-append name "-" version ".tar.gz"))
-        (sha256
-         (base32
-          "07f5laqw2k9l3k8wrg9h8p2m5d9hkfxngyacwrn3vs7mlnw8l81m"))))
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "tectonic" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "16fm2bfvfizrydmirzf0bhr1fidb5slcbvr6150and8yqr8jc4lf"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-clap" ,rust-clap-2)
-        ("rust-crossbeam-channel" ,rust-crossbeam-channel-0.4)
-        ("rust-dirs" ,rust-dirs-2.0)
+       (("rust-app-dirs2" ,rust-app-dirs2-2)
+        ("rust-atty" ,rust-atty-0.2)
+        ("rust-byte-unit" ,rust-byte-unit-4)
+        ("rust-cbindgen" ,rust-cbindgen-0.16)
+        ("rust-cc" ,rust-cc-1)
+        ("rust-cfg-if" ,rust-cfg-if-1)
+        ("rust-error-chain" ,rust-error-chain-0.12)
+        ("rust-flate2" ,rust-flate2-1)
+        ("rust-fs2" ,rust-fs2-0.4)
+        ("rust-headers" ,rust-headers-0.2)
+        ("rust-lazy-static" ,rust-lazy-static-1)
+        ("rust-libc" ,rust-libc-0.2)
+        ("rust-md-5" ,rust-md-5-0.9)
+        ("rust-pkg-config" ,rust-pkg-config-0.3)
+        ("rust-regex" ,rust-regex-1)
+        ("rust-reqwest" ,rust-reqwest-0.9)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-sha2" ,rust-sha2-0.9)
+        ("rust-structopt" ,rust-structopt-0.3)
+        ("rust-tectonic-cfg-support" ,rust-tectonic-cfg-support-0.1)
+        ("rust-tectonic-xdv" ,rust-tectonic-xdv-0.1)
+        ("rust-tempfile" ,rust-tempfile-3)
+        ("rust-termcolor" ,rust-termcolor-1)
+        ("rust-toml" ,rust-toml-0.5)
+        ("rust-vcpkg" ,rust-vcpkg-0.2)
+        ("rust-zip" ,rust-zip-0.5))
+       #:cargo-development-inputs
+       (("rust-filetime" ,rust-filetime-0.2)
+        ("rust-futures" ,rust-futures-0.1)
+        ("rust-headers" ,rust-headers-0.2)
+        ("rust-hyper" ,rust-hyper-0.12)
+        ("rust-tempfile" ,rust-tempfile-3)
+        ("rust-tokio" ,rust-tokio-0.1))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-doc
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (string-append out "/share/doc/" ,name "-" ,version)))
+               (copy-recursively "docs/src" doc)
+               #t))))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("fontconfig" ,fontconfig)
+       ("harfbuzz" ,harfbuzz)
+       ("openssl" ,openssl)
+       ("zlib" ,zlib)))
+    (home-page "https://tectonic-typesetting.github.io/")
+    (synopsis "Complete, embeddable TeX/LaTeX engine")
+    (description
+     "This package provides a modernized, complete, embeddable
+TeX/LaTeX engine.  Tectonic is forked from the XeTeX extension to the
+classic Web2C implementation of TeX and uses the TeXLive distribution
+of support files.")
+    (license license:expat)))
+
+(define-public tokei
+  (package
+    (name "tokei")
+    (version "12.1.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "tokei" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "000w549v1bpw7r57xw656p40ywf1gimvxxx5cjnri2js0xg927x4"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-aho-corasick" ,rust-aho-corasick-0.7)
+        ("rust-clap" ,rust-clap-2)
+        ("rust-crossbeam-channel" ,rust-crossbeam-channel-0.5)
+        ("rust-dashmap" ,rust-dashmap-4)
+        ("rust-dirs" ,rust-dirs-3)
         ("rust-encoding-rs-io" ,rust-encoding-rs-io-0.1)
-        ("rust-env-logger" ,rust-env-logger-0.7)
+        ("rust-env-logger" ,rust-env-logger-0.8)
         ("rust-grep-searcher" ,rust-grep-searcher-0.1)
         ("rust-hex" ,rust-hex-0.4)
         ("rust-ignore" ,rust-ignore-0.4)
         ("rust-log" ,rust-log-0.4)
+        ("rust-num-format" ,rust-num-format-0.4)
+        ("rust-once-cell" ,rust-once-cell-1)
+        ("rust-parking-lot" ,rust-parking-lot-0.11)
         ("rust-rayon" ,rust-rayon-1)
+        ("rust-regex" ,rust-regex-1)
         ("rust-serde" ,rust-serde-1)
-        ("rust-serde-cbor" ,rust-serde-cbor-0.10)
-        ("rust-serde-derive" ,rust-serde-derive-1)
+        ("rust-serde-cbor" ,rust-serde-cbor-0.11)
         ("rust-serde-json" ,rust-serde-json-1)
         ("rust-serde-yaml" ,rust-serde-yaml-0.8)
+        ("rust-tera" ,rust-tera-1)
         ("rust-term-size" ,rust-term-size-0.3)
         ("rust-toml" ,rust-toml-0.5))
        #:cargo-development-inputs
-       (("rust-git2" ,rust-git2-0.11)
-        ("rust-handlebars" ,rust-handlebars-2.0)
-        ("rust-ignore" ,rust-ignore-0.4)
-        ("rust-lazy-static" ,rust-lazy-static-1)
+       (("rust-git2" ,rust-git2-0.13)
         ("rust-regex" ,rust-regex-1)
-        ("rust-serde-json" ,rust-serde-json-1)
-        ("rust-tempfile" ,rust-tempfile-3))
-       #:phases
-       (modify-phases %standard-phases
-         (add-after 'configure 'unvendor-libraries-from-crates
-           (lambda* (#:key inputs #:allow-other-keys)
-             (let ((openssl (assoc-ref inputs "openssl")))
-               (setenv "OPENSSL_DIR" openssl))
-             #t)))))
+        ("rust-tempfile" ,rust-tempfile-3))))
     (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
      `(("libgit2" ,libgit2)
        ("openssl" ,openssl)
-       ("pkg-config" ,pkg-config)
        ("zlib" ,zlib)))
     (home-page "https://tokei.rs")
     (synopsis "Count code, quickly")
@@ -371,7 +631,7 @@ blanks grouped by language.")
 (define-public watchexec
   (package
     (name "watchexec")
-    (version "1.14.0")
+    (version "1.14.1")
     (source
      (origin
        (method url-fetch)
@@ -379,8 +639,7 @@ blanks grouped by language.")
        (file-name
         (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32
-         "0bwgqb5fvyqbf2lf0005fxzpbpbwbszc7144g3kg2cmzy5cbrf0w"))))
+        (base32 "1vqaa462sjpzi0crh12ixqc2wa5bblirc129pnj8jr8iz3xw3gvd"))))
     (build-system cargo-build-system)
     (arguments
      `(#:phases
@@ -395,7 +654,7 @@ blanks grouped by language.")
                (install-file "README.md" doc)
                #t))))
        #:cargo-inputs
-       (("rust-clap" ,rust-clap-2)
+       (("rust-embed-resource" ,rust-embed-resource-1.3)
         ("rust-derive-builder" ,rust-derive-builder-0.9)
         ("rust-env-logger" ,rust-env-logger-0.7)
         ("rust-glob" ,rust-glob-0.3)
@@ -404,8 +663,7 @@ blanks grouped by language.")
         ("rust-log" ,rust-log-0.4)
         ("rust-nix" ,rust-nix-0.17)
         ("rust-notify" ,rust-notify-4)
-        ("rust-walkdir" ,rust-walkdir-2)
-        ("rust-winapi" ,rust-winapi-0.3))))
+        ("rust-walkdir" ,rust-walkdir-2))))
     (home-page "https://github.com/watchexec/watchexec")
     (synopsis "Executes commands in response to file modifications")
     (description
@@ -420,7 +678,7 @@ Example use cases:
 
 Features:
 @itemize @bullet
-@item Coalesces multiple filesystem events into one, for editors that
+@item Coalesces multiple file system events into one, for editors that
 use swap/backup files during saving
 @item By default, uses @code{.gitignore} and @code{.ignore} to determine which
 files to ignore notifications for

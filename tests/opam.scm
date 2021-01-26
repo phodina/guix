@@ -80,117 +80,115 @@ url {
                 (set! test-source-hash
                   (call-with-input-file file-name port-sha256))))
              (_ (error "Unexpected URL: " url)))))
-      (let ((my-package (string-append test-repo "/packages/foo/foo.1.0.0")))
-        (mkdir-p my-package)
-        (with-output-to-file (string-append my-package "/opam")
-          (lambda _
-            (format #t "~a" test-opam-file))))
-      (match (opam->guix-package "foo" #:repository test-repo)
-        (('package
-           ('name "ocaml-foo")
-           ('version "1.0.0")
-           ('source ('origin
-                      ('method 'url-fetch)
-                      ('uri "https://example.org/foo-1.0.0.tar.gz")
-                      ('sha256
-                       ('base32
-                        (? string? hash)))))
-           ('build-system 'ocaml-build-system)
-           ('propagated-inputs
-            ('quasiquote
-             (("ocaml-zarith" ('unquote 'ocaml-zarith)))))
-           ('native-inputs
-            ('quasiquote
-             (("ocaml-alcotest" ('unquote 'ocaml-alcotest))
-              ("ocamlbuild" ('unquote 'ocamlbuild)))))
-           ('home-page "https://example.org/")
-           ('synopsis "Some example package")
-           ('description "This package is just an example.")
-           ('license #f))
-         (string=? (bytevector->nix-base32-string
-                    test-source-hash)
-                   hash))
-        (x
-         (pk 'fail x #f)))))
+        (mock ((guix import opam) get-opam-repository
+               (const test-repo))
+              (let ((my-package (string-append test-repo
+                                               "/packages/foo/foo.1.0.0")))
+                (mkdir-p my-package)
+                (with-output-to-file (string-append my-package "/opam")
+                  (lambda _
+                    (format #t "~a" test-opam-file))))
+              (match (opam->guix-package "foo" #:repo test-repo)
+                (('package
+                   ('name "ocaml-foo")
+                   ('version "1.0.0")
+                   ('source ('origin
+                              ('method 'url-fetch)
+                              ('uri "https://example.org/foo-1.0.0.tar.gz")
+                              ('sha256
+                               ('base32
+                                (? string? hash)))))
+                   ('build-system 'ocaml-build-system)
+                   ('propagated-inputs
+                    ('quasiquote
+                     (("ocaml-zarith" ('unquote 'ocaml-zarith)))))
+                   ('native-inputs
+                    ('quasiquote
+                     (("ocaml-alcotest" ('unquote 'ocaml-alcotest))
+                      ("ocamlbuild" ('unquote 'ocamlbuild)))))
+                   ('home-page "https://example.org/")
+                   ('synopsis "Some example package")
+                   ('description "This package is just an example.")
+                   ('license #f))
+                 (string=? (bytevector->nix-base32-string
+                            test-source-hash)
+                           hash))
+                (x
+                 (pk 'fail x #f))))))
 
 ;; Test the opam file parser
 ;; We fold over some test cases. Each case is a pair of the string to parse and the
 ;; expected result.
-(test-assert "parse-strings"
-  (fold (lambda (test acc)
-          (display test) (newline)
-          (and acc
-               (let ((result (peg:tree (match-pattern string-pat (car test)))))
-                 (if (equal? result (cdr test))
-                   #t
-                   (pk 'fail (list (car test) result (cdr test)) #f)))))
-    #t '(("" . #f)
-         ("\"hello\"" . (string-pat "hello"))
-         ("\"hello world\"" . (string-pat "hello world"))
-         ("\"The dreaded \\\"é\\\"\"" . (string-pat "The dreaded \"é\""))
-         ("\"Have some \\\\\\\\ :)\"" . (string-pat "Have some \\\\ :)"))
-         ("\"今日は\"" . (string-pat "今日は")))))
+(define (test-opam-syntax name pattern test-cases)
+  (test-assert name
+    (fold (lambda (test acc)
+            (display test) (newline)
+            (match test
+              ((str . expected)
+               (and acc
+                    (let ((result (peg:tree (match-pattern pattern str))))
+                      (if (equal? result expected)
+                          #t
+                          (pk 'fail (list str result expected) #f)))))))
+          #t test-cases)))
 
-(test-assert "parse-multiline-strings"
-  (fold (lambda (test acc)
-          (display test) (newline)
-          (and acc
-               (let ((result (peg:tree (match-pattern multiline-string (car test)))))
-                 (if (equal? result (cdr test))
-                   #t
-                   (pk 'fail (list (car test) result (cdr test)) #f)))))
-    #t '(("" . #f)
-         ("\"\"\"hello\"\"\"" . (multiline-string "hello"))
-         ("\"\"\"hello \"world\"!\"\"\"" . (multiline-string "hello \"world\"!"))
-         ("\"\"\"hello \"\"world\"\"!\"\"\"" . (multiline-string "hello \"\"world\"\"!")))))
+(test-opam-syntax
+  "parse-strings" string-pat
+  '(("" . #f)
+    ("\"hello\"" . (string-pat "hello"))
+    ("\"hello world\"" . (string-pat "hello world"))
+    ("\"The dreaded \\\"é\\\"\"" . (string-pat "The dreaded \"é\""))
+    ("\"Have some \\\\\\\\ :)\"" . (string-pat "Have some \\\\ :)"))
+    ("\"今日は\"" . (string-pat "今日は"))))
 
-(test-assert "parse-lists"
-  (fold (lambda (test acc)
-          (and acc
-               (let ((result (peg:tree (match-pattern list-pat (car test)))))
-                 (if (equal? result (cdr test))
-                   #t
-                   (pk 'fail (list (car test) result (cdr test)) #f)))))
-    #t '(("" . #f)
-         ("[]" . list-pat)
-         ("[make]" . (list-pat (var "make")))
-         ("[\"make\"]" . (list-pat (string-pat "make")))
-         ("[\n  a\n  b\n  c]" . (list-pat (var "a") (var "b") (var "c")))
-         ("[a   b     \"c\"]" . (list-pat (var "a") (var "b") (string-pat "c"))))))
+(test-opam-syntax
+  "parse-multiline-strings" multiline-string
+  '(("" . #f)
+    ("\"\"\"hello\"\"\"" . (multiline-string "hello"))
+    ("\"\"\"hello \"world\"!\"\"\"" . (multiline-string "hello \"world\"!"))
+    ("\"\"\"hello \"\"world\"\"!\"\"\"" . (multiline-string "hello \"\"world\"\"!"))))
 
-(test-assert "parse-dicts"
-  (fold (lambda (test acc)
-          (and acc
-               (let ((result (peg:tree (match-pattern dict (car test)))))
-                 (if (equal? result (cdr test))
-                   #t
-                   (pk 'fail (list (car test) result (cdr test)) #f)))))
-    #t '(("" . #f)
-         ("{}" . dict)
-         ("{a: \"b\"}" . (dict (record "a" (string-pat "b"))))
-         ("{a: \"b\"\nc: \"d\"}" . (dict (record "a" (string-pat "b")) (record "c" (string-pat "d")))))))
+(test-opam-syntax
+  "parse-lists" list-pat
+  '(("" . #f)
+    ("[]" . list-pat)
+    ("[make]" . (list-pat (var "make")))
+    ("[\"make\"]" . (list-pat (string-pat "make")))
+    ("[\n  a\n  b\n  c]" . (list-pat (var "a") (var "b") (var "c")))
+    ("[a   b     \"c\"]" . (list-pat (var "a") (var "b") (string-pat "c")))
+    ;; complex lists
+    ("[(a & b)]" . (list-pat (choice-pat (group-pat (var "a") (var "b")))))
+    ("[(a | b & c)]" . (list-pat (choice-pat (var "a") (group-pat (var "b") (var "c")))))
+    ("[a (b | c) d]" . (list-pat (var "a") (choice-pat (var "b") (var "c")) (var "d")))))
 
-(test-assert "parse-conditions"
-  (fold (lambda (test acc)
-          (and acc
-               (let ((result (peg:tree (match-pattern condition (car test)))))
-                 (if (equal? result (cdr test))
-                   #t
-                   (pk 'fail (list (car test) result (cdr test)) #f)))))
-    #t '(("" . #f)
-         ("{}" . #f)
-         ("{build}" . (condition-var "build"))
-         ("{>= \"0.2.0\"}" . (condition-greater-or-equal
-                               (condition-string "0.2.0")))
-         ("{>= \"0.2.0\" & test}" . (condition-and
-                                      (condition-greater-or-equal
-                                        (condition-string "0.2.0"))
-                                      (condition-var "test")))
-         ("{>= \"0.2.0\" | build}" . (condition-or
-                                      (condition-greater-or-equal
-                                        (condition-string "0.2.0"))
-                                      (condition-var "build")))
-         ("{ = \"1.0+beta19\" }" . (condition-eq
-                                     (condition-string "1.0+beta19"))))))
+(test-opam-syntax
+  "parse-dicts" dict
+  '(("" . #f)
+    ("{}" . dict)
+    ("{a: \"b\"}" . (dict (record "a" (string-pat "b"))))
+    ("{a: \"b\"\nc: \"d\"}" . (dict (record "a" (string-pat "b")) (record "c" (string-pat "d"))))))
+
+(test-opam-syntax
+  "parse-conditions" condition
+  '(("" . #f)
+    ("{}" . #f)
+    ("{build}" . (condition-var "build"))
+    ("{>= \"0.2.0\"}" . (condition-greater-or-equal
+                          (condition-string "0.2.0")))
+    ("{>= \"0.2.0\" & test}" . (condition-and
+                                 (condition-greater-or-equal
+                                   (condition-string "0.2.0"))
+                                 (condition-var "test")))
+    ("{>= \"0.2.0\" | build}" . (condition-or
+                                 (condition-greater-or-equal
+                                   (condition-string "0.2.0"))
+                                 (condition-var "build")))
+    ("{ = \"1.0+beta19\" }" . (condition-eq
+                                (condition-string "1.0+beta19")))))
+
+(test-opam-syntax
+  "parse-comment" list-pat
+  '(("" . #f)
+    ("[#comment\n]" . list-pat)))
 
 (test-end "opam")

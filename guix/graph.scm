@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2015, 2016, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2015, 2016, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -142,7 +142,7 @@ typically returned by 'node-edges' or 'node-back-edges'."
                         nodes node-edges))
 
 (define (shortest-path node1 node2 type)
-  "Return as a monadic value the shorted path, represented as a list, from
+  "Return as a monadic value the shortest path, represented as a list, from
 NODE1 to NODE2 of the given TYPE.  Return #f when there is no path."
   (define node-edges
     (node-type-edges type))
@@ -238,7 +238,7 @@ NODE1 to NODE2 of the given TYPE.  Return #f when there is no path."
 (define (emit-epilogue port)
   (display "\n}\n" port))
 (define (emit-node id label port)
-  (format port "  \"~a\" [label = \"~a\", shape = box, fontname = Helvetica];~%"
+  (format port "  \"~a\" [label = \"~a\", shape = box, fontname = sans];~%"
           id label))
 (define (emit-edge id1 id2 port)
   (format port "  \"~a\" -> \"~a\" [color = ~a];~%"
@@ -274,11 +274,11 @@ text {
 var nodes = {},
     nodeArray = [],
     links = [];
-" (search-path %load-path "d3.v3.js")))
+" (search-path %load-path "guix/d3.v3.js")))
 
 (define (emit-d3js-epilogue port)
   (format port "</script><script type=\"text/javascript\" src=\"~a\"></script></body></html>"
-          (search-path %load-path "graph.js")))
+          (search-path %load-path "guix/graph.js")))
 
 (define (emit-d3js-node id label port)
   (format port "\

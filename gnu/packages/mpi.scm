@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014, 2015, 2018, 2019 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014 Ian Denhardt <ian@zenhack.net>
 ;;; Copyright © 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2017 Dave Love <fx@gnu.org>
@@ -69,6 +69,7 @@
     (build-system gnu-build-system)
     (outputs '("out"           ;'lstopo' & co., depends on Cairo, libx11, etc.
                "lib"           ;small closure
+               "doc"           ;400+ section 3 man pages
                "debug"))
     (inputs
      `(("libx11" ,libx11)
@@ -114,6 +115,15 @@
                (substitute* (string-append lib "/lib/pkgconfig/hwloc.pc")
                  (("^.*prefix=.*$")
                   ""))
+               #t)))
+         (add-after 'install 'move-man3-pages
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; Move section 3 man pages to the "doc" output.
+             (let ((out (assoc-ref outputs "out"))
+                   (doc (assoc-ref outputs "doc")))
+               (copy-recursively (string-append out "/share/man/man3")
+                                 (string-append doc "/share/man/man3"))
+               (delete-file-recursively (string-append out "/share/man/man3"))
                #t))))))
     (home-page "https://www.open-mpi.org/projects/hwloc/")
     (synopsis "Abstraction of hardware architectures")
@@ -177,7 +187,7 @@ bind processes, and much more.")
 (define-public openmpi
   (package
     (name "openmpi")
-    (version "4.0.3")
+    (version "4.0.5")
     (source
      (origin
       (method url-fetch)
@@ -185,7 +195,7 @@ bind processes, and much more.")
                           (version-major+minor version)
                           "/downloads/openmpi-" version ".tar.bz2"))
       (sha256
-       (base32 "00zxcw99gr5n693cmcmn4f6a47vx1ywna895p0x7p163v37gw0hl"))
+       (base32 "02f0r9d3xgs08svkmj8v7lzviyxqnkk4yd3z0wql550xnriki3y5"))
       (patches (search-patches "openmpi-mtl-priorities.patch"))))
     (build-system gnu-build-system)
     (inputs
@@ -220,6 +230,10 @@ bind processes, and much more.")
                            "--with-valgrind"
                            "--with-hwloc=external"
                            "--with-libevent"
+
+                           ;; Help 'orterun' and 'mpirun' find their tools
+                           ;; under $prefix by default.
+                           "--enable-mpirun-prefix-by-default"
 
                            ;; InfiniBand support
                            "--enable-openib-control-hdr-padding"
@@ -432,7 +446,12 @@ arrays) that expose a buffer interface.")
      `(#:configure-flags
        (list "--disable-silent-rules"             ;let's see what's happening
              "--enable-debuginfo"
-             ;; "--with-device=ch4:ucx" ; --with-device=ch4:ofi segfaults in tests
+
+             ;; Default to "ch4", as will be the case in 3.4.  It also works
+             ;; around issues when running test suites of packages that use
+             ;; MPICH: <https://issues.guix.gnu.org/39588#15>.
+             "--with-device=ch4:ucx" ; --with-device=ch4:ofi segfaults in tests
+
              (string-append "--with-hwloc-prefix="
                             (assoc-ref %build-inputs "hwloc"))
 

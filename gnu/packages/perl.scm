@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2013, 2019 Andreas Enge <andreas@enge.fr>
+;;; Copyright © 2013, 2019, 2020 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015, 2016, 2017, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015, 2016, 2017, 2019, 2020 Eric Bavier <bavier@posteo.net>
 ;;; Copyright © 2015 Eric Dvorsak <eric@dvorsak.fr>
@@ -27,6 +27,8 @@
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Paul Garlick <pgarlick@tourbillion-technology.com>
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2020 Malte Frank Gerdes <malte.f.gerdes@gmail.com>
+;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -74,7 +76,8 @@
   #:use-module (gnu packages sdl)
   #:use-module (gnu packages textutils)
   #:use-module (gnu packages video)
-  #:use-module (gnu packages web))
+  #:use-module (gnu packages web)
+  #:use-module (gnu packages xorg))
 
 ;;;
 ;;; Please: Try to add new module packages in alphabetic order.
@@ -267,15 +270,14 @@ more.")
 (define-public perl-algorithm-c3
   (package
     (name "perl-algorithm-c3")
-    (version "0.10")
+    (version "0.11")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/H/HA/HAARG/"
                            "Algorithm-C3-" version ".tar.gz"))
        (sha256
-        (base32
-         "01hlcaxndls86bl92rkd3fvf9pfa3inxqaimv88bxs95803kmkss"))))
+        (base32 "02ck52cf0yyk57354rd1rp5l0kbfwi1pvg2lh3jadvjxfrkq9x5a"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/Algorithm-C3")
     (synopsis "Module for merging hierarchies using the C3 algorithm")
@@ -454,14 +456,14 @@ list manipulation routines.")
 (define-public perl-async-interrupt
   (package
     (name "perl-async-interrupt")
-    (version "1.25")
+    (version "1.26")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://cpan/authors/id/M/ML/MLEHMANN/"
                                   "Async-Interrupt-" version ".tar.gz"))
               (sha256
                (base32
-                "0jh94wj1b6a0cnni8prsb59g5lak5rfj2fw5ng96291zmz2yqp1w"))))
+                "0nq8wqy0gsnwhiw23wsp1dmgzzbf2q1asi85yd0d7cmg4haxsmib"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-canary-stability" ,perl-canary-stability)))
@@ -1265,14 +1267,14 @@ different getters and setters.")
 (define-public perl-class-c3
   (package
     (name "perl-class-c3")
-    (version "0.34")
+    (version "0.35")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/H/HA/HAARG/"
                            "Class-C3-" version ".tar.gz"))
        (sha256
-        (base32 "1dcibc31v5jwmi6hsdzi7c5ag1sb4wp3kxkibc889qrdj7jm12sd"))))
+        (base32 "0gp3czp6y0jxx4448kz37f7gdxq4vw514bvc0l98rk4glvqkq1c4"))))
     (build-system perl-build-system)
     (propagated-inputs
      `(("perl-algorithm-c3" ,perl-algorithm-c3)))
@@ -1691,15 +1693,14 @@ one.")
 (define-public perl-clone-pp
   (package
     (name "perl-clone-pp")
-    (version "1.07")
+    (version "1.08")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/N/NE/NEILB/Clone-PP-"
                            version ".tar.gz"))
        (sha256
-        (base32
-         "15dkhqvih6rx9dnngfwwljcm9s8afb0nbyl2vdvhd8frnw4y31dz"))))
+        (base32 "0y7m25fksiavzg4xj4cm9zkz8rmnk4iqy7lm01m4nmyqlna3082p"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/Clone-PP")
     (synopsis "Recursively copy Perl datatypes")
@@ -1712,7 +1713,7 @@ and objects.")
 (define-public perl-common-sense
   (package
     (name "perl-common-sense")
-    (version "3.74")
+    (version "3.75")
     (source
      (origin
        (method url-fetch)
@@ -1720,7 +1721,7 @@ and objects.")
                            "common-sense-" version ".tar.gz"))
        (sha256
         (base32
-         "1wxv2s0hbjkrnssvxvsds0k213awg5pgdlrpkr6xkpnimc17s7vp"))))
+         "0zhfp8f0czg69ycwn7r6ayg6idm5kyh2ai06g5s6s07kli61qsm8"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/common-sense")
     (synopsis "Sane defaults for Perl programs")
@@ -1961,7 +1962,7 @@ the caller.")
     (synopsis "Extract data from Macintosh BinHex files")
     (description
      "BinHex is a format for transporting files safely through electronic
-mail, as short-lined, 7-bit, semi-compressed data streams.  Ths module
+mail, as short-lined, 7-bit, semi-compressed data streams.  This module
 provides a means of converting those data streams back into into binary
 data.")
     (license license:perl-license)))
@@ -2033,14 +2034,14 @@ CPAN::Meta object are present.")
 (define-public perl-cpanel-json-xs
   (package
     (name "perl-cpanel-json-xs")
-    (version "4.18")
+    (version "4.25")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/R/RU/RURBAN/"
                            "Cpanel-JSON-XS-" version ".tar.gz"))
        (sha256
-        (base32 "1dnnf6bjz0fi9hk8gzmsklmh5y0z137vk62k3d7s88q30maf3rk3"))))
+        (base32 "061940vyj9y3rzwq47z2a3f5i5rfpa90ccz7fgz228zr7njkvfpr"))))
     (build-system perl-build-system)
     (propagated-inputs
      `(("perl-common-sense" ,perl-common-sense)))
@@ -2211,7 +2212,7 @@ Password Generator\".")
 (define-public perl-crypt-rijndael
   (package
     (name "perl-crypt-rijndael")
-    (version "1.14")
+    (version "1.15")
     (source
      (origin
       (method url-fetch)
@@ -2219,8 +2220,7 @@ Password Generator\".")
             "mirror://cpan/authors/id/L/LE/LEONT/Crypt-Rijndael-"
             version ".tar.gz"))
       (sha256
-       (base32
-        "03l5nwq97a8q9na4dpd4m3r7vrwpranx225vw8xm40w7zvgw6lb4"))))
+       (base32 "0qs1b6ma4sj0ip5d8544fzgc1bbankc4qlmznp8hay8dk5arp650"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/Crypt-Rijndael")
     (synopsis "Crypt::CBC compliant Rijndael encryption module")
@@ -3812,24 +3812,15 @@ of the input.  MD4 is described in RFC 1320.")
 (define-public perl-digest-md5
   (package
     (name "perl-digest-md5")
-    (version "2.55")
+    (version "2.58")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://cpan/authors/id/G/GA/GAAS/Digest-MD5-"
+       (uri (string-append "mirror://cpan/authors/id/T/TO/TODDR/Digest-MD5-"
                            version ".tar.gz"))
        (sha256
-        (base32
-         "0g0fklbrm2krswc1xhp4iwn1dhqq71fqh2p5wm8xj9a4s6i9ic83"))))
+        (base32 "057psy6k7im0pr3344ny6k5rsnbqj8aizkmwgw53kbbngabh20kx"))))
     (build-system perl-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after 'build 'set-permissions
-           (lambda _
-             ;; Make MD5.so read-write so it can be stripped.
-             (chmod "blib/arch/auto/Digest/MD5/MD5.so" #o755)
-             #t)))))
     (home-page "https://metacpan.org/release/Digest-MD5")
     (synopsis "Perl interface to the MD-5 algorithm")
     (description
@@ -4064,6 +4055,41 @@ them in $@@ instead.  This module attempts to solve these problems.  It
 provides an eval_closure function, which evals a string in a clean
 environment, other than a fixed list of specified variables.  Compilation
 errors are rethrown automatically.")
+    (license (package-license perl))))
+
+(define-public perl-eval-withlexicals
+  (package
+    (name "perl-eval-withlexicals")
+    (version "1.003006")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "mirror://cpan/authors/id/H/HA/HAARG/Eval-WithLexicals-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "0x09mq0q745cxkw3xgr0h7dil7p1pdq3l5299kj3mk2ijkk2gwb6"))))
+    (build-system perl-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (add-after 'install 'wrap-tinyrepl
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out")))
+                        (wrap-program (string-append out "/bin/tinyrepl")
+                          `("PERL5LIB" ":" prefix
+                            (,(getenv "PERL5LIB")
+                             ,(string-append out "/lib/perl5/site_perl"))))
+                        #t))))))
+    (propagated-inputs
+     `(("perl-moo" ,perl-moo)
+       ("perl-strictures" ,perl-strictures)))
+    (home-page "https://metacpan.org/release/Eval-WithLexicals")
+    (synopsis "Lexical scope evaluation library for Perl")
+    (description "The Eval::WithLexicals Perl library provides support for
+lexical scope evaluation.  This package also includes the @command{tinyrepl}
+command, which can be used as a minimal Perl read-eval-print loop (REPL).")
     (license (package-license perl))))
 
 (define-public perl-exception-class
@@ -5023,16 +5049,19 @@ relic support.")
 (define-public perl-hash-merge
   (package
     (name "perl-hash-merge")
-    (version "0.300")
+    (version "0.302")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://cpan/authors/id/R/RE/REHSACK/"
+       (uri (string-append "mirror://cpan/authors/id/H/HE/HERMES/"
                            "Hash-Merge-" version ".tar.gz"))
        (sha256
-        (base32
-         "0h3wfnpv5d4d3f9xzmwkchay6251nhzngdv3f6xia56mj4hxabs0"))))
+        (base32 "0i46agids6pk445gfck80f8z7q3pjvkp0ip1vmhqnq1rcpvj41df"))))
     (build-system perl-build-system)
+    (native-inputs
+     ;; For tests only.
+     `(("perl-clone" ,perl-clone)
+       ("perl-clone-pp" ,perl-clone-pp)))
     (propagated-inputs
      `(("perl-clone-choose" ,perl-clone-choose)))
     (home-page "https://metacpan.org/release/Hash-Merge")
@@ -5560,18 +5589,18 @@ installed.")
 (define-public perl-json-maybexs
   (package
     (name "perl-json-maybexs")
-    (version "1.004000")
+    (version "1.004003")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://cpan/authors/id/H/HA/HAARG/"
+       (uri (string-append "mirror://cpan/authors/id/E/ET/ETHER/"
                            "JSON-MaybeXS-" version ".tar.gz"))
        (sha256
         (base32
-         "09m1w03as6n0a00pzvaldkhm494yaf5n0g3j2cwwfx24iwpa1gar"))))
+         "1grg8saa318bs4x2wqnww7y0nra7azrzg35bk5pgvkwxzwbkpvjv"))))
     (build-system perl-build-system)
     (native-inputs
-     `(("perl-test-without-module" ,perl-test-without-module)))
+     `(("perl-test-needs" ,perl-test-needs)))
     (inputs
      `(("perl-cpanel-json-xs" ,perl-cpanel-json-xs)))
     (home-page "https://metacpan.org/release/JSON-MaybeXS")
@@ -5784,14 +5813,14 @@ one: logging, exceptions, and translations.")
 (define-public perl-libintl-perl
   (package
     (name "perl-libintl-perl")
-    (version "1.31")
+    (version "1.32")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/G/GU/GUIDO/"
                            "libintl-perl-" version ".tar.gz"))
        (sha256
-        (base32 "1afandrl44mq9c32r57xr489gkfswdgc97h8x86k98dz1byv3l6a"))))
+        (base32 "19gbbh9w3rl805mv6mg1q80fsrg610h098qhf7ycnkjnyac84440"))))
     (build-system perl-build-system)
     (arguments
      `(#:phases
@@ -5904,15 +5933,14 @@ intersections, unions, unique elements, complements and many more.")
 (define-public perl-list-moreutils
   (package
     (name "perl-list-moreutils")
-    (version "0.428")
+    (version "0.430")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/R/RE/REHSACK/"
                            "List-MoreUtils-" version ".tar.gz"))
        (sha256
-        (base32
-         "1hkc8xkd27yzfkgaglzn77j4qjmilyva4gaz3pc64vpism2hjgki"))))
+        (base32 "09v5cipjf634a1176wy2wicibzz51lry0d0yim9rnbfl5j2ggcb3"))))
     (build-system perl-build-system)
     (arguments
      `(#:phases
@@ -5939,15 +5967,14 @@ functionality on lists which is not going to go into List::Util.")
 (define-public perl-list-moreutils-xs
   (package
     (name "perl-list-moreutils-xs")
-    (version "0.428")
+    (version "0.430")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/R/RE/REHSACK/List-MoreUtils-XS-"
                            version ".tar.gz"))
        (sha256
-        (base32
-         "0bfndmnkqaaf3gffprak143bzplxd69c368jxgr7rzlx88hyd7wx"))))
+        (base32 "0hmjkhmk1qlzbg8skq7g1zral07k1x0fk4w2fpcfr7hpgkaldkp8"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-config-autoconf" ,perl-config-autoconf)
@@ -7285,15 +7312,14 @@ building is done in @code{MooX::ConfigFromFile::Role}---using
 (define-public perl-moox-file-configdir
   (package
     (name "perl-moox-file-configdir")
-    (version "0.007")
+    (version "0.008")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/R/RE/REHSACK/"
                            "MooX-File-ConfigDir-" version ".tar.gz"))
        (sha256
-        (base32
-         "074v150wrbddhy1n0qc8s80zrb71l3c4is968cnr06ac5l9kmshz"))))
+        (base32 "1b033injzk9d8clgip67ps5j5bpkrnag28q89ddwhrgqx12i3m7q"))))
     (build-system perl-build-system)
     (propagated-inputs
      `(("perl-file-configdir" ,perl-file-configdir)
@@ -7309,17 +7335,16 @@ installing configuration files or for finding any piece of settings.")
 (define-public perl-moox-handlesvia
   (package
     (name "perl-moox-handlesvia")
-    (version "0.001008")
+    (version "0.001009")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
-             "mirror://cpan/authors/id/M/MA/MATTP/MooX-HandlesVia-"
+             "mirror://cpan/authors/id/T/TO/TOBYINK/MooX-HandlesVia-"
              version
              ".tar.gz"))
        (sha256
-        (base32
-         "137yrjn2jmw4cj0fjdajnkjgqr5arnpq72kbm6w66xskncinz55h"))))
+        (base32 "04kcyflg49rclxa1nm035c05jpyvhdacjyy1wklbgv4li3im6qvi"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-moox-types-mooselike"
@@ -7867,6 +7892,64 @@ technology to store hierarchical information such as links to other
 documents within a single file.")
     (license (package-license perl))))
 
+(define-public perl-opengl
+  (package
+    (name "perl-opengl")
+    (version "0.70")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append
+               "mirror://cpan/authors/id/C/CH/CHM/OpenGL-"
+               version
+               ".tar.gz"))
+        (sha256
+          (base32
+            "1q3lz168q081iwl9jg21fbzhp9la79gav9mv6nmh2jab83s2l3mj"))))
+    (build-system perl-build-system)
+    (inputs `(("freeglut" ,freeglut)
+              ("libxi" ,libxi)
+              ("libxmu" ,libxmu)))
+    (arguments
+     '(#:tests? #f ; test.pl fails with our empty glversion.txt, while
+                   ; the package still seems to work on the examples
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'glversion
+           ;; Building utils/glversion.txt fails, and is probably
+           ;; dependent on the graphics card in the build system.
+           ;; Replace it by a content-free file; while this breaks
+           ;; the tests, the examples in the examples/ subdirectory
+           ;; can be run.
+           (lambda _
+             (substitute* "Makefile.PL"
+               (("unlink") "# unlink") ; prevent utils/glversion.txt
+                                       ; from being deleted once...
+               (("\\.\"\\$make_ver clean\"") "")) ; ...and twice...
+             (substitute* "utils/Makefile"
+               (("all: glversion.txt") "all: ")) ; ...and thrice.
+             (call-with-output-file "utils/glversion.txt"
+               (lambda (port)
+                 (display (string-append "FREEGLUT=\nGLUT=\nVERSION=\n"
+                                         "VENDOR=\nRENDERER=\n"
+                                         "EXTENSIONS=\n")
+                          port)))
+             #t))
+         (add-before 'configure 'fix-library-flags
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "Makefile.PL"
+               (("-L/usr/local/freeglut/lib")
+                (string-append "-L" (assoc-ref inputs "freeglut") "/lib\n"
+                               "-L" (assoc-ref inputs "glu") "/lib\n"
+                               "-L" (assoc-ref inputs "mesa") "/lib\n")))
+             #t)))))
+    (home-page "https://metacpan.org/release/OpenGL")
+    (synopsis
+      "Perl bindings to the OpenGL API, GLU, and GLUT/FreeGLUT")
+    (description "The package provides Perl bindings to OpenGL, GLU
+and FreeGLUT.")
+    (license (package-license perl))))
+
 (define-public perl-package-anon
   (package
     (name "perl-package-anon")
@@ -8226,7 +8309,7 @@ with file paths.")
 (define-public perl-pdf-api2
   (package
     (name "perl-pdf-api2")
-    (version "2.036")
+    (version "2.038")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -8234,7 +8317,7 @@ with file paths.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0x0pa75wpb87pcshl92y5nh8pzikjp46ljlr2pqvdgpqzvll8107"))))
+                "02dxz798sx0ncdphjrfvfl2a3c1lkplyriyk4psq99q2kdsc8ivl"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-test-exception" ,perl-test-exception)
@@ -8321,14 +8404,14 @@ for a given module is comprehensive.")
 (define-public perl-pod-simple
   (package
     (name "perl-pod-simple")
-    (version "3.35")
+    (version "3.42")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://cpan/authors/id/K/KH/KHW/"
                                   "Pod-Simple-" version ".tar.gz"))
               (sha256
                (base32
-                "0gg11ibbc02l2aw0bsv4jx0jax8z0apgfy3p5csqnvhlsb6218cr"))))
+                "1icagrjqw1azmff82h17cbrhqgql7rg21gz64mjpiqqq0cpfpz59"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/Pod-Simple")
     (synopsis "Parsing library for text in Pod format")
@@ -8552,14 +8635,14 @@ and @code{deserialize_regexp}.")
 (define-public perl-role-tiny-2
   (package
     (inherit perl-role-tiny)
-    (version "2.001001")
+    (version "2.001004")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/H/HA/HAARG/"
                            "Role-Tiny-" version ".tar.gz"))
        (sha256
-        (base32 "16yryg3cr14xw201gm8k8ci00hs60fy8lk2xhnaqa85n5m68flk8"))))))
+        (base32 "11qn516352yhi794www3ykwa9xv2gxpfnhn9jcn10x0ahl95gflj"))))))
 
 (define-public perl-safe-isa
   (package
@@ -9738,14 +9821,14 @@ can combine fields into a CSV string and parse a CSV string into fields.")
 (define-public perl-text-csv-xs
   (package
     (name "perl-text-csv-xs")
-    (version "1.43")
+    (version "1.44")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/H/HM/HMBRAND/"
                            "Text-CSV_XS-" version ".tgz"))
        (sha256
-        (base32 "1frh8awr5ipry21x4403wdkbglpl707n69smksg8sf79ia75756d"))))
+        (base32 "1i4viyf61lzss474ndnmqhdqlhksn9hcxhjbqhv4frg2m3f2v0f4"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/Text-CSV_XS")
     (synopsis "Routines for manipulating CSV files")
@@ -9784,7 +9867,7 @@ generally slower on larger files.")
 (define-public perl-text-format
   (package
     (name "perl-text-format")
-    (version "0.61")
+    (version "0.62")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -9792,7 +9875,7 @@ generally slower on larger files.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0axfyiml3zwawwd127z8rl2lm53z6dlsflzmp80m3j0myn7kp2mv"))))
+                "0104z7jjv46kqh77rnx8kvmsbr5dy0s56xm01dckq4ly65br0hkx"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-module-build" ,perl-module-build)
@@ -10227,7 +10310,7 @@ duration strings like \"2 minutes\" and \"3 seconds\" to seconds.")
 (define-public perl-time-hires
   (package
     (name "perl-time-hires")
-    (version "1.9760")
+    (version "1.9764")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -10235,10 +10318,10 @@ duration strings like \"2 minutes\" and \"3 seconds\" to seconds.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0avh25m5ffsqc2xnfczvlnlbfbisw5wjq9d3w0j01h9byjzrif1c"))))
+                "1cfp078spid9z5g7xiswkpkjbkh4mkjvarz25wgwvdxzhxavwhcq"))))
     (build-system perl-build-system)
     (home-page "https://metacpan.org/release/Time-HiRes")
-    (synopsis "High resolution alarm, sleep, gettimeofday, interval timers")
+    (synopsis "High-resolution alarm, sleep, gettimeofday, and interval timers")
     (description "This package implements @code{usleep}, @code{ualarm}, and
 @code{gettimeofday} for Perl, as well as wrappers to implement @code{time},
 @code{sleep}, and @code{alarm} that know about non-integral seconds.")
@@ -11057,6 +11140,39 @@ object oriented interfaces to the Simple DirectMedia Layer for Perl5.  This
 package takes some liberties with the SDL API, and attempts to adhere to the
 spirit of both the SDL and Perl.")
     (license license:lgpl2.1)))
+
+(define-public perl-sgmls
+  (package
+    (name "perl-sgmls")
+    (version "1.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://cpan/authors/id/R/RA/RAAB/SGMLSpm-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "1gdjf3mcz2bxir0l9iljxiz6qqqg3a9gg23y5wjg538w552r432m"))))
+    (build-system perl-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (add-after 'install 'wrap-script
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out"))
+                             (site (string-append out "/lib/perl5/site_perl")))
+                        (with-directory-excursion out
+                          (rename-file "bin/sgmlspl.pl" "bin/sgmlspl")
+                          (wrap-program "bin/sgmlspl"
+                            `("PERL5LIB" suffix (,site))))
+                        #t))))))
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)))
+    (home-page "https://metacpan.org/release/RAAB/SGMLSpm-1.1")
+    (synopsis "Perl module for processing SGML parser output")
+    (description "This package contains @code{SGMLS.pm}, a perl5 class library
+for parsing the output from an SGML parser such as OpenSP.  It also includes
+the @command{sgmlspl} command, an Perl script showcasing how the library can
+be used.")
+    (license license:gpl2+)))
 
 (define-public perl-shell-command
   (package

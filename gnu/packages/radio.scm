@@ -2,10 +2,10 @@
 ;;; Copyright © 2017, 2018, 2019, 2020 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2019, 2020 Christopher Howard <christopher@librehacker.com>
 ;;; Copyright © 2019, 2020 Evan Straw <evan.straw99@gmail.com>
-;;; Copyright © 2020 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2020, 2021 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2020 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2020 Charlie Ritter <chewzerita@posteo.net>
-;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2020, 2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -159,15 +159,14 @@ this package.  E.g.: @code{(udev-rules-service 'rtl-sdr rtl-sdr)}")
 (define-public chirp
   (package
     (name "chirp")
-    (version "20200430")
+    (version "20201121")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://trac.chirp.danplanet.com/chirp_daily/daily-"
                            version "/chirp-daily-" version ".tar.gz"))
        (sha256
-        (base32
-         "060fzplgmpfrk6wkfaasx7phpfk90mmylk6drbwzk4f9r1655vda"))))
+        (base32 "092jryb1jn9li6zj243awv6piz1lhghqsm4phrz7j0rgqf76dy4n"))))
     (build-system python-build-system)
     (inputs
      `(("python2-libxml2" ,python2-libxml2)
@@ -418,7 +417,7 @@ environment.")
 (define-public gnuradio-osmosdr
   (package
     (name "gnuradio-osmosdr")
-    (version "0.2.0")
+    (version "0.2.2")
     (source
      (origin
        (method git-fetch)
@@ -427,7 +426,7 @@ environment.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1rdx7fa0xiq0qmgrrbby7z1bblmqhl9qh9jqpsznzxkx91f17ypd"))))
+        (base32 "1aqj5cylipmmjh1x1kb2j8262hxq6mi86dgb2zphj94wvsab2ghx"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
@@ -539,7 +538,7 @@ to the fix block above.
 (define-public gqrx
   (package
     (name "gqrx")
-    (version "2.12.1")
+    (version "2.14.4")
     (source
      (origin
        (method git-fetch)
@@ -548,7 +547,7 @@ to the fix block above.
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "00alf3q6y313xpx6p7v43vqsphd2x4am4q362lw21bcy9wc4jidw"))))
+        (base32 "0m4ncydihz4n4i80c252vk3c5v672yab1jv85n6ndn7a92xv3ilq"))))
     (build-system qt-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -568,7 +567,7 @@ to the fix block above.
        ("qtsvg" ,qtsvg)
        ("volk" ,volk)))
     (arguments
-     `(#:tests? #f)) ; No tests
+     `(#:tests? #f))                    ; no tests
     (synopsis "Software defined radio receiver")
     (description "Gqrx is a software defined radio (SDR) receiver implemented
 using GNU Radio and the Qt GUI toolkit.")
@@ -578,14 +577,14 @@ using GNU Radio and the Qt GUI toolkit.")
 (define-public fldigi
   (package
     (name "fldigi")
-    (version "4.1.13")
+    (version "4.1.17")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://www.w1hkj.com/files/fldigi/fldigi-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0mlq4z5k3h466plij8hg9xn5xbjxk557g4pw13cplpf32fhng224"))))
+        (base32 "1gzff60sn3h05279f9mdi1rkdws52m28shcil16911lvlq6ki13m"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -614,14 +613,14 @@ hardware.")
 (define-public flrig
   (package
     (name "flrig")
-    (version "1.3.51")
+    (version "1.3.52")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://www.w1hkj.com/files/flrig/flrig-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0aq4x0ai9q08ypfhzfj2inc4z3q39zq1l6h9as1kil9yn4zbay61"))))
+        (base32 "18c154080vl25cy4l5amh96abm6kzm7mzld9h58pabc28yqq8zl8"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1016,7 +1015,7 @@ gain and standing wave ratio.")
 (define-public dump1090
   (package
     (name "dump1090")
-    (version "3.8.1")
+    (version "4.0")
     (source
      (origin
        (method git-fetch)
@@ -1025,7 +1024,7 @@ gain and standing wave ratio.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0xg8rzrxqklx1m9ncxsd96dlkbjcsxfi2mrb859v50f07xysdyd8"))))
+        (base32 "1zacsqaqsiapljhzw31dwc4nld2rp98jm3ivkyznrhzk9n156p42"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1053,12 +1052,12 @@ gain and standing wave ratio.")
 It can be used to decode the ADS-B signals that planes emit to indicate
 their position, altitude, speed, etc.")
     (home-page "https://github.com/flightaware/dump1090")
-    (license license:bsd-3)))
+    (license license:gpl2+)))
 
 (define-public rtl-433
   (package
     (name "rtl-433")
-    (version "20.02")
+    (version "20.11")
     (source
      (origin
        (method git-fetch)
@@ -1067,7 +1066,7 @@ their position, altitude, speed, etc.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "11991xky9gawkragdyg27qsf7kw5bhlg7ygvf3fn7ng00x4xbh1z"))))
+        (base32 "093bxjxkg7yf78wqj5gpijbfa2p05ny09qqsj84kzi1svnzsa369"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1084,7 +1083,7 @@ from devices on the 433 MHz, 868 MHz, 315 MHz, 345 MHz and 915 MHz ISM bands.")
 (define-public multimon-ng
   (package
     (name "multimon-ng")
-    (version "1.1.8")
+    (version "1.1.9")
     (source
      (origin
        (method git-fetch)
@@ -1093,13 +1092,13 @@ from devices on the 433 MHz, 868 MHz, 315 MHz, 345 MHz and 915 MHz ISM bands.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1973xfyvzl1viz19zr83cgqlx5laxbjrca35rqabn6dlb6xb5xk8"))))
+        (base32 "01716cfhxfzsab9zjply9giaa4nn4b7rm3p3vizrwi7n253yiwm2"))))
     (build-system cmake-build-system)
     (inputs
      `(("libx11" ,libx11)
        ("pulseaudio" ,pulseaudio)))
     (arguments
-     '(#:tests? #f)) ; No test suite
+     '(#:tests? #f))                    ; no test suite
     (home-page "https://github.com/EliasOenal/multimon-ng")
     (synopsis "Decoder for digital radio transmission modes")
     (description "Multimon-ng can decode several digital radio transmission
@@ -1118,3 +1117,33 @@ modes:
 @item X10
 @end itemize")
     (license license:gpl2+)))
+
+(define-public nanovna-saver
+  (package
+    (name "nanovna-saver")
+    (version "0.3.8")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/NanoVNA-Saver/nanovna-saver")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0z83rwpnbbs1n74mx8dgh1d1crp90mannj9vfy161dmy4wzc5kpv"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-cython" ,python-cython)))
+    (inputs
+     `(("python-numpy" ,python-numpy)
+       ("python-pyqt" ,python-pyqt)
+       ("python-pyserial" ,python-pyserial)
+       ("python-scipy" ,python-scipy)))
+    (arguments
+     '(#:tests? #f))
+    (home-page "https://github.com/NanoVNA-Saver/nanovna-saver")
+    (synopsis "GUI for NanoVNA devices")
+    (description
+     "NanoVNA-Saver is a tool for reading, displaying and saving data from the
+NanoVNA vector network analyzers.")
+    (license license:gpl3+)))

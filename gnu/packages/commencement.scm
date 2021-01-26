@@ -381,7 +381,7 @@ $MES -e '(mescc)' module/mescc.scm -- \"$@\"
     (inputs '())
     (propagated-inputs '())
     (native-inputs
-     `(("nyacc-source" ,(origin (inherit (package-source nyacc))
+     `(("nyacc-source" ,(origin (inherit (package-source nyacc-0.99))
                                 (snippet #f)))
        ("mes" ,%bootstrap-mes-rewired)
        ("mescc-tools" ,%bootstrap-mescc-tools)
@@ -477,7 +477,7 @@ $MES -e '(mescc)' module/mescc.scm -- \"$@\"
     (propagated-inputs '())
     (native-inputs
      `(("mes" ,mes-boot)
-       ("nyacc-source" ,(origin (inherit (package-source nyacc))
+       ("nyacc-source" ,(origin (inherit (package-source nyacc-0.99))
                                 (snippet #f)))
        ("mescc-tools" ,%bootstrap-mescc-tools)
        ,@(%boot-gash-inputs)))
@@ -788,14 +788,17 @@ $MES -e '(mescc)' module/mescc.scm -- \"$@\"
              (substitute* "config.h"
                (("#define GETCWD_BROKEN 1") "#undef GETCWD_BROKEN"))
              (let ((config.h (open-file "config.h" "a")))
-               (display (string-append "
+               (display (string-append
+                         ;; XXX TODO: remove nested ,(string-append ...) and
+                         ;; store file name on next rebuild cycle
+                         ,(string-append "
 // tcc: error: undefined symbol 'enable_hostname_completion'
 #define enable_hostname_completion(on_or_off) 0
 
-// /gnu/store/cq0cmv35s9dhilx14zaghlc08gpc0hwr-tcc-boot0-0.9.26-6.c004e9a/lib/libc.a: error: 'sigprocmask' defined twice
+// /gnu/store/" "cq0cmv35s9dhilx14zaghlc08gpc0hwr-tcc-boot0-0.9.26-6.c004e9a/lib/libc.a: error: 'sigprocmask' defined twice
 #define HAVE_POSIX_SIGNALS 1
 #define endpwent(x) 0
-")
+"))
                         config.h)
                (close config.h))
              #t))
@@ -2815,6 +2818,12 @@ exec " gcc "/bin/" program
                            "--disable-shared"
                            "--enable-languages=c,c++"
 
+                           ,@(if (equal? "powerpc64le-linux-gnu" (boot-triplet))
+                                 ;; On POWER9 (little endian) glibc needs the
+                                 ;; 128-bit long double type.
+                                 '("--with-long-double-128")
+                                 '())
+
                            ;; libstdc++ cannot be built at this stage
                            ;; ("Link tests are not allowed after
                            ;; GCC_NO_EXECUTABLES.").
@@ -3853,15 +3862,20 @@ COREUTILS-FINAL vs. COREUTILS, etc."
                                                      "libc-static")))
                        #t))))
 
-      (native-search-paths (package-native-search-paths gcc))
-      (search-paths (package-search-paths gcc))
+      (native-search-paths
+       (append (package-native-search-paths gcc)
+               (package-native-search-paths libc))) ;GUIX_LOCPATH
+      (search-paths
+       (append (package-search-paths gcc)
+               (package-search-paths libc)))
 
       (license (package-license gcc))
       (synopsis "Complete GCC tool chain for C/C++ development")
       (description
        "This package provides a complete GCC tool chain for C/C++ development to
 be installed in user profiles.  This includes GCC, as well as libc (headers and
-binaries, plus debugging symbols in the @code{debug} output), and Binutils.")
+binaries, plus debugging symbols in the @code{debug} output), and Binutils.  GCC
+is the GNU Compiler Collection.")
       (home-page "https://gcc.gnu.org/")
       (outputs '("out" "debug" "static"))
 
@@ -3901,6 +3915,12 @@ binaries, plus debugging symbols in the @code{debug} output), and Binutils.")
 
 (define-public gcc-toolchain-10
   (make-gcc-toolchain gcc-10))
+
+(define-public gcc-toolchain-aka-gcc
+  ;; It's natural for users to try "guix install gcc".  This package
+  ;; automatically "redirects" them to 'gcc-toolchain'.
+  (deprecated-package "gcc" gcc-toolchain-10))
+
 
 (define-public gdc-toolchain-10
   (package (inherit (make-gcc-toolchain gdc-10))

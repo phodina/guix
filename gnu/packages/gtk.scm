@@ -8,7 +8,7 @@
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2015 Andy Wingo <wingo@igalia.com>
 ;;; Copyright © 2015 David Hashe <david.hashe@dhashe.com>
-;;; Coypright © 2015, 2016, 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
+;;; Coypright © 2015, 2016, 2017, 2018, 2020, 2021 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
@@ -61,6 +61,7 @@
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages docbook)
+  #:use-module (gnu packages documentation)
   #:use-module (gnu packages enchant)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
@@ -83,6 +84,7 @@
   #:use-module (gnu packages guile)
   #:use-module (gnu packages guile-xyz)
   #:use-module (gnu packages cups)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages xdisorg)
@@ -171,6 +173,12 @@ affine transformation (scale, rotation, shear, etc.).")
    (license license:lgpl2.1) ; or Mozilla Public License 1.1
    (home-page "https://cairographics.org/")))
 
+(define-public cairo-sans-poppler
+  ;; Variant used to break the dependency cycle between Poppler and Cairo.
+  (package/inherit cairo
+    (inputs (alist-delete "poppler" (package-inputs cairo)))
+    (properties `((hidden? . #t)))))
+
 (define-public cairo-xcb
   (package
     (inherit cairo)
@@ -223,6 +231,67 @@ affine transformation (scale, rotation, shear, etc.).")
    (license (license:x11-style "file://COPYING"
                        "See 'COPYING' in the distribution."))
    (home-page "https://www.freedesktop.org/wiki/Software/HarfBuzz/")))
+
+(define-public libdatrie
+  (package
+    (name "libdatrie")
+    (version "0.2.12")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "https://linux.thai.net/pub/ThaiLinux/software/"
+                       "libthai/libdatrie-" version ".tar.xz"))
+       (sha256
+        (base32 "0jdi01pcxv0b24zbjy7zahawsqqqw4mv94f2yy01zh4n796wqba5"))))
+    (build-system gnu-build-system)
+    (outputs '("out" "doc"))
+    (arguments
+     `(#:configure-flags
+       (list
+        (string-append "--with-html-docdir="
+                       (assoc-ref %outputs "doc")
+                       "/share/doc/datrie/html"))))
+    (native-inputs
+     `(("doxygen" ,doxygen)
+       ("pkg-config" ,pkg-config)))
+    (synopsis "Double-Array Trie Library")
+    (description "Libdatrie is an implementation of double-array structure for
+representing trie.  Trie is a kind of digital search tree.")
+    (home-page "https://linux.thai.net/~thep/datrie/datrie.html")
+    (license license:lgpl2.1+)))
+
+(define-public libthai
+  (package
+    (name "libthai")
+    (version "0.1.28")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "https://linux.thai.net/pub/thailinux/software/"
+                       "libthai/libthai-" version ".tar.xz"))
+       (sha256
+        (base32 "04g93bgxrcnay9fglpq2lj9nr7x1xh06i60m7haip8as9dxs3q7z"))))
+    (build-system gnu-build-system)
+    (outputs '("out" "doc"))
+    (arguments
+     `(#:configure-flags
+       (list
+        (string-append "--with-html-docdir="
+                       (assoc-ref %outputs "doc")
+                       "/share/doc/libthai/html"))))
+    (native-inputs
+     `(("doxygen" ,doxygen)
+       ("pkg-config" ,pkg-config)))
+    (propagated-inputs
+     `(("datrie" ,libdatrie)))
+    (synopsis "Thai language support library")
+    (description "LibThai is a set of Thai language support routines aimed to
+ease developers’ tasks to incorporate Thai language support in their
+applications.")
+    (home-page "https://linux.thai.net/projects/libthai")
+    (license license:lgpl2.1+)))
 
 (define-public pango
   (package
@@ -761,7 +830,7 @@ application suites.")
 (define-public gtk+
   (package (inherit gtk+-2)
    (name "gtk+")
-   (version "3.24.20")
+   (version "3.24.23")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnome/sources/" name "/"
@@ -769,7 +838,7 @@ application suites.")
                                 name "-" version ".tar.xz"))
             (sha256
              (base32
-              "1wqxkd3xnqwihcawncp9mkf9bv5a5fg5i4ahm6klpl782vvnkb1d"))
+              "1cg2vbwbcp7bc84ky0b69ipgdr9djhspnf5k8lajb8jphcj4v1jx"))
             (patches (search-patches "gtk3-respect-GUIX_GTK3_PATH.patch"
                                      "gtk3-respect-GUIX_GTK3_IM_MODULE_FILE.patch"))))
    (propagated-inputs
@@ -853,14 +922,14 @@ application suites.")
 (define-public guile-cairo
   (package
     (name "guile-cairo")
-    (version "1.10.0")
+    (version "1.11.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://savannah/guile-cairo/guile-cairo-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0p6xrhf2k6n5dybn88050za7h90gnd7534n62l53vsca187pwgdf"))
+                "1gc642r9ndsjhhmh9bl5cbd3dwvy4dpxwhr0zpsw43y9nmz37xpl"))
               (modules '((guix build utils)))
               (snippet
                (begin
@@ -882,7 +951,35 @@ application suites.")
     (arguments
      ;; Uses of 'scm_t_uint8' & co. are deprecated; don't stop the build
      ;; because of them.
-     '(#:configure-flags '("--disable-Werror")))
+     `(#:configure-flags '("--disable-Werror")
+       #:make-flags '("GUILE_AUTO_COMPILE=0") ; to prevent guild warnings
+       #:modules ((guix build gnu-build-system)
+                  (guix build utils)
+                  (ice-9 rdelim)
+                  (ice-9 popen))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-go-files
+           (lambda* (#:key outputs inputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (effective (read-line
+                                (open-pipe* OPEN_READ
+                                            "guile" "-c"
+                                            "(display (effective-version))")))
+                    (module-dir (string-append out "/share/guile/site/"
+                                               effective))
+                    (object-dir (string-append out "/lib/guile/" effective
+                                               "/site-ccache"))
+                    (prefix     (string-length module-dir)))
+               ;; compile to the destination
+               (for-each (lambda (file)
+                           (let* ((base (string-drop (string-drop-right file 4)
+                                                     prefix))
+                                  (go   (string-append object-dir base ".go")))
+                             (invoke "guild" "compile" "-L" module-dir
+                                     file "-o" go)))
+                         (find-files module-dir "\\.scm$"))
+               #t))))))
     (inputs
      `(("guile-lib" ,guile-lib)
        ("expat" ,expat)
@@ -943,10 +1040,36 @@ exceptions, macros, and a dynamic programming environment.")
                 (file-name (string-append name "-" version ".tar.gz"))))
       (build-system gnu-build-system)
       (arguments
-       `(#:phases (modify-phases %standard-phases
-                    (replace 'bootstrap
-                      (lambda _
-                        (invoke "autoreconf" "-vfi"))))))
+       `(#:modules ((guix build gnu-build-system)
+                    (guix build utils)
+                    (ice-9 rdelim)
+                    (ice-9 popen))
+         #:phases
+         (modify-phases %standard-phases
+           (replace 'bootstrap
+             (lambda _
+               (invoke "autoreconf" "-vfi")))
+           (add-after 'install 'install-go-files
+             (lambda* (#:key outputs inputs #:allow-other-keys)
+               (let* ((out (assoc-ref outputs "out"))
+                      (effective (read-line
+                                  (open-pipe* OPEN_READ
+                                              "guile" "-c"
+                                              "(display (effective-version))")))
+                      (module-dir (string-append out "/share/guile/site/"
+                                                 effective))
+                      (object-dir (string-append out "/lib/guile/" effective
+                                                 "/site-ccache"))
+                      (prefix     (string-length module-dir)))
+                 ;; compile to the destination
+                 (for-each (lambda (file)
+                             (let* ((base (string-drop (string-drop-right file 4)
+                                                       prefix))
+                                    (go   (string-append object-dir base ".go")))
+                               (invoke "guild" "compile" "-L" module-dir
+                                       file "-o" go)))
+                           (find-files module-dir "\\.scm$"))
+                 #t))))))
       (native-inputs `(("pkg-config" ,pkg-config)
                        ("autoconf" ,autoconf)
                        ("automake" ,automake)
@@ -1138,6 +1261,23 @@ guile-gnome-platform (GNOME developer libraries), and guile-gtksourceview.")
 library.")
     (license license:lgpl2.0+)))
 
+(define-public cairomm-1.13
+  (package
+    (inherit cairomm)
+    (name "cairomm")
+    (version "1.13.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "https://www.cairographics.org/releases/"
+                       name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1xlfl0fm5mgv53lr8xjv2kqsk3bz67qkk6qzvbrqmbvbvvbqp9wp"))))
+    (propagated-inputs
+     `(("cairo" ,cairo)
+       ("sigc++" ,libsigc++)))))
+
 (define-public pangomm
   (package
     (name "pangomm")
@@ -1163,6 +1303,25 @@ library.")
      "Pangomm provides a C++ programming interface to the Pango text rendering
 library.")
     (license license:lgpl2.1+)))
+
+(define-public pangomm-2.42
+  (package
+    (inherit pangomm)
+    (name "pangomm")
+    (version "2.42.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "mirror://gnome/sources/" name "/"
+                       (version-major+minor version)  "/"
+                       name "-" version ".tar.xz"))
+       (sha256
+        (base32 "03zli5amizhv9bfklwfq7xyf0b5dagchx1lnz9f0v1rhk69h9gql"))))
+    (propagated-inputs
+     `(("cairomm" ,cairomm-1.13)
+       ("glibmm" ,glibmm-2.64)
+       ("pango" ,pango)))))
 
 (define-public atkmm
   (package
@@ -1403,7 +1562,7 @@ write GNOME applications.")
 (define-public perl-cairo
   (package
     (name "perl-cairo")
-    (version "1.107")
+    (version "1.108")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1411,7 +1570,7 @@ write GNOME applications.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0sg1gf1f2pjq7pji0zsv4rbi3bzpsx82z98k7yqxafzrvlkf27ay"))))
+                "1nh5iya63q6j2w0cdi24x2ygpi8k8wwccnbh8cisnx8nqmywnhk0"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-extutils-depends" ,perl-extutils-depends)
@@ -1513,7 +1672,7 @@ and routines to assist in editing internationalized text.")
        (sha256
         (base32 "08rpw9hkaprm4r853xy1d35i2af1pji8c3mzzl01mmwmyr9p0x8k"))))
     (native-inputs `(("pkg-config" ,pkg-config)
-                     ("check" ,check)
+                     ("check" ,check-0.14)
                      ("gettext" ,gettext-minimal)
                      ("glib:bin" ,glib "bin")
                      ("xorg-server" ,xorg-server-for-tests)))
@@ -1766,40 +1925,47 @@ Parcellite and adds bugfixes and features.")
   (package
     (name "graphene")
     (version "1.10.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/ebassi/graphene/releases/"
-                                  "download/" version
-                                  "/graphene-" version ".tar.xz"))
-              (sha256
-               (base32 "16b4hz73bnrgv5v8n96dczkd6xp9qc06lrl43zln3jnl3psrfva0"))))
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/ebassi/graphene.git")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "14a0j1rvjlc7yhfdmhmckdmkzy4ch61qbzywdlw1xv58h23wx29p"))))
     (build-system meson-build-system)
     (arguments
-     `(#:configure-flags '("-Dinstalled_tests=false")))
+     `(#:glib-or-gtk? #t     ; To wrap binaries and/or compile schemas
+       #:configure-flags
+       (list
+        "-Dinstalled_tests=false")))
     (native-inputs
-     `(("gobject-introspection" ,gobject-introspection)
+     `(("git" ,git-minimal)
+       ("gobject-introspection" ,gobject-introspection)
+       ("mutest" ,mutest)
        ("pkg-config" ,pkg-config)))
     (inputs
-     `(("python" ,python)
-       ("glib" ,glib)))
-    (home-page "https://ebassi.github.io/graphene/")
+     `(("glib" ,glib)
+       ("python" ,python)))
     (synopsis "Thin layer of graphic data types")
-    (description "This library provides graphic types and their relative API;
-it does not deal with windowing system surfaces, drawing, scene graphs, or
-input.")
+    (description "Graphene provides graphic types and their relative API; it
+does not deal with windowing system surfaces, drawing, scene graphs, or input.")
+    (home-page "https://ebassi.github.io/graphene/")
     (license license:expat)))
 
 (define-public spread-sheet-widget
   (package
     (name "spread-sheet-widget")
-    (version "0.5")
+    (version "0.7")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://alpha.gnu.org/gnu/ssw/"
                            "spread-sheet-widget-" version ".tar.gz"))
        (sha256
-        (base32 "0vxqv229vp6l278hz11ayrfirn4gj736clh4wlmn0h21bh5b8pfc"))))
+        (base32 "09rzgp7gabnzab460x874a1ibgyjiibpwzsz5srn9zs6jv2jdxjb"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("glib" ,glib "bin")             ; for glib-genmarshal, etc.
@@ -2027,7 +2193,7 @@ library for drawing.")
 (define-public gtksheet
   (package
     (name "gtksheet")
-    (version "4.3.4")
+    (version "4.3.5")
     (source
      (origin
        (method git-fetch)
@@ -2037,7 +2203,7 @@ library for drawing.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "10qzmdkjkkvkcadxn019cbyhwaahxcfv1apv54lc711bqvh63v8r"))))
+         "13jwr1vly4ga3f09dajwky1cdrz5bmggwga3vnnd6j6zzia7dpyr"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags (list "--enable-glade"
@@ -2051,6 +2217,11 @@ library for drawing.")
            (lambda _
              (delete-file "configure")
              #t))
+         (add-after 'unpack 'rename-type
+           (lambda _
+             (substitute* "glade/glade-gtksheet-editor.c"
+               (("GladeEditableIface") "GladeEditableInterface"))
+             #t))
          ;; Fix glade install directories.
          (add-before 'bootstrap 'configure-glade-directories
            (lambda* (#:key outputs #:allow-other-keys)
@@ -2061,15 +2232,6 @@ library for drawing.")
                 (string-append (assoc-ref outputs "out") "/lib/glade/modules"))
                (("`\\$PKG_CONFIG --variable=pixmapdir gladeui-2.0`")
                 (string-append (assoc-ref outputs "out") "/share/pixmaps")))
-             #t))
-         ;; Fix incorrect typelib version. This is a known upstream bug. See
-         ;; https://github.com/fpaquet/gtksheet/issues/23
-         (add-after 'install 'fix-typelib-version
-           (lambda* (#:key outputs #:allow-other-keys)
-             (with-directory-excursion (string-append (assoc-ref outputs "out")
-                                                      "/lib/girepository-1.0")
-               (rename-file "GtkSheet-4.0.typelib"
-                            (string-append "GtkSheet-" ,version ".typelib")))
              #t)))))
     (inputs
      `(("glade" ,glade3)

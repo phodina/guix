@@ -1,5 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -48,11 +49,18 @@ TARGET."
        '("bootstrap-tarballs" "gcc-toolchain" "nss-certs"
          "openssh" "emacs" "vim" "python" "guile" "guix")))
 
+(define %base-packages/hurd
+  ;; XXX: For now we are less demanding of "i586-gnu".
+  (map specification->package
+       '("coreutils" "grep" "findutils" "gawk" "make"
+         "gcc-toolchain" "tar" "xz")))
+
 (define %system-packages
   ;; Key packages proposed by the Guix System installer.
   (append (map specification->package
                '("xorg-server" "xfce" "gnome" "mate" "enlightenment"
                  "openbox" "awesome" "i3-wm" "ratpoison"
+                 "emacs" "emacs-exwm" "emacs-desktop-environment"
                  "xlockmore" "slock" "libreoffice"
                  "connman" "network-manager" "network-manager-applet"
                  "openssh" "ntp" "tor"
@@ -92,7 +100,9 @@ TARGET."
   (manifest
    (append-map (lambda (system)
                  (map (cut package->manifest-entry* <> system)
-                      %base-packages))
+                      (if (string=? system "i586-gnu")
+                          %base-packages/hurd
+                          %base-packages)))
                %hydra-supported-systems)))
 
 (define %system-manifest

@@ -5,6 +5,7 @@
 ;;; Copyright © 2018 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2020 Eric Bavier <bavier@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -42,6 +43,7 @@
   #:use-module (guix search-paths)
   #:use-module (guix build-system gnu)
   #:use-module (guix scripts build)
+  #:use-module (guix transformations)
   #:use-module ((guix self) #:select (make-config.scm))
   #:use-module (gnu packages)
   #:use-module (gnu packages bootstrap)
@@ -57,11 +59,16 @@
   #:use-module (srfi srfi-37)
   #:use-module (ice-9 match)
   #:export (compressor?
+            compressor-name
+            compressor-extenstion
+            compressor-command
+            %compressors
             lookup-compressor
             self-contained-tarball
             docker-image
             squashfs-image
 
+            %formats
             guix-pack))
 
 ;; Type of a compression tool.
@@ -135,9 +142,11 @@ dependencies are registered."
 
   (define build
     (with-extensions gcrypt-sqlite3&co
-      (with-imported-modules (source-module-closure
-                              '((guix build store-copy)
-                                (guix store database)))
+      (with-imported-modules `(((guix config) => ,(make-config.scm))
+                               ,@(source-module-closure
+                                  '((guix build store-copy)
+                                    (guix store database))
+                                  #:select? not-config?))
         #~(begin
             (use-modules (guix store database)
                          (guix build store-copy)
@@ -158,8 +167,6 @@ dependencies are registered."
             (let ((items (append-map read-closure '#$labels)))
               (with-database db-file db
                 (register-items db items
-                                #:deduplicate? #f
-                                #:reset-timestamps? #f
                                 #:registration-time %epoch)))))))
 
   (computed-file "store-database" build
@@ -195,12 +202,19 @@ added to the pack."
                      #+(file-append glibc-utf8-locales "/lib/locale"))
              (setlocale LC_ALL "en_US.utf8"))))
 
+  (define (import-module? module)
+    ;; Since we don't use deduplication support in 'populate-store', don't
+    ;; import (guix store deduplication) and its dependencies, which includes
+    ;; Guile-Gcrypt.  That way we can run tests with '--bootstrap'.
+    (and (not-config? module)
+         (not (equal? '(guix store deduplication) module))))
+
   (define build
     (with-imported-modules (source-module-closure
                             `((guix build utils)
                               (guix build union)
                               (gnu build install))
-                            #:select? not-config?)
+                            #:select? import-module?)
       #~(begin
           (use-modules (guix build utils)
                        ((guix build union) #:select (relative-file-name))
@@ -374,138 +388,139 @@ added to the pack."
         `(("/bin" -> "bin") ,@symlinks)))
 
   (define build
-    (with-imported-modules (source-module-closure
-                            '((guix build utils)
-                              (guix build store-copy)
-                              (guix build union)
-                              (gnu build install))
-                            #:select? not-config?)
-      #~(begin
-          (use-modules (guix build utils)
-                       (guix build store-copy)
-                       ((guix build union) #:select (relative-file-name))
-                       (gnu build install)
-                       (srfi srfi-1)
-                       (srfi srfi-26)
-                       (ice-9 match))
+    (with-extensions (list guile-gcrypt)
+      (with-imported-modules (source-module-closure
+                              '((guix build utils)
+                                (guix build store-copy)
+                                (guix build union)
+                                (gnu build install))
+                              #:select? not-config?)
+        #~(begin
+            (use-modules (guix build utils)
+                         (guix build store-copy)
+                         ((guix build union) #:select (relative-file-name))
+                         (gnu build install)
+                         (srfi srfi-1)
+                         (srfi srfi-26)
+                         (ice-9 match))
 
-          (define database #+database)
-          (define entry-point #$entry-point)
+            (define database #+database)
+            (define entry-point #$entry-point)
 
-          (define (mksquashfs args)
-            (apply invoke "mksquashfs"
-                   `(,@args
+            (define (mksquashfs args)
+              (apply invoke "mksquashfs"
+                     `(,@args
 
-                     ;; Do not create a "recovery file" when appending to the
-                     ;; file system since it's useless in this case.
-                     "-no-recovery"
+                       ;; Do not create a "recovery file" when appending to the
+                       ;; file system since it's useless in this case.
+                       "-no-recovery"
 
-                     ;; Do not attempt to store extended attributes.
-                     ;; See <https://bugs.gnu.org/40043>.
-                     "-no-xattrs"
+                       ;; Do not attempt to store extended attributes.
+                       ;; See <https://bugs.gnu.org/40043>.
+                       "-no-xattrs"
 
-                     ;; Set file times and the file system creation time to
-                     ;; one second after the Epoch.
-                     "-all-time" "1" "-mkfs-time" "1"
+                       ;; Set file times and the file system creation time to
+                       ;; one second after the Epoch.
+                       "-all-time" "1" "-mkfs-time" "1"
 
-                     ;; Reset all UIDs and GIDs.
-                     "-force-uid" "0" "-force-gid" "0")))
+                       ;; Reset all UIDs and GIDs.
+                       "-force-uid" "0" "-force-gid" "0")))
 
-          (setenv "PATH" #+(file-append archiver "/bin"))
+            (setenv "PATH" #+(file-append archiver "/bin"))
 
-          ;; We need an empty file in order to have a valid file argument when
-          ;; we reparent the root file system.  Read on for why that's
-          ;; necessary.
-          (with-output-to-file ".empty" (lambda () (display "")))
+            ;; We need an empty file in order to have a valid file argument when
+            ;; we reparent the root file system.  Read on for why that's
+            ;; necessary.
+            (with-output-to-file ".empty" (lambda () (display "")))
 
-          ;; Create the squashfs image in several steps.
-          ;; Add all store items.  Unfortunately mksquashfs throws away all
-          ;; ancestor directories and only keeps the basename.  We fix this
-          ;; in the following invocations of mksquashfs.
-          (mksquashfs `(,@(map store-info-item
-                               (call-with-input-file "profile"
-                                 read-reference-graph))
-                        #$environment
-                        ,#$output
+            ;; Create the squashfs image in several steps.
+            ;; Add all store items.  Unfortunately mksquashfs throws away all
+            ;; ancestor directories and only keeps the basename.  We fix this
+            ;; in the following invocations of mksquashfs.
+            (mksquashfs `(,@(map store-info-item
+                                 (call-with-input-file "profile"
+                                   read-reference-graph))
+                          #$environment
+                          ,#$output
 
-                        ;; Do not perform duplicate checking because we
-                        ;; don't have any dupes.
-                        "-no-duplicates"
-                        "-comp"
-                        ,#+(compressor-name compressor)))
+                          ;; Do not perform duplicate checking because we
+                          ;; don't have any dupes.
+                          "-no-duplicates"
+                          "-comp"
+                          ,#+(compressor-name compressor)))
 
-          ;; Here we reparent the store items.  For each sub-directory of
-          ;; the store prefix we need one invocation of "mksquashfs".
-          (for-each (lambda (dir)
-                      (mksquashfs `(".empty"
-                                    ,#$output
-                                    "-root-becomes" ,dir)))
-                    (reverse (string-tokenize (%store-directory)
-                                              (char-set-complement (char-set #\/)))))
+            ;; Here we reparent the store items.  For each sub-directory of
+            ;; the store prefix we need one invocation of "mksquashfs".
+            (for-each (lambda (dir)
+                        (mksquashfs `(".empty"
+                                      ,#$output
+                                      "-root-becomes" ,dir)))
+                      (reverse (string-tokenize (%store-directory)
+                                                (char-set-complement (char-set #\/)))))
 
-          ;; Add symlinks and mount points.
-          (mksquashfs
-           `(".empty"
-             ,#$output
-             ;; Create SYMLINKS via pseudo file definitions.
-             ,@(append-map
-                (match-lambda
-                  ((source '-> target)
-                   ;; Create relative symlinks to work around a bug in
-                   ;; Singularity 2.x:
-                   ;;   https://bugs.gnu.org/34913
-                   ;;   https://github.com/sylabs/singularity/issues/1487
-                   (let ((target (string-append #$profile "/" target)))
-                     (list "-p"
-                           (string-join
-                            ;; name s mode uid gid symlink
-                            (list source
-                                  "s" "777" "0" "0"
-                                  (relative-file-name (dirname source)
-                                                      target)))))))
-                '#$symlinks*)
+            ;; Add symlinks and mount points.
+            (mksquashfs
+             `(".empty"
+               ,#$output
+               ;; Create SYMLINKS via pseudo file definitions.
+               ,@(append-map
+                  (match-lambda
+                    ((source '-> target)
+                     ;; Create relative symlinks to work around a bug in
+                     ;; Singularity 2.x:
+                     ;;   https://bugs.gnu.org/34913
+                     ;;   https://github.com/sylabs/singularity/issues/1487
+                     (let ((target (string-append #$profile "/" target)))
+                       (list "-p"
+                             (string-join
+                              ;; name s mode uid gid symlink
+                              (list source
+                                    "s" "777" "0" "0"
+                                    (relative-file-name (dirname source)
+                                                        target)))))))
+                  '#$symlinks*)
 
-             "-p" "/.singularity.d d 555 0 0"
+               "-p" "/.singularity.d d 555 0 0"
 
-             ;; Create the environment file.
-             "-p" "/.singularity.d/env d 555 0 0"
-             "-p" ,(string-append
-                    "/.singularity.d/env/90-environment.sh s 777 0 0 "
-                    (relative-file-name "/.singularity.d/env"
-                                        #$environment))
+               ;; Create the environment file.
+               "-p" "/.singularity.d/env d 555 0 0"
+               "-p" ,(string-append
+                      "/.singularity.d/env/90-environment.sh s 777 0 0 "
+                      (relative-file-name "/.singularity.d/env"
+                                          #$environment))
 
-             ;; Create /.singularity.d/actions, and optionally the 'run'
-             ;; script, used by 'singularity run'.
-             "-p" "/.singularity.d/actions d 555 0 0"
+               ;; Create /.singularity.d/actions, and optionally the 'run'
+               ;; script, used by 'singularity run'.
+               "-p" "/.singularity.d/actions d 555 0 0"
 
-             ,@(if entry-point
-                   `(;; This one if for Singularity 2.x.
-                     "-p"
-                     ,(string-append
-                       "/.singularity.d/actions/run s 777 0 0 "
-                       (relative-file-name "/.singularity.d/actions"
-                                           (string-append #$profile "/"
-                                                          entry-point)))
+               ,@(if entry-point
+                     `( ;; This one if for Singularity 2.x.
+                       "-p"
+                       ,(string-append
+                         "/.singularity.d/actions/run s 777 0 0 "
+                         (relative-file-name "/.singularity.d/actions"
+                                             (string-append #$profile "/"
+                                                            entry-point)))
 
-                     ;; This one is for Singularity 3.x.
-                     "-p"
-                     ,(string-append
-                       "/.singularity.d/runscript s 777 0 0 "
-                       (relative-file-name "/.singularity.d"
-                                           (string-append #$profile "/"
-                                                          entry-point))))
-                   '())
+                       ;; This one is for Singularity 3.x.
+                       "-p"
+                       ,(string-append
+                         "/.singularity.d/runscript s 777 0 0 "
+                         (relative-file-name "/.singularity.d"
+                                             (string-append #$profile "/"
+                                                            entry-point))))
+                     '())
 
-             ;; Create empty mount points.
-             "-p" "/proc d 555 0 0"
-             "-p" "/sys d 555 0 0"
-             "-p" "/dev d 555 0 0"
-             "-p" "/home d 555 0 0"))
+               ;; Create empty mount points.
+               "-p" "/proc d 555 0 0"
+               "-p" "/sys d 555 0 0"
+               "-p" "/dev d 555 0 0"
+               "-p" "/home d 555 0 0"))
 
-          (when database
-            ;; Initialize /var/guix.
-            (install-database-and-gc-roots "var-etc" database #$profile)
-            (mksquashfs `("var-etc" ,#$output))))))
+            (when database
+              ;; Initialize /var/guix.
+              (install-database-and-gc-roots "var-etc" database #$profile)
+              (mksquashfs `("var-etc" ,#$output)))))))
 
   (gexp->derivation (string-append name
                                    (compressor-extension compressor)
@@ -748,12 +763,13 @@ last resort for relocation."
                               (guix elf)))
       #~(begin
           (use-modules (guix build utils)
-                       ((guix build union) #:select (relative-file-name))
+                       ((guix build union) #:select (symlink-relative))
                        (guix elf)
                        (guix build gremlin)
                        (ice-9 binary-ports)
                        (ice-9 ftw)
                        (ice-9 match)
+                       (ice-9 receive)
                        (srfi srfi-1)
                        (rnrs bytevectors))
 
@@ -817,11 +833,17 @@ last resort for relocation."
 
                             (string-append "-DLOADER_AUDIT_MODULE=\""
                                            #$(audit-module) "\"")
+
+                            ;; XXX: Normally (runpath #$(audit-module)) is
+                            ;; enough.  However, to work around
+                            ;; <https://sourceware.org/bugzilla/show_bug.cgi?id=26634>
+                            ;; (glibc <= 2.32), pass the whole search path of
+                            ;; PROGRAM, which presumably is a superset of that
+                            ;; of the audit module.
                             (string-append "-DLOADER_AUDIT_RUNPATH={ "
                                            (string-join
                                             (map object->string
-                                                 (runpath
-                                                  #$(audit-module)))
+                                                 (runpath program))
                                             ", " 'suffix)
                                            "NULL }")
                             (if gconv
@@ -841,7 +863,7 @@ last resort for relocation."
               (("@STORE_DIRECTORY@") (%store-directory)))
 
             (let* ((base   (strip-store-prefix program))
-                   (result (string-append target "/" base))
+                   (result (string-append target base))
                    (proot  #$(and proot?
                                   #~(string-drop
                                      #$(file-append (proot) "/bin/proot")
@@ -850,6 +872,9 @@ last resort for relocation."
               (mkdir-p (dirname result))
               (apply invoke #$compiler "-std=gnu99" "-static" "-Os" "-g0" "-Wall"
                      "run.c" "-o" result
+                     (string-append "-DWRAPPER_PROGRAM=\""
+                                    (canonicalize-path (dirname result)) "/"
+                                    (basename result) "\"")
                      (append (if proot
                                  (list (string-append "-DPROOT_PROGRAM=\""
                                                       proot "\""))
@@ -864,16 +889,27 @@ last resort for relocation."
           (mkdir target)
           (for-each (lambda (file)
                       (unless (member file '("." ".." "bin" "sbin" "libexec"))
-                        (let ((file* (string-append input "/" file)))
-                          (symlink (relative-file-name target file*)
-                                   (string-append target "/" file)))))
+                        (symlink-relative (string-append input  "/" file)
+                                          (string-append target "/" file))))
                     (scandir input))
 
-          (for-each build-wrapper
-                    ;; Note: Trailing slash in case these are symlinks.
-                    (append (find-files (string-append input "/bin/"))
-                            (find-files (string-append input "/sbin/"))
-                            (find-files (string-append input "/libexec/")))))))
+          (receive (executables others)
+              (partition executable-file?
+			 ;; Note: Trailing slash in case these are symlinks.
+                         (append (find-files (string-append input "/bin/"))
+                                 (find-files (string-append input "/sbin/"))
+                                 (find-files (string-append input "/libexec/"))))
+            ;; Wrap only executables, since the wrapper will eventually need
+            ;; to execve them.  E.g. git's "libexec" directory contains many
+            ;; shell scripts that are source'd from elsewhere, which fails if
+            ;; they are wrapped.
+            (for-each build-wrapper executables)
+            ;; Link any other non-executable files
+            (for-each (lambda (old)
+                        (let ((new (string-append target (strip-store-prefix old))))
+                          (mkdir-p (dirname new))
+                          (symlink-relative old new)))
+                      others)))))
 
   (computed-file (string-append
                   (cond ((package? package)
@@ -1089,7 +1125,10 @@ Create a bundle of PACKAGE.\n"))
 ;;; Entry point.
 ;;;
 
-(define (guix-pack . args)
+(define-command (guix-pack . args)
+  (category development)
+  (synopsis "create application bundles")
+
   (define opts
     (parse-command-line args %options (list %default-options)))
 
@@ -1109,9 +1148,9 @@ Create a bundle of PACKAGE.\n"))
     (let* ((transform     (options->transformation opts))
            (packages      (map (match-lambda
                                  (((? package? package) output)
-                                  (list (transform store package) output))
+                                  (list (transform package) output))
                                  ((? package? package)
-                                  (list (transform store package) "out")))
+                                  (list (transform package) "out")))
                                (reverse
                                 (filter-map maybe-package-argument opts))))
            (manifests     (filter-map (match-lambda
@@ -1131,19 +1170,24 @@ Create a bundle of PACKAGE.\n"))
                manifest))
             identity))
 
+      (define (with-transformations manifest)
+        (map-manifest-entries manifest-entry-with-transformations
+                              manifest))
+
       (with-provenance
-       (cond
-        ((and (not (null? manifests)) (not (null? packages)))
-         (leave (G_ "both a manifest and a package list were given~%")))
-        ((not (null? manifests))
-         (concatenate-manifests
-          (map (lambda (file)
-                 (let ((user-module (make-user-module
-                                     '((guix profiles) (gnu)))))
-                   (load* file user-module)))
-               manifests)))
-        (else
-         (packages->manifest packages))))))
+       (with-transformations
+        (cond
+         ((and (not (null? manifests)) (not (null? packages)))
+          (leave (G_ "both a manifest and a package list were given~%")))
+         ((not (null? manifests))
+          (concatenate-manifests
+           (map (lambda (file)
+                  (let ((user-module (make-user-module
+                                      '((guix profiles) (gnu)))))
+                    (load* file user-module)))
+                manifests)))
+         (else
+          (packages->manifest packages)))))))
 
   (with-error-handling
     (with-store store

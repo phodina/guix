@@ -3,7 +3,7 @@
 ;;; Copyright © 2016 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2017, 2019 Mathieu Othacehe <m.othacehe@gmail.com>
-;;; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -76,9 +76,20 @@ the derivations referenced by EXP are automatically copied to the initrd."
   (define init
     (program-file "init" exp #:guile guile))
 
+  (define (import-module? module)
+    ;; Since we don't use deduplication support in 'populate-store', don't
+    ;; import (guix store deduplication) and its dependencies, which includes
+    ;; Guile-Gcrypt.  That way we can run tests with '--bootstrap'.
+    (and (guix-module-name? module)
+         (not (equal? module '(guix store deduplication)))))
+
   (define builder
+    ;; Do not use "guile-zlib" extension here, otherwise it would drag the
+    ;; non-static "zlib" package to the initrd closure.  It is not needed
+    ;; anyway because the modules are stored uncompressed within the initrd.
     (with-imported-modules (source-module-closure
-                            '((gnu build linux-initrd)))
+                            '((gnu build linux-initrd))
+                            #:select? import-module?)
       #~(begin
           (use-modules (gnu build linux-initrd))
 
@@ -111,34 +122,49 @@ the derivations referenced by EXP are automatically copied to the initrd."
 (define (flat-linux-module-directory linux modules)
   "Return a flat directory containing the Linux kernel modules listed in
 MODULES and taken from LINUX."
+  (define imported-modules
+    (source-module-closure '((gnu build linux-modules)
+                             (guix build utils))))
+
   (define build-exp
-    (with-imported-modules (source-module-closure
-                            '((gnu build linux-modules)))
-      #~(begin
-          (use-modules (gnu build linux-modules)
-                       (srfi srfi-1)
-                       (srfi srfi-26))
+    (with-imported-modules imported-modules
+      (with-extensions (list guile-zlib)
+        #~(begin
+            (use-modules (gnu build linux-modules)
+                         (guix build utils)
+                         (srfi srfi-1)
+                         (srfi srfi-26))
 
-          (define module-dir
-            (string-append #$linux "/lib/modules"))
+            (define module-dir
+              (string-append #$linux "/lib/modules"))
 
-          (define modules
-            (let* ((lookup  (cut find-module-file module-dir <>))
-                   (modules (map lookup '#$modules)))
-              (append modules
-                      (recursive-module-dependencies modules
-                                                     #:lookup-module lookup))))
+            (define modules
+              (let* ((lookup  (cut find-module-file module-dir <>))
+                     (modules (map lookup '#$modules)))
+                (append modules
+                        (recursive-module-dependencies
+                         modules
+                         #:lookup-module lookup))))
 
-          (mkdir #$output)
-          (for-each (lambda (module)
-                      (format #t "copying '~a'...~%" module)
-                      (copy-file module
-                                 (string-append #$output "/"
-                                                (basename module))))
-                    (delete-duplicates modules))
+            (define (maybe-uncompress file)
+              ;; If FILE is a compressed module, uncompress it, as the initrd
+              ;; is already gzipped as a whole.
+              (cond
+               ((string-contains file ".ko.gz")
+                (invoke #+(file-append gzip "/bin/gunzip") file))))
 
-          ;; Hyphen or underscore?  This database tells us.
-          (write-module-name-database #$output))))
+            (mkdir #$output)
+            (for-each (lambda (module)
+                        (let ((out-module
+                               (string-append #$output "/"
+                                              (basename module))))
+                          (format #t "copying '~a'...~%" module)
+                          (copy-file module out-module)
+                          (maybe-uncompress out-module)))
+                      (delete-duplicates modules))
+
+            ;; Hyphen or underscore?  This database tells us.
+            (write-module-name-database #$output)))))
 
   (computed-file "linux-modules" build-exp))
 
@@ -177,11 +203,11 @@ upon error."
   (define device-mapping-commands
     ;; List of gexps to open the mapped devices.
     (map (lambda (md)
-           (let* ((source (mapped-device-source md))
-                  (target (mapped-device-target md))
-                  (type   (mapped-device-type md))
-                  (open   (mapped-device-kind-open type)))
-             (open source target)))
+           (let* ((source  (mapped-device-source md))
+                  (targets (mapped-device-targets md))
+                  (type    (mapped-device-type md))
+                  (open    (mapped-device-kind-open type)))
+             (open source targets)))
          mapped-devices))
 
   (define kodir
@@ -199,6 +225,7 @@ upon error."
                       (gnu system file-systems)
                       ((guix build utils) #:hide (delete))
                       (guix build bournish)   ;add the 'bournish' meta-command
+                      (srfi srfi-1)           ;for lvm-device-mapping
                       (srfi srfi-26)
 
                       ;; FIXME: The following modules are for
@@ -241,6 +268,9 @@ FILE-SYSTEMS."
                 file-systems)
           (list fatfsck/static)
           '())
+    ,@(if (find (file-system-type-predicate "bcachefs") file-systems)
+          (list bcachefs-tools/static)
+          '())
     ,@(if (find (file-system-type-predicate "btrfs") file-systems)
           (list btrfs-progs/static)
           '())
@@ -276,6 +306,7 @@ FILE-SYSTEMS."
   ;; Given a file system type, return the list of modules it needs.
   (lookup-procedure ("cifs" => '("md4" "ecb" "cifs"))
                     ("9p" => '("9p" "9pnet_virtio"))
+                    ("bcachefs" => '("bcachefs"))
                     ("btrfs" => '("btrfs"))
                     ("iso9660" => '("isofs"))
                     ("jfs" => '("jfs"))

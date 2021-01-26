@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2016 Alex Kost <alezost@gmail.com>
-;;; Copyright © 2015, 2016 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2015, 2016, 2020 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
@@ -62,7 +62,8 @@
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match)
   #:use-module (ice-9 format)
-  #:re-export (user-processes-service-type)       ;backwards compatibility
+  #:re-export (user-processes-service-type        ;backwards compatibility
+               %default-substitute-urls)
   #:export (fstab-service-type
             root-file-system-service
             file-system-service-type
@@ -106,6 +107,12 @@
             agetty-service-type
 
             mingetty-configuration
+            mingetty-configuration-tty
+            mingetty-configuration-auto-login
+            mingetty-configuration-login-program
+            mingetty-configuration-login-pause?
+            mingetty-configuration-clear-on-logout?
+            mingetty-configuration-mingetty
             mingetty-configuration?
             mingetty-service
             mingetty-service-type
@@ -272,7 +279,9 @@ system objects.")))
 
 (define root-file-system-service-type
   (shepherd-service-type 'root-file-system
-                         (const %root-file-system-shepherd-service)))
+                         (const %root-file-system-shepherd-service)
+                         (description "Take care of syncing the root file
+system and of remounting it read-only when the system shuts down.")))
 
 (define (root-file-system-service)
   "Return a service whose sole purpose is to re-mount read-only the root file
@@ -291,7 +300,8 @@ FILE-SYSTEM."
 (define (mapped-device->shepherd-service-name md)
   "Return the symbol that denotes the shepherd service of MD, a <mapped-device>."
   (symbol-append 'device-mapping-
-                 (string->symbol (mapped-device-target md))))
+                 (string->symbol (string-join
+                                  (mapped-device-targets md) "-"))))
 
 (define dependency->shepherd-service-name
   (match-lambda
@@ -562,7 +572,9 @@ down.")))
         (requirement '(udev))
         (provision '(trng))
         (start #~(make-forkexec-constructor '#$rngd-command))
-        (stop #~(make-kill-destructor))))))
+        (stop #~(make-kill-destructor))))
+    (description "Run the @command{rngd} random number generation daemon to
+supply entropy to the kernel's pool.")))
 
 (define* (rngd-service #:key
                        (rng-tools rng-tools)
@@ -589,7 +601,8 @@ to add @var{device} to the kernel's entropy pool.  The service will fail if
       (provision '(host-name))
       (start #~(lambda _
                  (sethostname #$name)))
-      (one-shot? #t)))))
+      (one-shot? #t)))
+   (description "Initialize the machine's host name.")))
 
 (define (host-name-service name)
   "Return a service that sets the host name to @var{name}."
@@ -618,7 +631,8 @@ to add @var{device} to the kernel's entropy pool.  The service will fail if
                          (display 1 port))))
                    #t))
         (stop #~(const #f)))))
-   #t))                                           ;default to UTF-8
+   #t                                             ;default to UTF-8
+   (description "Ensure the Linux virtual terminals run in UTF-8 mode.")))
 
 (define console-keymap-service-type
   (shepherd-service-type
@@ -630,7 +644,10 @@ to add @var{device} to the kernel's entropy pool.  The service will fail if
       (start #~(lambda _
                  (zero? (system* #$(file-append kbd "/bin/loadkeys")
                                  #$@files))))
-      (respawn? #f)))))
+      (respawn? #f)))
+   (description "@emph{This service is deprecated in favor of the
+@code{keyboard-layout} field of @code{operating-system}.}  Load the given list
+of console keymaps with @command{loadkeys}.")))
 
 (define-deprecated (console-keymap-service #:rest files)
   #f
@@ -1024,20 +1041,22 @@ the tty to run, among other things."
 (define-record-type* <mingetty-configuration>
   mingetty-configuration make-mingetty-configuration
   mingetty-configuration?
-  (mingetty       mingetty-configuration-mingetty ;<package>
-                  (default mingetty))
-  (tty            mingetty-configuration-tty)     ;string
-  (auto-login     mingetty-auto-login             ;string | #f
-                  (default #f))
-  (login-program  mingetty-login-program          ;gexp
-                  (default #f))
-  (login-pause?   mingetty-login-pause?           ;Boolean
-                  (default #f)))
+  (mingetty         mingetty-configuration-mingetty ;<package>
+                    (default mingetty))
+  (tty              mingetty-configuration-tty)     ;string
+  (auto-login       mingetty-auto-login             ;string | #f
+                    (default #f))
+  (login-program    mingetty-login-program          ;gexp
+                    (default #f))
+  (login-pause?     mingetty-login-pause?           ;Boolean
+                    (default #f))
+  (clear-on-logout? mingetty-clear-on-logout?       ;Boolean
+                    (default #t)))
 
 (define mingetty-shepherd-service
   (match-lambda
     (($ <mingetty-configuration> mingetty tty auto-login login-program
-                                 login-pause?)
+                                 login-pause? clear-on-logout?)
      (list
       (shepherd-service
        (documentation "Run mingetty on an tty.")
@@ -1050,7 +1069,6 @@ the tty to run, among other things."
 
        (start  #~(make-forkexec-constructor
                   (list #$(file-append mingetty "/sbin/mingetty")
-                        "--noclear"
 
                         ;; Avoiding 'vhangup' allows us to avoid 'setfont'
                         ;; errors down the path where various ioctls get
@@ -1058,6 +1076,9 @@ the tty to run, among other things."
                         ;; in Linux.
                         "--nohangup" #$tty
 
+                        #$@(if clear-on-logout?
+                               #~()
+                               #~("--noclear"))
                         #$@(if auto-login
                                #~("--autologin" #$auto-login)
                                #~())
@@ -1329,7 +1350,9 @@ Service Switch}, for an example."
                          (pid  (spawn)))
                      (umask mask)
                      pid))))
-      (stop #~(make-kill-destructor))))))
+      (stop #~(make-kill-destructor))))
+   (description "Run the syslog daemon, @command{syslogd}, which is
+responsible for logging system messages.")))
 
 ;; Snippet adapted from the GNU inetutils manual.
 (define %default-syslog.conf
@@ -1476,10 +1499,18 @@ archive' public keys, with GUIX."
     #~(begin
         (use-modules (guix build utils))
 
-        (unless (file-exists? "/etc/guix/acl")
-          (mkdir-p "/etc/guix")
-          (copy-file #+default-acl "/etc/guix/acl")
-          (chmod "/etc/guix/acl" #o600)))))
+        ;; If the ACL already exists, move it out of the way.  Create a backup
+        ;; if it's a regular file: it's likely that the user manually updated
+        ;; it with 'guix archive --authorize'.
+        (if (file-exists? "/etc/guix/acl")
+            (if (and (symbolic-link? "/etc/guix/acl")
+                     (store-file-name? (readlink "/etc/guix/acl")))
+                (delete-file "/etc/guix/acl")
+                (rename-file "/etc/guix/acl" "/etc/guix/acl.bak"))
+            (mkdir-p "/etc/guix"))
+
+        ;; Installed the declared ACL.
+        (symlink #+default-acl "/etc/guix/acl"))))
 
 (define %default-authorized-guix-keys
   ;; List of authorized substitute keys.
@@ -1510,6 +1541,8 @@ archive' public keys, with GUIX."
                     (default 0))
   (log-compression  guix-configuration-log-compression
                     (default 'bzip2))
+  (discover?        guix-configuration-discover?
+                    (default #f))
   (extra-options    guix-configuration-extra-options ;list of strings
                     (default '()))
   (log-file         guix-configuration-log-file   ;string
@@ -1546,69 +1579,118 @@ proxy of 'guix-daemon'...~%")
                     (environ environment)
                     #t)))))
 
+(define shepherd-discover-action
+  ;; Shepherd action to enable or disable substitute servers discovery.
+  (shepherd-action
+   (name 'discover)
+   (documentation
+    "Enable or disable substitute servers discovery and restart the
+'guix-daemon'.")
+   (procedure #~(lambda* (_ status)
+                  (let ((environment (environ)))
+                    (if (and status
+                             (string=? status "on"))
+                        (begin
+                          (format #t "enable substitute servers discovery~%")
+                          (setenv "discover" "on"))
+                        (begin
+                          (format #t "disable substitute servers discovery~%")
+                          (unsetenv "discover")))
+                    (action 'guix-daemon 'restart)
+                    (environ environment)
+                    #t)))))
+
 (define (guix-shepherd-service config)
   "Return a <shepherd-service> for the Guix daemon service with CONFIG."
   (match-record config <guix-configuration>
     (guix build-group build-accounts authorize-key? authorized-keys
           use-substitutes? substitute-urls max-silent-time timeout
-          log-compression extra-options log-file http-proxy tmpdir
-          chroot-directories)
+          log-compression discover? extra-options log-file
+          http-proxy tmpdir chroot-directories)
     (list (shepherd-service
            (documentation "Run the Guix daemon.")
            (provision '(guix-daemon))
            (requirement '(user-processes))
-           (actions (list shepherd-set-http-proxy-action))
-           (modules '((srfi srfi-1)))
+           (actions (list shepherd-set-http-proxy-action
+                          shepherd-discover-action))
+           (modules '((srfi srfi-1)
+                      (ice-9 match)
+                      (gnu build shepherd)))
            (start
-            #~(lambda _
-                (define proxy
-                  ;; HTTP/HTTPS proxy.  The 'http_proxy' variable is set by
-                  ;; the 'set-http-proxy' action.
-                  (or (getenv "http_proxy") #$http-proxy))
+            (with-imported-modules `(((guix config) => ,(make-config.scm))
+                                     ,@(source-module-closure
+                                        '((gnu build shepherd))
+                                        #:select? not-config?))
+              #~(lambda args
+                  (define proxy
+                    ;; HTTP/HTTPS proxy.  The 'http_proxy' variable is set by
+                    ;; the 'set-http-proxy' action.
+                    (or (getenv "http_proxy") #$http-proxy))
 
-                (fork+exec-command
-                 (cons* #$(file-append guix "/bin/guix-daemon")
-                        "--build-users-group" #$build-group
-                        "--max-silent-time" #$(number->string max-silent-time)
-                        "--timeout" #$(number->string timeout)
-                        "--log-compression" #$(symbol->string log-compression)
-                        #$@(if use-substitutes?
-                               '()
-                               '("--no-substitutes"))
-                        "--substitute-urls" #$(string-join substitute-urls)
-                        #$@extra-options
+                  (define discover?
+                    (or (getenv "discover") #$discover?))
 
-                        ;; Add CHROOT-DIRECTORIES and all their dependencies
-                        ;; (if these are store items) to the chroot.
-                        (append-map (lambda (file)
-                                      (append-map (lambda (directory)
-                                                    (list "--chroot-directory"
-                                                          directory))
-                                                  (call-with-input-file file
-                                                    read)))
-                                    '#$(map references-file
-                                            chroot-directories)))
+                  ;; Start the guix-daemon from a container, when supported,
+                  ;; to solve an installation issue. See the comment below for
+                  ;; more details.
+                  (fork+exec-command/container
+                   (cons* #$(file-append guix "/bin/guix-daemon")
+                          "--build-users-group" #$build-group
+                          "--max-silent-time"
+                          #$(number->string max-silent-time)
+                          "--timeout" #$(number->string timeout)
+                          "--log-compression"
+                          #$(symbol->string log-compression)
+                          #$@(if use-substitutes?
+                                 '()
+                                 '("--no-substitutes"))
+                          (string-append "--discover="
+                                         (if discover? "yes" "no"))
+                          "--substitute-urls" #$(string-join substitute-urls)
+                          #$@extra-options
 
-                 #:environment-variables
-                 (append (list #$@(if tmpdir
-                                      (list (string-append "TMPDIR=" tmpdir))
-                                      '())
+                          ;; Add CHROOT-DIRECTORIES and all their dependencies
+                          ;; (if these are store items) to the chroot.
+                          (append-map
+                           (lambda (file)
+                             (append-map (lambda (directory)
+                                           (list "--chroot-directory"
+                                                 directory))
+                                         (call-with-input-file file
+                                           read)))
+                           '#$(map references-file
+                                   chroot-directories)))
 
-                               ;; Make sure we run in a UTF-8 locale so that
-                               ;; 'guix offload' correctly restores nars that
-                               ;; contain UTF-8 file names such as
-                               ;; 'nss-certs'.  See
-                               ;; <https://bugs.gnu.org/32942>.
-                               (string-append "GUIX_LOCPATH="
-                                              #$glibc-utf8-locales
-                                              "/lib/locale")
-                               "LC_ALL=en_US.utf8")
-                         (if proxy
-                             (list (string-append "http_proxy=" proxy)
-                                   (string-append "https_proxy=" proxy))
-                             '()))
+                   ;; When running the installer, we need guix-daemon to
+                   ;; operate from within the same MNT namespace as the
+                   ;; installation container. In that case only, enter the
+                   ;; namespace of the process PID passed as start argument.
+                   ;; Otherwise, for symmetry purposes enter the caller
+                   ;; namespaces which is a no-op.
+                   #:pid (match args
+                           ((pid) (string->number pid))
+                           (else (getpid)))
 
-                 #:log-file #$log-file)))
+                   #:environment-variables
+                   (append (list #$@(if tmpdir
+                                        (list (string-append "TMPDIR=" tmpdir))
+                                        '())
+
+                                 ;; Make sure we run in a UTF-8 locale so that
+                                 ;; 'guix offload' correctly restores nars
+                                 ;; that contain UTF-8 file names such as
+                                 ;; 'nss-certs'.  See
+                                 ;; <https://bugs.gnu.org/32942>.
+                                 (string-append "GUIX_LOCPATH="
+                                                #$glibc-utf8-locales
+                                                "/lib/locale")
+                                 "LC_ALL=en_US.utf8")
+                           (if proxy
+                               (list (string-append "http_proxy=" proxy)
+                                     (string-append "https_proxy=" proxy))
+                               '()))
+
+                   #:log-file #$log-file))))
            (stop #~(make-kill-destructor))))))
 
 (define (guix-accounts config)
@@ -1633,26 +1715,32 @@ proxy of 'guix-daemon'...~%")
      ;; otherwise call 'chown' here, but the problem is that on a COW overlayfs,
      ;; chown leads to an entire copy of the tree, which is a bad idea.
 
-     ;; Optionally authorize substitute server keys.
-     (if authorize-key?
-         (substitute-key-authorization keys guix)
-         #~#f))))
+     ;; Generate a key pair and optionally authorize substitute server keys.
+     #~(begin
+         (unless (file-exists? "/etc/guix/signing-key.pub")
+           (system* #$(file-append guix "/bin/guix") "archive"
+                    "--generate-key"))
+
+         #$(if authorize-key?
+               (substitute-key-authorization keys guix)
+               #~#f)))))
 
 (define* (references-file item #:optional (name "references"))
   "Return a file that contains the list of references of ITEM."
   (if (struct? item)                              ;lowerable object
       (computed-file name
-                     (with-imported-modules (source-module-closure
-                                             '((guix build store-copy)))
-                       #~(begin
-                           (use-modules (guix build store-copy))
+                     (with-extensions (list guile-gcrypt) ;for store-copy
+                       (with-imported-modules (source-module-closure
+                                               '((guix build store-copy)))
+                         #~(begin
+                             (use-modules (guix build store-copy))
 
-                           (call-with-output-file #$output
-                             (lambda (port)
-                               (write (map store-info-item
-                                           (call-with-input-file "graph"
-                                             read-reference-graph))
-                                      port)))))
+                             (call-with-output-file #$output
+                               (lambda (port)
+                                 (write (map store-info-item
+                                             (call-with-input-file "graph"
+                                               read-reference-graph))
+                                        port))))))
                      #:options `(#:local-build? #f
                                  #:references-graphs (("graph" ,item))))
       (plain-file name "()")))
@@ -1697,6 +1785,8 @@ proxy of 'guix-daemon'...~%")
            (default 80))
   (host    guix-publish-configuration-host        ;string
            (default "localhost"))
+  (advertise? guix-publish-advertise?       ;boolean
+              (default #f))
   (compression       guix-publish-configuration-compression
                      (thunked)
                      (default (default-compression this-record
@@ -1707,6 +1797,8 @@ proxy of 'guix-daemon'...~%")
                (default "nar"))
   (cache       guix-publish-configuration-cache   ;#f | string
                (default #f))
+  (cache-bypass-threshold guix-publish-configuration-cache-bypass-threshold
+                          (default (* 10 (expt 2 20)))) ;integer
   (workers     guix-publish-configuration-workers ;#f | integer
                (default #f))
   (ttl         guix-publish-configuration-ttl     ;#f | integer
@@ -1741,10 +1833,13 @@ raise a deprecation warning if the 'compression-level' field was used."
                    lst))))
 
   (match-record config <guix-publish-configuration>
-    (guix port host nar-path cache workers ttl)
+    (guix port host nar-path cache workers ttl cache-bypass-threshold
+          advertise?)
     (list (shepherd-service
            (provision '(guix-publish))
-           (requirement '(guix-daemon))
+           (requirement `(user-processes
+                          guix-daemon
+                          ,@(if advertise? '(avahi-daemon) '())))
            (start #~(make-forkexec-constructor
                      (list #$(file-append guix "/bin/guix")
                            "publish" "-u" "guix-publish"
@@ -1752,6 +1847,9 @@ raise a deprecation warning if the 'compression-level' field was used."
                            #$@(config->compression-options config)
                            (string-append "--nar-path=" #$nar-path)
                            (string-append "--listen=" #$host)
+                           #$@(if advertise?
+                                  #~("--advertise")
+                                  #~())
                            #$@(if workers
                                   #~((string-append "--workers="
                                                     #$(number->string
@@ -1763,7 +1861,11 @@ raise a deprecation warning if the 'compression-level' field was used."
                                                     "s"))
                                   #~())
                            #$@(if cache
-                                  #~((string-append "--cache=" #$cache))
+                                  #~((string-append "--cache=" #$cache)
+                                     #$(string-append
+                                        "--cache-bypass-threshold="
+                                        (number->string
+                                         cache-bypass-threshold)))
                                   #~()))
 
                      ;; Make sure we run in a UTF-8 locale so we can produce
@@ -2071,22 +2173,53 @@ instance."
    'swap
    (lambda (device)
      (define requirement
-       (if (string-prefix? "/dev/mapper/" device)
+       (if (and (string? device)
+                (string-prefix? "/dev/mapper/" device))
            (list (symbol-append 'device-mapping-
                                 (string->symbol (basename device))))
            '()))
 
-     (shepherd-service
-      (provision (list (symbol-append 'swap- (string->symbol device))))
-      (requirement `(udev ,@requirement))
-      (documentation "Enable the given swap device.")
-      (start #~(lambda ()
-                 (restart-on-EINTR (swapon #$device))
-                 #t))
-      (stop #~(lambda _
-                (restart-on-EINTR (swapoff #$device))
-                #f))
-      (respawn? #f)))))
+     (define (device-lookup device)
+       ;; The generic 'find-partition' procedures could return a partition
+       ;; that's not swap space, but that's unlikely.
+       (cond ((uuid? device)
+              #~(find-partition-by-uuid #$(uuid-bytevector device)))
+             ((file-system-label? device)
+              #~(find-partition-by-label
+                 #$(file-system-label->string device)))
+             (else
+              device)))
+
+     (define service-name
+       (symbol-append 'swap-
+                      (string->symbol
+                       (cond ((uuid? device)
+                              (string-take (uuid->string device) 6))
+                             ((file-system-label? device)
+                              (file-system-label->string device))
+                             (else
+                              device)))))
+
+     (with-imported-modules (source-module-closure '((gnu build file-systems)))
+       (shepherd-service
+        (provision (list service-name))
+        (requirement `(udev ,@requirement))
+        (documentation "Enable the given swap device.")
+        (modules `((gnu build file-systems)
+                   ,@%default-modules))
+        (start #~(lambda ()
+                   (let ((device #$(device-lookup device)))
+                     (and device
+                          (begin
+                            (restart-on-EINTR (swapon device))
+                            #t)))))
+        (stop #~(lambda _
+                  (let ((device #$(device-lookup device)))
+                    (when device
+                      (restart-on-EINTR (swapoff device)))
+                    #f)))
+        (respawn? #f))))
+   (description "Turn on the virtual memory swap area.")))
 
 (define (swap-service device)
   "Return a service that uses @var{device} as a swap device."
@@ -2200,7 +2333,9 @@ This service is not part of @var{%base-services}."
         (requirement '(user-processes udev dbus-system))
         (provision (list (symbol-append 'term- (string->symbol virtual-terminal))))
         (start #~(make-forkexec-constructor #$kmscon-command))
-        (stop #~(make-kill-destructor)))))))
+        (stop #~(make-kill-destructor)))))
+   (description "Start the @command{kmscon} virtual terminal emulator for the
+Linux @dfn{kernel mode setting} (KMS).")))
 
 (define-record-type* <static-networking>
   static-networking make-static-networking

@@ -1,5 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2020 Mathieu Othacehe <othacehe@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -23,7 +24,8 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match)
-  #:export (make-forkexec-constructor/container))
+  #:export (make-forkexec-constructor/container
+            fork+exec-command/container))
 
 ;;; Commentary:
 ;;;
@@ -93,7 +95,8 @@
 ;; XXX: Lazy-bind the Shepherd to avoid a compile-time dependency.
 (module-autoload! (current-module)
                   '(shepherd service)
-                  '(read-pid-file exec-command %precious-signals))
+                  '(fork+exec-command read-pid-file exec-command
+                    %precious-signals))
 (module-autoload! (current-module)
                   '(shepherd system) '(unblock-signals))
 
@@ -187,6 +190,35 @@ namespace, in addition to essential bind-mounts such /proc."
                                        #:max-delay pid-file-timeout)
               (read-pid-file pid-file #:max-delay pid-file-timeout))
           pid))))
+
+(define* (fork+exec-command/container command
+                                      #:key pid
+                                      #:allow-other-keys
+                                      #:rest args)
+  "This is a variant of 'fork+exec-command' procedure, that joins the
+namespaces of process PID beforehand.  If there is no support for containers,
+on Hurd systems for instance, fallback to direct forking."
+  (define (strip-pid args)
+    ;; TODO: Replace with 'strip-keyword-arguments' when that no longer pulls
+    ;; in (guix config).
+    (let loop ((args args)
+               (result '()))
+      (match args
+        (()
+         (reverse result))
+        ((#:pid _ . rest)
+         (loop rest result))
+        ((head . rest)
+         (loop rest (cons head result))))))
+
+  (let ((container-support?
+         (file-exists? "/proc/self/ns"))
+        (fork-proc (lambda ()
+                     (apply fork+exec-command command
+                            (strip-pid args)))))
+    (if container-support?
+        (container-excursion* pid fork-proc)
+        (fork-proc))))
 
 ;; Local Variables:
 ;; eval: (put 'container-excursion* 'scheme-indent-function 1)

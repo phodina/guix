@@ -2,6 +2,7 @@
 ;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2021 Evgeny Pisemsky <evgeny@pisemsky.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -29,6 +30,7 @@
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages glib)
+  #:use-module (gnu packages gtk)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages ncurses)
@@ -52,14 +54,14 @@
 (define-public ddcutil
   (package
     (name "ddcutil")
-    (version "0.9.8")
+    (version "0.9.9")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.ddcutil.com/tarballs/"
                            "ddcutil-" version ".tar.gz"))
        (sha256
-        (base32 "13ccxbqgyz4ah9jwbcylnfkgl8j3ida8xd00xkcq4xnfyyv5mg6v"))))
+        (base32 "0anyxy53k2613hq9glaad16llqlv6iim5p8gz0rs5pnpp8p00dg1"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -192,7 +194,7 @@ Memtest86+ cannot currently be used on computers booted with UEFI.")
 (define-public memtester
   (package
     (name "memtester")
-    (version "4.3.0")
+    (version "4.5.0")
     (source
      (origin
        (method url-fetch)
@@ -200,7 +202,7 @@ Memtest86+ cannot currently be used on computers booted with UEFI.")
        (uri (string-append "http://pyropus.ca/software/memtester/old-versions/"
                            "memtester-" version ".tar.gz"))
        (sha256
-        (base32 "127xymmyzb9r6dxqrwd69v7gf8csv8kv7fjvagbglf3wfgyy5pzr"))))
+        (base32 "0dxfwayns3hjjplkxkpkm1409lmjlpi4chcrahcvdbnl0q6jpmcf"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
@@ -289,7 +291,7 @@ be dangerous and may void your CPU or system board's warranty.")
 (define-public wavemon
   (package
     (name "wavemon")
-    (version "0.9.1")
+    (version "0.9.3")
     (source
      (origin
        (method git-fetch)
@@ -298,7 +300,7 @@ be dangerous and may void your CPU or system board's warranty.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "109ycwnjjqc2vpnd8b86njfifczlxglnyv4rh2qmbn2i5nw2wryg"))))
+        (base32 "0m9n5asjxs1ir5rqprigqcrm976mgjvh4yql1jhfnbszwbf95193"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
@@ -464,4 +466,35 @@ applications.")
 authorization policies (what kind of USB devices are authorized) as well as
 method of use policies (how a USB device may interact with the system).
 Simply put, it is a USB device whitelisting tool.")
+    (license license:gpl2)))
+
+(define-public screentest
+  (package
+    (name "screentest")
+    (version "2.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/TobiX/screentest")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0gv3xj9sbk1wsyijfw9xjnvy8pg7j4arjnma2r2kfi18qy32wd30"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("glib" ,glib)
+       ("gtk+" ,gtk+-2)))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("intltool" ,intltool)
+       ("libtool" ,libtool)
+       ("glib" ,glib "bin")
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)))
+    (synopsis "Simple screen testing tool")
+    (description "This is a program for testing the quality of CRT/LCD
+screens.  It displays various patterns and allows you to estimate the quality
+of your CRT/LCD monitor.")
+    (home-page "https://github.com/TobiX/screentest")
     (license license:gpl2)))

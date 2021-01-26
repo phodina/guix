@@ -6,7 +6,7 @@
 ;;; Copyright © 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Andy Patterson <ajpatter@uwaterloo.ca>
 ;;; Copyright © 2017, 2018, 2019 Rutger Helling <rhelling@mykolab.com>
-;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2018 Sou Bunnbu <iyzsong@member.fsf.org>
 ;;; Copyright © 2018 Julien Lepiller <julien@lepiller.eu>
@@ -15,6 +15,8 @@
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Brett Gilio <brettg@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -85,6 +87,7 @@
   #:use-module (gnu packages polkit)
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-check)
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
@@ -129,21 +132,34 @@
 (define-public qemu
   (package
     (name "qemu")
-    (version "5.0.0")
+    (version "5.1.0")
     (source (origin
-             (method url-fetch)
-             (uri (string-append "https://download.qemu.org/qemu-"
-                                 version ".tar.xz"))
-             (sha256
-              (base32
-               "1dlcwyshdp94fwd30pddxf9bn2q8dfw5jsvry2gvdj551wmaj4rg"))))
-    (build-system gnu-build-system)
-    (arguments
-     `(;; Running tests in parallel can occasionally lead to failures, like:
-       ;; boot_sector_test: assertion failed (signature == SIGNATURE): (0x00000000 == 0x0000dead)
-       #:parallel-tests? #f
-
-       ;; FIXME: Disable tests on i686 to work around
+              (method url-fetch)
+              (uri (string-append "https://download.qemu.org/qemu-"
+                                  version ".tar.xz"))
+               (sha256
+                (base32
+                 "1rd41wwlvp0vpialjp2czs6i3lsc338xc72l3zkbb7ixjfslw5y9"))
+              (patches (search-patches "qemu-build-info-manual.patch"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Fix a bug in the do_ioctl_ifconf() function of qemu to
+                  ;; make ioctl(…, SIOCGIFCONF, …) work for emulated 64 bit
+                  ;; architectures.  The size of struct ifreq is handled
+                  ;; incorrectly.
+                  ;; https://lists.nongnu.org/archive/html/qemu-devel/2021-01/msg01545.html
+                  (substitute* '("linux-user/syscall.c")
+                    (("^([[:blank:]]*)const argtype ifreq_arg_type.*$" line indent)
+                     (string-append line indent
+                                    "const argtype ifreq_max_type[] = { MK_STRUCT(STRUCT_ifmap_ifreq) };\n"))
+                    (("^([[:blank:]]*)target_ifreq_size[[:blank:]]=.*$" _ indent)
+                     (string-append indent "target_ifreq_size = thunk_type_size(ifreq_max_type, 0);")))
+                  #t))))
+     (outputs '("out" "doc"))            ;4.7 MiB of HTML docs
+     (build-system gnu-build-system)
+     (arguments
+     `(;; FIXME: Disable tests on i686 to work around
        ;; <https://bugs.gnu.org/40527>.
        #:tests? ,(or (%current-target-system)
                      (not (string=? "i686-linux" (%current-system))))
@@ -178,6 +194,31 @@
                                               '("include")
                                               input-directories)
                #t)))
+         (add-after 'unpack 'extend-test-time-outs
+           (lambda _
+             ;; These tests can time out on heavily-loaded and/or slow storage.
+             (substitute* (cons* "tests/qemu-iotests/common.qemu"
+                                 (find-files "tests/qemu-iotests" "^[0-9]+$"))
+               (("QEMU_COMM_TIMEOUT=[0-9]+" match)
+                (string-append match "9")))))
+         (add-after 'unpack 'disable-unusable-tests
+           (lambda _
+             (substitute* "tests/Makefile.include"
+               ;; Comment out the test-qga test, which needs /sys and
+               ;; fails within the build environment.
+               (("check-unit-.* tests/test-qga" all)
+                (string-append "# " all))
+               ;; Comment out the test-char test, which needs networking and
+               ;; fails within the build environment.
+               (("check-unit-.* tests/test-char" all)
+                (string-append "# " all)))
+             (substitute* "tests/qtest/Makefile.include"
+               ;; Disable the following test, which triggers a crash on some
+               ;; x86 CPUs (see https://issues.guix.info/43048 and
+               ;; https://bugs.launchpad.net/qemu/+bug/1896263).
+               (("check-qtest-i386-y \\+= bios-tables-test" all)
+                (string-append "# " all)))
+             #t))
          (add-after 'patch-source-shebangs 'patch-/bin/sh-references
            (lambda _
              ;; Ensure the executables created by these source files reference
@@ -188,7 +229,7 @@
              #t))
          (replace 'configure
            (lambda* (#:key inputs outputs (configure-flags '())
-                           #:allow-other-keys)
+                     #:allow-other-keys)
              ;; The `configure' script doesn't understand some of the
              ;; GNU options.  Thus, add a new phase that's compatible.
              (let ((out (assoc-ref outputs "out")))
@@ -218,23 +259,12 @@
                         ,(string-append "--prefix=" out)
                         ,(string-append "--sysconfdir=/etc")
                         ,@configure-flags)))))
-         (add-after 'install 'install-info
-           (lambda* (#:key inputs outputs #:allow-other-keys)
-             ;; Install the Info manual, unless Texinfo is missing.
-             (when (assoc-ref inputs "texinfo")
-               (let* ((out  (assoc-ref outputs "out"))
-                      (dir (string-append out "/share/info")))
-                 (invoke "make" "info")
-                 (for-each (lambda (info)
-                             (install-file info dir))
-                           (find-files "." "\\.info"))))
-             #t))
          ;; Create a wrapper for Samba. This allows QEMU to use Samba without
          ;; pulling it in as an input. Note that you need to explicitly install
          ;; Samba in your Guix profile for Samba support.
-         (add-after 'install-info 'create-samba-wrapper
+         (add-after 'install 'create-samba-wrapper
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let* ((out    (assoc-ref %outputs "out"))
+             (let* ((out    (assoc-ref outputs "out"))
                     (libexec (string-append out "/libexec")))
                (call-with-output-file "samba-wrapper"
                  (lambda (port)
@@ -243,18 +273,14 @@ exec smbd $@")))
                (chmod "samba-wrapper" #o755)
                (install-file "samba-wrapper" libexec))
              #t))
-         (add-before 'check 'disable-unusable-tests
+         (add-after 'install 'move-html-doc
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (substitute* "tests/Makefile.include"
-               ;; Comment out the test-qga test, which needs /sys and
-               ;; fails within the build environment.
-               (("check-unit-.* tests/test-qga" all)
-                (string-append "# " all)))
-             (substitute* "tests/Makefile.include"
-               ;; Comment out the test-char test, which needs networking and
-               ;; fails within the build environment.
-               (("check-unit-.* tests/test-char" all)
-                (string-append "# " all)))
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (assoc-ref outputs "doc"))
+                    (qemu-doc (string-append doc "/share/doc/qemu-" ,version)))
+               (mkdir-p qemu-doc)
+               (rename-file (string-append out "/share/doc/qemu")
+                            (string-append qemu-doc "/html")))
              #t)))))
     (inputs                                       ; TODO: Add optional inputs.
      `(("alsa-lib" ,alsa-lib)
@@ -324,34 +350,34 @@ server and embedded PowerPC, and S390 guests.")
      (substitute-keyword-arguments (package-arguments qemu)
        ((#:configure-flags _ '(list))
         ;; Restrict to the host's architecture.
-        (match (car (string-split (or (%current-target-system)
-                                      (%current-system))
-                                  #\-))
-          ("i686"
-           '(list "--target-list=i386-softmmu"))
-          ("x86_64"
-           '(list "--target-list=i386-softmmu,x86_64-softmmu"))
-          ("mips64"
-           '(list (string-append "--target-list=mips-softmmu,mipsel-softmmu,"
-                                 "mips64-softmmu,mips64el-softmmu")))
-          ("mips"
-           '(list "--target-list=mips-softmmu,mipsel-softmmu"))
-          ("aarch64"
-           '(list "--target-list=arm-softmmu,aarch64-softmmu"))
-          ("arm"
-           '(list "--target-list=arm-softmmu"))
-          ("alpha"
-           '(list "--target-list=alpha-softmmu"))
-          ("powerpc64"
-           '(list "--target-list=ppc-softmmu,ppc64-softmmu"))
-          ("powerpc"
-           '(list "--target-list=ppc-softmmu"))
-          ("s390"
-           '(list "--target-list=s390x-softmmu"))
-          ("riscv"
-           '(list "--target-list=riscv32-softmmu,riscv64-softmmu"))
-          (else   ; An empty list actually builds all the targets.
-            ''())))))
+        (let ((system (or (%current-target-system)
+                          (%current-system))))
+          (cond
+            ((string-prefix? "i686" system)
+             '(list "--target-list=i386-softmmu"))
+            ((string-prefix? "xasdf86_64" system)
+             '(list "--target-list=i386-softmmu,x86_64-softmmu"))
+            ((string-prefix? "mips64" system)
+             '(list (string-append "--target-list=mips-softmmu,mipsel-softmmu,"
+                                   "mips64-softmmu,mips64el-softmmu")))
+            ((string-prefix? "mips" system)
+             '(list "--target-list=mips-softmmu,mipsel-softmmu"))
+            ((string-prefix? "aarch64" system)
+             '(list "--target-list=arm-softmmu,aarch64-softmmu"))
+            ((string-prefix? "arm" system)
+             '(list "--target-list=arm-softmmu"))
+            ((string-prefix? "alpha" system)
+             '(list "--target-list=alpha-softmmu"))
+            ((string-prefix? "powerpc64" system)
+             '(list "--target-list=ppc-softmmu,ppc64-softmmu"))
+            ((string-prefix? "powerpc" system)
+             '(list "--target-list=ppc-softmmu"))
+            ((string-prefix? "s390" system)
+             '(list "--target-list=s390x-softmmu"))
+            ((string-prefix? "riscv" system)
+             '(list "--target-list=riscv32-softmmu,riscv64-softmmu"))
+            (else   ; An empty list actually builds all the targets.
+              ''()))))))
 
     ;; Remove dependencies on optional libraries, notably GUI libraries.
     (native-inputs (fold alist-delete (package-native-inputs qemu)
@@ -510,7 +536,11 @@ server and embedded PowerPC, and S390 guests.")
                (("\\$\\(GHC\\)")
                 "$(GHC) -package-db=../package.conf.d"))
              #t))
-
+         (add-after 'configure 'make-ghc-use-shared-libraries
+           (lambda _
+             (substitute* "Makefile"
+               (("HFLAGS =") "HFLAGS = -dynamic -fPIC"))
+             #t))
          (add-after 'configure 'fix-installation-directories
            (lambda _
              (substitute* "Makefile"
@@ -675,7 +705,7 @@ server and embedded PowerPC, and S390 guests.")
        ;; For the documentation.
        ("python-docutils" ,python-docutils)
        ("sphinx" ,python-sphinx)
-       ("pandoc" ,ghc-pandoc)
+       ("pandoc" ,pandoc)
        ("dot" ,graphviz)
 
        ;; Test dependencies.
@@ -937,7 +967,7 @@ all common programming languages.  Vala bindings are also provided.")
 (define-public lxc
   (package
     (name "lxc")
-    (version "3.1.0")
+    (version "4.0.6")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -945,7 +975,7 @@ all common programming languages.  Vala bindings are also provided.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "1igxqgx8q9cp15mcp1y8j564bl85ijw04jcmgb1s5bmfbg1751sd"))))
+                "0qz4l7mlhq7hx53q606qgvkyzyr01glsw290v8ppzvxn1fydlrci"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1280,14 +1310,14 @@ domains, their live performance and resource utilization statistics.")
 (define-public criu
   (package
     (name "criu")
-    (version "3.14")
+    (version "3.15")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://download.openvz.org/criu/criu-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1jrr3v99g18gc0hriz0avq6ccdvyya0j6wwz888sdsc4icc30gzn"))))
+                "09d0j24x0cyc7wkgi7cnxqgfjk7kbdlm79zxpj8d356sa3rw2z24"))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
@@ -1368,7 +1398,8 @@ domains, their live performance and resource utilization statistics.")
        ("libcap" ,libcap)
        ("libnet" ,libnet)
        ("libnl" ,libnl)
-       ("libbsd" ,libbsd)))
+       ("libbsd" ,libbsd)
+       ("nftables" ,nftables)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("perl" ,perl)
@@ -1512,18 +1543,19 @@ monitor/GPU.")
                        "-xvf" source))))
          (replace 'build
            (lambda* (#:key import-path #:allow-other-keys)
-             (chdir (string-append "src/" import-path))
-             ;; XXX: requires 'go-md2man'.
-             ;; (invoke "make" "man")
-             (invoke "make")))
+             (with-directory-excursion (string-append "src/" import-path)
+               ;; XXX: requires 'go-md2man'.
+               ;; (invoke "make" "man")
+               (invoke "make"))))
          ;; (replace 'check
          ;;   (lambda _
          ;;     (invoke "make" "localunittest")))
          (replace 'install
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
-              (invoke "make" "install" "install-bash"
-                      (string-append "PREFIX=" out))))))))
+           (lambda* (#:key import-path outputs #:allow-other-keys)
+             (with-directory-excursion (string-append "src/" import-path)
+               (let ((out (assoc-ref outputs "out")))
+                 (invoke "make" "install" "install-bash"
+                         (string-append "PREFIX=" out)))))))))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (inputs
@@ -1567,14 +1599,15 @@ Open Container Initiative specification.")
                        "-xvf" source))))
          (replace 'build
            (lambda* (#:key import-path #:allow-other-keys)
-             (chdir (string-append "src/" import-path))
-             ;; TODO: build manpages with 'go-md2man'.
-             (invoke "make" "SHELL=bash")))
+             (with-directory-excursion (string-append "src/" import-path)
+               ;; TODO: build manpages with 'go-md2man'.
+               (invoke "make" "SHELL=bash"))))
          (replace 'install
-           (lambda* (#:key outputs #:allow-other-keys)
+           (lambda* (#:key import-path outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
                     (bindir (string-append out "/bin")))
-               (install-file "umoci" bindir)
+               (install-file (string-append "src/" import-path "/umoci")
+                             bindir)
                #t))))))
     (home-page "https://umo.ci/")
     (synopsis "Tool for modifying Open Container images")
@@ -1586,19 +1619,20 @@ Open Container Initiative (OCI) image layout and its tagged images.")
 (define-public skopeo
   (package
     (name "skopeo")
-    (version "0.1.40")
+    (version "1.2.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/projectatomic/skopeo")
+                    (url "https://github.com/containers/skopeo")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1bagirzdzjhicn5dr691092ac3q6lhz3xngjzgqiqkxnvpz7p6cn"))))
+                "1y9pmijazbgxzriymrm7zrifmkd1x1wad9b3zjcj7zwr6c999dhg"))))
     (build-system go-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("pkg-config" ,pkg-config)
+       ("go-github-com-go-md2man" ,go-github-com-go-md2man)))
     (inputs
      `(("btrfs-progs" ,btrfs-progs)
        ("eudev" ,eudev)
@@ -1609,22 +1643,28 @@ Open Container Initiative (OCI) image layout and its tagged images.")
        ("glib" ,glib)
        ("gpgme" ,gpgme)))
     (arguments
-     '(#:import-path "github.com/projectatomic/skopeo"
+     '(#:import-path "github.com/containers/skopeo"
        #:install-source? #f
-       #:tests? #f ; The tests require Docker
+       #:tests? #f                                ; The tests require Docker
        #:phases
        (modify-phases %standard-phases
          (replace 'build
            (lambda* (#:key import-path #:allow-other-keys)
-             (chdir (string-append "src/" import-path))
-             ;; TODO: build manpages with 'go-md2man'.
-             (invoke "make" "binary-local")))
+             (with-directory-excursion (string-append "src/" import-path)
+               (invoke "make" "bin/skopeo"))))
+         (add-after 'build 'build-docs
+           (lambda* (#:key import-path #:allow-other-keys)
+             (with-directory-excursion (string-append "src/" import-path)
+               (invoke "make" "docs"))))
          (replace 'install
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
-               (invoke "make" "install-binary" "install-completions"
-                       (string-append "PREFIX=" out))))))))
-    (home-page "https://github.com/projectatomic/skopeo")
+           (lambda* (#:key import-path outputs #:allow-other-keys)
+             (with-directory-excursion (string-append "src/" import-path)
+               (let ((out (assoc-ref outputs "out")))
+                 (install-file "default-policy.json"
+                               (string-append out "/etc/containers"))
+                 (invoke "make" "install-binary" "install-completions" "install-docs"
+                         (string-append "PREFIX=" out)))))))))
+    (home-page "https://github.com/containers/skopeo")
     (synopsis "Interact with container images and container image registries")
     (description
      "@command{skopeo} is a command line utility providing various operations
@@ -1755,7 +1795,7 @@ DOS or Microsoft Windows.")
 (define-public xen
   (package
     (name "xen")
-    (version "4.13.0")
+    (version "4.14.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1764,7 +1804,7 @@ DOS or Microsoft Windows.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0py50n995gv909i0d1lfdcj9wcp5g1d5z6m2291jqqlfyany138g"))))
+                "1r90rvypw76ya9clqw5p02gm1k8hxz73f7gr95ca778nnzvb7xjw"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -1878,13 +1918,14 @@ override CC = " (assoc-ref inputs "cross-gcc") "/bin/i686-linux-gnu-gcc"))
                                          new-search-path ":")))
                     (setenv env-name new-env-value)))
                 environment-variable-names))
-             (setenv "CROSS_CPATH" (getenv "CPATH"))
+             (setenv "CROSS_C_INCLUDE_PATH" (getenv "C_INCLUDE_PATH"))
+             (setenv "CROSS_CPLUS_INCLUDE_PATH" (getenv "CPLUS_INCLUDE_PATH"))
              (setenv "CROSS_LIBRARY_PATH" (getenv "LIBRARY_PATH"))
              (filter-environment! cross?
-              '("CROSS_CPATH"
+              '("CROSS_C_INCLUDE_PATH" "CROSS_CPLUS_INCLUDE_PATH"
                 "CROSS_LIBRARY_PATH"))
              (filter-environment! (lambda (e) (not (cross? e)))
-              '("CPATH"
+              '("C_INCLUDE_PATH" "CPLUS_INCLUDE_PATH"
                 "LIBRARY_PATH"))
              ;; Guix tries to be helpful and automatically adds
              ;; mini-os-git-checkout/include to the include path,
@@ -1893,7 +1934,7 @@ override CC = " (assoc-ref inputs "cross-gcc") "/bin/i686-linux-gnu-gcc"))
                                     (not
                                      (string-contains e
                                       "mini-os-git-checkout")))
-              '("CPATH"
+              '("C_INCLUDE_PATH" "CPLUS_INCLUDE_PATH"
                 "LIBRARY_PATH"))
             (setenv "EFI_VENDOR" "guix")
              #t))
@@ -1991,14 +2032,14 @@ administrators and developers in managing the database.")
 (define-public osinfo-db
   (package
     (name "osinfo-db")
-    (version "20200529")
+    (version "20201218")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://releases.pagure.org/libosinfo/osinfo-db-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "0mbrf9j5wmjhc6jixvhp4jqyxixh1717lqrmzmipdg99xnzba81n"))))
+                "0ydbindwgw7kg861rqii5036gq0dbbbmv35dzrmmv937ddfsxwh0"))))
     (build-system trivial-build-system)
     (arguments
      `(#:modules ((guix build utils))
@@ -2023,3 +2064,48 @@ administrators and developers in managing the database.")
 libosinfo library.  It provides information about guest operating systems for
 use with virtualization provisioning tools")
     (license license:lgpl2.0+)))
+
+(define-public python-transient
+  (package
+    (name "python-transient")
+    (version "0.12")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "transient" version))
+       (sha256
+        (base32
+         "148yiqrmcscsi6787y0f27i1y9cf0gcw3mqfv5frhpmsmv62mv5z"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f ; Requires behave
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'fix-dependencies
+                    (lambda _
+                      (substitute* "setup.py"
+                        (("==")
+                         ">="))
+                      #t)))))
+    (propagated-inputs
+     `(("python-beautifultable" ,python-beautifultable)
+       ("python-click" ,python-click)
+       ("python-importlib-resources"
+        ,python-importlib-resources)
+       ("python-lark-parser" ,python-lark-parser)
+       ("python-marshmallow" ,python-marshmallow)
+       ("python-progressbar2" ,python-progressbar2)
+       ("python-requests" ,python-requests)
+       ("python-toml" ,python-toml)))
+    (native-inputs
+     `(("python-black" ,python-black)
+       ("python-mypy" ,python-mypy)
+       ("python-pyhamcrest" ,python-pyhamcrest)
+       ("python-twine" ,python-twine)))
+    (home-page
+     "https://github.com/ALSchwalm/transient")
+    (synopsis
+     "QEMU Wrapper written in Python")
+    (description
+     "@code{transient} is a wrapper for QEMU allowing the creation of virtual
+machines with shared folder, ssh, and disk creation support.")
+    (license license:expat)))

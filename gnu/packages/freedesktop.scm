@@ -21,6 +21,7 @@
 ;;; Copyright © 2020 Rene Saavedra <pacoon@protonmail.com>
 ;;; Copyright © 2020 Nicolò Balzarotti <nicolo@nixo.xyz>
 ;;; Copyright © 2020 Anders Thuné <asse.97@gmail.com>
+;;; Copyright © 2020 Raghav Gururajan <raghavgururajan@disroot.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -71,6 +72,7 @@
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gperf)
   #:use-module (gnu packages graphviz)
+  #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
   #:use-module (gnu packages libffi)
@@ -79,6 +81,7 @@
   #:use-module (gnu packages linux)
   #:use-module (gnu packages man)
   #:use-module (gnu packages m4)
+  #:use-module (gnu packages networking)
   #:use-module (gnu packages nss)
   #:use-module (gnu packages package-management)
   #:use-module (gnu packages perl)
@@ -97,6 +100,187 @@
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1))
+
+(define-public farstream
+  (package
+    (name "farstream")
+    (version "0.2.9")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://gitlab.freedesktop.org/farstream/farstream.git")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1sd8syldyq6bphfdm129s3gq554vfv7vh1vcwzk48gjryf101awk"))
+       (patches
+        (search-patches "farstream-make.patch"))))
+    (build-system glib-or-gtk-build-system)
+    (outputs '("out" "doc"))
+    (arguments
+     `(#:tests? #f ; https://gitlab.freedesktop.org/farstream/farstream/-/issues/18
+       #:configure-flags
+       (list
+        "--enable-gtk-doc"
+        "--enable-glib-asserts"
+        (string-append "--with-html-dir="
+                       (assoc-ref %outputs "doc")
+                       "/share/gtk-doc/html"))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'copy-common
+           (lambda _
+             (delete-file "autogen.sh")
+             (copy-recursively
+              (assoc-ref %build-inputs "common")
+              "common")
+             #t))
+         (add-after 'unpack 'patch-docbook-xml
+           (lambda* (#:key inputs #:allow-other-keys)
+             (with-directory-excursion "docs"
+               (substitute* '("libs/farstream-libs-docs.sgml"
+                              "plugins/farstream-plugins-docs.sgml")
+                 (("http://www.oasis-open.org/docbook/xml/4.1.2/")
+                  (string-append (assoc-ref inputs "docbook-xml")
+                                 "/xml/dtd/docbook/"))))
+             #t)))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("common"
+        ,(origin
+           (method git-fetch)
+           (uri
+            (git-reference
+             (url "https://gitlab.freedesktop.org/gstreamer/common.git")
+             (commit "88e512ca7197a45c4114f7fa993108f23245bf50")))
+           (file-name
+            (git-file-name "common" "latest.88e512c"))
+           (sha256
+            (base32 "1nk94pnskjyngqcfb9p32g4yvf4nzpjszisw24r9azl0pawqpsn6"))))
+       ("docbook-xml" ,docbook-xml-4.1.2)
+       ("docbook-xsl" ,docbook-xsl)
+       ("gobject-introspection" ,gobject-introspection)
+       ("gtk-doc" ,gtk-doc)
+       ("libtool" ,libtool)
+       ("perl" ,perl)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)
+       ("xsltproc" ,libxslt)))
+    (inputs
+     `(("glib" ,glib)
+       ("gtk+" ,gtk+)
+       ("gupnp-igd" ,gupnp-igd)
+       ("libnice" ,libnice)))
+    (propagated-inputs
+     `(("gstreamer" ,gstreamer)
+       ("gst-plugins-bad" ,gst-plugins-bad)
+       ("gst-plugins-base" ,gst-plugins-base)
+       ("gst-plugins-good" ,gst-plugins-good)))
+    (synopsis "The Farstream VVoIP framework")
+    (description "Farstream is a collection of GStreamer modules and libraries
+for videoconferencing.")
+    (home-page "https://www.freedesktop.org/wiki/Software/Farstream/")
+    (license license:lgpl2.1+)))
+
+(define-public libglib-testing
+  (package
+    (name "libglib-testing")
+    (version "0.1.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://gitlab.gnome.org/pwithnall/libglib-testing.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0xmycsrlqyji6sc2i4wvp2gxf3897z65a57ygihfnpjpyl7zlwkr"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:glib-or-gtk? #t
+       #:phases
+       (modify-phases %standard-phases
+         (add-before
+             'check 'pre-check
+           (lambda _
+             ;; The test suite requires a running dbus-daemon.
+             (system "dbus-daemon &")
+             ;; Don't fail on missing '/etc/machine-id'.
+             (setenv "DBUS_FATAL_WARNINGS" "0")
+             #t)))))
+    (native-inputs
+     `(("glib:bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("pkg-config" ,pkg-config)
+       ("gtk-doc" ,gtk-doc)))
+    (inputs
+     `(("dbus" ,dbus)
+       ("glib" ,glib)))
+    (synopsis "Glib testing library")
+    (description "Libglib-testing is a test library providing test harnesses and
+mock classes which complement the classes provided by GLib.  It is intended to
+be used by any project which uses GLib and which wants to write internal unit
+tests.")
+    (home-page "https://gitlab.gnome.org/pwithnall/libglib-testing")
+    (license license:lgpl2.1+)))
+
+(define-public malcontent
+  (package
+    (name "malcontent")
+    (version "0.8.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://gitlab.freedesktop.org/pwithnall/malcontent.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0vnf0pk516fwwh41v96c29l2i7h1pnwhivlkbf53kkx1q35g7lb3"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:glib-or-gtk? #t
+       #:phases
+       (modify-phases %standard-phases
+         ;; AppInfo not available inside build environment.
+         (add-after 'unpack 'fix-tests
+           (lambda _
+             (substitute* "libmalcontent/tests/app-filter.c"
+               (("g_test_add_func \\(\"/app-filter/appinfo\", test_app_filter_appinfo\\);")
+                 ""))
+             #t)))))
+    (native-inputs
+     `(("desktop-file-utils" ,desktop-file-utils)
+       ("gettext" ,gettext-minimal)
+       ("glib:bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("gtk+:bin" ,gtk+ "bin")
+       ("itstool" ,itstool)
+       ("libglib-testing" ,libglib-testing)
+       ("libxml2" ,libxml2)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("accountsservice" ,accountsservice)
+       ("appstream-glib" ,appstream-glib)
+       ("dbus" ,dbus)
+       ("flatpak" ,flatpak)
+       ("glib" ,glib)
+       ("gtk+" ,gtk+)
+       ("libostree" ,libostree)
+       ("linux-pam" ,linux-pam)
+       ("polkit" ,polkit)))
+    (synopsis "Parental controls support")
+    (description "MalContent implements parental controls support which can
+be used by applications to filter or limit the access of child accounts to
+inappropriate content.")
+    (home-page "https://gitlab.freedesktop.org/pwithnall/malcontent")
+    (license
+     (list
+      license:gpl2+
+      license:lgpl2.1+))))
 
 (define-public xdg-utils
   (package
@@ -189,14 +373,14 @@ freedesktop.org project.")
   ;; Updating this will rebuild over 700 packages through libinput-minimal.
   (package
     (name "libinput")
-    (version "1.15.5")
+    (version "1.16.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://freedesktop.org/software/libinput/"
                                   "libinput-" version ".tar.xz"))
               (sha256
                (base32
-                "15ww4jl3lcxyi8m8idg8canklbqv729gnwpkz7r98c1w8a7zq3m9"))))
+                "1ab0q4iya07kvjd2g1vzamj9h57qldi15h3b8324vg3szr88qggw"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags '("-Ddocumentation=false")
@@ -275,7 +459,7 @@ the freedesktop.org XDG Base Directory specification.")
 (define-public elogind
   (package
     (name "elogind")
-    (version "243.4")
+    (version "243.7")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -284,7 +468,7 @@ the freedesktop.org XDG Base Directory specification.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "141frvgyk4fafcxsix94qc0d9ffrwksld8lqq4hq6xsgjlvv0mrs"))))
+                "1ccj3cbs9nsfg497wg195in1a7b9csm1jdm7z6q7vvx1ynpjxlxz"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags
@@ -322,14 +506,6 @@ the freedesktop.org XDG Base Directory specification.")
              (substitute* "meson.build"
                (("join_paths\\(bindir, 'pkttyagent'\\)")
                 "'\"/run/current-system/profile/bin/pkttyagent\"'"))
-             #t))
-         (add-after 'unpack 'adjust-dbus-socket-address
-           (lambda _
-             ;; Look for the D-Bus socket in /var/run instead of /run.  Remove
-             ;; this for versions > 243.4.
-             (substitute* "src/libelogind/sd-bus/bus-internal.h"
-               (("=/run/dbus/system_bus_socket")
-                "=/var/run/dbus/system_bus_socket"))
              #t))
          (add-after 'unpack 'adjust-tests
            (lambda _
@@ -641,14 +817,14 @@ Python.")
 (define-public wayland
   (package
     (name "wayland")
-    (version "1.17.0")
+    (version "1.18.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://wayland.freedesktop.org/releases/"
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "194ibzwpdcn6fvk4xngr4bf5axpciwg2bj82fdvz88kfmjw13akj"))))
+                "0k995rn96xkplrapz5k648j651wc43kq817xk1x8280h16gsfxa6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:parallel-tests? #f))
@@ -677,7 +853,7 @@ applications, X servers (rootless or fullscreen) or other display servers.")
 (define-public wayland-protocols
   (package
     (name "wayland-protocols")
-    (version "1.18")
+    (version "1.20")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -685,7 +861,7 @@ applications, X servers (rootless or fullscreen) or other display servers.")
                     "wayland-protocols-" version ".tar.xz"))
               (sha256
                (base32
-                "1cvl93h83ymbfhb567jv5gzyq08181w7c46rsw4xqqqpcvkvfwrx"))))
+                "1rsdgvkkvxs3cjhpl6agvbkm53vm7k8rg127j9y2vn33m2hvg0lp"))))
     (build-system gnu-build-system)
     (inputs
      `(("wayland" ,wayland)))
@@ -699,7 +875,7 @@ applications, X servers (rootless or fullscreen) or other display servers.")
 (define-public waylandpp
   (package
     (name "waylandpp")
-    (version "0.2.7")
+    (version "0.2.8")
     (home-page "https://github.com/NilsBrause/waylandpp")
     (source (origin
               (method git-fetch)
@@ -707,10 +883,10 @@ applications, X servers (rootless or fullscreen) or other display servers.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1r4m0xhvwpcqxrqvp3hz1bzlkxqj2jiymd5r6hj8xjzz536hyprz"))))
+                "1kxiqab48p0n97pwg8c2zx56wqq32m3rcq7qd2pjj33ipcanb3qq"))))
     (build-system cmake-build-system)
     (arguments
-     `(#:tests? #f))                    ;no tests
+     `(#:tests? #f))                    ; no tests
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (inputs
@@ -812,41 +988,39 @@ multiplexer to the KMS/DRM Linux kernel devices.")
     (license license:expat)))
 
 (define-public wev
-  ;; There simple tool has no version or release yet.
-  (let ((commit "cee3dfb2a8b40ee303611018c68ae182d84a7f46"))
-    (package
-      (name "wev")
-      (version (string-append "2020-02-06-" (string-take commit 8)))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://git.sr.ht/~sircmpwn/wev")
-                      (commit commit)))
-                (file-name (git-file-name name version))
-                (sha256
-                 (base32
-                  "0l71v3fzgiiv6xkk365q1l08qvaymxd4kpaya6r2g8yzkr7i2hms"))))
-      (build-system gnu-build-system)
-      (arguments
-       `(#:tests? #f ; no tests
-         #:make-flags
-         (list "CC=gcc" (string-append "PREFIX=" (assoc-ref %outputs "out")))
-         #:phases
-         (modify-phases %standard-phases
-           (delete 'configure))))
-      (native-inputs
-       `(("pkg-config" ,pkg-config)
-         ("scdoc" ,scdoc)))
-      (inputs
-       `(("libxkbcommon" ,libxkbcommon)
-         ("wayland" ,wayland)
-         ("wayland-protocols" ,wayland-protocols)))
-      (home-page "https://git.sr.ht/~sircmpwn/wev")
-      (synopsis "Wayland event viewer")
-      (description "Wev is a tool that opens a window, printing all events
+  (package
+    (name "wev")
+    (version "1.0.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://git.sr.ht/~sircmpwn/wev")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0l71v3fzgiiv6xkk365q1l08qvaymxd4kpaya6r2g8yzkr7i2hms"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ; no tests
+       #:make-flags
+       (list "CC=gcc" (string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("scdoc" ,scdoc)))
+    (inputs
+     `(("libxkbcommon" ,libxkbcommon)
+       ("wayland" ,wayland)
+       ("wayland-protocols" ,wayland-protocols)))
+    (home-page "https://git.sr.ht/~sircmpwn/wev")
+    (synopsis "Wayland event viewer")
+    (description "Wev is a tool that opens a window, printing all events
 sent to a Wayland window, such as key presses.  It is analogous to the X11 tool
 XEv.")
-      (license license:expat))))
+    (license license:expat)))
 
 (define-public exempi
   (package
@@ -1211,17 +1385,22 @@ different sorts of messages in different formats.")
 (define-public telepathy-idle
   (package
     (name "telepathy-idle")
-    (version "0.2.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://telepathy.freedesktop.org/releases/"
-                                  name "/" name "-" version ".tar.bz2"))
-              (sha256
-               (base32
-                "1argdzbif1vdmwp5vqbgkadq9ancjmgdm2ncp0qfckni715ss4rh"))))
+    (version "0.2.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/TelepathyIM/telepathy-idle")
+             (commit (string-append "telepathy-idle-" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1pfw4g2cicw3ykxhsy743r0fc1yqbdrqxh2c5ha6am19dajcr95l"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("xsltproc" ,libxslt)
        ("python" ,python-2)
@@ -1301,7 +1480,7 @@ wish to perform colour calibration.")
 (define-public libfprint
   (package
     (name "libfprint")
-    (version "1.90.1")
+    (version "1.90.6")
     (source
      (origin
        (method git-fetch)
@@ -1310,7 +1489,7 @@ wish to perform colour calibration.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0fdaak7qjr9b4482g7fhhqpyfdqpxq5kpmyzkp7f5i7qq2ynb78a"))))
+        (base32 "0hagm1i78mrd772y3cinr7bda4myx0v4bixwqnqbxknds8m9h8sg"))))
     (build-system meson-build-system)
     (arguments
      '(#:configure-flags
@@ -1436,7 +1615,7 @@ to applications simultaneously competing for fingerprint readers.")
 (define-public desktop-file-utils
   (package
     (name "desktop-file-utils")
-    (version "0.24")
+    (version "0.26")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.freedesktop.org/software/"
@@ -1444,10 +1623,12 @@ to applications simultaneously competing for fingerprint readers.")
                                   "desktop-file-utils-" version ".tar.xz"))
               (sha256
                (base32
-                "1nc3bwjdrpcrkbdmzvhckq0yngbcxspwj2n1r7jr3gmx1jk5vpm1"))))
+                "02bkfi6fyk4c0gh2avd897882ww5zl7qg7bzzf28qb57kvkvsvdj"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("glib" ,glib)))
     (home-page "https://www.freedesktop.org/wiki/Software/desktop-file-utils/")
@@ -1620,14 +1801,14 @@ their MIME type.
 (define-public uchardet
   (package
     (name "uchardet")
-    (version "0.0.6")
+    (version "0.0.7")
     (source
       (origin
         (method url-fetch)
         (uri (string-append "https://www.freedesktop.org/software/"
                             name "/releases/" name "-" version ".tar.xz"))
         (sha256
-          (base32 "0q9c02b6nmw41yfsiqsnphgc3f0yg3fj31wkccp47cmwvy634lc3"))))
+          (base32 "1ca51sryhryqz82v4d0graaiqqq5w2f33a9gj83b910xmq499irz"))))
     (build-system cmake-build-system)
     (home-page "https://www.freedesktop.org/wiki/Software/uchardet/")
     (synopsis "Encoding detector library")

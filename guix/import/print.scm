@@ -57,7 +57,8 @@ when evaluated."
   ;; Print either license variable name or the code for a license object
   (define (license->code lic)
     (let ((var (variable-name lic '(guix licenses))))
-      (or (symbol-append 'license: var)
+      (if var
+          (symbol-append 'license: var)
           `(license
             (name ,(license-name lic))
             (uri ,(license-uri lic))
@@ -74,7 +75,7 @@ when evaluated."
   (define (source->code source version)
     (let ((uri       (origin-uri source))
           (method    (origin-method source))
-          (sha256    (origin-sha256 source))
+          (hash      (origin-hash source))
           (file-name (origin-file-name source))
           (patches   (origin-patches source)))
       `(origin
@@ -82,9 +83,12 @@ when evaluated."
          (uri (string-append ,@(match (factorize-uri uri version)
                                  ((? string? uri) (list uri))
                                  (factorized factorized))))
-         (sha256
-          (base32
-           ,(format #f "~a" (bytevector->nix-base32-string sha256))))
+         ,(if (equal? (content-hash-algorithm hash) 'sha256)
+              `(sha256 (base32 ,(bytevector->nix-base32-string
+                                 (content-hash-value hash))))
+              `(hash (content-hash ,(bytevector->nix-base32-string
+                                     (content-hash-value hash))
+                                   ,(content-hash-algorithm hash))))
          ;; FIXME: in order to be able to throw away the directory prefix,
          ;; we just assume that the patch files can be found with
          ;; "search-patches".

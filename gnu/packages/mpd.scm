@@ -7,6 +7,10 @@
 ;;; Copyright © 2016, 2018, 2019, 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Evan Straw <evan.straw99@gmail.com>
+;;; Copyright © 2020 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2020 Lars-Dominik Braun <lars@6xq.net>
+;;; Copyright © 2020 Simon Streit <simon@netpanic.org>
+;;; Copyright © 2021 Noah Evans <noah@nevans.me>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -30,15 +34,22 @@
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix utils)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system python)
+  #:use-module (gnu packages audio)
+  #:use-module (gnu packages autotools)
   #:use-module (gnu packages avahi)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages boost)
+  #:use-module (gnu packages cdrom)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages gnome)
+  #:use-module (gnu packages gnupg)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages icu4c)
+  #:use-module (gnu packages libusb)
   #:use-module (gnu packages readline)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
@@ -51,7 +62,9 @@
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages pulseaudio)
+  #:use-module (gnu packages qt)
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages video)
@@ -92,7 +105,7 @@ interfacing MPD in the C, C++ & Objective C languages.")
 (define-public mpd
   (package
     (name "mpd")
-    (version "0.21.25")
+    (version "0.22.4")
     (source (origin
               (method url-fetch)
               (uri
@@ -101,10 +114,10 @@ interfacing MPD in the C, C++ & Objective C languages.")
                               "/mpd-" version ".tar.xz"))
               (sha256
                (base32
-                "00f2cm3sg0vi9gxb1yk35lyyh3fbabwim3mfnsz2syrjpw0sv810"))))
+                "1l4x2jrv04hp4q9gyfg79g78bk68lrd6wd3hysl6y91rln9sj7l9"))))
     (build-system meson-build-system)
     (arguments
-     `(#:configure-flags '("-Ddocumentation=true"))) ;the default is 'false'...
+     `(#:configure-flags '("-Ddocumentation=enabled")))
     (inputs `(("ao" ,ao)
               ("alsa-lib" ,alsa-lib)
               ("avahi" ,avahi)
@@ -183,7 +196,7 @@ player daemon.")
 (define-public ncmpc
   (package
     (name "ncmpc")
-    (version "0.38")
+    (version "0.42")
     (source (origin
               (method url-fetch)
               (uri
@@ -192,7 +205,7 @@ player daemon.")
                               "/ncmpc-" version ".tar.xz"))
               (sha256
                (base32
-                "18i73q33xq89abrxjd3hhl05gjniv6ms76ndjlc168ydm8wamh9b"))))
+                "0kfdyvqd2dfrxll5bla8mm10xvpngshlmyjf6wic4wbafqflgxx5"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags
@@ -216,7 +229,7 @@ terminal using ncurses.")
 (define-public ncmpcpp
   (package
     (name "ncmpcpp")
-    (version "0.8.2")
+    (version "0.9.2")
     (source (origin
               (method url-fetch)
               (uri
@@ -224,7 +237,7 @@ terminal using ncurses.")
                               version ".tar.bz2"))
               (sha256
                (base32
-                "0m0mjb049sl62vx13h9waavysa30mk0rphacksnvf94n13la62v5"))))
+                "06rs734n120jp51hr0fkkhxrm7zscbhpdwls0m5b5cccghazdazs"))))
     (build-system gnu-build-system)
     (inputs `(("libmpdclient" ,libmpdclient)
               ("boost"  ,boost)
@@ -249,18 +262,19 @@ sort playlists, and a local file system browser.")
 (define-public mpdscribble
   (package
     (name "mpdscribble")
-    (version "0.22")
+    (version "0.23")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://www.musicpd.org/download/mpdscribble/"
-                                  version "/mpdscribble-" version ".tar.gz"))
+                                  version "/mpdscribble-" version ".tar.xz"))
               (sha256
                (base32
-                "0f0ybx380x2z2g1qvdndpvcrhkrgsfqckhz3ryydq2w3pl12v27z"))))
-    (build-system gnu-build-system)
-    (inputs `(("libmpdclient" ,libmpdclient)
+                "0s66zqscb44p88cl3kcv5jkjcqsskcnrv7xgrjhzrchf2kcpwf53"))))
+    (build-system meson-build-system)
+    (inputs `(("boost" ,boost)
               ("curl" ,curl)
-              ("glib" ,glib)))
+              ("libgcrypt" ,libgcrypt)
+              ("libmpdclient" ,libmpdclient)))
     (native-inputs `(("pkg-config" ,pkg-config)))
     (synopsis "MPD client for track scrobbling")
     (description "mpdscribble is a Music Player Daemon client which submits
@@ -271,20 +285,22 @@ information about tracks being played to a scrobbler, such as Libre.FM.")
 (define-public python-mpd2
   (package
     (name "python-mpd2")
-    (version "0.5.5")
+    (version "3.0.1")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "python-mpd2" version))
               (sha256
                (base32
-                "0laypd7h1j14b4vrmiayqlzdsh2j5hc3zv4l0fqvbrbw9y6763ii"))))
+                "0fxssbmnv44m03shjyvbqslc69b0160702j2s0flgvdxjggrnbjj"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
        (modify-phases %standard-phases
          (replace 'check
-           (lambda _ (invoke "python" "mpd_test.py"))))))
-    (native-inputs `(("python-mock" ,python-mock)))
+           (lambda _ (invoke "python" "-m" "pytest" "mpd/tests.py"))))))
+    (native-inputs
+     `(("python-mock" ,python-mock)
+       ("python-pytest" ,python-pytest)))
     (home-page "https://github.com/Mic92/python-mpd2")
     (synopsis "Python MPD client library")
     (description "Python-mpd2 is a Python library which provides a client
@@ -297,7 +313,7 @@ interface for the Music Player Daemon.")
 (define-public sonata
   (package
     (name "sonata")
-    (version "1.7b1")
+    (version "1.7.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -306,7 +322,7 @@ interface for the Music Player Daemon.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1npbxlrg6k154qybfd250nq2p96kxdsdkj9wwnp93gljnii3g8wh"))))
+                "0rl8w7s2asff626clzfvyz987l2k4ml5dg417mqp9v8a962q0v2x"))))
     (build-system python-build-system)
     (arguments
      `(#:modules ((guix build gnu-build-system)
@@ -366,3 +382,137 @@ MPD library in a similar way to many other music players' 'shuffle library'
 feature. ashuffle works like any other MPD client, and can be used alongside
 other MPD frontends.")
     (license license:expat)))
+
+(define-public mpdris2
+  (package
+    (name "mpdris2")
+    (version "0.8")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/eonpatapon/mpDris2")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "048b8acsd1b8kcxzd9fsh5p9g2an9c4rznicfcpyrsjz5syv894h"))))
+    (build-system gnu-build-system)
+    ;; Manually wrap the binary, because we’re not using python-build-system.
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'wrap-program
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out         (assoc-ref outputs "out"))
+                   (python-path (getenv "PYTHONPATH")))
+               (wrap-program (string-append out "/bin/mpDris2")
+                 `("PYTHONPATH" ":" prefix (,python-path)))
+               #t))))))
+    (inputs
+     `(("python-mpd2" ,python-mpd2)
+       ("python-dbus" ,python-dbus)
+       ("python-pygobject" ,python-pygobject)
+       ("python" ,python)))             ; Sets PYTHONPATH.
+    ;; For bootstrapping.
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("gettext" ,gettext-minimal)
+       ("which" ,which)
+       ("intltool" ,intltool)))
+    (synopsis "MPRIS V2.1 support for MPD")
+    (description "Client for the Music Player Daemon providing MPRIS 2
+support")
+    (home-page "https://github.com/eonpatapon/mpDris2")
+    (license license:gpl3+)))
+
+(define-public cantata
+  (package
+    (name "cantata")
+    (version "2.4.2")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/CDrummond/"
+                                  "cantata/releases/download/v" version "/"
+                                  "cantata-" version ".tar.bz2"))
+              (sha256
+               (base32
+                "10pcrpmb4n1mkgr21xd580nrbmh57q7s72cbs1zay847hc65vliy"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f)) ; No test suite
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("eudev", eudev)
+       ("ffmpeg" ,ffmpeg)
+       ("libcdio-paranoia" ,libcdio-paranoia)
+       ("libebur128" ,libebur128)
+       ("libmtp" ,libmtp)
+       ("mpg123" ,mpg123)
+       ("qtbase" ,qtbase)
+       ("qtmultimedia" ,qtmultimedia)
+       ("qtsvg" ,qtsvg)
+       ("taglib" ,taglib)
+       ("zlib" ,zlib)))
+    (synopsis "Graphical MPD Client")
+    (description "Cantata is a graphical client for the Music Player Daemon
+(MPD), using the Qt5 toolkit.  Its user interface is highly customizable,
+supporting multiple collections, ratings, and dynamic playlists.  A local cache
+of the music library will be created to provide a hierarchy of albums and
+artists along with albumart.")
+    (home-page "https://github.com/cdrummond/cantata")
+    (license license:gpl3+)))
+
+(define-public mcg
+  (package
+    (name "mcg")
+    (version "2.1.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://gitlab.com/coderkun/mcg")
+         (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "01iqxydssxyi4s644dwl64vm7xhn0szd99hdpywbipvb7kwp5196"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("glib:bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("avahi" ,avahi)
+       ("dconf" ,dconf)
+       ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
+       ("gtk+" ,gtk+)
+       ("python-pygobject" ,python-pygobject)))
+    (arguments
+     `(#:imported-modules ((guix build glib-or-gtk-build-system)
+                           ,@%python-build-system-modules)
+       #:modules ((guix build python-build-system)
+                  ((guix build glib-or-gtk-build-system) #:prefix glib-or-gtk:)
+                  (guix build utils))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'wrap-program
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((prog (string-append (assoc-ref outputs "out")
+                                        "/bin/mcg")))
+               (wrap-program prog
+                 `("PYTHONPATH" = (,(getenv "PYTHONPATH")))
+                 `("GI_TYPELIB_PATH" = (,(getenv "GI_TYPELIB_PATH"))))
+               #t)))
+         (add-after 'wrap-program 'glib-or-gtk-wrap
+           (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap)))))
+    (synopsis "Covergrid for the MPD")
+    (description
+     "mcg (CoverGrid) is a client for the Music Player Daemon (MPD), focusing
+on albums instead of single tracks.  It is not intended to be a replacement
+for your favorite MPD client but an addition to get a better
+album-experience.")
+    (home-page "https://gitlab.com/coderkun/mcg")
+    (license license:gpl3+)))

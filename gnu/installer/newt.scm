@@ -30,6 +30,7 @@
   #:use-module (gnu installer newt page)
   #:use-module (gnu installer newt partition)
   #:use-module (gnu installer newt services)
+  #:use-module (gnu installer newt substitutes)
   #:use-module (gnu installer newt timezone)
   #:use-module (gnu installer newt user)
   #:use-module (gnu installer newt utils)
@@ -46,6 +47,7 @@
   (newt-init)
   (clear-screen)
   (set-screen-size!)
+  (syslog "Display is ~ax~a.~%" (screen-columns) (screen-rows))
   (push-help-line
    (format #f (G_ "Press <F1> for installation parameters."))))
 
@@ -100,6 +102,9 @@ problem. The backtrace is displayed below. Please report it by email to \
 (define (network-page)
   (run-network-page))
 
+(define (substitutes-page)
+  (run-substitutes-page))
+
 (define (hostname-page)
   (run-hostname-page))
 
@@ -107,7 +112,7 @@ problem. The backtrace is displayed below. Please report it by email to \
   (run-user-page))
 
 (define (partition-page)
-  (run-partioning-page))
+  (run-partitioning-page))
 
 (define (services-page)
   (run-services-page))
@@ -129,6 +134,7 @@ problem. The backtrace is displayed below. Please report it by email to \
    (locale-page locale-page)
    (menu-page menu-page)
    (network-page network-page)
+   (substitutes-page substitutes-page)
    (timezone-page timezone-page)
    (hostname-page hostname-page)
    (user-page user-page)

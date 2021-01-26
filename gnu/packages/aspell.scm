@@ -2,13 +2,16 @@
 ;;; Copyright © 2013, 2014, 2015, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
-;;; Copyright © 2016, 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Christopher Andersson <christopher@8bits.nu>
 ;;; Copyright © 2016 Theodoros Foradis <theodoros@foradis.org>
-;;; Copyright © 2016, 2017, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2019, 2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Jens Mølgaard <jens@zete.tk>
 ;;; Copyright © 2020 Timotej Lazar <timotej.lazar@araneo.si>
 ;;; Copyright © 2020 Marcin Karpezo <sirmacik@wioo.waw.pl>
+;;; Copyright © 2020 Jonathan Brielmaier <jonathan.brielmaier@web.de>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Noah Landis <noahlandis@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -33,7 +36,9 @@
   #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages bison)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages ncurses)
   #:use-module (gnu packages perl)
   #:use-module (ice-9 match))
 
@@ -166,6 +171,13 @@ dictionaries, including personal ones.")
          (hash (content-hash sha256))))
       (home-page "https://www.softcatala.org/pub/softcatala/aspell/"))))
 
+(define-public aspell-dict-cs
+  (aspell-dictionary "cs" "Czech"
+                     #:version "20040614-1"
+                     #:sha256
+                     (base32
+                      "0rihj4hsw96pd9casvmpvw3r8040pfa28p1h73x4vyn20zwr3h01")))
+
 (define-public aspell-dict-de
   (aspell-dictionary "de" "German"
                      #:version "20161207-7-0"
@@ -271,6 +283,7 @@ dictionaries, including personal ones.")
 (define-public aspell-dict-mi
   (aspell-dictionary "mi" "Maori"
                      #:version "0.50-0"
+                     #:prefix "aspell-"
                      #:sha256
                      (base32
                       "12bxplpd348yx8d2q8qvahi9dlp7qf28qmanzhziwc7np8rixvmy")))
@@ -286,6 +299,7 @@ dictionaries, including personal ones.")
 (define-public aspell-dict-nn
   (aspell-dictionary "nn" "Norwegian Nynorsk"
                      #:version "0.50.1-1"
+                     #:prefix "aspell-"
                      #:sha256
                      (base32
                       "0w2k5l5rbqpliripgqwiqixz5ghnjf7i9ggbrc4ly4vy1ia10rmc")))
@@ -293,6 +307,7 @@ dictionaries, including personal ones.")
 (define-public aspell-dict-pl
   (aspell-dictionary "pl" "Polish"
                      #:version "0.51-0"
+                     #:prefix "aspell-"
                      #:sha256
                      (base32
                       "1a3ccji6k5gys7l3ilr2lh5pzxgzb7ipc5vb737svl6nqgdy8757")))
@@ -359,8 +374,8 @@ dictionaries, including personal ones.")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "http://downloads.sourceforge.net/wordlist/scowl-"
-                    version ".tar.gz"))
+                    "mirror://sourceforge/wordlist/SCOWL/"
+                    version "/scowl-" version ".tar.gz"))
               (sha256
                (base32
                 "11lkrnhwrf5mvrrq45k4mads3n9aswgac8dc25ba61c75alxb5rs"))))
@@ -404,8 +419,12 @@ dictionaries, including personal ones.")
                              (find-files "speller"
                                          ,(string-append language ".*\\.dic$"))))
 
-               (install-file ,(string-append "speller/" language ".aff")
-                             hunspell)
+               ;; Install affix files corresponding to installed dictionaries
+               (for-each (lambda (dic)
+                           (install-file (string-append
+                                           "speller/" (basename dic ".dic") ".aff")
+                                         hunspell))
+                         (find-files hunspell ".*\\.dic$"))
                (symlink hunspell (string-append myspell "/dicts"))
                (for-each (lambda (file)
                            (install-file file doc))
@@ -453,3 +472,49 @@ under permissive licensing terms.  See the 'Copyright' file."))))
 (define-word-list-dictionary hunspell-dict-en-us
   "en_US"
   (synopsis "Hunspell dictionary for United States English"))
+
+(define-public ispell
+  (package
+    (name "ispell")
+    (version "3.4.02")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://www.cs.hmc.edu/~geoff/tars/ispell-"
+                           version ".tar.gz"))
+       (sha256
+        (base32 "0b6rqzqjdhwf323sf1dv8qzx5pxa5asz618922r59zjp65660yb6"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:parallel-build? #f
+       #:tests? #f ; no tests
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             ;; Based on local.h.linux
+             (let* ((grep (assoc-ref inputs "grep"))
+                    (out (assoc-ref outputs "out")))
+               (call-with-output-file "local.h"
+                 (lambda (port)
+                   (format port "#define MINIMENU~%")
+                   (format port "#define USG~%")
+                   (format port "#define HAS_RENAME~%")
+                   (format port "#define CC \"gcc\"~%")
+                   (format port "#define POUNDBANG \"#!~a\"~%" (which "sh"))
+                   (format port "#define EGREPCMD \"~a/bin/grep -Ei\"~%" grep)
+                   (format port "#define BINDIR \"~a/bin\"~%" out)
+                   (format port "#define LIBDIR \"~a/lib/ispell\"~%" out)
+                   (format port "#define MAN1DIR \"~a/share/man/man1\"~%" out)
+                   (format port "#define MAN45DIR \"~a/share/man/man5\"~%" out))))
+             #t)))))
+    (inputs
+     `(("grep" ,grep)
+       ("ncurses" ,ncurses)))
+    (native-inputs
+     `(("bison" ,bison)))
+    (synopsis "Interactive spell-checking tool for Unix")
+    (description "Ispell is an interactive spell-checking tool supporting many
+European languages.")
+    (home-page "https://www.cs.hmc.edu/~geoff/ispell.html")
+    (license bsd-3)))

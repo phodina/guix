@@ -6,7 +6,7 @@
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Jonathan Brielmaier <jonathan.brielmaier@web.de>
-;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Vagrant Cascadian <vagrant@debian.org>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 Christopher Howard <christopher@librehacker.com>
@@ -53,7 +53,7 @@
 (define-public libusb
   (package
     (name "libusb")
-    (version "1.0.23")
+    (version "1.0.24")
     (source
      (origin
       (method url-fetch)
@@ -61,7 +61,7 @@
                           "releases/download/v" version
                           "/libusb-" version ".tar.bz2"))
       (sha256
-       (base32 "13dd2a9x290d1q8nb1lqiaf36grcvns5ripk5k2xm0lajmpc04fv"))))
+       (base32 "0amilbi5qncdnrds3ji21vbiz1wvdm1fwp5qrxnk49xkyy2jdzby"))))
     (build-system gnu-build-system)
 
     ;; XXX: Enabling udev is now recommended, but eudev indirectly depends on
@@ -351,16 +351,15 @@ I2C and SPI devices attached to the USB Hub.")
 (define-public libplist
   (package
     (name "libplist")
-    (version "2.1.0")
+    (version "2.2.0")
     (source
      (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/libimobiledevice/libplist")
-             (commit version)))
-       (file-name (git-file-name name version))
+       (method url-fetch)
+       (uri (string-append "https://github.com/libimobiledevice"
+                           "/libplist/releases/download/" version
+                           "/libplist-" version ".tar.bz2"))
        (sha256
-        (base32 "02vraf4j46bp746s0gz7vga2gv2dy3zd1v1bsy9x8algg9fpcb7n"))))
+        (base32 "16mxdwaw01x9a3adf0yj3bqjc7afpf2vm1n5hkgj3i3y6zjifmaa"))))
     (build-system gnu-build-system)
     (arguments
      `(;; Tests fail randomly when run in parallel because several of them write
@@ -375,7 +374,7 @@ I2C and SPI devices attached to the USB Hub.")
        ("libtool" ,libtool)
        ("pkg-config" ,pkg-config)
        ("python-cython" ,python-cython))) ; to build Python bindings
-    (home-page "https://www.libimobiledevice.org/")
+    (home-page "https://libimobiledevice.org/")
     (synopsis "C library to handle Apple Property List files")
     (description "This package provides a small portable C library to handle
 Apple Property List files in binary or XML.")
@@ -384,80 +383,52 @@ Apple Property List files in binary or XML.")
 (define-public libusbmuxd
   (package
     (name "libusbmuxd")
-    (version "1.0.10")
+    (version "2.0.2")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://www.libimobiledevice.org/downloads/"
-                                  "libusbmuxd-" version ".tar.bz2"))
+              (uri (string-append "https://github.com/libimobiledevice"
+                                  "/libusbmuxd/releases/download/" version
+                                  "/libusbmuxd-" version ".tar.bz2"))
               (sha256
                (base32
-                "1wn9zq2224786mdr12c5hxad643d29wg4z6b7jn888jx4s8i78hs"))))
+                "084vg570g1qb506jd7axg6c080mfsmbf52v3lngzlknsaf2q0snc"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("libplist" ,libplist)))
-    (home-page "https://www.libimobiledevice.org/")
+    (home-page "https://libimobiledevice.org/")
     (synopsis "Library to multiplex connections from and to iOS devices")
     (description "This package provides a client library to multiplex
 connections from and to iOS devices by connecting to a socket provided by a
 @code{usbmuxd} daemon.")
     (license license:lgpl2.1+)))
 
-;; These patches are needed to build with Python 3.8.
-(define %libimobiledevice-patches
-  (list (origin
-          (method url-fetch)
-          (uri (string-append "https://github.com/libimobiledevice/libimobiledevice"
-                              "/commit/1ff3448d2e27f1bac8d2f0af8b8e952854860278.patch"))
-          (file-name "libimobiledevice-python-config.patch")
-          (sha256
-           (base32
-            "1mkwhp8vvhajij29jk3w4rkgcfh8d8waf908drh3076k70hb6i8y")))
-        (origin
-          (method url-fetch)
-          (uri (string-append "https://github.com/libimobiledevice/libimobiledevice"
-                              "/commit/eea4f1be9107c8ab621fd71460e47d0d38e55d71.patch"))
-          (file-name "libimobiledevice-python-3.8-compat.patch")
-          (sha256
-           (base32
-            "1zz8v7kgwyq5ck1qp03l29pcmljygnjwls9d6q28nv5pkwa6848w")))))
-
 (define-public libimobiledevice
   (package
     (name "libimobiledevice")
-    (version "1.2.0")
+    (version "1.3.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://www.libimobiledevice.org/downloads/"
-                                  "libimobiledevice-" version ".tar.bz2"))
-              ;; Note: Remove the 'force-bootstrap' phase and the autoconf
-              ;; inputs below when removing these patches.
-              (patches %libimobiledevice-patches)
+              (uri (string-append "https://github.com/libimobiledevice"
+                                  "/libimobiledevice/releases/download/"
+                                  version "/libimobiledevice-" version
+                                  ".tar.bz2"))
               (sha256
                (base32
-                "0dqhy4qwj30mw8pwckvjmgnj1qqrh6p8c6jknmhvylshhzh0ssvq"))))
+                "1xmhfnypg6j7shl73wfkrrn4mj9dh8qzaj3258q9zkb5cc669wjk"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:phases (modify-phases %standard-phases
-                  (add-before 'bootstrap 'force-bootstrap
-                    (lambda _
-                      (delete-file "configure")
-                      #t)))))
+     '(#:configure-flags '("PYTHON_VERSION=3")))
     (propagated-inputs
-     `(("openssl" ,openssl-1.0)
+     `(("openssl" ,openssl)
        ("libplist" ,libplist)
        ("libusbmuxd" ,libusbmuxd)))
     (inputs
      `(("python" ,python)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
-       ("python-cython" ,python-cython)
-
-       ;; These are required because we patch and bootstrap the build system.
-       ("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("libtool" ,libtool)))
-    (home-page "https://www.libimobiledevice.org/")
+       ("python-cython" ,python-cython)))
+    (home-page "https://libimobiledevice.org/")
     (synopsis "Protocol library and tools to communicate with Apple devices")
     (description "libimobiledevice is a software library that talks the
 protocols to support Apple devices.  It allows other software to easily access
@@ -470,21 +441,22 @@ music and video to the device.")
 (define-public ifuse
   (package
     (name "ifuse")
-    (version "1.1.3")
+    (version "1.1.4")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://www.libimobiledevice.org/downloads/"
-                                  "ifuse-" version ".tar.bz2"))
+              (uri (string-append "https://github.com/libimobiledevice"
+                                  "/ifuse/releases/download/" version
+                                  "/ifuse-" version ".tar.bz2"))
               (sha256
                (base32
-                "1p9a4n36jb194cnp6v57cz2bggwbywaz8pbpb95ch83pzdkdx257"))))
+                "11wdv44qwia77sh38n36809ysaib52rwd4fvqwb5ybsbz4p70l1m"))))
     (inputs
      `(("fuse" ,fuse)
        ("libimobiledevice" ,libimobiledevice)))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (build-system gnu-build-system)
-    (home-page "https://www.libimobiledevice.org/")
+    (home-page "https://libimobiledevice.org/")
     (synopsis "Mount iOS devices")
     (description "This package provides @command{ifuse}, a command to mount
 iOS devices and access their contents.")
@@ -493,14 +465,15 @@ iOS devices and access their contents.")
 (define-public usbmuxd
   (package
     (name "usbmuxd")
-    (version "1.1.0")
+    (version "1.1.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://www.libimobiledevice.org/downloads/"
-                                  "usbmuxd-" version ".tar.bz2"))
+              (uri (string-append "https://github.com/libimobiledevice"
+                                  "/usbmuxd/releases/download/" version
+                                  "/usbmuxd-" version ".tar.bz2"))
               (sha256
                (base32
-                "0bdlc7a8plvglqqx39qqampqm6y0hcdws76l9dffwl22zss4i29y"))))
+                "17idzpxrvkbff0jpynf35df95lh7wsm8vndynp63bxib2w09gv60"))))
     (inputs
      `(("libplist" ,libplist)
        ("libusb" ,libusb)
@@ -508,7 +481,7 @@ iOS devices and access their contents.")
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (build-system gnu-build-system)
-    (home-page "https://www.libimobiledevice.org/")
+    (home-page "https://libimobiledevice.org/")
     (synopsis "Multiplex connections over USB to an iOS device")
     (description "This package provides the @code{usbmuxd} daemon
 which multiplexes connections over USB to an iOS device.  To
@@ -519,14 +492,14 @@ over USB.")
 (define-public libmtp
   (package
     (name "libmtp")
-    (version "1.1.17")
+    (version "1.1.18")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://sourceforge/libmtp/libmtp/" version
                                  "/libmtp-" version ".tar.gz"))
              (sha256
               (base32
-               "1p3r38nvdip40ab1h4scj3mzfjkx6kd14szjqyw9r6wz5pslr8zq"))))
+               "1w41l93yi0dmw218daiw36rylkc8rammxx37csh1ij24q18gx03j"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -591,7 +564,7 @@ devices.")
 (define-public hidapi
   (package
     (name "hidapi")
-    (version "0.9.0")
+    (version "0.10.1")
     (source
      (origin
        (method git-fetch)
@@ -600,7 +573,7 @@ devices.")
              (commit (string-append "hidapi-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1p4g8lgwj4rki6lbn5l6rvwj0xlbn1xfh4d255bg5pvgczmwmc4i"))))
+        (base32 "1nr4z4b10vpbh3ss525r7spz4i43zim2ba5qzfl15dgdxshxxivb"))))
     (build-system gnu-build-system)
     (inputs
      `(("libusb" ,libusb)

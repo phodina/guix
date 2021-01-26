@@ -737,16 +737,15 @@ information is written to standard error.")
 (define-public asunder
   (package
     (name "asunder")
-    (version "2.9.6")
-    (source (origin
-              (method url-fetch)
-              (uri
-               (string-append "http://www.littlesvr.ca/asunder/releases/asunder-"
-                              version
-                              ".tar.bz2"))
-              (sha256
-               (base32
-                "1ycnd82lh7qy1pcbngd4b41s16j9hnm2kyfrncg4cwr3bfk7yg7a"))))
+    (version "2.9.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "http://www.littlesvr.ca/asunder/releases/asunder-"
+                       version ".tar.bz2"))
+       (sha256
+        (base32 "1x3l308ss0iqhz90qyjb94gyd8b4piyrm2nzjmg5kf049k9prjf1"))))
     (build-system glib-or-gtk-build-system)
     (arguments
      '(#:out-of-source? #f
@@ -954,7 +953,7 @@ CD data, and more.  It's mostly compatible with @code{cdrtools}.")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "https://downloads.sourceforge.net/cdemu/libmirage-"
+                    "mirror://sourceforge/cdemu/libmirage/libmirage-"
                     version ".tar.bz2"))
               (sha256
                (base32
@@ -983,7 +982,7 @@ the data stored in various image formats.")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "https://downloads.sourceforge.net/cdemu/cdemu-daemon/"
+                    "mirror://sourceforge/cdemu/cdemu-daemon/"
                     "cdemu-daemon-" version ".tar.bz2"))
               (sha256
                (base32
@@ -1012,7 +1011,7 @@ drive and disc (including CD-ROMs and DVD-ROMs).")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "https://downloads.sourceforge.net/cdemu/cdemu-client-"
+                    "mirror://sourceforge/cdemu/cdemu-client/cdemu-client-"
                     version ".tar.bz2"))
               (sha256
                (base32

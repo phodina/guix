@@ -8,7 +8,38 @@
      ;; For use with 'bug-reference-prog-mode'.
      (bug-reference-url-format . "http://bugs.gnu.org/%s")
      (bug-reference-bug-regexp
-      . "<https?://\\(debbugs\\|bugs\\)\\.gnu\\.org/\\([0-9]+\\)>")))
+      . "<https?://\\(debbugs\\|bugs\\)\\.gnu\\.org/\\([0-9]+\\)>")
+
+     ;; Emacs-Guix
+     (eval . (setq-local guix-directory
+                         (locate-dominating-file default-directory
+                                                 ".dir-locals.el")))
+
+     ;; Geiser
+     ;; This allows automatically setting the `geiser-guile-load-path'
+     ;; variable when using various Guix checkouts (e.g., via git worktrees).
+     (eval . (let ((root-dir-unexpanded (locate-dominating-file
+                                         default-directory ".dir-locals.el")))
+               ;; While Guix should in theory always have a .dir-locals.el
+               ;; (we are reading this file, after all) there seems to be a
+               ;; strange problem where this code "escapes" to some other buffers,
+               ;; at least vc-mode.  See:
+               ;;   https://lists.gnu.org/archive/html/guix-devel/2020-11/msg00296.html
+               ;; Upstream report: <https://bugs.gnu.org/44698>
+               ;; Hence the following "when", which might otherwise be unnecessary;
+               ;; it prevents causing an error when root-dir-unexpanded is nil.
+               (when root-dir-unexpanded
+                 (let* ((root-dir (expand-file-name root-dir-unexpanded))
+                        ;; Workaround for bug https://issues.guix.gnu.org/43818.
+                        (root-dir* (directory-file-name root-dir)))
+
+                   (unless (boundp 'geiser-guile-load-path)
+                     (defvar geiser-guile-load-path '()))
+                   (make-local-variable 'geiser-guile-load-path)
+                   (require 'cl-lib)
+                   (cl-pushnew root-dir* geiser-guile-load-path
+                               :test #'string-equal)))))))
+
  (c-mode          . ((c-file-style . "gnu")))
  (scheme-mode
   .
@@ -37,9 +68,10 @@
    (eval . (put 'with-file-lock 'scheme-indent-function 1))
    (eval . (put 'with-file-lock/no-wait 'scheme-indent-function 1))
    (eval . (put 'with-profile-lock 'scheme-indent-function 1))
-   (eval . (put 'with-writable-file 'scheme-indent-function 1))
+   (eval . (put 'with-writable-file 'scheme-indent-function 2))
 
    (eval . (put 'package 'scheme-indent-function 0))
+   (eval . (put 'package/inherit 'scheme-indent-function 1))
    (eval . (put 'origin 'scheme-indent-function 0))
    (eval . (put 'build-system 'scheme-indent-function 0))
    (eval . (put 'bag 'scheme-indent-function 0))
@@ -89,9 +121,10 @@
    (eval . (put 'let-system 'scheme-indent-function 1))
 
    (eval . (put 'with-database 'scheme-indent-function 2))
-   (eval . (put 'call-with-transaction 'scheme-indent-function 2))
+   (eval . (put 'call-with-database 'scheme-indent-function 1))
+   (eval . (put 'call-with-transaction 'scheme-indent-function 1))
    (eval . (put 'with-statement 'scheme-indent-function 3))
-   (eval . (put 'call-with-retrying-transaction 'scheme-indent-function 2))
+   (eval . (put 'call-with-retrying-transaction 'scheme-indent-function 1))
    (eval . (put 'call-with-savepoint 'scheme-indent-function 1))
    (eval . (put 'call-with-retrying-savepoint 'scheme-indent-function 1))
 

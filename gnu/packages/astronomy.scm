@@ -1,10 +1,11 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
-;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2018–2021 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 by Amar Singh <nly@disroot.org>
 ;;; Copyright © 2020 R Veera Kumar <vkor@vkten.in>
 ;;; Copyright © 2020 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2021 Sharlatan Hellseher <sharlatanus@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -51,25 +52,26 @@
   #:use-module (gnu packages xorg)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (ice-9 match)
   #:use-module (srfi srfi-1))
 
 (define-public cfitsio
   (package
     (name "cfitsio")
-    (version "3.47")
+    (version "3.49")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
              "http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/"
-             name "-" version ".tar.gz"))
+             "cfitsio-" version ".tar.gz"))
        (sha256
-        (base32 "1vzlxnrjckz78p2wf148v2z3krkwnykfqvlj42sz3q711vqid1a1"))))
+        (base32 "1cyl1qksnkl3cq1fzl4dmjvkd6329b57y9iqyv44wjakbh6s4rav"))))
     (build-system gnu-build-system)
     ;; XXX Building with curl currently breaks wcslib.  It doesn't use
     ;; pkg-config and hence won't link with -lcurl.
     (arguments
-     `(#:tests? #f ; no tests
+     `(#:tests? #f                      ; no tests
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'patch-paths
@@ -128,7 +130,7 @@ header.")
 (define-public gnuastro
   (package
     (name "gnuastro")
-    (version "0.12")
+    (version "0.14")
     (source
      (origin
        (method url-fetch)
@@ -136,13 +138,15 @@ header.")
                            version ".tar.lz"))
        (sha256
         (base32
-         "0ypk1c72q778cixfa52vjxzbd5m4qc6hfjgnipy16sfa7mnspmyf"))))
+         "1xp6n42qxv0x6yigi2w2l5k8006smv27lhrcssysgsvzbydghzg5"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--disable-static")))
     (inputs
      `(("cfitsio" ,cfitsio)
+       ("curl" ,curl-minimal)
        ("gsl" ,gsl)
+       ("libgit2" ,libgit2)
        ("libjpeg" ,libjpeg-turbo)
        ("libtiff" ,libtiff)
        ("wcslib" ,wcslib)
@@ -156,10 +160,56 @@ header.")
 programs for the manipulation and analysis of astronomical data.")
     (license license:gpl3+)))
 
+(define-public sextractor
+  (package
+    (name "sextractor")
+    (version "2.25.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/astromatic/sextractor")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0q69n3nyal57h3ik2xirwzrxzljrwy9ivwraxzv9566vi3n4z5mw"))))
+    (build-system gnu-build-system)
+    ;; NOTE: (Sharlatan-20210124T103117+0000): Building with `atlas' is failing
+    ;; due to missing shared library which required on configure phase. Switch
+    ;; build to use `openblas' instead. It requires FFTW with single precision
+    ;; `fftwf'.
+    (arguments
+     `(#:configure-flags
+       (list
+        "--enable-openblas"
+        (string-append
+         "--with-openblas-libdir=" (assoc-ref %build-inputs "openblas") "/lib")
+        (string-append
+         "--with-openblas-incdir=" (assoc-ref %build-inputs "openblas") "/include")
+        (string-append
+         "--with-fftw-libdir=" (assoc-ref %build-inputs "fftw") "/lib")
+        (string-append
+         "--with-fftw-incdir=" (assoc-ref %build-inputs "fftw") "/include"))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)))
+    (inputs
+     `(("openblas" ,openblas)
+       ("fftw" ,fftwf)))
+    (home-page "http://www.astromatic.net/software/sextractor")
+    (synopsis "Extract catalogs of sources from astronomical images")
+    (description
+     "SExtractor is a program that builds a catalogue of objects from an
+astronomical image.  Although it is particularly oriented towards reduction of
+large scale galaxy-survey data, it can perform reasonably well on moderately
+crowded star fields.")
+    (license license:gpl3+)))
+
 (define-public stellarium
   (package
     (name "stellarium")
-    (version "0.20.2")
+    (version "0.20.4")
     (source
      (origin
        (method url-fetch)
@@ -167,7 +217,7 @@ programs for the manipulation and analysis of astronomical data.")
                            "/releases/download/v" version
                            "/stellarium-" version ".tar.gz"))
        (sha256
-        (base32 "16symz212vjvhfabh39a68qf7d0rm574c6djlibj2qd1q9jgj3j0"))))
+        (base32 "1253zlr0mi4kdbj119spxk7spg4rkahb4rlpd0hz1d81mnv3n0v3"))))
     (build-system cmake-build-system)
     (inputs
      `(("qtbase" ,qtbase)
@@ -299,6 +349,55 @@ Mechanics, Astrometry and Astrodynamics library.")
     (license (list license:lgpl2.0+
                    license:gpl2+)))) ; examples/transforms.c & lntest/*.c
 
+(define-public libpasastro
+  ;; NOTE: (Sharlatan-20210122T215921+0000): the version tag has a build
+  ;; error on spice which is resolved with the latest commit.
+  (let ((commit "e3c218d1502a18cae858c83a9a8812ab197fcb60")
+        (revision "1"))
+    (package
+      (name "libpasastro")
+      (version (git-version "1.4.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/pchev/libpasastro")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0asp2sn34nds5va2ghppwc41vb6j3d1mf049j949rgrll817kx47"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f
+         #:make-flags
+         (list
+          ,(match (or (%current-target-system) (%current-system))
+             ((or "aarch64-linux" "armhf-linux" "i686-linux" "x86_64-linux")
+              "OS_TARGET=linux")
+             (_ #f))
+          ,(match (or (%current-target-system) (%current-system))
+             ("i686-linux" "CPU_TARGET=i386")
+             ("x86_64-linux" "CPU_TARGET=x86_64")
+             ((or "armhf-linux" "aarch64-linux") "CPU_TARGET=armv7l")
+             (_ #f))
+          (string-append "PREFIX=" (assoc-ref %outputs "out")))
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'configure))))
+      (home-page "https://github.com/pchev/libpasastro")
+      (synopsis "Interface to astronomy library for use from Pascal program")
+      (description
+       "This package provides shared libraries to interface Pascal program with
+standard astronomy libraries:
+
+@itemize
+@item @code{libpasgetdss.so}: Interface with GetDSS to work with DSS images.
+@item @code{libpasplan404.so}: Interface with Plan404 to compute planets position.
+@item @code{libpaswcs.so}: Interface with libwcs to work with FITS WCS.
+@item @code{libpasspice.so}: To work with NAIF/SPICE kernel.
+@end itemize\n")
+      (license license:gpl2+))))
+
 (define-public xplanet
   (package
     (name "xplanet")
@@ -328,7 +427,7 @@ Mechanics, Astrometry and Astrodynamics library.")
        ("freetype" ,freetype)
        ("pango" ,pango)
        ("giflib" ,giflib)
-       ("libjpeg", libjpeg-turbo)
+       ("libjpeg" ,libjpeg-turbo)
        ("libpng" ,libpng)
        ("libtiff" ,libtiff)
        ("netpbm" ,netpbm)

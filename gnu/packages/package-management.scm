@@ -1,20 +1,22 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2017, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Muriithi Frederick Muriuki <fredmanglis@gmail.com>
 ;;; Copyright © 2017, 2018 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2017 Roel Janssen <roel@gnu.org>
-;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2018, 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018 Sou Bunnbu <iyzsong@member.fsf.org>
 ;;; Copyright © 2018, 2019 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Jonathan Brielmaier <jonathan.brielmaier@web.de>
 ;;; Copyright © 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;; Copyright © 2020 Jesse Gibbons <jgibbons2357+guix@gmail.com>
+;;; Copyright © 2020 Martin Becze <mjbecze@riseup.net>
+;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -49,6 +51,7 @@
   #:use-module (gnu packages cpio)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
+  #:use-module (gnu packages databases)
   #:use-module (gnu packages dbm)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages file)
@@ -114,13 +117,23 @@
                         arch "-linux"
                         "/20131110/guile-2.0.9.tar.xz"))))
 
+;; NOTE: The commit IDs used here form a linked list threaded through the git
+;; history. In a phenomenon known as boot-stripping, not only the head of this
+;; list is used, but also a few older versions, when a guix from this package is
+;; used to build something also depending on guix.
+;;
+;; Therefore, if, by accident, you set this package to a non-existent commit ID,
+;; it is insufficient to simply correct it with the latest commit.
+;; Instead, please push one commit that rolls back Guix to before the mistake,
+;; and then another that points to the first one. That way, the faulty commit
+;; won't appear on the linked list.
 (define-public guix
   ;; Latest version of Guix, which may or may not correspond to a release.
   ;; Note: the 'update-guix-package.scm' script expects this definition to
   ;; start precisely like this.
-  (let ((version "1.1.0")
-        (commit "218a67dfabcdf592325a8f8c49b86478f69ff589")
-        (revision 18))
+  (let ((version "1.2.0")
+        (commit "d4a562ba7ac4549cc2d57eff7f440026a2045f45")
+        (revision 11))
     (package
       (name "guix")
 
@@ -132,11 +145,11 @@
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://git.savannah.gnu.org/r/guix.git")
+                      (url "https://git.savannah.gnu.org/git/guix.git")
                       (commit commit)))
                 (sha256
                  (base32
-                  "0zjpfagd377i977xv1ljzl0cj4vlrk4qpyqmlhclcdkjfbbachaq"))
+                  "05gkymzfl0fdb2zjyvvn7w15arfnn7fgpbn3bch9r5yc7ldxg868"))
                 (file-name (string-append "guix-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
@@ -185,6 +198,13 @@
                         (substitute* "nix/local.mk"
                           (("^sysvinitservicedir = .*$")
                            (string-append "sysvinitservicedir = \
+$(prefix)/etc/init.d\n")))
+
+                        ;; Install OpenRC init files to $(prefix)/etc rather
+                        ;; than to /etc.
+                        (substitute* "nix/local.mk"
+                          (("^openrcservicedir = .*$")
+                           (string-append "openrcservicedir = \
 $(prefix)/etc/init.d\n")))
 
                         (invoke "sh" "bootstrap")))
@@ -275,17 +295,24 @@ $(prefix)/etc/init.d\n")))
                                (guile  ,@(if (%current-target-system)
                                              '((assoc-ref native-inputs "guile"))
                                              '((assoc-ref inputs "guile"))))
+                               (avahi  (assoc-ref inputs "guile-avahi"))
                                (gcrypt (assoc-ref inputs "guile-gcrypt"))
                                (json   (assoc-ref inputs "guile-json"))
                                (sqlite (assoc-ref inputs "guile-sqlite3"))
+                               (zlib   (assoc-ref inputs "guile-zlib"))
+                               (lzlib  (assoc-ref inputs "guile-lzlib"))
+                               (zstd   (assoc-ref inputs "guile-zstd"))
                                (git    (assoc-ref inputs "guile-git"))
                                (bs     (assoc-ref inputs
                                                   "guile-bytestructures"))
                                (ssh    (assoc-ref inputs "guile-ssh"))
                                (gnutls (assoc-ref inputs "gnutls"))
                                (locales (assoc-ref inputs "glibc-utf8-locales"))
-                               (deps   (list gcrypt json sqlite gnutls
-                                             git bs ssh))
+                               (deps   (list gcrypt json sqlite gnutls git
+                                             bs ssh zlib lzlib zstd))
+                               (deps*  ,@(if (%current-target-system)
+                                             '(deps)
+                                             '((cons avahi deps))))
                                (effective
                                 (read-line
                                  (open-pipe* OPEN_READ
@@ -295,13 +322,13 @@ $(prefix)/etc/init.d\n")))
                                         (map (cut string-append <>
                                                   "/share/guile/site/"
                                                   effective)
-                                             (delete #f deps))
+                                             (delete #f deps*))
                                         ":"))
                                (gopath (string-join
                                         (map (cut string-append <>
                                                   "/lib/guile/" effective
                                                   "/site-ccache")
-                                             (delete #f deps))
+                                             (delete #f deps*))
                                         ":"))
                                (locpath (string-append locales "/lib/locale")))
 
@@ -315,16 +342,28 @@ $(prefix)/etc/init.d\n")))
                             (let ((bash (assoc-ref inputs "bash")))
                               (substitute* (string-append out "/bin/guix")
                                 (("^#!.*/bash") (string-append "#! " bash "/bin/bash")))))
-                          #t))))))
+                          #t)))
+
+                    ;; The 'guix' executable has 'OUT/libexec/guix/guile' as
+                    ;; its shebang; that should remain unchanged, thus remove
+                    ;; the 'patch-shebangs' phase, which would otherwise
+                    ;; change it to 'GUILE/bin/guile'.
+                    (delete 'patch-shebangs))))
       (native-inputs `(("pkg-config" ,pkg-config)
 
                        ;; Guile libraries are needed here for
                        ;; cross-compilation.
                        ("guile" ,guile-3.0-latest) ;for faster builds
                        ("gnutls" ,gnutls)
+                       ,@(if (%current-target-system)
+                             '()
+                             `(("guile-avahi" ,guile-avahi)))
                        ("guile-gcrypt" ,guile-gcrypt)
                        ("guile-json" ,guile-json-4)
                        ("guile-sqlite3" ,guile-sqlite3)
+                       ("guile-zlib" ,guile-zlib)
+                       ("guile-lzlib" ,guile-lzlib)
+                       ("guile-zstd" ,guile-zstd)
                        ("guile-ssh" ,guile-ssh)
                        ("guile-git" ,guile-git)
 
@@ -341,9 +380,6 @@ $(prefix)/etc/init.d\n")))
       (inputs
        `(("bzip2" ,bzip2)
          ("gzip" ,gzip)
-         ("zlib" ,zlib)              ;for 'guix publish'
-         ("lzlib" ,lzlib)            ;for 'guix publish' and 'guix substitute'
-
          ("sqlite" ,sqlite)
          ("libgcrypt" ,libgcrypt)
 
@@ -372,12 +408,30 @@ $(prefix)/etc/init.d\n")))
 
          ("glibc-utf8-locales" ,glibc-utf8-locales)))
       (propagated-inputs
-       `(("gnutls" ,(if (%current-target-system) gnutls-3.6.14 guile3.0-gnutls))
+       `(("gnutls" ,(if (%current-target-system) gnutls/fixed gnutls))
+         ;; Avahi requires "glib" which doesn't cross-compile yet.
+         ,@(if (%current-target-system)
+               '()
+               `(("guile-avahi" ,guile-avahi)))
          ("guile-gcrypt" ,guile-gcrypt)
          ("guile-json" ,guile-json-4)
          ("guile-sqlite3" ,guile-sqlite3)
          ("guile-ssh" ,guile-ssh)
-         ("guile-git" ,guile-git)))
+         ("guile-git" ,guile-git)
+         ("guile-zlib" ,guile-zlib)
+         ("guile-lzlib" ,guile-lzlib)
+         ("guile-zstd" ,guile-zstd)))
+      (native-search-paths
+       (list (search-path-specification
+              (variable "GUIX_EXTENSIONS_PATH")
+              (files '("share/guix/extensions")))
+
+             ;; (guix git) and (guix build download) honor this variable whose
+             ;; name comes from OpenSSL.
+             (search-path-specification
+              (variable "SSL_CERT_DIR")
+              (separator #f)                      ;single entry
+              (files '("etc/ssl/certs")))))
 
       (home-page "https://www.gnu.org/software/guix/")
       (synopsis "Functional package manager for installed software packages and versions")
@@ -404,7 +458,7 @@ the Nix package manager.")
      (fold alist-delete (package-native-inputs guix)
            '("po4a" "graphviz" "help2man")))
     (inputs
-     `(("gnutls" ,guile3.0-gnutls)
+     `(("gnutls" ,gnutls)
        ("guile-git" ,guile-git)
        ("guile-json" ,guile-json-3)
        ("guile-gcrypt" ,guile-gcrypt)
@@ -544,18 +598,17 @@ out) and returning a package that uses that as its 'source'."
 (define-public nix
   (package
     (name "nix")
-    (version "2.3.6")
+    (version "2.3.10")
     (source (origin
              (method url-fetch)
-             (uri (string-append "http://nixos.org/releases/nix/nix-"
+             (uri (string-append "https://nixos.org/releases/nix/nix-"
                                  version "/nix-" version ".tar.xz"))
              (sha256
               (base32
-               "128xf2as0y7hr28x575pbf9lkjpxr9hsxknbavv4p7ywr4lhbs85"))))
+               "1axphwkx270c10bjyn4icq9wlx46npgnw0qkpymigl23vramxa58"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:configure-flags
-       (list "--sysconfdir=/etc")
+     `(#:configure-flags '("--sysconfdir=/etc" "--enable-gc")
        #:phases
        (modify-phases %standard-phases
          (replace 'install
@@ -620,10 +673,29 @@ letting you install them apart in distinct directories and then create
 symlinks to the files in a common directory such as /usr/local.")
     (license license:gpl3+)))
 
+(define-public xstow
+  (package
+    (name "xstow")
+    (version "1.0.2")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/xstow/xstow-"
+                                  version ".tar.bz2"))
+              (sha256
+               (base32
+                "1vy6lcswpkixh7h5mvsmq2wbcih6lpsmcva3m7v6f5npllciy13g"))))
+    (build-system gnu-build-system)
+    (synopsis "Replacement of GNU Stow written in C++")
+    (description
+     "XStow is a replacement of GNU Stow written in C++.  It supports all
+features of Stow with some extensions.")
+    (home-page "http://xstow.sourceforge.net/")
+    (license license:gpl2)))
+
 (define-public rpm
   (package
     (name "rpm")
-    (version "4.14.2.1")
+    (version "4.16.1.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://ftp.rpm.org/releases/rpm-"
@@ -631,7 +703,7 @@ symlinks to the files in a common directory such as /usr/local.")
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1nmck2fq9h85fgs3zhh6w1avlw5y16cbz5khd459ry3jfd5w4f8i"))))
+                "1k6ank2aad7r503w12m6m494mxr6iccj52wqhwbc94pwxsf34mw3"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--with-external-db"   ;use the system's bdb
@@ -655,6 +727,7 @@ symlinks to the files in a common directory such as /usr/local.")
        ("nss" ,nss)
        ("nspr" ,nspr)
        ("libarchive" ,libarchive)
+       ("libgcrypt" ,libgcrypt)
        ("file" ,file)
        ("bzip2" ,bzip2)
        ("zlib" ,zlib)
@@ -728,10 +801,64 @@ environments.")
 (define-public python2-anaconda-client
   (package-with-python2 python-anaconda-client))
 
-(define-public python-conda
+(define-public python-conda-package-handling
   (package
-    (name "python-conda")
-    (version "4.3.16")
+    (name "python-conda-package-handling")
+    (version "1.6.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/conda/conda-package-handling/")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0bqbs6a8jbjmbn47n5n1p529cx7pf4vgfnhqca9mflgidfb5i0jf"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'use-unmodified-libarchive
+           (lambda _
+             (substitute* "setup.py"
+               (("archive_and_deps") "archive"))
+             #t))
+         (replace 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (invoke "pytest" "-vv" "tests"
+                     "-k"
+                     (string-append
+                      ;; TODO: these three fail because the mocker fixture
+                      ;; cannot be found
+                      "not test_rename_to_trash"
+                      " and not test_api_extract_tarball_with_libarchive_import_error"
+                      " and not test_delete_trash"
+                      ;; TODO: this one does not raise an exception when it
+                      ;; should.
+                      " and not test_secure_refusal_to_extract_abs_paths")))))))
+    (propagated-inputs
+     `(("python-six" ,python-six)
+       ("python-tqdm" ,python-tqdm)))
+    (inputs
+     `(("libarchive" ,libarchive)))
+    (native-inputs
+     `(("python-cython" ,python-cython)
+       ("python-pytest" ,python-pytest)
+       ("python-pytest-cov" ,python-pytest-cov)
+       ("python-mock" ,python-mock)))
+    (home-page "https://conda.io")
+    (synopsis "Create and extract conda packages of various formats")
+    (description
+     "This library is an abstraction of Conda package handling and a tool for
+extracting, creating, and converting between formats.")
+    (license license:bsd-3)))
+
+(define-public conda
+  (package
+    (name "conda")
+    (version "4.8.3")
     (source
      (origin
        (method git-fetch)
@@ -741,58 +868,118 @@ environments.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "1qwy0awx4qf2pbk8z2b7q6wdcq7mvwpxxjhg27mbirdvs5hw7hb2"))))
+         "0iv1qzk21jsk6vdp3106xvpvl68zgfdqb3kyzpya87jhkl204l7r"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'fix-permissions
+           (lambda _
+             ;; This file is no longer writable after downloading with
+             ;; 'git-fetch'
+             (make-file-writable
+              "tests/conda_env/support/saved-env/environment.yml")
+             #t))
+         (add-after 'unpack 'correct-python-executable-name
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((python (assoc-ref inputs "python-wrapper")))
+               #;
+               (substitute* "conda/common/path.py"
+                 (("python_version or ''")
+                  "python_version or '3'"))
+               (substitute* "conda/core/initialize.py"
+                 (("python_exe = join")
+                  (format #f "python_exe = \"~a/bin/python\" #"
+                          python))))
+             #t))
+         (add-after 'unpack 'do-not-use-python-root-as-prefix
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out"))
+                   (python (assoc-ref inputs "python-wrapper")))
+               (substitute* "tests/core/test_initialize.py"
+                 (("\"\"\"\\) % conda_prefix")
+                  (format #f "\"\"\") % \"~a\"" python))
+                 (("CONDA_PYTHON_EXE \"%s\"' % join\\(conda_prefix")
+                  (format #f "CONDA_PYTHON_EXE \"%s\"' % join(\"~a\""
+                          python))
+                 (("conda_prefix = abspath\\(sys.prefix\\)")
+                  (format #f "conda_prefix = abspath(\"~a\")" out)))
+               (substitute* "conda/base/context.py"
+                 (("os.chdir\\(sys.prefix\\)")
+                  (format #f "os.chdir(\"~a\")" out))
+                 (("sys.prefix, '.condarc'")
+                  (format #f "\"~a\", '.condarc'" out))
+                 (("return abspath\\(sys.prefix\\)")
+                  (format #f "return abspath(\"~a\")" out))
+                 (("os.path.join\\(sys.prefix, bin_dir, exe\\)")
+                  (format #f "\"~a/bin/conda\"" out))
+                 (("'CONDA_EXE', sys.executable")
+                  (format #f "'CONDA_EXE', \"~a/bin/conda\"" out))))
+             #t))
          (add-before 'build 'create-version-file
            (lambda _
              (with-output-to-file "conda/.version"
                (lambda () (display ,version)))
              #t))
-         (add-before 'check 'remove-failing-tests
-           (lambda _
-             ;; These tests require internet/network access
-             (let ((network-tests '("test_cli.py"
-                                    "test_create.py"
-                                    "test_export.py"
-                                    "test_fetch.py"
-                                    "test_history.py"
-                                    "test_info.py"
-                                    "test_install.py"
-                                    "test_priority.py"
-                                    "conda_env/test_cli.py"
-                                    "conda_env/test_create.py"
-                                    "conda_env/specs/test_notebook.py"
-                                    "conda_env/utils/test_notebooks.py"
-                                    "core/test_index.py"
-                                    "core/test_repodata.py")))
-               (with-directory-excursion "tests"
-                 (for-each delete-file network-tests)
-
-                 ;; FIXME: This test creates a file, then deletes it and tests
-                 ;; that the file was deleted.  For some reason it fails when
-                 ;; building with guix, but does not when you run it in the
-                 ;; directory left when you build with the --keep-failed
-                 ;; option
-                 (delete-file "gateways/disk/test_delete.py")
-                 ;; This file is no longer writable after downloading with 'git-fetch'
-                 (make-file-writable "conda_env/support/saved-env/environment.yml")
-                 #t))))
          (replace 'check
            (lambda _
              (setenv "HOME" "/tmp")
-             (invoke "py.test"))))))
-    (native-inputs
-     `(("python-cytoolz" ,python-cytoolz)
-       ("python-ruamel.yaml" ,python-ruamel.yaml)
-       ("python-requests" ,python-requests)
+             (invoke "py.test" "-vv"
+                     "-k"
+                     (string-append
+                      "not integration"
+                      ;; This one reports a newer version of conda than
+                      ;; expected.
+                      " and not test_auto_update_conda"
+                      ;; This fails because the output directory is not a
+                      ;; Conda environment.
+                      " and not test_list"
+                      ;; This fails because we patched the default root
+                      ;; prefix.
+                      " and not test_default_target_is_root_prefix"
+                      ;; TODO: I don't understand what this failure means
+                      " and not test_PrefixData_return_value_contract"
+                      ;; TODO: same here
+                      " and not test_install_1"
+                      ;; Not sure if this is really wrong.  This fails because
+                      ;; /gnu/store/...python-conda-4.8.3/bin/python
+                      ;; is not /gnu/store/...python-wrapper-3.8.2/bin/python
+                      " and not test_make_entry_point"))))
+         (add-after 'install 'init
+           ;; This writes a whole bunch of shell initialization files to the
+           ;; prefix directory.  Many features of conda can only be used after
+           ;; running "conda init".
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (add-installed-pythonpath inputs outputs)
+             (setenv "HOME" "/tmp")
+
+             ;; "conda init" insists on using sudo, because it is hell-bent on
+             ;; modifying system files.
+             (mkdir-p "/tmp/fake-sudo")
+             (with-output-to-file "/tmp/fake-sudo/sudo"
+               (lambda () (format #t "#!~/bin/sh~%exec $@" (which "sh"))))
+             (chmod "/tmp/fake-sudo/sudo" #o700)
+             (setenv "PATH" (string-append "/tmp/fake-sudo:"
+                                           (getenv "PATH")))
+
+             (invoke (string-append (assoc-ref outputs "out")
+                                    "/bin/conda")
+                     "init"))))))
+    (inputs
+     `(("python-wrapper" ,python-wrapper)))
+    (propagated-inputs
+     `(("python-anaconda-client" ,python-anaconda-client)
+       ("python-conda-package-handling" ,python-conda-package-handling)
+       ("python-cytoolz" ,python-cytoolz)
        ("python-pycosat" ,python-pycosat)
        ("python-pytest" ,python-pytest)
-       ("python-responses" ,python-responses)
        ("python-pyyaml" ,python-pyyaml)
-       ("python-anaconda-client" ,python-anaconda-client)))
+       ("python-requests" ,python-requests)
+       ("python-responses" ,python-responses)
+       ("python-ruamel.yaml" ,python-ruamel.yaml)
+       ("python-tqdm" ,python-tqdm)
+       ;; XXX: This is dragged in by libarchive and is needed at runtime.
+       ("zstd" ,zstd)))
     (home-page "https://github.com/conda/conda")
     (synopsis "Cross-platform, OS-agnostic, system-level binary package manager")
     (description
@@ -800,76 +987,11 @@ environments.")
 is the package manager used by Anaconda installations, but it may be used for
 other systems as well.  Conda makes environments first-class citizens, making
 it easy to create independent environments even for C libraries.  Conda is
-written entirely in Python.
-
-This package provides Conda as a library.")
+written entirely in Python.")
     (license license:bsd-3)))
 
-(define-public python2-conda
-  (let ((base (package-with-python2
-               (strip-python2-variant python-conda))))
-    (package (inherit base)
-             (native-inputs
-              `(("python2-enum34" ,python2-enum34)
-                ,@(package-native-inputs base))))))
-
-(define-public conda
-  (package (inherit python-conda)
-    (name "conda")
-    (arguments
-     (substitute-keyword-arguments (package-arguments python-conda)
-       ((#:phases phases)
-        `(modify-phases ,phases
-           (replace 'build
-             (lambda* (#:key outputs #:allow-other-keys)
-               ;; This test fails when run before installation.
-               (delete-file "tests/test_activate.py")
-
-               ;; Fix broken defaults
-               (substitute* "conda/base/context.py"
-                 (("return sys.prefix")
-                  (string-append "return \"" (assoc-ref outputs "out") "\""))
-                 (("return (prefix_is_writable\\(self.root_prefix\\))" _ match)
-                  (string-append "return False if self.root_prefix == self.conda_prefix else "
-                                 match)))
-
-               ;; The util/setup-testing.py is used to build conda in
-               ;; application form, rather than the default, library form.
-               ;; With this, we are able to run commands like `conda --help`
-               ;; directly on the command line
-               (invoke "python" "utils/setup-testing.py" "build_py")))
-           (replace 'install
-             (lambda* (#:key inputs outputs #:allow-other-keys)
-               (let* ((out (assoc-ref outputs "out"))
-                      (target (string-append out "/lib/python"
-                                             (python-version
-                                              (assoc-ref inputs "python"))
-                                             "/site-packages/")))
-                 ;; The installer aborts if the target directory is not on
-                 ;; PYTHONPATH.
-                 (setenv "PYTHONPATH"
-                         (string-append target ":" (getenv "PYTHONPATH")))
-
-                 ;; And it aborts if the directory doesn't exist.
-                 (mkdir-p target)
-                 (invoke "python" "utils/setup-testing.py" "install"
-                         (string-append "--prefix=" out)))))
-           ;; The "activate" and "deactivate" scripts don't need wrapping.
-           ;; They also break when they are renamed.
-           (add-after 'wrap 'undo-wrap
-             (lambda* (#:key outputs #:allow-other-keys)
-               (with-directory-excursion (string-append (assoc-ref outputs "out") "/bin/")
-                 (delete-file "deactivate")
-                 (rename-file ".deactivate-real" "deactivate")
-                 (delete-file "activate")
-                 (rename-file ".activate-real" "activate")
-                 #t)))))))
-    (description
-     "Conda is a cross-platform, Python-agnostic binary package manager.  It
-is the package manager used by Anaconda installations, but it may be used for
-other systems as well.  Conda makes environments first-class citizens, making
-it easy to create independent environments even for C libraries.  Conda is
-written entirely in Python.")))
+(define-public python-conda
+  (deprecated-package "python-conda" conda))
 
 (define-public gwl
   (package
@@ -919,10 +1041,106 @@ environments.")
     ;; and the fonts included in this package are licensed OFL1.1.
     (license (list license:gpl3+ license:agpl3+ license:silofl1.1))))
 
+(define-public guix-build-coordinator
+  (let ((commit "b5d998c22f7d4db3e26166ada9489af363f2d47a")
+        (revision "15"))
+    (package
+      (name "guix-build-coordinator")
+      (version (git-version "0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://git.cbaines.net/git/guix/build-coordinator")
+                      (commit commit)))
+                (sha256
+                 (base32
+                  "1jfmwfx7cvfsvryc3w70nw6mixdamjymkqh40qkv99sspkd86dkr"))
+                (file-name (string-append name "-" version "-checkout"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:modules (((guix build guile-build-system)
+                     #:select (target-guile-effective-version))
+                    ,@%gnu-build-system-modules)
+         #:imported-modules ((guix build guile-build-system)
+                             ,@%gnu-build-system-modules)
+         #:phases
+         (modify-phases %standard-phases
+           (add-before 'build 'set-GUILE_AUTO_COMPILE
+             (lambda _
+               ;; To avoid warnings relating to 'guild'.
+               (setenv "GUILE_AUTO_COMPILE" "0")
+               #t))
+           (add-after 'install 'wrap-executable
+             (lambda* (#:key inputs outputs #:allow-other-keys)
+               (let* ((out (assoc-ref outputs "out"))
+                      (bin (string-append out "/bin"))
+                      (guile (assoc-ref inputs "guile"))
+                      (version (target-guile-effective-version))
+                      (scm (string-append out "/share/guile/site/" version))
+                      (go  (string-append out "/lib/guile/" version "/site-ccache")))
+                 (for-each
+                  (lambda (file)
+                    (simple-format (current-error-port) "wrapping: ~A\n" file)
+                    (wrap-program file
+                      `("PATH" ":" prefix
+                        (,bin
+                         ;; Support building without sqitch as an input, as it
+                         ;; can't be cross-compiled yet
+                         ,@(or (and=> (assoc-ref inputs "sqitch")
+                                      list)
+                               '())))
+                      `("GUILE_LOAD_PATH" ":" prefix
+                        (,scm ,(getenv "GUILE_LOAD_PATH")))
+                      `("GUILE_LOAD_COMPILED_PATH" ":" prefix
+                        (,go ,(getenv "GUILE_LOAD_COMPILED_PATH")))))
+                  (find-files bin)))
+               #t))
+           (delete 'strip))))             ; As the .go files aren't compatible
+      (native-inputs
+       `(("pkg-config" ,pkg-config)
+         ("autoconf" ,autoconf)
+         ("automake" ,automake)
+         ("gnutls" ,gnutls)
+
+         ;; Guile libraries are needed here for cross-compilation.
+         ("guile-json" ,guile-json-4)
+         ("guile-gcrypt" ,guile-gcrypt)
+         ("guix" ,guix)
+         ("guile-prometheus" ,guile-prometheus)
+         ("guile-fibers" ,guile-fibers)
+         ("guile-lib" ,guile-lib)
+         ("guile" ,@(assoc-ref (package-native-inputs guix) "guile"))))
+      (inputs
+       `(("guile" ,@(assoc-ref (package-native-inputs guix) "guile"))
+         ("sqlite" ,sqlite)
+         ,@(if (hurd-target?)
+               '()
+               `(("sqitch" ,sqitch)))))
+      (propagated-inputs
+       `(,@(if (hurd-target?)
+               '()
+               `(("guile-fibers" ,guile-fibers)))
+         ("guile-prometheus" ,guile-prometheus)
+         ("guile-gcrypt" ,guile-gcrypt)
+         ("guile-json" ,guile-json-4)
+         ("guile-lib" ,guile-lib)
+         ("guile-lzlib" ,guile-lzlib)
+         ("guile-zlib" ,guile-zlib)
+         ("guile-sqlite3" ,guile-sqlite3)
+         ("guix" ,guix)
+         ("gnutls" ,gnutls)))
+      (home-page "https://git.cbaines.net/guix/build-coordinator/")
+      (synopsis "Tool to help build derivations")
+      (description
+       "The Guix Build Coordinator helps with performing lots of builds across
+potentially many machines, and with doing something with the results and
+outputs of those builds.")
+      (license license:gpl3+))))
+
 (define-public guix-jupyter
   (package
     (name "guix-jupyter")
-    (version "0.1.0")
+    (version "0.2.1")
     (home-page "https://gitlab.inria.fr/guix-hpc/guix-kernel")
     (source (origin
               (method git-fetch)
@@ -930,15 +1148,7 @@ environments.")
                                   (commit (string-append "v" version))))
               (sha256
                (base32
-                "01z7jjkc7r7lj6637rcgpz40v8xqqyfp6871h94yvcnwm7zy9h1n"))
-              (modules '((guix build utils)))
-              (snippet
-               '(begin
-                  ;; Allow builds with Guile 3.0.
-                  (substitute* "configure.ac"
-                    (("^GUILE_PKG.*")
-                     "GUILE_PKG([3.0 2.2])\n"))
-                  #t))
+                "1kqwfp5h95s6mirq5nbydsbmlhsinn32grz1ld5mbxvhl6sn2i0j"))
               (file-name (string-append "guix-jupyter-" version "-checkout"))))
     (build-system gnu-build-system)
     (arguments
@@ -1014,14 +1224,14 @@ in an isolated environment, in separate namespaces.")
 (define-public gcab
   (package
     (name "gcab")
-    (version "1.2")
+    (version "1.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/gcab/"
                                   version "/gcab-" version ".tar.xz"))
               (sha256
                (base32
-                "038h5kk41si2hc9d9169rrlvp8xgsxq27kri7hv2vr39gvz9cbas"))))
+                "13q43iqld4l50yra45lhvkd376pn6qpk7rkx374zn8y9wsdzm9b7"))))
     (build-system meson-build-system)
     (native-inputs
      `(("glib:bin" ,glib "bin")         ; for glib-mkenums
@@ -1077,15 +1287,15 @@ for packaging and deployment of cross-compiled Windows applications.")
 (define-public libostree
   (package
     (name "libostree")
-    (version "2020.4")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append
-                    "https://github.com/ostreedev/ostree/releases/download/v"
-                    (version-major+minor version) "/libostree-" version ".tar.xz"))
-              (sha256
-               (base32
-                "0s13cjrpx5r1dc9j9c9924zak45wl9nlbg9hiwgpsal80l92c39n"))))
+    (version "2020.8")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://github.com/ostreedev/ostree/releases/download/v"
+             (version-major+minor version) "/libostree-" version ".tar.xz"))
+       (sha256
+        (base32 "16v73v63h16ika73kgh2cvgm0v27r2d48m932mbj3xm6s295kapx"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
@@ -1131,14 +1341,14 @@ the boot loader configuration.")
 (define-public flatpak
   (package
    (name "flatpak")
-   (version "1.8.1")
+   (version "1.10.1")
    (source
     (origin
      (method url-fetch)
      (uri (string-append "https://github.com/flatpak/flatpak/releases/download/"
                          version "/flatpak-" version ".tar.xz"))
      (sha256
-      (base32 "1bcymiv0yzs05rplbyzpimb1k17s345a95y0dhw7jh56z5k4p4b6"))))
+      (base32 "1dywvfpmszvp2wy5hvpzy8z6gz2gzmi9p302njp52p9vpx14ydf1"))))
 
    ;; Wrap 'flatpak' so that GIO_EXTRA_MODULES is set, thereby allowing GIO to
    ;; find the TLS backend in glib-networking.
@@ -1174,7 +1384,7 @@ cp -r /tmp/locale/*/en_US.*")))
               (("/usr/bin/python3") (which "python3")))
             #t))
         ;; Many tests fail for unknown reasons, so we just run a few basic
-        ;; tests
+        ;; tests.
         (replace 'check
           (lambda _
             (setenv "HOME" "/tmp")
@@ -1219,3 +1429,53 @@ applications")
    (description "Flatpak is a system for building, distributing, and running
 sandboxed desktop applications on GNU/Linux.")
    (license license:lgpl2.1+)))
+
+(define-public akku
+  (package
+    (name "akku")
+    (version "1.0.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/akkuscm/akku.git")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256 (base32 "1dm32ws3nshnnscd7k75zswxxs1pp25y2q4k8j5ms241hz47by3c"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:phases (modify-phases %standard-phases
+                  (replace 'bootstrap
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (for-each patch-shebang
+                                '("bootstrap"
+                                  ".akku/env"))
+                      (let* ((home "/tmp")
+                             (datadir (string-append home "/.local/share/akku/")))
+                        (mkdir-p datadir)
+                        (invoke "touch" (string-append datadir "index.db"))
+                        (setenv "HOME" home))
+                      (invoke "./bootstrap")
+                      #t))
+                  (add-after 'install 'wrap-executables
+                    (lambda* (#:key outputs inputs #:allow-other-keys)
+                      (let ((out (assoc-ref outputs "out"))
+                            (curl (assoc-ref inputs "curl")))
+                        (wrap-program (string-append out "/bin/akku")
+                          `("LD_LIBRARY_PATH" ":" prefix (,(string-append curl "/lib"))))
+                        #t))))))
+    (native-inputs
+     `(("which" ,which)
+       ("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("guile" ,guile-3.0)
+       ("curl" ,curl)))
+    (home-page "https://akkuscm.org/")
+    (synopsis "Language package manager for Scheme")
+    (description
+     "Akku.scm is a project-based language package manager for R6RS and R7RS Scheme.
+It is mainly meant for programmers who develop portable programs or libraries in Scheme,
+but could potentially work for end-users of those programs.  It also has a translator
+from R7RS, which allows most R7RS code to run on R6RS implementations.")
+    (license license:gpl3+)))

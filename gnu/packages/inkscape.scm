@@ -5,6 +5,8 @@
 ;;; Copyright © 2017, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Boris A. Dekshteyn <boris.dekshteyn@gmail.com>
+;;; Copyright © 2020 Ekaitz Zarraga <ekaitz@elenq.tech>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -43,6 +45,7 @@
   #:use-module (gnu packages pdf)
   #:use-module (gnu packages popt)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages fontutils)
@@ -117,7 +120,7 @@ as the native format.")
 (define-public inkscape-1.0
   (package
     (name "inkscape")
-    (version "1.0")
+    (version "1.0.2")
     (source
      (origin
        (method url-fetch)
@@ -126,7 +129,7 @@ as the native format.")
                            "inkscape-" version ".tar.xz"))
        (sha256
         (base32
-         "1fwl7yjkykqb86555k4fm24inhc40mrvxqwgl2v2vi9alv8j7hc9"))
+         "12krl97a00gdcxxibsb7g2lgx5458mhx2437x0hvz350242j6gns"))
        (modules '((guix build utils)
                   (ice-9 format)))
        (snippet
@@ -249,7 +252,14 @@ endif()~%~%"
          (add-after 'install 'glib-or-gtk-compile-schemas
            (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-compile-schemas))
          (add-after 'glib-or-gtk-compile-schemas 'glib-or-gtk-wrap
-           (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap)))))
+           (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap))
+         (add-after 'install 'wrap-program
+           ;; Ensure Python is available at runtime.
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/inkscape")
+                 `("PYTHONPATH" ":" prefix (,(getenv "PYTHONPATH")))))
+             #t)))))
     (inputs
      `(("aspell" ,aspell)
        ("autotrace" ,autotrace)
@@ -274,15 +284,19 @@ endif()~%~%"
        ("popt" ,popt)
        ("potrace" ,potrace)
        ("lcms" ,lcms)
-       ("boost" ,boost)))
+       ("boost" ,boost)
+       ("python" ,python-wrapper)
+       ("python-scour" ,python-scour)
+       ("python-pyserial" ,python-pyserial)
+       ("python-numpy" ,python-numpy)
+       ("python-lxml" ,python-lxml)))
     (native-inputs
      `(("imagemagick" ,imagemagick)     ;for tests
        ("intltool" ,intltool)
        ("glib" ,glib "bin")
        ("googletest" ,googletest)
        ("perl" ,perl)
-       ("pkg-config" ,pkg-config)
-       ("python" ,python-wrapper)))
+       ("pkg-config" ,pkg-config)))
     (home-page "https://inkscape.org/")
     (synopsis "Vector graphics editor")
     (description "Inkscape is a vector graphics editor.  What sets Inkscape

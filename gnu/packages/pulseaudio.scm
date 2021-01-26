@@ -13,6 +13,7 @@
 ;;; Copyright © 2020 Amin Bandali <bandali@gnu.org>
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2020 Pierre Neidhardt <mail@ambrevar.xyz>
+;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -70,25 +71,41 @@
 (define-public libsndfile
   (package
     (name "libsndfile")
-    (version "1.0.28")
+    (version "1.0.30")
     (source (origin
              (method url-fetch)
-             (uri (string-append "http://www.mega-nerd.com/libsndfile/files/libsndfile-"
-                                 version ".tar.gz"))
-             (patches (search-patches "libsndfile-armhf-type-checks.patch"
-                                      "libsndfile-CVE-2017-8361-8363-8365.patch"
-                                      "libsndfile-CVE-2017-8362.patch"
-                                      "libsndfile-CVE-2017-12562.patch"))
+             (uri (string-append "https://github.com/erikd/libsndfile"
+                                 "/releases/download/v" version
+                                 "/libsndfile-" version ".tar.bz2"))
              (sha256
               (base32
-               "1afzm7jx34jhqn32clc5xghyjglccam2728yxlx37yj2y0lkkwqz"))))
+               "06k1wj3lwm7vf21s8yqy51k6nrkn9z610bj1gxb618ag5hq77wlx"))
+             (modules '((ice-9 textual-ports) (guix build utils)))
+             (snippet
+              '(begin
+                 ;; Remove carriage returns (CRLF) to prevent bogus
+                 ;; errors from bash like "$'\r': command not found".
+                 (let ((data (call-with-input-file
+                                 "tests/pedantic-header-test.sh.in"
+                               (lambda (port)
+                                 (string-join
+                                  (string-split (get-string-all port)
+                                                #\return))))))
+                   (call-with-output-file "tests/pedantic-header-test.sh.in"
+                     (lambda (port) (format port data))))
+
+                 ;; While at it, fix hard coded executable name.
+                 (substitute* "tests/test_wrapper.sh.in"
+                   (("^/usr/bin/env") "env"))
+                 #t))))
     (build-system gnu-build-system)
     (inputs
      `(("libvorbis" ,libvorbis)
        ("libogg" ,libogg)
        ("flac" ,flac)))
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("pkg-config" ,pkg-config)
+       ("python" ,python)))
     (home-page "http://www.mega-nerd.com/libsndfile/")
     (synopsis "Reading and writing files containing sampled sound")
     (description
@@ -224,7 +241,7 @@ rates.")
 
        ("eudev" ,eudev)))         ;for the detection of hardware audio devices
     (native-inputs
-     `(("check" ,check)
+     `(("check" ,check-0.14)
        ("gettext" ,gettext-minimal)
        ("glib:bin" ,glib "bin")
        ("m4" ,m4)
@@ -505,7 +522,7 @@ module-gsettings is loaded in the sound server.")
 (define-public rnnoise
   (package
     (name "rnnoise")
-    (version "0.9")
+    (version "0.91")
     (source
      (origin
        (method git-fetch)
@@ -514,7 +531,7 @@ module-gsettings is loaded in the sound server.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "18bq5b50xw3d4r1ildinafpg3isb9y216430h4mm9wr3ir7h76a7"))))
+        (base32 "11pwisbcks7g0mdgcrrv49v3ci1l6m26bbb7f67xz4pr1hai5dwc"))))
     (build-system cmake-build-system)
     (arguments
      ;; No tests.
@@ -538,7 +555,7 @@ The plugin is made to work with 1 or 2 channels (ladspa plugin),
 (define-public noisetorch
   (package
     (name "noisetorch")
-    (version "0.6.1-beta")
+    (version "0.8.3")
     (source
      (origin
        (method git-fetch)
@@ -547,7 +564,7 @@ The plugin is made to work with 1 or 2 channels (ladspa plugin),
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1jmh7204mhlabdn0azfjrm3kb944j24n0w0cwibqrs9lfgdn8k52"))))
+        (base32 "115sq4waq048bv82lnq5sblf62m50yvyakx7x06qq359v7qf5ji1"))))
     (build-system go-build-system)
     (arguments
      `(#:import-path "github.com/lawl/NoiseTorch"
@@ -571,6 +588,12 @@ The plugin is made to work with 1 or 2 channels (ladspa plugin),
                (with-output-to-file "version.go"
                  (lambda ()
                    (format #t "package main~%~%var version=~s~&" ,version))))
+             #t))
+         (add-after 'unpack 'disable-update-check.go
+           (lambda _
+             (with-directory-excursion "src/github.com/lawl/NoiseTorch"
+               (substitute* "main.go"
+                 ((".*updateCheck.*") "")))
              #t))
          (add-before 'build 'go-generate
            (lambda _

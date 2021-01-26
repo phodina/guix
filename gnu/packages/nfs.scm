@@ -62,7 +62,8 @@
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
-       `("--without-tcp-wrappers"
+       `("--disable-static"
+         "--without-tcp-wrappers"
          ,(string-append "--with-start-statd="
                          (assoc-ref %outputs "out") "/sbin/start-statd")
          ,(string-append "--with-krb5=" (assoc-ref %build-inputs "mit-krb5"))
@@ -116,10 +117,11 @@
      `(("keyutils" ,keyutils)
        ("libevent" ,libevent)
        ("libnfsidmap" ,libnfsidmap)
-       ("rpcsvc-proto" ,rpcsvc-proto) ;for 'rpcgen'
+       ("rpcsvc-proto" ,rpcsvc-proto)   ;for 'rpcgen'
        ("sqlite" ,sqlite)
        ("lvm2" ,lvm2)
-       ("util-linux" ,util-linux "lib")
+       ("util-linux" ,util-linux)           ; only for above substitutions
+       ("util-linux:lib" ,util-linux "lib") ; for libblkid
        ("mit-krb5" ,mit-krb5)
        ("libtirpc" ,libtirpc)
        ("python-wrapper" ,python-wrapper))) ;for the Python based tools

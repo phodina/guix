@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2012, 2015 Free Software Foundation, Inc.
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
@@ -70,15 +70,23 @@
 
 
 (define* (http-fetch uri #:key port (text? #f) (buffered? #t)
+                     (keep-alive? #f)
                      (verify-certificate? #t)
-                     (headers '((user-agent . "GNU Guile"))))
+                     (headers '((user-agent . "GNU Guile")))
+                     timeout)
   "Return an input port containing the data at URI, and the expected number of
 bytes available or #f.  If TEXT? is true, the data at URI is considered to be
 textual.  Follow any HTTP redirection.  When BUFFERED? is #f, return an
 unbuffered port, suitable for use in `filtered-port'.  HEADERS is an alist of
 extra HTTP headers.
 
+When KEEP-ALIVE? is true, the connection is marked as 'keep-alive' and PORT is
+not closed upon completion.
+
 When VERIFY-CERTIFICATE? is true, verify HTTPS server certificates.
+
+TIMEOUT specifies the timeout in seconds for connection establishment; when
+TIMEOUT is #f, connection establishment never times out.
 
 Raise an '&http-get-error' condition if downloading fails."
   (let loop ((uri (if (string? uri)
@@ -86,7 +94,8 @@ Raise an '&http-get-error' condition if downloading fails."
                       uri)))
     (let ((port (or port (guix:open-connection-for-uri uri
                                                        #:verify-certificate?
-                                                       verify-certificate?)))
+                                                       verify-certificate?
+                                                       #:timeout timeout)))
           (headers (match (uri-userinfo uri)
                      ((? string? str)
                       (cons (cons 'Authorization
@@ -99,11 +108,7 @@ Raise an '&http-get-error' condition if downloading fails."
         (setvbuf port 'none))
       (let*-values (((resp data)
                      (http-get uri #:streaming? #t #:port port
-                               ;; XXX: When #:keep-alive? is true, if DATA is
-                               ;; a chunked-encoding port, closing DATA won't
-                               ;; close PORT, leading to a file descriptor
-                               ;; leak.
-                               #:keep-alive? #f
+                               #:keep-alive? keep-alive?
                                #:headers headers))
                     ((code)
                      (response-code resp)))
@@ -155,13 +160,16 @@ Raise an '&http-get-error' condition if downloading fails."
 
 (define* (http-fetch/cached uri #:key (ttl (%http-cache-ttl)) text?
                             (write-cache dump-port)
-                            (cache-miss (const #t)))
+                            (cache-miss (const #t))
+                            (timeout 10))
   "Like 'http-fetch', return an input port, but cache its contents in
 ~/.cache/guix.  The cache remains valid for TTL seconds.
 
 Call WRITE-CACHE with the HTTP input port and the cache output port to write
 the data to cache.  Call CACHE-MISS with URI just before fetching data from
-URI."
+URI.
+
+TIMEOUT specifies the timeout in seconds for connection establishment."
   (let ((file (cache-file-for-uri uri)))
     (define (update-cache cache-port)
       (define cache-time
@@ -183,7 +191,7 @@ URI."
                        cache-port)
                      (raise c))))
         (let ((port (http-fetch uri #:text? text?
-                                #:headers headers)))
+                                #:headers headers #:timeout timeout)))
           (cache-miss uri)
           (mkdir-p (dirname file))
           (when cache-port

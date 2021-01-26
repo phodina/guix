@@ -1,11 +1,12 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013, 2014, 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015, 2016, 2018 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2020 Alexandros Theodotou <alex@zrythm.org>
 ;;; Copyright © 2020 Pjotr Prins <pjotr.guix@thebird.nl>
 ;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2020 pukkamustard <pukkamustard@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -267,17 +268,17 @@ and triple stores.")
 (define-public serd
   (package
     (name "serd")
-    (version "0.30.4")
+    (version "0.30.8")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://download.drobilla.net/serd-"
                                  version ".tar.bz2"))
              (sha256
               (base32
-               "168rn3m32c59qbar120f83ibcnnd987ij9p053kybgl7cmm6358c"))))
+               "11zs53yx40mv62vxsl15mvdh7s17y5v6lgcgahdvzxgnan7w8bk7"))))
     (build-system waf-build-system)
     (arguments
-     `(#:tests? #f ; no check target
+     `(#:tests? #f                      ; no check target
        #:phases
        (modify-phases %standard-phases
          (add-before
@@ -301,14 +302,14 @@ ideal (e.g. in LV2 implementations or embedded applications).")
 (define-public sord
   (package
     (name "sord")
-    (version "0.16.4")
+    (version "0.16.8")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://download.drobilla.net/sord-"
                                  version ".tar.bz2"))
              (sha256
               (base32
-               "1mwh4qvp9q4vgrgg5bz9sgjhxscncrylf2b06h0q55ddwzs9hndi"))))
+               "052y7zllrg0bzyky2rmrrwnnf16p6bk7q40rq9mgm0mzm8p9sa3w"))))
     (build-system waf-build-system)
     (arguments
      `(#:tests? #f                      ; no check target
@@ -413,3 +414,32 @@ parser and serializer.")
     (description
      "This package contains RDF Collections flattener for @code{rdflib}.")
     (license license:asl2.0)))
+
+(define-public hdt-cpp
+  (package
+    (name "hdt-cpp")
+    (version "1.3.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/rdfhdt/hdt-cpp")
+                     (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1vsq80jnix6cy78ayag7v8ajyw7h8dqyad1q6xkf2hzz3skvr34z"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("serd" ,serd)
+       ("zlib" ,zlib)))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (home-page "https://github.com/rdfhdt/hdt-cpp")
+    (synopsis "C++ implementation of the HDT compression format")
+    (description "Header Dictionary Triples (HDT) is a compression format for
+RDF data that can also be queried for Triple Patterns.  This package provides a
+C++ library as well as various command-line tools to to work with HDT.")
+(license license:lgpl2.1+)))

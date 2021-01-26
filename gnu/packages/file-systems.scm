@@ -3,8 +3,10 @@
 ;;; Copyright © 2017 Gábor Boskovits <boskovits@gmail.com>
 ;;; Copyright © 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2018 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2020 Raghav Gururajan <raghavgururajan@disroot.org>
+;;; Copyright © 2020 Morgan Smith <Morgan.J.Smith@outlook.com>
+;;; Copyright © 2021 raid5atemyhoemwork <raid5atemyhomework@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -30,12 +32,14 @@
   #:use-module (guix build-system copy)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system linux-module)
+  #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
   #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages acl)
   #:use-module (gnu packages attr)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
@@ -46,6 +50,7 @@
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages flex)
+  #:use-module (gnu packages gawk)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages kerberos)
@@ -57,6 +62,8 @@
   #:use-module (gnu packages photo)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-crypto)
+  #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages readline)
   #:use-module (gnu packages rsync)
@@ -64,6 +71,7 @@
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages valgrind)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages xml))
 
 (define-public autofs
@@ -138,6 +146,119 @@ large and/or frequently changing (network) environment.")
     (license (list license:bsd-3        ; modules/cyrus-sasl.c
                    license:gpl2+))))    ; the rest
 
+(define-public bindfs
+  (package
+    (name "bindfs")
+    (version "1.14.8")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://bindfs.org/downloads/bindfs-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "15y4brlcrqhxl6z73785m0dr1vp2q3wc6xss08x9jjr0apzmmjp5"))))
+    (build-system gnu-build-system)
+    (arguments
+     ;; XXX: The tests have no hope of passing until there is a "nogroup"
+     ;; entry (or at least some group to which the guix builder does
+     ;; not belong) in the /etc/group file of the build environment.
+     ;; Currently we do not have such a group.  Disable tests for now.
+     '(#:tests? #f))
+    (native-inputs
+       ;; Native inputs to run the tests
+       ;; ("ruby" ,ruby)
+       ;; ("valgrind" ,valgrind)
+       ;; ("which" ,which)
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("fuse" ,fuse)))
+    (home-page "https://bindfs.org")
+    (synopsis "Bind mount a directory and alter permission bits")
+    (description
+     "@command{bindfs} is a FUSE filesystem for mounting a directory to
+another location, similar to @command{mount --bind}.  It can be used for:
+@itemize
+@item Making a directory read-only.
+@item Making all executables non-executable.
+@item Sharing a directory with a list of users (or groups).
+@item Modifying permission bits using rules with chmod-like syntax.
+@item Changing the permissions with which files are created.
+@end itemize ")
+    (license license:gpl2+)))
+
+(define-public davfs2
+  (package
+    (name "davfs2")
+    (version "1.6.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://download.savannah.nongnu.org/releases/"
+                           "davfs2/davfs2-" version ".tar.gz"))
+       (sha256
+        (base32 "0l1vnv5lfigciwg17p10zxwhzj4qw2d9kw30prr7g4dxhmb6fsrf"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "--sysconfdir=/etc"        ; so man pages & binaries contain /etc
+             (string-append "--docdir=" (assoc-ref %outputs "out")
+                            "/share/doc/" ,name "-" ,version)
+             (string-append "ssbindir=" (assoc-ref %outputs "out") "/sbin")
+             ;; The default ‘davfs2’ user and group don't exist on most systems.
+             "dav_user=nobody"
+             "dav_group=nogroup")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'omit-redundancy
+           ;; Don't install redundant copies of /etc examples into /share.
+           (lambda _
+             (substitute* "etc/Makefile.in"
+               (("(dist_pkgdata_DATA =.*) davfs2.conf secrets(.*)"
+                 _ prefix suffix)
+                (string-append prefix suffix)))
+             #t))
+         (add-after 'unpack 'patch-file-names
+           (lambda _
+             ;; Don't auto-load the FUSE kernel module.  That's up to root.
+             ;; XXX If/when we restore the previous behaviour, make sure not
+             ;; to introduce a security hole when mount.davfs is setuid.
+             (substitute* "src/kernel_interface.c"
+               (("/sbin/modprobe") "/modprobe/disabled"))
+             #t))
+         (replace 'install
+           (lambda* (#:key make-flags outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (apply invoke "make" "install"
+                      (string-append "pkgsysconfdir=" out "/etc")
+                      make-flags)))))))
+    (inputs
+     `(("neon" ,neon)
+
+       ;; Neon requires but doesn't propagate zlib, nor would we want that.
+       ;; XZ as well, but that's already present in the build environment.
+       ("zlib" ,zlib)))
+    (home-page "https://savannah.nongnu.org/projects/davfs2")
+    (synopsis "Mount remote WebDAV resources in the local file system")
+    (description
+     "The @acronym{WebDAV, Web Distributed Authoring and Versioning} extension
+to the HTTP protocol defines a standard way to author resources on a remote Web
+server.  Davfs2 exposes such resources as a typical filesystem which can be used
+by standard applications with no built-in support for WebDAV, such as the GNU
+coreutils (@command{cp}, @command{mv}, etc.) or a graphical word processor.
+
+Davfs2 works with most WebDAV servers with no or little configuration.  It
+supports TLS (HTTPS), HTTP proxies, HTTP basic and digest authentication, and
+client certificates.  It performs extensive caching to avoid unnecessary network
+traffic, stay responsive even over slow or unreliable connections, and prevent
+data loss.  It aims to make use by unprivileged users as easy and secure as
+possible.
+
+However, davfs2 is not a full-featured WebDAV client.  The file system interface
+and the WebDAV protocol are quite different.  Translating between the two is not
+always possible.")
+    (license (list license:bsd-2        ; src/fuse_kernel.h
+                   license:gpl3+))))    ; everything else
+
 (define-public fsarchiver
   (package
     (name "fsarchiver")
@@ -210,8 +331,8 @@ from a mounted file system.")
     (license license:gpl2+)))
 
 (define-public bcachefs-tools
-  (let ((commit "ab2f1ec24f5307b0cf1e3c4ad19bf350d9f54d9f")
-        (revision "0"))
+  (let ((commit "db931a4571817d7d61be6bce306f1d42f7cd3398")
+        (revision "2"))
     (package
       (name "bcachefs-tools")
       (version (git-version "0.1" revision commit))
@@ -223,7 +344,7 @@ from a mounted file system.")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
-          (base32 "10pafvaxg1lvwnqjv3a4rsi96bghbpcsgh3vhqilndi334k3b0hd"))))
+          (base32 "1zl8lda6ni6rhsmsng6smrcjihy2irjf03h1m7nvkqmkhq44j80s"))))
       (build-system gnu-build-system)
       (arguments
        `(#:make-flags
@@ -234,7 +355,24 @@ from a mounted file system.")
                "PYTEST=pytest")
          #:phases
          (modify-phases %standard-phases
-           (delete 'configure))         ; no configure script
+           (delete 'configure)          ; no configure script
+           (add-after 'install 'promote-mount.bcachefs.sh
+             ;; XXX The (optional) mount.bcachefs helper requires rust:cargo.
+             ;; This alternative shell script does the job well enough for now.
+             (lambda* (#:key inputs outputs #:allow-other-keys)
+               (let ((out (assoc-ref outputs "out")))
+               (with-directory-excursion (string-append out "/sbin")
+                 (rename-file "mount.bcachefs.sh" "mount.bcachefs")
+                 ;; WRAP-SCRIPT causes bogus ‘Insufficient arguments’ errors.
+                 (wrap-program "mount.bcachefs"
+                   `("PATH" ":" prefix
+                     ,(cons (string-append out "/sbin")
+                            (map (lambda (input)
+                                     (string-append (assoc-ref inputs input)
+                                                    "/bin"))
+                                   (list "coreutils"
+                                         "gawk"
+                                         "util-linux"))))))))))
          #:tests? #f))                  ; XXX 6 valgrind tests fail
       (native-inputs
        `(("pkg-config" ,pkg-config)
@@ -243,15 +381,21 @@ from a mounted file system.")
          ("python-pytest" ,python-pytest)
          ("valgrind" ,valgrind)))
       (inputs
-       `(("keyutils" ,keyutils)
+       `(("eudev" ,eudev)
+         ("keyutils" ,keyutils)
          ("libaio" ,libaio)
          ("libscrypt" ,libscrypt)
          ("libsodium" ,libsodium)
          ("liburcu" ,liburcu)
-         ("util-linux" ,util-linux "lib") ; lib{blkid,uuid}
+         ("util-linux:lib" ,util-linux "lib") ; lib{blkid,uuid}
          ("lz4" ,lz4)
          ("zlib" ,zlib)
-         ("zstd:lib" ,zstd "lib")))
+         ("zstd:lib" ,zstd "lib")
+
+         ;; Only for mount.bcachefs.sh.
+         ("coreutils" ,coreutils-minimal)
+         ("gawk" ,gawk)
+         ("util-linux" ,util-linux)))
       (home-page "https://bcachefs.org/")
       (synopsis "Tools to create and manage bcachefs file systems")
       (description
@@ -266,6 +410,55 @@ In addition, bcachefs provides all the functionality of bcache, a block-layer
 caching system, and lets you assign different roles to each device based on its
 performance and other characteristics.")
       (license license:gpl2+))))
+
+(define-public bcachefs-tools/static
+   (package
+     (inherit bcachefs-tools)
+     (name "bcachefs-tools-static")
+     (arguments
+      (substitute-keyword-arguments (package-arguments bcachefs-tools)
+        ((#:make-flags make-flags)
+         `(append ,make-flags
+                  (list "LDFLAGS=-static")))))
+     (inputs
+      `(("eudev:static" ,eudev "static")
+        ("libscrypt:static" ,libscrypt "static")
+        ("lz4:static" ,lz4 "static")
+        ("util-linux:static" ,util-linux "static") ; lib{blkid,uuid}
+        ("zlib" ,zlib "static")
+        ("zstd:static" ,zstd "static")
+        ,@(package-inputs bcachefs-tools)))))
+
+(define-public bcachefs/static
+  (package
+    (name "bcachefs-static")
+    (version (package-version bcachefs-tools))
+    (build-system trivial-build-system)
+    (source #f)
+    (inputs
+     `(("bcachefs-tools" ,bcachefs-tools/static)))
+    (arguments
+     `(#:modules ((guix build utils))
+       #:builder
+       (begin
+         (use-modules (guix build utils)
+                      (ice-9 ftw)
+                      (srfi srfi-26))
+         (let* ((bcachefs-tools (assoc-ref %build-inputs "bcachefs-tools"))
+                (out (assoc-ref %outputs "out")))
+           (mkdir-p out)
+           (with-directory-excursion out
+             (install-file (string-append bcachefs-tools
+                                          "/sbin/bcachefs")
+                           "sbin")
+             (remove-store-references "sbin/bcachefs")
+             (invoke "sbin/bcachefs" "version") ; test suite
+             #t)))))
+    (home-page (package-home-page bcachefs-tools))
+    (synopsis "Statically-linked bcachefs command from bcachefs-tools")
+    (description "This package provides the statically-linked @command{bcachefs}
+from the bcachefs-tools package.  It is meant to be used in initrds.")
+    (license (package-license bcachefs-tools))))
 
 (define-public exfatprogs
   (package
@@ -501,8 +694,8 @@ non-determinism in the build process.")
            (lambda _ (invoke "./autogen.sh"))))))
     (native-inputs
      `(("pkg-config" ,pkg-config)
-       ("libtirpc", libtirpc)
-       ("rpcsvc-proto", rpcsvc-proto)
+       ("libtirpc" ,libtirpc)
+       ("rpcsvc-proto" ,rpcsvc-proto)
        ("python-2" ,python-2) ; must be version 2
        ("flex" ,flex)
        ("bison" ,bison)
@@ -512,15 +705,15 @@ non-determinism in the build process.")
        ("cmocka" ,cmocka)))
     (inputs
      `(("acl" ,acl)
-       ("fuse", fuse)
+       ("fuse" ,fuse)
        ("openssl" ,openssl)
        ("liburcu" ,liburcu)
        ("libuuid" ,util-linux "lib")
        ("libxml2" ,libxml2)
        ("readline" ,readline)
        ("zlib" ,zlib)
-       ("libaio", libaio)
-       ("rdma-core", rdma-core)))
+       ("libaio" ,libaio)
+       ("rdma-core" ,rdma-core)))
     (home-page "https://www.gluster.org")
     (synopsis "Distributed file system")
     (description "GlusterFS is a distributed scalable network file system
@@ -654,7 +847,7 @@ APFS.")
 (define-public zfs
   (package
     (name "zfs")
-    (version "0.8.2")
+    (version "2.0.1")
     (outputs '("out" "module" "src"))
     (source
       (origin
@@ -663,8 +856,7 @@ APFS.")
                               "/download/zfs-" version
                               "/zfs-" version ".tar.gz"))
           (sha256
-           (base32
-            "1f7aig15q3z832pr2n48j3clafic2yk1vvqlh28vpklfghjqwq27"))))
+           (base32 "0y3992l4nzr67q18lz1kizw0za1shvqbpmsjz9shv4frh5ihllbi"))))
     (build-system linux-module-build-system)
     (arguments
      `(;; The ZFS kernel module should not be downloaded since the license
@@ -678,8 +870,7 @@ APFS.")
            (lambda* (#:key outputs inputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (substitute* "configure"
-                 (("-/bin/sh") (string-append "-" (which "sh")))
-                 ((" /bin/sh") (string-append " " (which "sh"))))
+                 (("-/bin/sh") (string-append "-" (which "sh"))))
                (invoke "./configure"
                        "--with-config=all"
                        (string-append "--prefix=" out)
@@ -694,16 +885,33 @@ APFS.")
              (let ((out        (assoc-ref outputs "out"))
                    (src        (assoc-ref outputs "src"))
                    (util-linux (assoc-ref inputs "util-linux"))
-                   (nfs-utils  (assoc-ref inputs "nfs-utils")))
-               (substitute* "module/zfs/zfs_ctldir.c"
+                   (nfs-utils  (assoc-ref inputs "nfs-utils"))
+                   (kmod       (assoc-ref inputs "kmod-runtime")))
+               (substitute* "etc/Makefile.in"
+                 ;; This just contains an example configuration file for
+                 ;; configuring ZFS on traditional init systems, skip it
+                 ;; since we cannot use it anyway; the install target becomes
+                 ;; misdirected.
+                 (("= default ") "= "))
+               (substitute* "lib/libzfs/os/linux/libzfs_util_os.c"
+                 ;; Use path to /gnu/store/*-kmod in actual path that is exec'ed.
+                 (("\"/sbin/modprobe\"")
+                  (string-append "\"" kmod "/bin/modprobe" "\""))
+                 ;; Just use 'modprobe' in message to user, since Guix
+                 ;; does not have a traditional /sbin/
+                 (("'/sbin/modprobe ") "'modprobe "))
+               (substitute* "contrib/Makefile.in"
+                 ;; This is not configurable nor is its hard-coded /usr prefix.
+                 ((" initramfs") ""))
+               (substitute* "module/os/linux/zfs/zfs_ctldir.c"
                  (("/usr/bin/env\", \"umount")
                   (string-append util-linux "/bin/umount\", \"-n"))
                  (("/usr/bin/env\", \"mount")
                   (string-append util-linux "/bin/mount\", \"-n")))
-               (substitute* "lib/libzfs/libzfs_mount.c"
+               (substitute* "lib/libzfs/os/linux/libzfs_mount_os.c"
                  (("/bin/mount") (string-append util-linux "/bin/mount"))
                  (("/bin/umount") (string-append util-linux "/bin/umount")))
-               (substitute* "lib/libshare/nfs.c"
+               (substitute* "lib/libshare/os/linux/nfs.c"
                  (("/usr/sbin/exportfs")
                   (string-append nfs-utils "/sbin/exportfs")))
                (substitute* "config/zfs-build.m4"
@@ -721,7 +929,9 @@ APFS.")
                (substitute* "contrib/pyzfs/Makefile.in"
                  ((".*install-lib.*") ""))
                (substitute* '("Makefile.am" "Makefile.in")
-                 (("\\$\\(prefix)/src") (string-append src "/src"))))
+                 (("\\$\\(prefix)/src") (string-append src "/src")))
+               (substitute* (find-files "udev/rules.d/" ".rules.in$")
+                 (("/sbin/modprobe") (string-append kmod "/bin/modprobe"))))
              #t))
          (replace 'build
            (lambda _ (invoke "make")))
@@ -738,7 +948,6 @@ APFS.")
                        "INSTALL_MOD_STRIP=1")
                (install-file "contrib/bash_completion.d/zfs"
                              (string-append out "/share/bash-completion/completions"))
-               (symlink "../share/pkgconfig/" (string-append out "/lib/pkgconfig"))
                #t))))))
     (native-inputs
      `(("attr" ,attr)
@@ -746,13 +955,15 @@ APFS.")
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("eudev" ,eudev)
+       ("kmod-runtime" ,kmod)
        ("libaio" ,libaio)
        ("libtirpc" ,libtirpc)
        ("nfs-utils" ,nfs-utils)
        ("openssl" ,openssl)
        ("python" ,python)
        ("python-cffi" ,python-cffi)
-       ("util-linux" ,util-linux "lib")
+       ("util-linux" ,util-linux)
+       ("util-linux:lib" ,util-linux "lib")
        ("zlib" ,zlib)))
     (home-page "https://zfsonlinux.org/")
     (synopsis "Native ZFS on Linux")
@@ -765,7 +976,7 @@ community.")
 (define-public mergerfs
   (package
     (name "mergerfs")
-    (version "2.29.0")
+    (version "2.31.0")
     (source
      (origin
        (method url-fetch)
@@ -773,7 +984,7 @@ community.")
                            version "/mergerfs-" version ".tar.gz"))
        (sha256
         (base32
-         "17gizw4vgbqqjd2ykkfpp276942jb5qclp0lkiwkmq1yjgyjqfmk"))))
+         "0k4asbg5n9dhy5jpjkw6simqqnr1zira2y4i71cq05091dfwm90p"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; No tests exist.
@@ -794,8 +1005,9 @@ community.")
              ;; The Makefile does not allow overriding PREFIX via make variables.
              (substitute* '("Makefile" "libfuse/Makefile")
                (("= /usr/local") (string-append "= " (assoc-ref outputs "out")))
+               (("= /sbin") "= $(EXEC_PREFIX)/sbin")
                ;; cannot chown as build user
-               (("chown root:root") "true"))
+               (("chown root(:root)?") "true"))
              #t)))))
     ;; mergerfs bundles a heavily modified copy of libfuse.
     (inputs `(("util-linux" ,util-linux)))
@@ -810,8 +1022,8 @@ is similar to mhddfs, unionfs, and aufs.")
               ))))
 
 (define-public mergerfs-tools
-  (let ((commit "c926779d87458d103f3b674603bf97801ae2486d")
-        (revision "1"))
+  (let ((commit "480296ed03d1c3c7909697d7ef96d35840ee26b8")
+        (revision "2"))
     (package
       (name "mergerfs-tools")
       ;; No released version exists.
@@ -825,7 +1037,7 @@ is similar to mhddfs, unionfs, and aufs.")
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "04hhwcib0xv4cf1mkj8zrp2aqpxkncml9iqg4m1mz6a5zhzsk0vm"))))
+           "0xr06gi4xcr832rzy0hkp5c1n231s7w5iq1nkjvx9kvm0dl7chpq"))))
       (build-system copy-build-system)
       (inputs
        `(("python" ,python)
@@ -858,3 +1070,62 @@ directory onto a single drive and create FreeDesktop.org Trash specification
 compatible directories.")
       (home-page "https://github.com/trapexit/mergerfs-tools")
       (license license:isc))))
+
+(define-public python-dropbox
+  (package
+    (name "python-dropbox")
+    (version "11.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "dropbox" version))
+        (sha256
+         (base32
+          "0r64jxm5m4a1sln2la3av0103filb0plqja1nnyibqvk9qrqs5jf"))))
+    (build-system python-build-system)
+    (arguments '(#:tests? #f))  ; Tests require a network connection.
+    (native-inputs
+     `(("python-pytest" ,python-pytest)
+       ("python-pytest-runner" ,python-pytest-runner)))
+    (propagated-inputs
+     `(("python-certifi" ,python-certifi)
+       ("python-chardet" ,python-chardet)
+       ("python-requests" ,python-requests)
+       ("python-six" ,python-six)
+       ("python-stone" ,python-stone)
+       ("python-urllib3" ,python-urllib3)))
+    (home-page "https://www.dropbox.com/developers")
+    (synopsis "Official Dropbox API Client")
+    (description "This package provides a Python SDK for integrating with the
+Dropbox API v2.")
+    (license license:expat)))
+
+(define-public dbxfs
+  (package
+    (name "dbxfs")
+    (version "1.0.50")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "dbxfs" version))
+        (sha256
+         (base32
+          "01zvk862ybz12270q0r2l1i7kdj30ib2gxrlxmwvi19b2fkf39na"))
+        (patches (search-patches "dbxfs-remove-sentry-sdk.patch"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:tests? #f)) ; tests requires safefs
+    (propagated-inputs
+     `(("python-appdirs" ,python-appdirs)
+       ("python-block-tracing" ,python-block-tracing)
+       ("python-dropbox" ,python-dropbox)
+       ("python-keyring" ,python-keyring)
+       ("python-keyrings.alt" ,python-keyrings.alt)
+       ("python-privy" ,python-privy)
+       ("python-userspacefs" ,python-userspacefs)))
+  (home-page "https://github.com/rianhunter/dbxfs")
+  (synopsis "User-space file system for Dropbox")
+  (description
+   "@code{dbxfs} allows you to mount your Dropbox folder as if it were a
+local file system using FUSE.")
+  (license license:gpl3+)))

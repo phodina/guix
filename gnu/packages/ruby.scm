@@ -7,7 +7,7 @@
 ;;; Copyright © 2015, 2016, 2017 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2017, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017, 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017, 2018, 2019 Christopher Baines <mail@cbaines.net>
@@ -21,6 +21,9 @@
 ;;; Copyright © 2019 Diego N. Barbato <dnbarbato@posteo.de>
 ;;; Copyright © 2019 Brett Gilio <brettg@posteo.de>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
+;;; Copyright © 2020 Holgr Peters <holger.peters@posteo.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -145,16 +148,16 @@ a focus on simplicity and productivity.")
 (define-public ruby-2.7
   (package
     (inherit ruby)
-    (version "2.7.1")
+    (version "2.7.2")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://cache.ruby-lang.org/pub/ruby/"
+       (uri (string-append "https://cache.ruby-lang.org/pub/ruby/"
                            (version-major+minor version)
                            "/ruby-" version ".tar.gz"))
        (sha256
         (base32
-         "0674x98f542y02r7n2yv2qhmh97blqhi2mvh2dn5f000vlxlh66l"))
+         "1m63461mxi3fg4y3bspbgmb0ckbbb1ldgf9xi0piwkpfsk80cmvf"))
        (modules '((guix build utils)))
        (snippet `(begin
                    ;; Remove bundled libffi
@@ -184,6 +187,20 @@ a focus on simplicity and productivity.")
              #t)))))
     (native-inputs
      `(("autoconf" ,autoconf)))))
+
+(define-public ruby-3.0
+  (package
+    (inherit ruby-2.7)
+    (version "3.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://cache.ruby-lang.org/pub/ruby/"
+                           (version-major+minor version)
+                           "/ruby-" version ".tar.xz"))
+       (sha256
+        (base32
+         "1cbcixwnr0y8q0lg67wjgplp06kjd6p6hjjh680csv3v0bpsxgv8"))))))
 
 (define-public ruby-2.5
   (package
@@ -226,7 +243,7 @@ a focus on simplicity and productivity.")
 (define-public mruby
   (package
     (name "mruby")
-    (version "2.0.0")
+    (version "2.1.2")
     (source
      (origin
        (method git-fetch)
@@ -236,7 +253,7 @@ a focus on simplicity and productivity.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "1r6w1asjshff43ymdwa6xmrkggza99mi2kw88k7ic6ag2j81hcj5"))))
+         "0fhfv8pi7i8jn2vgk2n2rjnbnfa12nhj514v8i4k353n7q4pmkh3"))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
@@ -646,8 +663,8 @@ outcomes of a code example.")
     (synopsis "Ripper-style abstract syntax tree to Ruby source generator")
     (description "Sorcerer generates Ruby code from a Ripper-like abstract
 syntax tree (i.e. S-Expressions).  Sorcerer is targeted mainly at small
-snippets of Ruby code, expressable in a single line.  Longer examples may be
-re-sourced, but they will be rendered in a single line format.")
+snippets of Ruby code, expressible in a single line.  Longer examples may be
+re-sourced, but they will be rendered in a single-line format.")
     (home-page "https://github.com/rspec-given/sorcerer")
     (license license:expat)))
 
@@ -1113,7 +1130,7 @@ line of code.")
              #t))
          (add-after 'unpack 'patch-pandoc-path
            (lambda* (#:key inputs #:allow-other-keys)
-             (let ((pandoc (string-append (assoc-ref inputs "ghc-pandoc")
+             (let ((pandoc (string-append (assoc-ref inputs "pandoc")
                                           "/bin/pandoc")))
                (substitute* "lib/pandoc-ruby.rb"
                  (("@@pandoc_path = 'pandoc'")
@@ -1133,7 +1150,7 @@ line of code.")
     (native-inputs
      `(("ruby-mocha" ,ruby-mocha)))
     (inputs
-     `(("ghc-pandoc" ,ghc-pandoc)))
+     `(("pandoc" ,pandoc)))
     (synopsis "Ruby wrapper for Pandoc")
     (description "PandocRuby is a wrapper for Pandoc, a Haskell library with
 command line tools for converting one markup format to another.  Pandoc can
@@ -1347,7 +1364,7 @@ Prawn module.")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/prawnpdf/prawn-templates.git")
+             (url "https://github.com/prawnpdf/prawn-templates")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
@@ -1409,7 +1426,7 @@ loader for the file type associated with a filename extension, and it augments
      (origin
        (method git-fetch)               ;no test suite in distributed gem
        (uri (git-reference
-             (url "https://github.com/cjheath/treetop.git")
+             (url "https://github.com/cjheath/treetop")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1472,7 +1489,7 @@ for performance optimizations in Ruby code.")
        (origin
          (method git-fetch)
          (uri (git-reference
-               (url "https://github.com/searls/gimme.git")
+               (url "https://github.com/searls/gimme")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
@@ -1533,7 +1550,7 @@ only what they care about.")
      (origin
        (method git-fetch)               ;no test suite in distributed gem
        (uri (git-reference
-             (url "https://github.com/testdouble/standard.git")
+             (url "https://github.com/testdouble/standard")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -1580,17 +1597,16 @@ to save time in the following ways:
 (define-public ruby-chunky-png
   (package
     (name "ruby-chunky-png")
-    (version "1.3.12")
+    (version "1.3.14")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/wvanbergen/chunky_png.git")
+             (url "https://github.com/wvanbergen/chunky_png")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32
-         "0hn8ap7iib47qkqdp0awmxgma11z0lmk1ca3lp7c97ykhv7ij1zs"))))
+        (base32 "1m7y11ix38h5a2pj5v81qdmvqh980ql9hp62hk2dxwkwsa4nh22h"))))
     (build-system ruby-build-system)
     (arguments
      `(#:test-target "spec"
@@ -1637,7 +1653,12 @@ pixel, depending on the hardware).
 Performance: ChunkyPNG is reasonably fast for Ruby standards, by only using
 integer math and a highly optimized saving routine.
 @item Interoperability with RMagick.
-@end itemize")
+@end itemize
+
+ChunkyPNG is vulnerable to decompression bombs and can run out of memory when
+loading a specifically crafted PNG file.  This is hard to fix in pure Ruby.
+Deal with untrusted images in a separate process, e.g., by using @code{fork}
+or a background processing library.")
     (home-page "https://github.com/wvanbergen/chunky_png/wiki")
     (license license:expat)))
 
@@ -1699,7 +1720,7 @@ web pages.")
        (origin
          (method git-fetch)      ;no test suite in the distributed gem
          (uri (git-reference
-               (url "https://github.com/asciidoctor/asciidoctor-pdf.git")
+               (url "https://github.com/asciidoctor/asciidoctor-pdf")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
@@ -2414,7 +2435,9 @@ extensions.")
     (arguments
      '(#:tests? #f ; test suite hangs for unknown reason
        #:gem-flags
-       (list "--"
+       (list "--no-document"            ; TODO: Re-enable when documentation
+                                        ; generation works
+             "--"
              (string-append "--with-xml2-include="
                             (assoc-ref %build-inputs "libxml2")
                             "/include/libxml2" ))))
@@ -3793,8 +3816,7 @@ specs for Ruby implementations in ruby/spec.")
                (invoke "rspec"))
              #t)))))
     (inputs
-     `(("mariadb" ,mariadb "lib")
-       ("mariadb-dev" ,mariadb "dev")
+     `(("mariadb-dev" ,mariadb "dev")
        ("zlib" ,zlib)))
     (native-inputs
      `(("ruby-rspec" ,ruby-rspec)
@@ -3846,6 +3868,10 @@ as a base class when writing classes that depend upon
         (base32
          "1r19ifc4skyl2gxnifrxa5jvbbay9fb2in79ppgv02b6n4bhsw90"))))
     (build-system ruby-build-system)
+    (arguments
+     ;; The test suite fails (see:
+     ;; https://github.com/cldwalker/bond/issues/46).
+     `(#:tests? #f))
     (native-inputs
      `(("ruby-bacon" ,ruby-bacon)
        ("ruby-bacon-bits" ,ruby-bacon-bits)
@@ -4517,6 +4543,29 @@ reporter.")
     (home-page "https://blowmage.com/minitest-rg/")
     (license license:expat)))
 
+(define-public ruby-minitest-global-expectations
+  (package
+    (name "ruby-minitest-global-expectations")
+    (version "1.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "minitest-global_expectations"
+                          version))
+       (sha256
+        (base32
+         "1pp3k2608spj4kvqy2y16hs18an917g6vwgvphrfhjviac83090x"))))
+    (build-system ruby-build-system)
+    (propagated-inputs
+     `(("ruby-minitest" ,ruby-minitest)))
+    (synopsis "Adjust minitest behaviour for calling expectation methods")
+    (description
+     "Minitest-global_expectations allows continued use of expectation methods
+on all objects.  Calling expectation methods on all objects was deprecated in
+minitest 5.12, and is planned to be removed from minitest 6.")
+    (home-page "https://github.com/jeremyevans/minitest-global_expectations")
+    (license license:expat)))
+
 (define-public ruby-minitest-hooks
   (package
     (name "ruby-minitest-hooks")
@@ -4971,10 +5020,16 @@ both CSS3 selector and XPath 1.0 support.")
          "1pnyh44qycnf9mzi1j6fywd5fkskv3x7nmsqrrws0rjn5dd4ayfp"))))
     (build-system ruby-build-system)
     (arguments
-     `(#:test-target "spec"))
+     `(#:test-target "spec"
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'remove-git-ls-files
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* "Rakefile"
+               (("git ls-files") "find . -type f"))
+             #t)))))
     (native-inputs
-     `(("ruby-rspec" ,ruby-rspec)
-       ("git" ,git)))
+     `(("ruby-rspec" ,ruby-rspec)))
     (synopsis "Retrieve the source code for Ruby methods")
     (description "Method_source retrieves the source code for Ruby methods.
 Additionally, it can extract source code from Proc and Lambda objects or just
@@ -5096,15 +5151,17 @@ across multiple CPU cores.")
 (define-public ruby-parser
   (package
     (name "ruby-parser")
-    (version "2.7.1.4")
+    (version "2.7.2.0")
     (source
      (origin
        (method url-fetch)
        (uri (rubygems-uri "parser" version))
        (sha256
         (base32
-         "1030znhvhkfn39svwbj6qn4xb6hgl94gnvg57k4d3r76f9bryqmn"))))
+         "1f7gmm60yla325wlnd3qkxs59qm2y0aan8ljpg6k18rwzrrfil6z"))))
     (build-system ruby-build-system)
+    (arguments
+     '(#:tests? #f)) ; tests not included in gem
     (native-inputs
      `(("bundler" ,bundler)
        ("ruby-cliver" ,ruby-cliver)
@@ -6308,14 +6365,14 @@ alternative to Marshal for Object serialization. ")
 (define-public ruby-pg
   (package
     (name "ruby-pg")
-    (version "1.1.4")
+    (version "1.2.3")
     (source
      (origin
        (method url-fetch)
        (uri (rubygems-uri "pg" version))
        (sha256
         (base32
-         "0fmnyxcyrvgdbgq7m09whgn9i8rwfybk0w8aii1nc4g5kqw0k2jy"))))
+         "13mfrysrdrh8cka1d96zm0lnfs59i5x2g6ps49r2kz5p3q81xrzj"))))
     (build-system ruby-build-system)
     (arguments
      '(#:test-target "spec"))
@@ -6785,17 +6842,17 @@ inspired by the Sinatra microframework style of specifying actions:
 (define-public ruby-rubocop-ast
   (package
     (name "ruby-rubocop-ast")
-    (version "0.1.0")
+    (version "0.3.0")
     (source
      (origin
        (method git-fetch)               ;no test suite in distributed gem
        (uri (git-reference
-             (url "https://github.com/rubocop-hq/rubocop-ast.git")
+             (url "https://github.com/rubocop-hq/rubocop-ast")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0nz25z5b76xkgb9sh370hni3l946j07fr05cdwkdj9x7ibgsb6nj"))))
+         "1ycf6qcj8nbzk2js72priim4642lkn56w5kbny1nlryjkckxgm04"))))
     (build-system ruby-build-system)
     (arguments
      `(#:test-target "spec"
@@ -6834,7 +6891,7 @@ by RuboCop to deal with Ruby's Abstract Syntax Tree (AST), in particular:
      (origin
        (method git-fetch)               ;no tests in distributed gem
        (uri (git-reference
-             (url "https://github.com/ruby/rexml.git")
+             (url "https://github.com/ruby/rexml")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -6885,7 +6942,7 @@ better performance than @code{Regexp} and @code{String} methods from the
       (origin
         (method git-fetch)
         (uri (git-reference
-              (url "https://github.com/janosch-x/range_compressor.git")
+              (url "https://github.com/janosch-x/range_compressor")
               (commit (string-append "v" version))))
         (file-name (git-file-name name version))
         (sha256
@@ -6918,7 +6975,7 @@ following: @code{[1, 2, 3, 4, 6, 8, 9, 10]} into @code{[1..4, 6..6, 8..10]}.")
      (origin
        (method git-fetch)
        (uri (git-reference              ;no test suite in distributed gem
-             (url "https://github.com/jaynetics/regexp_property_values.git")
+             (url "https://github.com/jaynetics/regexp_property_values")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -6944,17 +7001,17 @@ they match.")
 (define-public ruby-regexp-parser
   (package
     (name "ruby-regexp-parser")
-    (version "1.7.1")
+    (version "2.0.0")
     (source
      (origin
        (method git-fetch)               ;bin/test missing from gem
        (uri (git-reference
-             (url "https://github.com/ammar/regexp_parser.git")
+             (url "https://github.com/ammar/regexp_parser")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0dk9d4vpw31cc06s29fqyr1kq0kipym1mydifkcrnppvpl3pd53r"))))
+         "09ddxdwlml30q6j4rqf06bbjj1mwx00rs0bksnyblhv85anrqz3k"))))
     (build-system ruby-build-system)
     (arguments
      '(#:test-target "default"
@@ -7022,7 +7079,7 @@ run.")
      (origin
        (method git-fetch)               ;no tests in distributed gem
        (uri (git-reference
-             (url "https://github.com/rubocop-hq/rubocop.git")
+             (url "https://github.com/rubocop-hq/rubocop")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -7790,7 +7847,7 @@ master/html-formatter/ruby")
     (native-inputs
      `(;; Use a untested version of aruba, to avoid a circular dependency, as
        ;; ruby-aruba depends on ruby-cucumber.
-       ("ruby-aruba", ruby-aruba-without-tests)
+       ("ruby-aruba" ,ruby-aruba-without-tests)
        ("ruby-rspec" ,ruby-rspec)
        ("ruby-pry" ,ruby-pry)
        ("ruby-nokogiri" ,ruby-nokogiri)
@@ -8849,7 +8906,7 @@ display width of strings in Ruby.")
     (native-inputs
      `(("ruby-rdoc" ,ruby-rdoc)
        ("ruby-rspec" ,ruby-rspec)
-       ("ruby-rubygems-tasks", ruby-rubygems-tasks)))
+       ("ruby-rubygems-tasks" ,ruby-rubygems-tasks)))
     (synopsis "Ruby library to help check the Ruby version")
     (description "@code{ruby_version} provides a @code{RubyVersion} module to simplify
 checking for the right Ruby version in software.")
@@ -8903,14 +8960,13 @@ extension plugins.")
 (define-public ruby-domain-name
   (package
     (name "ruby-domain-name")
-    (version "0.5.20180417")
+    (version "0.5.20190701")
     (source
      (origin
        (method url-fetch)
        (uri (rubygems-uri "domain_name" version))
        (sha256
-        (base32
-         "0abdlwb64ns7ssmiqhdwgl27ly40x2l27l8hs8hn0z4kb3zd2x3v"))))
+        (base32 "0lcqjsmixjp52bnlgzh4lg9ppsk52x9hpwdjd53k8jnbah2602h0"))))
     (build-system ruby-build-system)
     (arguments
      `(#:phases
@@ -9896,13 +9952,13 @@ programs running in the background, in Ruby.")
 (define-public ruby-public-suffix
   (package
     (name "ruby-public-suffix")
-    (version "4.0.1")
+    (version "4.0.5")
     (source (origin
               (method url-fetch)
               (uri (rubygems-uri "public_suffix" version))
               (sha256
                (base32
-                "0xnfv2j2bqgdpg2yq9i2rxby0w2sc9h5iyjkpaas2xknwrgmhdb0"))))
+                "0vywld400fzi17cszwrchrzcqys4qm6sshbv73wy5mwcixmrgg7g"))))
     (build-system ruby-build-system)
     (arguments
      '(#:phases
@@ -9962,7 +10018,7 @@ all known public suffixes.")
        ("bundler" ,bundler)
        ("ruby-idn-ruby" ,ruby-idn-ruby)
        ("ruby-sporkmonger-rack-mount" ,ruby-sporkmonger-rack-mount)
-       ("ruby-rspec-its", ruby-rspec-its-minimal)
+       ("ruby-rspec-its" ,ruby-rspec-its-minimal)
        ("ruby-yard" ,ruby-yard)
        ("ruby-simplecov" ,ruby-simplecov)))
     (propagated-inputs
@@ -10503,7 +10559,7 @@ custom checks.  This gem provides a set of additional checks.")
     (source (origin
               (method git-fetch)        ;no test in distributed gem archive
               (uri (git-reference
-                    (url "https://github.com/yob/pdf-reader.git")
+                    (url "https://github.com/yob/pdf-reader")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
@@ -10543,7 +10599,7 @@ access to the contents of a PDF file with a high degree of flexibility.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/prawnpdf/pdf-inspector.git")
+                      (url "https://github.com/prawnpdf/pdf-inspector")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -10606,7 +10662,7 @@ functionality from Prawn.")
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://github.com/prawnpdf/prawn.git")
+                      (url "https://github.com/prawnpdf/prawn")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
@@ -10697,13 +10753,13 @@ functionality from Prawn.")
 (define-public ruby-kramdown
   (package
     (name "ruby-kramdown")
-    (version "1.17.0")
+    (version "2.3.0")
     (source (origin
               (method url-fetch)
               (uri (rubygems-uri "kramdown" version))
               (sha256
                (base32
-                "1n1c4jmrh5ig8iv1rw81s4mw4xsp4v97hvf8zkigv4hn5h542qjq"))))
+                "1vmw752c26ny2jwl0npn0gbyqwgz4hdmlpxnsld9qi9xhk5b1qh7"))))
     (build-system ruby-build-system)
     (arguments `(#:tests? #f)); FIXME: some test failures
     (native-inputs
@@ -10715,6 +10771,28 @@ functionality from Prawn.")
 of Markdown.  It is completely written in Ruby, supports standard Markdown
 (with some minor modifications) and various extensions that have been made
 popular by the PHP @code{Markdown Extra} package and @code{Maruku}.")
+    (license license:expat)))
+
+(define-public ruby-kramdown-parser-gfm
+  (package
+    (name "ruby-kramdown-parser-gfm")
+    (version "1.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "kramdown-parser-gfm" version))
+       (sha256
+        (base32 "0a8pb3v951f4x7h968rqfsa19c8arz21zw1vaj42jza22rap8fgv"))))
+    (build-system ruby-build-system)
+    (arguments
+     `(#:tests? #f))                    ;no rakefile
+    (propagated-inputs
+     `(("ruby-kramdown" ,ruby-kramdown)))
+    (synopsis "Kramdown parser for the GFM dialect of Markdown")
+    (description
+     "This is a parser for kramdown that converts Markdown documents in the
+GFM dialect to HTML.")
+    (home-page "https://github.com/kramdown/parser-gfm")
     (license license:expat)))
 
 (define-public ruby-http-parser.rb
@@ -10985,7 +11063,8 @@ Pathname.")
          (add-before 'build 'fix-i18n
            (lambda _
              (substitute* ".gemspec"
-               (("~> 0.7") ">= 0.7"))
+               (("~> 0.7") ">= 0.7")
+               (("~> 1.14") ">= 1.14"))
              #t)))))
     (propagated-inputs
      `(("ruby-addressable" ,ruby-addressable)
@@ -10994,7 +11073,7 @@ Pathname.")
        ("ruby-i18n" ,ruby-i18n)
        ("ruby-jekyll-sass-converter" ,ruby-jekyll-sass-converter)
        ("ruby-jekyll-watch" ,ruby-jekyll-watch)
-       ("ruby-kramdown" ,ruby-kramdown)
+       ("ruby-kramdown" ,ruby-kramdown-parser-gfm)
        ("ruby-liquid" ,ruby-liquid)
        ("ruby-mercenary" ,ruby-mercenary)
        ("ruby-pathutil" ,ruby-pathutil)
@@ -11008,13 +11087,13 @@ Pathname.")
 (define-public ruby-jekyll-paginate-v2
   (package
     (name "ruby-jekyll-paginate-v2")
-    (version "2.0.0")
+    (version "3.0.0")
     (source (origin
               (method url-fetch)
               (uri (rubygems-uri "jekyll-paginate-v2" version))
               (sha256
                (base32
-                "154bfpyml6abxww9868hhyfvxasl8qhsc5zy2q30c7dxaj0igdib"))))
+                "1qzlqhpiqz28624fp0ak76hfy7908w6kpx62v7z43aiwjv0yc6q0"))))
     (build-system ruby-build-system)
     (propagated-inputs
      `(("jekyll" ,jekyll)))
@@ -11143,6 +11222,29 @@ uniquely identify it.")
      "Sprockets is a Rack-based asset packaging system that concatenates and
 serves JavaScript, CoffeeScript, CSS, LESS, Sass, and SCSS.")
     (home-page "https://github.com/rails/sprockets")
+    (license license:expat)))
+
+(define-public ruby-mustache
+  (package
+    (name "ruby-mustache")
+    (version "1.1.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "mustache" version))
+       (sha256
+        (base32 "1l0p4wx15mi3wnamfv92ipkia4nsx8qi132c6g51jfdma3fiz2ch"))))
+    (build-system ruby-build-system)
+    (native-inputs
+     `(("ruby-simplecov" ,ruby-simplecov)))
+    (synopsis "framework-agnostic way to render logic-free views")
+    (description
+     "Mustache is a framework-agnostic way to render logic-free views.
+Think of Mustache as a replacement for your views.  Instead of views
+consisting of ERB or HAML with random helpers and arbitrary logic,
+your views are broken into two parts: a Ruby class and an HTML
+template.")
+    (home-page "https://github.com/mustache/mustache")
     (license license:expat)))
 
 (define-public ruby-mustermann
@@ -11634,4 +11736,31 @@ which snapshots to consider and what files to include.")
      "WWTD is a @dfn{Travis Simulator} that lets you run test matrices
 defined in @file{.travis.yml} on your local machine, using @code{rvm},
 @code{rbenv}, or @code{chruby} to test different versions of Ruby.")
+    (license license:expat)))
+
+(define-public ruby-rugged
+  (package
+    (name "ruby-rugged")
+    (version "1.1.0")
+    (home-page "https://www.rubydoc.info/gems/rugged")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "rugged" version))
+       (sha256
+        (base32 "04aq913plcxjw71l5r62qgz3bx3466p0wvgyfqahg5n3nybmcwqy"))))
+    (build-system ruby-build-system)
+    (arguments
+     `(#:tests? #f
+       #:gem-flags (list  "--" "--use-system-libraries")))
+    (inputs
+     `(("libgit2" ,libgit2)))
+    (native-inputs
+     `(("ruby-minitest" ,ruby-minitest)
+       ("ruby-pry" ,ruby-pry)
+       ("ruby-rake-compiler" ,ruby-rake-compiler)))
+    (synopsis "Ruby bindings to the libgit2 linkable C Git library")
+    (description "Rugged is a library for accessing libgit2 in Ruby.  It gives
+you the speed and portability of libgit2 with the beauty of the Ruby
+language.")
     (license license:expat)))

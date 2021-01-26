@@ -72,6 +72,7 @@
             openpgp-fingerprint->bytevector
             openpgp-fingerprint
 
+            %default-guix-channel
             %default-channels
             guix-channel?
 
@@ -170,13 +171,16 @@ to the corresponding bytevector."
   ;; URL of the default 'guix' channel.
   "https://git.savannah.gnu.org/git/guix.git")
 
+(define %default-guix-channel
+  (channel
+   (name 'guix)
+   (branch "master")
+   (url %default-channel-url)
+   (introduction %guix-channel-introduction)))
+
 (define %default-channels
   ;; Default list of channels.
-  (list (channel
-         (name 'guix)
-         (branch "master")
-         (url %default-channel-url)
-         (introduction %guix-channel-introduction))))
+  (list %default-guix-channel))
 
 (define (guix-channel? channel)
   "Return true if CHANNEL is the 'guix' channel."
@@ -783,7 +787,8 @@ modules in the old ~/.config/guix/latest style."
                    ;; derivation that builds modules.  We have to infer what the
                    ;; dependencies of these modules were.
                    (list guile-json-3 guile-git guile-bytestructures
-                         (ssh -> guile-ssh) (tls -> gnutls)))))
+                         (ssh -> guile-ssh) (tls -> gnutls))
+                   #:guile (default-guile))))
 
 (define (old-style-guix? drv)
   "Return true if DRV corresponds to a ~/.config/guix/latest style of

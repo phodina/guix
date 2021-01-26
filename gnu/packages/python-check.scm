@@ -1,8 +1,8 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2019 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2019, 2020, 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2020 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
@@ -28,6 +28,7 @@
 (define-module (gnu packages python-check)
   #:use-module (gnu packages)
   #:use-module (gnu packages check)
+  #:use-module (gnu packages openstack)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages web)
@@ -81,6 +82,39 @@
 This package provides seamless integration with coverage.py (and thus pytest,
 nosetests, etc...) in Python projects.")
     (license license:expat)))
+
+(define-public python-junit-xml
+  ;; XXX: There are no tags or PyPI releases, so take the latest commit
+  ;; and use the version defined in setup.py.
+  (let ((version "1.9")
+        (commit "4bd08a272f059998cedf9b7779f944d49eba13a6")
+        (revision "0"))
+    (package
+      (name "python-junit-xml")
+      (version (git-version version revision commit))
+      (home-page "https://github.com/kyrus/python-junit-xml")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference (url home-page) (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0b8kbjhk3j10rk0vcniy695m3h43yip6y93h1bd6jjh0cp7s09c7"))))
+      (build-system python-build-system)
+      (arguments
+       `(#:phases (modify-phases %standard-phases
+                    (replace 'check
+                      (lambda _
+                        (invoke "pytest" "-vv"))))))
+      (native-inputs
+       `(("python-pytest" ,python-pytest)))
+      (propagated-inputs
+       `(("python-six" ,python-six)))
+      (synopsis "Create JUnit XML test results")
+      (description
+       "This package provides a Python module for creating JUnit XML test
+result documents that can be read by tools such as Jenkins or Bamboo.")
+      (license license:expat))))
 
 (define-public python-vcrpy
   (package
@@ -436,6 +470,40 @@ in Pytest.")
 of the project to ensure it renders properly.")
     (license license:expat)))
 
+(define-public python-re-assert
+  (package
+    (name "python-re-assert")
+    (version "1.1.0")
+    (source
+     (origin
+       ;; There are no tests in the PyPI tarball.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/asottile/re-assert")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1rssq4wpqmx1c17hjfx5l3sn3zmnlz9jffddiqrs4f6h7m6cadai"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             (invoke "pytest" "-vv"))))))
+    (native-inputs
+     `(("python-covdefaults" ,python-covdefaults)
+       ("python-coverage" ,python-coverage)
+       ("python-pytest" ,python-pytest)))
+    (propagated-inputs
+     `(("python-regex" ,python-regex)))
+    (home-page "https://github.com/asottile/re-assert")
+    (synopsis "Show where your regex match assertion failed")
+    (description
+     "@code{re-assert} provides a helper class to make assertions of regexes
+simpler.")
+    (license license:expat)))
+
 (define-public python-pytest-trio
   (package
     (name "python-pytest-trio")
@@ -698,6 +766,49 @@ rounds that are calibrated to the chosen timer.")
 service processes for your tests with pytest.")
     (license license:expat)))
 
+(define-public python-pytest-toolbox
+  (package
+    (name "python-pytest-toolbox")
+    (version "0.4")
+    (source
+     (origin
+       ;; No tests in the PyPI tarball.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/samuelcolvin/pytest-toolbox")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1wqkr3g5gmqdxmhzfsxbwy8pm3cadaj6a8cxq58w9bacly4hqbh0"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             ;; Make the installed plugin discoverable by Pytest.
+             (add-installed-pythonpath inputs outputs)
+             (invoke "pytest" "-vv"))))))
+    (native-inputs
+     `(("python-coverage" ,python-coverage)
+       ("python-docutils" ,python-docutils)
+       ("python-flake8" ,python-flake8)
+       ("python-isort" ,python-isort)
+       ("python-pydantic" ,python-pydantic)
+       ("python-pyflakes" ,python-pyflakes)
+       ("python-pygments" ,python-pygments)
+       ("python-pytest" ,python-pytest)
+       ("python-pytest-cov" ,python-pytest-cov)
+       ("python-pytest-isort" ,python-pytest-isort)
+       ("python-pytest-mock" ,python-pytest-mock)
+       ("python-pytest-sugar" ,python-pytest-sugar)))
+    (home-page "https://github.com/samuelcolvin/pytest-toolbox")
+    (synopsis "Numerous useful plugins for Pytest")
+    (description
+     "Pytest Toolbox contains many useful plugins for Pytest.  Among them are
+new fixtures, new methods and new comparison objects.")
+    (license license:expat)))
+
 (define-public python-pytest-aiohttp
   (package
     (name "python-pytest-aiohttp")
@@ -722,13 +833,13 @@ service processes for your tests with pytest.")
 (define-public python-nbval
   (package
     (name "python-nbval")
-    (version "0.9.5")
+    (version "0.9.6")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "nbval" version))
        (sha256
-        (base32 "1xh2p7g5s5g06caaraf3dsz69bpj7dgw2h3ss67kci789aspnwp8"))))
+        (base32 "0h3xrnw0mj1srigrx2rfnd73h8s0xjycclmjs0vx7qkfyqpcvvyg"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -807,6 +918,26 @@ also ensuring that the notebooks are running without errors.")
     (description
      "This is a @code{py.test} plugin that enables you to set environment
 variables in the @file{pytest.ini} file.")
+    (license license:expat)))
+
+(define-public python-pyux
+  (package
+    (name "python-pyux")
+    (version "0.0.6")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pyux" version))
+       (sha256
+        (base32
+         "1i17xh4dy238ibrjdgh8vn78fk5q6dj37mcznpvdfzidj57js7ca"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f))                  ;the mini test suite fails
+    (home-page "https://github.com/farizrahman4u/pyux")
+    (synopsis "Utility to check API integrity in Python libraries")
+    (description "The pyux utility detects API changes in Python
+libraries.")
     (license license:expat)))
 
 (define-public python-codacy-coverage
@@ -911,22 +1042,31 @@ supported by the MyPy typechecker.")
 (define-public python-mypy
   (package
     (name "python-mypy")
-    (version "0.782")
+    (version "0.790")
     (source
-      (origin
-        (method url-fetch)
-        (uri (pypi-uri "mypy" version))
-        (sha256
-         (base32
-          "030kn709515452n6gy2i1d9fg6fyrkmdz228lfpmbslybsld9xzg"))))
+     (origin
+       ;; Because of https://github.com/python/mypy/issues/9584, the
+       ;; mypyc/analysis directory is missing in the PyPI archive, leading to
+       ;; test failures.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/python/mypy")
+             (commit (string-append "v" version))
+             ;; Fetch git submodules otherwise typeshed is not fetched.
+             ;; Typeshed is a collection of Python sources type annotation
+             ;; (data) files.
+             (recursive? #t)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0zq3lpdf9hphcklk40wz444h8w3dkhwa12mqba5j9lmg11klnhz7"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
          (replace 'check
            (lambda _
-             (invoke "./runtests.py")
-             #t)))))
+             (invoke "pytest" "mypyc"))))))
     (native-inputs
      `(("python-attrs" ,python-attrs)
        ("python-flake8" ,python-flake8)
@@ -935,8 +1075,7 @@ supported by the MyPy typechecker.")
        ("python-importlib-metadata" ,python-importlib-metadata)
        ("python-lxml" ,python-lxml)
        ("python-psutil" ,python-psutil)
-       ("python-py" ,python-py)
-       ("python-pytest" ,python-pytest)
+       ("python-pytest" ,python-pytest-6)
        ("python-pytest-cov" ,python-pytest-cov)
        ("python-pytest-forked" ,python-pytest-forked)
        ("python-pytest-xdist" ,python-pytest-xdist)
@@ -956,3 +1095,107 @@ any Python VM with basically no runtime overhead.")
     ;; Foundation License version 2: stdlib-samples/*, mypyc/lib-rt/pythonsupport.h and
     ;; mypyc/lib-rt/getargs.c
     (license (list license:expat license:psfl))))
+
+(define-public python-eradicate
+  (package
+    (name "python-eradicate")
+    (version "2.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "eradicate" version))
+       (sha256
+        (base32
+         "1j30g9jfmbfki383qxwrfds8b23yiwywj40lng4lqcf5yab4ahr7"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/myint/eradicate")
+    (synopsis "Remove commented-out code from Python sources")
+    (description "The @command{eradicate} command removes commented-out code
+from Python files.  It does this by detecting block comments that contain
+valid Python syntax that are likely to be commented out code.")
+    (license license:expat)))
+
+(define-public python-robber
+  (package
+    (name "python-robber")
+    (version "1.1.5")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "robber" version))
+              (sha256
+               (base32
+                "0xp5csgv2g9q38hscml6bc5i1nm4xy5lzqqiimm2drxsf0hw2nq5"))))
+    (build-system python-build-system)
+    ;; There are no tests in the tarball downloaded from PyPI.
+    ;; The last version tagged in Github (0.1.0) is older than the one on PyPI.
+    ;; Reported upstream: <https://github.com/vesln/robber.py/issues/20>.
+    (arguments '(#:tests? #f))
+    (propagated-inputs
+     `(("python-mock" ,python-mock)
+       ("python-termcolor" ,python-termcolor)))
+    ;; URL of the fork used to generate the package available on PyPI.
+    (home-page "https://github.com/EastAgile/robber.py")
+    (synopsis "Test-driven development (TDD) assertion library for Python")
+    (description "Robber is a Python assertion library for test-driven and
+behavior-driven development (TDD and BDD).")
+    (license license:expat)))
+
+(define-public python-stestr
+  (package
+    (name "python-stestr")
+    (version "3.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "stestr" version))
+       (sha256
+        (base32
+         "0adhqp9c9338wlvlq776k57k04lyxp38bv591afdm9gjsn2qn1zm"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f))                    ;to avoid circular dependencies
+    (native-inputs
+     `(("python-pbr" ,python-pbr)))
+    (propagated-inputs
+     `(("python-cliff" ,python-cliff)
+       ("python-fixtures" ,python-fixtures)
+       ("python-future" ,python-future)
+       ("python-pyyaml" ,python-pyyaml)
+       ("python-subunit" ,python-subunit)
+       ("python-testtools" ,python-testtools)
+       ("python-voluptuous" ,python-voluptuous)))
+    (home-page "https://stestr.readthedocs.io/en/latest/")
+    (synopsis "Parallel Python test runner")
+    (description "This package provides the @command{stestr} command, a
+parallel Python test runner built around @code{subunit}.  It is designed to
+execute @code{unittest} test suites using multiple processes to split up
+execution of a test suite.  It will also store a history of all test runs to
+help in debugging failures and optimizing the scheduler to improve speed.")
+    (license license:asl2.0)))
+
+;; This is only used by python-sanic
+(define-public python-pytest-sanic
+  (package
+    (name "python-pytest-sanic")
+    (version "1.6.2")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "pytest-sanic" version))
+              (sha256
+                (base32
+                  "02ajd8z77ahi69kzkz200qgxrb4s2j4qb6k8j9ds1kz6qa6fsa34"))))
+    (build-system python-build-system)
+    (arguments
+     ;; Tests depend on python-sanic.
+     `(#:tests? #f))
+    (propagated-inputs
+      `(("python-aiohttp" ,python-aiohttp)
+        ("python-async-generator"
+         ,python-async-generator)
+        ("python-pytest" ,python-pytest)))
+    (home-page
+      "https://github.com/yunstanford/pytest-sanic")
+    (synopsis "Pytest plugin for Sanic")
+    (description "A pytest plugin for Sanic.  It helps you to test your
+code asynchronously.")
+    (license license:expat)))

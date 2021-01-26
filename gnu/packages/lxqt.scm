@@ -591,7 +591,8 @@ of other programs.")
        ("qtsvg" ,qtsvg)
        ("qtx11extras" ,qtx11extras)
        ("solid" ,solid)
-       ("xcb-util" ,xcb-util)))
+       ("xcb-util" ,xcb-util)
+       ("xkeyboard-config" ,xkeyboard-config)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("lxqt-build-tools" ,lxqt-build-tools)
@@ -599,7 +600,8 @@ of other programs.")
     (propagated-inputs
      ;; Propagating KWINDOWSYSTEM so that the list of opened applications
      ;; shows up in lxqt-panel's taskbar plugin.
-     `(("kwindowsystem" ,kwindowsystem)))
+     `(("kwindowsystem" ,kwindowsystem)
+       ("lxmenu-data" ,lxmenu-data)))
     (arguments
      '(#:tests? #f                      ; no tests
        #:phases
@@ -618,7 +620,15 @@ of other programs.")
                (("\\$\\{LXQT_TRANSLATIONS_DIR\\}")
                 (string-append (assoc-ref outputs "out")
                                "/share/lxqt/translations")))
-             #t)))))
+             #t))
+         (add-after 'unpack 'set-xkeyboard-config-file-path
+                (lambda* (#:key inputs #:allow-other-keys)
+                  ;; Set the path to xkeyboard-config.
+                  (let ((xkb (assoc-ref inputs "xkeyboard-config")))
+                    (substitute* "plugin-kbindicator/src/x11/kbdlayout.cpp"
+                      (("/usr/share/X11/xkb/rules/evdev.xml")
+                       (string-append xkb "/share/X11/xkb/rules/evdev.xml")))
+                  #t))))))
     (home-page "https://lxqt.github.io")
     (synopsis "The LXQt desktop panel")
     (description "lxqt-panel represents the taskbar of LXQt.")
@@ -839,12 +849,16 @@ allows for launching applications or shutting down the system.")
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'patch-source
-           (lambda _
+           (lambda* (#:key outputs #:allow-other-keys)
              (substitute* '("autostart/CMakeLists.txt"
                             "config/CMakeLists.txt")
                (("DESTINATION \"\\$\\{LXQT_ETC_XDG_DIR\\}")
                 "DESTINATION \"etc/xdg"))
-             #t))
+             (let ((out (assoc-ref outputs "out")))
+               (substitute* '("xsession/lxqt.desktop.in")
+                 (("Exec=startlxqt") (string-append "Exec=" out "/bin/startlxqt"))
+                 (("TryExec=lxqt-session") (string-append "TryExec=" out "/bin/startlxqt")))
+               #t)))
          ;; add write permission to lxqt-rc.xml file which is stored as read-only in store
          (add-after 'unpack 'patch-openbox-permission
            (lambda _
@@ -862,7 +876,14 @@ allows for launching applications or shutting down the system.")
                (("\\$\\{LXQT_TRANSLATIONS_DIR\\}")
                 (string-append (assoc-ref outputs "out")
                                "/share/lxqt/translations")))
-             #t)))))
+             #t))
+         (add-after 'install 'wrap-program
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/startlxqt")
+                 `("XDG_CONFIG_DIRS" ":" suffix ("/run/current-system/profile/share"
+                                                 "/run/current-system/profile/share/pcmanfm-qt")))
+               #t))))))
     (home-page "https://lxqt.github.io")
     (synopsis "Session manager for LXQt")
     (description "lxqt-session provides the standard session manager
@@ -1011,6 +1032,9 @@ components to build desktop file managers which belongs to LXDE.")
              (substitute* '("autostart/CMakeLists.txt")
                (("DESTINATION \"\\$\\{LXQT_ETC_XDG_DIR\\}")
                 "DESTINATION \"etc/xdg"))
+             (substitute* '("config/pcmanfm-qt/lxqt/settings.conf.in")
+               (("@LXQT_SHARE_DIR@")
+                "/run/current-system/profile/share/lxqt" ))
              #t)))))
     (home-page "https://lxqt.github.io")
     (synopsis "File manager and desktop icon manager")
@@ -1306,7 +1330,7 @@ like @command{tar} and @command{zip}.")
         (origin
           (method git-fetch)
           (uri (git-reference
-            (url (string-append "https://github.com/lxqt/" name ".git"))
+            (url (string-append "https://github.com/lxqt/" name))
             (commit commit)))
           (file-name (git-file-name name version))
           (sha256 (base32 "0br4bxfrl8k7lq84aq4grznlk8xzzjgkmd19bf9mwjr0a87gg72v"))))
@@ -1370,6 +1394,7 @@ desktop.")
        ("lxqt-about" ,lxqt-about)
        ("lxqt-admin" ,lxqt-admin)
        ("lxqt-config" ,lxqt-config)
+       ("lxqt-globalkeys" ,lxqt-globalkeys)
        ("lxqt-notificationd" ,lxqt-notificationd)
        ("lxqt-openssh-askpass" ,lxqt-openssh-askpass)
        ("lxqt-panel" ,lxqt-panel)

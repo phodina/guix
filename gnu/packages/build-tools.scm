@@ -6,11 +6,12 @@
 ;;; Copyright © 2018 Tomáš Čech <sleep_walker@gnu.org>
 ;;; Copyright © 2018, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
-;;; Copyright © 2019 Brett Gilio <brettg@gnu.org>
+;;; Copyright © 2019, 2020 Brett Gilio <brettg@gnu.org>
 ;;; Copyright © 2019 Jonathan Brielmaier <jonathan.brielmaier@web.de>
 ;;; Copyright © 2020 Leo Prikler <leo.prikler@student.tugraz.at>
 ;;; Copyright © 2020 Yuval Kogman <nothingmuch@woobling.org>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -35,18 +36,27 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system cmake)
   #:use-module (gnu packages)
+  #:use-module (gnu packages adns)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages cpp)
+  #:use-module (gnu packages gcc)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages logging)
   #:use-module (gnu packages lua)
   #:use-module (gnu packages package-management)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages pretty-print)
+  #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages regex)
+  #:use-module (gnu packages rpc)
   #:use-module (gnu packages sqlite)
+  #:use-module (gnu packages tls)
   #:use-module (gnu packages ninja)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python))
@@ -67,7 +77,7 @@
                 "13br735ig7lygvzyfd15fc2rdygrqm503j6xj5xkrl1r7w2wipq6"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:make-flags `("CC=gcc"
+     `(#:make-flags `(,(string-append "CC=" ,(cc-for-target))
                       ,(string-append "INSTALL_PREFIX="
                                       (assoc-ref %outputs "out")))
        #:test-target "test"
@@ -89,19 +99,46 @@ makes a few sacrifices to acquire fast full and incremental build times.")
 (define-public bear
   (package
     (name "bear")
-    (version "2.4.3")
+    (version "3.0.4")
     (source (origin
               (method git-fetch)
               (uri (git-reference
                     (url "https://github.com/rizsotto/Bear")
                     (commit version)))
               (file-name (git-file-name name version))
+              (patches (search-patches
+                        "bear-disable-preinstall-tests.patch"))
               (sha256
                (base32
-                "19fk4flfykbzhb89ppmzqf0zlrkbjm6ajl9fsayndj9km5ys0041"))))
+                "15r22sbk5bibrhf54lf0shiqw1gnsik24fr5as96w3hnj6iahgwn"))))
     (build-system cmake-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (add-before 'check 'set-build-environment
+                    (lambda _
+                      (setenv "CC" "gcc")
+                      #t))
+                  ;; TODO: Test Configuration is Incomplete
+                  (replace 'check
+                    (lambda _
+                      (invoke "ctest"))))))
     (inputs
-     `(("python" ,python-wrapper)))
+     `(("c-ares" ,c-ares)
+       ("fmt" ,fmt)
+       ("grpc" ,grpc)
+       ("json-modern-cxx" ,json-modern-cxx)
+       ("protobuf" ,protobuf)
+       ("python" ,python-wrapper)
+       ("re2" ,re2)
+       ("spdlog" ,spdlog)))
+    (native-inputs
+     `(("abseil-cpp" ,abseil-cpp)
+       ("gcc-9" ,gcc-9) ; for <filesystem>, #44896
+       ("googletest" ,googletest)
+       ("openssl" ,openssl)
+       ("pkg-config" ,pkg-config)
+       ("python-lit" ,python-lit)
+       ("zlib" ,zlib)))
     (home-page "https://github.com/rizsotto/Bear")
     (synopsis "Tool for generating a compilation database")
     (description "A JSON compilation database is used in the Clang project to
@@ -111,8 +148,8 @@ generate such a compilation database.")
     (license license:gpl3+)))
 
 (define-public gn
-  (let ((commit "eb997b5ab9c3f1ba6a2c52072785884864a84eae")
-        (revision "1794"))            ;as returned by `git describe`, used below
+  (let ((commit "e327ffdc503815916db2543ec000226a8df45163")
+        (revision "1819"))            ;as returned by `git describe`, used below
     (package
       (name "gn")
       (version (git-version "0.0" revision commit))
@@ -122,7 +159,7 @@ generate such a compilation database.")
                 (uri (git-reference (url home-page) (commit commit)))
                 (sha256
                  (base32
-                  "1vfkcy34wqhg7wsk7jdzhgnnzwim10wgbxv5bnavxzjcs871i2xa"))
+                  "0kvlfj3www84zp1vmxh76x8fdjm9hyk8lkh2vdsidafpmm75fphr"))
                 (file-name (git-file-name name version))))
       (build-system gnu-build-system)
       (arguments
@@ -211,6 +248,21 @@ files}, are written in a custom domain-specific language (@dfn{DSL}) that
 resembles Python.")
     (license license:asl2.0)))
 
+;; Added temporarily for packages that need it.
+;; TODO: Remove when core-updates is merged.
+(define-public meson-0.55
+  (package
+    (inherit meson)
+    (version "0.55.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/mesonbuild/meson/"
+                                  "releases/download/" version  "/meson-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "1070kjiirxxdfppmrhi3wsc6rykay1zlciqrzayjhjg0hkw42mrv"))))))
+
 (define-public meson-for-build
   (package
     (inherit meson)
@@ -237,7 +289,7 @@ resembles Python.")
     (native-inputs
      `(("unzip" ,unzip))) ; for unpacking the source
     (arguments
-     `(#:make-flags '("CC=gcc")
+     `(#:make-flags (list (string-append "CC=" ,(cc-for-target)))
        #:tests? #f ; No test suite
        #:phases
        (modify-phases %standard-phases

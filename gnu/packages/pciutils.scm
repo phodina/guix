@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2017, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
@@ -36,7 +36,7 @@
 (define-public pciutils
   (package
     (name "pciutils")
-    (version "3.6.4")
+    (version "3.7.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -45,7 +45,7 @@
               (patches (search-patches "pciutils-hurd-configure.patch"))
               (sha256
                (base32
-                "0mb0f2phdcmp4kfiqsszn2k6nlln0w160ffzrjjv4bbfjwrgfzzn"))))
+                "1ss0rnfsx8gvqjxaji4mvbhf9xyih4cadmgadbwwv8mnx1xvjh4x"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -92,7 +92,15 @@
          (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
              ;; Install the commands, library, and .pc files.
-             (invoke "make" "install" "install-lib"))))
+             (invoke "make" "install" "install-lib")))
+
+         ,@(if (hurd-target?)
+               '((add-after 'unpack 'apply-hurd-patch
+                   (lambda* (#:key inputs #:allow-other-keys)
+                     (let ((patch (assoc-ref inputs "hurd-patch")))
+                       (invoke "patch" "-p1" "--batch" "-i"
+                               patch)))))
+               '()))
 
        ;; Make sure programs have an RPATH so they can find libpciutils.so.
        #:make-flags (list (string-append "LDFLAGS=-Wl,-rpath="
@@ -108,6 +116,9 @@
                          (%current-system))
                      (package-supported-systems kmod))
              `(("kmod" ,kmod))
+             '())
+       ,@(if (hurd-target?)
+             `(("hurd-patch" ,(search-patch "pciutils-hurd-fix.patch")))
              '())
        ("zlib" ,zlib)))
     (home-page "https://mj.ucw.cz/sw/pciutils/")

@@ -7,6 +7,7 @@
 ;;; Copyright © 2015 David Thompson <davet@gnu.org>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2018, 2020 Marius Bakke <marius@gnu.org>
+;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -77,11 +78,14 @@
             target-arm?
             target-64bit?
             cc-for-target
+            cxx-for-target
+            pkg-config-for-target
 
             version-compare
             version>?
             version>=?
             version-prefix
+            version-major+minor+point
             version-major+minor
             version-major
             guile-version>?
@@ -106,7 +110,6 @@
             edit-expression
 
             filtered-port
-            compressed-port
             decompressed-port
             call-with-decompressed-port
             compressed-output-port
@@ -206,13 +209,14 @@ buffered data is lost."
 (define (lzip-port proc port . args)
   "Return the lzip port produced by calling PROC (a symbol) on PORT and ARGS.
 Raise an error if lzlib support is missing."
-  (let* ((lzlib       (false-if-exception (resolve-interface '(guix lzlib))))
-         (supported?  (and lzlib
-                           ((module-ref lzlib 'lzlib-available?)))))
-    (if supported?
-        (let ((make-port (module-ref lzlib proc)))
-          (values (make-port port) '()))
-        (error "lzip compression not supported" lzlib))))
+  (let ((make-port (module-ref (resolve-interface '(lzlib)) proc)))
+    (make-port port)))
+
+(define (zstd-port proc port . args)
+  "Return the zstd port produced by calling PROC (a symbol) on PORT and ARGS.
+Raise an error if zstd support is missing."
+  (let ((make-port (module-ref (resolve-interface '(zstd)) proc)))
+    (make-port port)))
 
 (define (decompressed-port compression input)
   "Return an input port where INPUT is decompressed according to COMPRESSION,
@@ -224,17 +228,7 @@ a symbol such as 'xz."
     ('gzip         (filtered-port `(,%gzip "-dc") input))
     ('lzip         (values (lzip-port 'make-lzip-input-port input)
                            '()))
-    (_             (error "unsupported compression scheme" compression))))
-
-(define (compressed-port compression input)
-  "Return an input port where INPUT is compressed according to COMPRESSION,
-a symbol such as 'xz."
-  (match compression
-    ((or #f 'none) (values input '()))
-    ('bzip2        (filtered-port `(,%bzip2 "-c") input))
-    ('xz           (filtered-port `(,%xz "-c") input))
-    ('gzip         (filtered-port `(,%gzip "-c") input))
-    ('lzip         (values (lzip-port 'make-lzip-input-port/compressed input)
+    ('zstd         (values (zstd-port 'make-zstd-input-port input)
                            '()))
     (_             (error "unsupported compression scheme" compression))))
 
@@ -294,6 +288,8 @@ program--e.g., '(\"--fast\")."
     ('xz           (filtered-output-port `(,%xz "-c" ,@options) output))
     ('gzip         (filtered-output-port `(,%gzip "-c" ,@options) output))
     ('lzip         (values (lzip-port 'make-lzip-output-port output)
+                           '()))
+    ('zstd         (values (zstd-port 'make-zstd-output-port output)
                            '()))
     (_             (error "unsupported compression scheme" compression))))
 
@@ -545,6 +541,16 @@ a character other than '@'."
       (string-append target "-gcc")
       "gcc"))
 
+(define* (cxx-for-target #:optional (target (%current-target-system)))
+  (if target
+      (string-append target "-g++")
+      "g++"))
+
+(define* (pkg-config-for-target #:optional (target (%current-target-system)))
+  (if target
+      (string-append target "-pkg-config")
+      "pkg-config"))
+
 (define version-compare
   (let ((strverscmp
          (let ((sym (or (dynamic-func "strverscmp" (dynamic-link))
@@ -564,6 +570,15 @@ or '= when they denote equal versions."
 For example, (version-prefix \"2.1.47.4.23\" 3) returns \"2.1.47\""
   (string-join (take (string-split version-string #\.) num-parts) "."))
 
+(define (version-major+minor+point version-string)
+  "Return \"major>.<minor>.<point>\", where major, minor and point are the
+major, minor and point version numbers from the version-string.  For example,
+(version-major+minor+point \"6.4.5.2\") returns \"6.4.5\" or
+(version-major+minor+point \"1.19.2-2581-324ca14c3003\") returns \"1.19.2\"."
+  (let* ((3-dot (version-prefix version-string 3))
+         (index (string-index 3-dot #\-)))
+    (or (false-if-exception (substring 3-dot 0 index))
+        3-dot)))
 
 (define (version-major+minor version-string)
   "Return \"<major>.<minor>\", where major and minor are the major and

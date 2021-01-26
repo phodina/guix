@@ -1,19 +1,19 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013 Cyril Roelandt <tipecaml@gmail.com>
-;;; Copyright © 2014, 2015, 2016, 2018, 2019 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2014, 2015, 2016, 2018, 2019, 2020 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2020 Eric Bavier <bavier@posteo.net>
 ;;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2015 Alex Sassmannshausen <alex.sassmannshausen@gmail.com>
 ;;; Copyright © 2015 Eric Dvorsak <eric@dvorsak.fr>
-;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2016, 2017, 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Pjotr Prins <pjotr.guix@thebird.nl>
 ;;; Copyright © 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Peter Feigl <peter.feigl@nexoid.at>
 ;;; Copyright © 2016 John J. Foerch <jjfoerch@earthlink.net>
 ;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
-;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2017 Ben Sturmfels <ben@sturm.com.au>
 ;;; Copyright © 2017 Ethan R. Jones <doubleplusgood23@gmail.com>
@@ -56,6 +56,7 @@
   #:use-module (guix build-system emacs)
   #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
@@ -106,6 +107,7 @@
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages lua)
+  #:use-module (gnu packages mail)
   #:use-module (gnu packages man)
   #:use-module (gnu packages mcrypt)
   #:use-module (gnu packages mpi)
@@ -265,7 +267,8 @@ and provides a \"top-like\" mode (monitoring).")
                 "0x9zr0x3xvk4qkb6jnda451d5iyrl06cz1bjzjsm0lxvjj3fabyk"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:configure-flags '("--localstatedir=/var")))
+     '(#:configure-flags '("--localstatedir=/var")
+       #:make-flags '("GUILE_AUTO_COMPILE=0")))
     (native-inputs
      `(("pkg-config" ,pkg-config)
 
@@ -295,7 +298,8 @@ interface and is based on GNU Guile.")
      `(("pkg-config" ,pkg-config)
        ("guile" ,guile-2.2)))
     (inputs
-     `(("guile" ,guile-2.2)))))
+     `(("guile" ,guile-2.2)
+       ("guile2.2-readline" ,guile2.2-readline)))))
 
 (define-public guile3.0-shepherd
   (deprecated-package "guile3.0-shepherd" shepherd))
@@ -305,15 +309,26 @@ interface and is based on GNU Guile.")
     (inherit shepherd)
     (name "guile2.0-shepherd")
     (native-inputs
-     `(("pkg-config" ,pkg-config)
+     `(("help2man" ,help2man)
+       ("pkg-config" ,pkg-config)
        ("guile" ,guile-2.0)))
     (inputs
-     `(("guile" ,guile-2.0)))))
+     `(("guile" ,guile-2.0)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-source
+           (lambda _
+             ;; (ice-9 threads) isn't available in guile-2.0
+             (substitute* "modules/shepherd.scm"
+               ((".*\\(ice-9 threads\\).*") ""))
+             #t)))
+       ,@(package-arguments shepherd)))))
 
 (define-public cloud-utils
   (package
     (name "cloud-utils")
-    (version "0.31")
+    (version "0.32")
     (source
      (origin
        (method url-fetch)
@@ -322,7 +337,7 @@ interface and is based on GNU Guile.")
              version "/+download/cloud-utils-" version ".tar.gz"))
        (sha256
         (base32
-         "07fl3dlqwdzw4xx7mcxhpkks6dnmaxha80zgs9f6wmibgzni8z0r"))))
+         "0xxdi55lzw7j91zfajw7jhd2ilsqj2dy04i9brlk8j3pvb5ma8hk"))))
     (build-system gnu-build-system)
     (arguments
      '(#:make-flags
@@ -443,7 +458,7 @@ graphs and can export its output to different formats.")
 (define-public facter
   (package
     (name "facter")
-    (version "4.0.33")
+    (version "4.0.49")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -452,7 +467,7 @@ graphs and can export its output to different formats.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0r9fi15cib4324ii4pniayjf27g51dka2skv9isiaj8y4wyhcq0v"))))
+                "0l7gic5ql5xiy5s6rb0j9ydyaal5bcxl10bx45khcgdr9zg16pb1"))))
     (build-system ruby-build-system)
     (arguments
      `(#:phases
@@ -514,20 +529,23 @@ or via the @code{facter} Ruby library.")
 (define-public htop
   (package
     (name "htop")
-    (version "2.2.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "http://hisham.hm/htop/releases/"
-                                  version "/htop-" version ".tar.gz"))
-              (sha256
-               (base32
-                "0mrwpb3cpn3ai7ar33m31yklj64c3pp576vh1naqff6f21pq5mnr"))))
+    (version "3.0.5")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/htop-dev/htop")
+             (commit version)))
+       (sha256
+        (base32 "10lp6cbfvigzp6pq5nwj3s3l4vs7cv92krz2r08nwrz8vl6rqdzp"))
+       (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (inputs
      `(("ncurses" ,ncurses)))
     (native-inputs
-     `(("python" ,python-wrapper)))     ;for scripts/MakeHeader.py
-    (home-page "https://hisham.hm/htop/")
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)))
+    (home-page "https://htop.dev")
     (synopsis "Interactive process viewer")
     (description
      "This is htop, an interactive process viewer.  It is a text-mode
@@ -561,7 +579,7 @@ memory, disks, network and processes.")
 (define-public pies
   (package
     (name "pies")
-    (version "1.4")
+    (version "1.5")
     (source
      (origin
        (method url-fetch)
@@ -569,7 +587,7 @@ memory, disks, network and processes.")
                            version ".tar.bz2"))
        (sha256
         (base32
-         "14jb4pa4zs26d5j2skxbaypnwhsx2lw8jgj1irrgs03c2dnf7gp6"))))
+         "11j168qljsinaj5dwmg7nkm2z1aghi6gc3d0wf0pikflnh2q2wqf"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases
@@ -824,7 +842,7 @@ would need and has several interesting built-in capabilities.")
 (define-public netcat-openbsd
   (package
     (name "netcat-openbsd")
-    (version "1.217-1")
+    (version "1.217-2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -833,12 +851,12 @@ would need and has several interesting built-in capabilities.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0kcvi3pav2fdx5c22psjv5dggk4cmrqiaq2cklhqngsk4a7vrjan"))))
+                "19sr52ix14w344pv13ppb0c1wyg5dxhic1fw2q0s3qfmx57b9hhp"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no test suite
        #:make-flags
-       (list "CC=gcc")
+       (list (string-append "CC=" ,(cc-for-target)))
        #:phases
        (modify-phases %standard-phases
          (delete 'configure)
@@ -924,14 +942,14 @@ recursive runs on the generated subnets.  (also IPv6)
 (define-public alive
   (package
     (name "alive")
-    (version "2.0.2")
+    (version "2.0.3")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://gnu/alive/alive-"
                                  version ".tar.xz"))
              (sha256
               (base32
-               "1vrzg51ai68x9yld7vbgl58sxaw5qpx8rbakwcxn4cqq6vpxj38j"))))
+               "053hfp7s66lnilm1ii4jrjmy44wpa2cwwh6f0sl8cyz0mm813x4b"))))
     (build-system gnu-build-system)
     (arguments '(#:configure-flags '("alive_cv_nice_ping=yes")))
     (inputs `(("guile" ,guile-2.0)
@@ -946,7 +964,7 @@ connection alive.")
 (define-public isc-dhcp
   (let* ((bind-major-version "9")
          (bind-minor-version "11")
-         (bind-patch-version "18")
+         (bind-patch-version "22")
          (bind-release-type "")         ; for patch release, use "-P"
          (bind-release-version "")      ; for patch release, e.g. "6"
          (bind-version (string-append bind-major-version
@@ -1042,10 +1060,10 @@ connection alive.")
                ;; if finds all the programs it needs.
                (let* ((out       (assoc-ref outputs "out"))
                       (libexec   (string-append out "/libexec"))
-                      (coreutils (assoc-ref inputs "coreutils"))
+                      (coreutils (assoc-ref inputs "coreutils*"))
                       (inetutils (assoc-ref inputs "inetutils"))
                       (net-tools (assoc-ref inputs "net-tools"))
-                      (sed       (assoc-ref inputs "sed")))
+                      (sed       (assoc-ref inputs "sed*")))
                  (substitute* "client/scripts/linux"
                    (("/sbin/ip")
                     (string-append (assoc-ref inputs "iproute")
@@ -1083,14 +1101,10 @@ connection alive.")
                                         "/bind-" bind-version ".tar.gz"))
                     (sha256
                      (base32
-                      "0vws0zzb39mkphj4hhjrgfj9dzw951lc4pfa6pqg5ll5ma51mbsr"))))
+                      "1j9a4r83a77mp8k1y8z524c9rzdqgd8rzwczd6zwmw86a00xiimg"))))
 
-                ;; When cross-compiling, we need the cross Coreutils and sed.
-                ;; Otherwise just use those from %FINAL-INPUTS.
-                ,@(if (%current-target-system)
-                      `(("coreutils" ,coreutils)
-                        ("sed" ,sed))
-                      '())))
+                ("coreutils*" ,coreutils)
+                ("sed*" ,sed)))
 
       (home-page "https://www.isc.org/products/DHCP/")
       (synopsis "Dynamic Host Configuration Protocol (DHCP) tools")
@@ -1343,9 +1357,11 @@ at once based on a Perl regular expression.")
 
        #:phases (modify-phases %standard-phases
                   (add-after 'unpack 'patch-paths
-                    (lambda _
+                    (lambda* (#:key inputs #:allow-other-keys)
                       (substitute* "rc/rc"
-                        (("/usr/sbin/sendmail") "sendmail"))
+                        (("/usr/sbin/sendmail")
+                         (string-append (assoc-ref inputs "mailutils")
+                                        "/bin/mail")))
                       #t))
                   (add-after 'unpack 'fix-configure
                     (lambda* (#:key inputs native-inputs #:allow-other-keys)
@@ -1369,10 +1385,11 @@ at once based on a Perl regular expression.")
                          "packdir=\"/var/log\""))
                       #t))
                   (add-before 'install 'tweak-rc-weekly
-                    (lambda _
+                    (lambda* (#:key inputs #:allow-other-keys)
                       (substitute* "rc/weekly"
                         (("/bin/kill")
-                         (which "kill"))
+                         (string-append (assoc-ref inputs "coreutils*")
+                                        "/bin/kill"))
                         (("syslogd\\.pid")
                          ;; The file is called 'syslog.pid' (no 'd').
                          "syslog.pid"))
@@ -1383,6 +1400,8 @@ at once based on a Perl regular expression.")
     (native-inputs `(("texinfo" ,texinfo)
                      ("automake" ,automake)
                      ("util-linux" ,util-linux))) ; for 'cal'
+    (inputs `(("coreutils*" ,coreutils)
+              ("mailutils" ,mailutils)))
     (home-page "https://www.gnu.org/software/rottlog/")
     (synopsis "Log rotation and management")
     (description
@@ -1396,7 +1415,7 @@ system administrator.")
 (define-public sudo
   (package
     (name "sudo")
-    (version "1.9.2")
+    (version "1.9.5p1")
     (source (origin
               (method url-fetch)
               (uri
@@ -1406,24 +1425,18 @@ system administrator.")
                                     version ".tar.gz")))
               (sha256
                (base32
-                "05432672iilb7s52j9l9xzrlambb1wg3k7qvf5973i41y40x563w"))
+                "10kqdfbfpf3vk5ihz5gwynv4pxdf1lg6ircrlanyygb549yg7pad"))
               (modules '((guix build utils)))
               (snippet
                '(begin
                   (delete-file-recursively "lib/zlib")
                   #t))))
     (build-system gnu-build-system)
-    (outputs (list "out" "python"))
+    (outputs (list "out"))
     (arguments
      `(#:configure-flags
        (list (string-append "--docdir=" (assoc-ref %outputs "out")
                             "/share/doc/" ,name "-" ,version)
-
-             ;; XXX: Disable Python support when cross-compiling because
-             ;; 'configure' tries to run 'python', which fails.
-             ,(if (%current-target-system)
-                  "--disable-python"
-                  "--enable-python")              ; for plug-ins written in ~
 
              "--with-logpath=/var/log/sudo.log"
              "--with-rundir=/var/run/sudo" ; must be cleaned up at boot time
@@ -1471,34 +1484,19 @@ system administrator.")
              (substitute* "plugins/sudoers/Makefile.in"
                (("^pre-install:" match)
                 (string-append match "\ndisabled-" match)))
-             #t))
-         (add-after 'install 'separate-python-output
-           (lambda* (#:key target outputs #:allow-other-keys)
-             (let ((out        (assoc-ref outputs "out"))
-                   (out:python (assoc-ref outputs "python")))
-               (if target
-                   (mkdir-p (string-append out:python "/empty"))
-                   (for-each
-                    (lambda (file)
-                      (let ((old (string-append out "/" file))
-                            (new (string-append out:python "/" file)))
-                        (mkdir-p (dirname new))
-                        (rename-file old new)))
-                    (list "libexec/sudo/python_plugin.so"
-                          "libexec/sudo/python_plugin.la")))
-               #t))))
+             #t)))
 
        ;; XXX: The 'testsudoers' test series expects user 'root' to exist, but
        ;; the chroot's /etc/passwd doesn't have it.  Turn off the tests.
        #:tests? #f))
     (native-inputs
-     `(("groff" ,groff)))
+     ;; XXX TODO: Remove on next rebuild cycle.
+     (if (hurd-target?)
+         '()
+         `(("groff" ,groff))))
     (inputs
      `(("coreutils" ,coreutils)
        ("linux-pam" ,linux-pam)
-       ,@(if (%current-target-system)
-             '()
-             `(("python" ,python)))
        ("zlib" ,zlib)))
     (home-page "https://www.sudo.ws/")
     (synopsis "Run commands as root")
@@ -1514,7 +1512,7 @@ commands and their arguments.")
 (define-public opendoas
   (package
     (name "opendoas")
-    (version "6.6.1")
+    (version "6.8")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1523,7 +1521,7 @@ commands and their arguments.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "07kkc5729p654jrgfsc8zyhiwicgmq38yacmwfvay2b3gmy728zn"))))
+                "1dlwnvy8r6slxcy260gfkximp1ms510wdslpfq9y6xvd2qi5izcb"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1531,19 +1529,17 @@ commands and their arguments.")
          (replace 'configure
            ;; The configure script doesn't accept most of the default flags.
            (lambda* (#:key configure-flags #:allow-other-keys)
-             ;; The configure script can only be told which compiler to use
+             ;; The configure script can be told which compiler to use only
              ;; through environment variables.
              (setenv "CC" ,(cc-for-target))
              (apply invoke "./configure" configure-flags)))
          (add-before 'install 'fix-makefile
            (lambda* (#:key outputs #:allow-other-keys)
-             (substitute* "bsd.prog.mk"
+             (substitute* "GNUmakefile"
                (("^\tchown.*$") ""))
              #t)))
        #:configure-flags
        (list (string-append "--prefix=" (assoc-ref %outputs "out"))
-             ;; Nothing is done with this value (yet?) but it's supported.
-             ;; (string-append "--target=" (or ,(%current-target-system) ""))
              "--with-timestamp")
        ;; Compiler choice is not carried over from the configure script.
        #:make-flags
@@ -1581,10 +1577,10 @@ features of sudo with a fraction of the codebase.")
                     #t))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases
+     `(#:phases
        (modify-phases %standard-phases
          (replace 'configure
-           (lambda* (#:key outputs #:allow-other-keys)
+           (lambda _
              (chdir "wpa_supplicant")
              (copy-file "defconfig" ".config")
              (let ((port (open-file ".config" "al")))
@@ -1598,6 +1594,15 @@ features of sudo with a fraction of the codebase.")
       CONFIG_LIBNL32=y
       CONFIG_READLINE=y\n" port)
                (close-port port))
+             ;; Make sure we have a pkg-config when cross compiling
+             (substitute* '(".config"
+                            "Android.mk"
+                            "Makefile"
+                            "dbus/Makefile")
+               (("pkg-config")
+                (or (which "pkg-config")
+                    (which (string-append ,(%current-target-system)
+                                          "-pkg-config")))))
              #t))
          (add-after 'install 'install-documentation
            (lambda* (#:key outputs #:allow-other-keys)
@@ -1626,7 +1631,7 @@ features of sudo with a fraction of the codebase.")
                            "wpa_supplicant.conf"))
                #t))))
 
-      #:make-flags (list "CC=gcc"
+      #:make-flags (list (string-append "CC=" ,(cc-for-target))
                          (string-append "BINDIR=" (assoc-ref %outputs "out")
                                         "/sbin")
                          (string-append "LIBDIR=" (assoc-ref %outputs "out")
@@ -1736,10 +1741,10 @@ command.")
                 "1mrbvg4v7vm7mknf0n29mf88k3s4a4qj6r4d51wq8hmjj1m7s7c8"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases
+     `(#:phases
        (modify-phases %standard-phases
          (replace 'configure
-           (lambda* (#:key outputs #:allow-other-keys)
+           (lambda _
              ;; This is mostly copied from 'wpa-supplicant' above.
              (chdir "hostapd")
              (copy-file "defconfig" ".config")
@@ -1750,6 +1755,14 @@ command.")
       CONFIG_IEEE80211N=y
       CONFIG_IEEE80211AC=y\n" port)
                (close-port port))
+             #t))
+         (add-after 'unpack 'patch-pkg-config
+           (lambda _
+             (substitute* "src/drivers/drivers.mak"
+               (("pkg-config")
+                (or (which "pkg-config")
+                    (string-append ,(%current-target-system)
+                                   "-pkg-config"))))
              #t))
          (add-after 'install 'install-man-pages
            (lambda* (#:key outputs #:allow-other-keys)
@@ -1767,7 +1780,7 @@ command.")
                          (find-files "." "\\.8"))
                #t))))
 
-      #:make-flags (list "CC=gcc"
+      #:make-flags (list (string-append "CC=" ,(cc-for-target))
                          (string-append "BINDIR=" (assoc-ref %outputs "out")
                                         "/sbin")
                          (string-append "LIBDIR=" (assoc-ref %outputs "out")
@@ -1829,21 +1842,24 @@ network, which causes enabled computers to power on.")
 (define-public dmidecode
   (package
     (name "dmidecode")
-    (version "3.2")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append
-                    "mirror://savannah/dmidecode/dmidecode-"
-                    version ".tar.xz"))
-              (sha256
-               (base32
-                "1pcfhcgs2ifdjwp7amnsr3lq95pgxpr150bjhdinvl505px0cw07"))))
+    (version "3.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://savannah/dmidecode/dmidecode-"
+                           version ".tar.xz"))
+       (sha256
+        (base32 "0m8lzg9rf1qssasiix672bxk5qwms90561g8hfkkhk31h2kkgiw2"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases (modify-phases %standard-phases (delete 'configure))
-       #:tests? #f                                ; no 'check' target
-       #:make-flags (list (string-append "prefix="
-                                         (assoc-ref %outputs "out")))))
+     `(#:tests? #f                                ; no 'check' target
+       #:make-flags
+       (list (string-append "CC=" ,(cc-for-target))
+             (string-append "prefix="
+                            (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))))                   ; no configure script
     (home-page "https://www.nongnu.org/dmidecode/")
     (synopsis "Read hardware information from the BIOS")
     (description
@@ -1859,7 +1875,7 @@ module slots, and the list of I/O ports (e.g. serial, parallel, USB).")
 (define-public acpica
   (package
     (name "acpica")
-    (version "20200528")
+    (version "20210105")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1867,13 +1883,13 @@ module slots, and the list of I/O ports (e.g. serial, parallel, USB).")
                     version ".tar.gz"))
               (sha256
                (base32
-                "01ajxnz9dpnvdbib7yv20dw21a1yyfgwiw3whg0xi57cf4app2md"))))
+                "1gi7qzfywg118g5nlqn5lawxk25pg2sz01gmbz40vvmikks4ri9r"))))
     (build-system gnu-build-system)
     (native-inputs `(("flex" ,flex)
                      ("bison" ,bison)))
     (arguments
-     '(#:make-flags (list (string-append "PREFIX=" %output)
-                          "CC=gcc"
+     `(#:make-flags (list (string-append "PREFIX=" %output)
+                          (string-append "CC=" ,(cc-for-target))
                           "HOST=_LINUX"
                           "OPT_CFLAGS=-Wall -fno-strict-aliasing")
        #:tests? #f                      ; no 'check' target
@@ -2079,7 +2095,7 @@ track changes in important system configuration files.")
 (define-public libcap-ng
   (package
     (name "libcap-ng")
-    (version "0.7.10")
+    (version "0.8")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2087,7 +2103,7 @@ track changes in important system configuration files.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "1gzzy12agfa9ddipdf72h9y68zqqnvsjjylv4vnq6hj4w2safk58"))))
+                "08cy59iassiwbmfxa5v0kb374r80290vv32f5q1mnip11av26kgi"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -2107,7 +2123,7 @@ various ways that may be running with too much privilege.")
 (define-public smartmontools
   (package
     (name "smartmontools")
-    (version "7.1")
+    (version "7.2")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2115,7 +2131,7 @@ various ways that may be running with too much privilege.")
                     version "/smartmontools-" version ".tar.gz"))
               (sha256
                (base32
-                "0imqb7ka4ia5573w8rnpck571pjjc9698pdjcapy9cfyk4n4swrz"))))
+                "1mlc25sd5rgj5xmzcllci47inmfdw7cp185fday6hc9rwqkqmnaw"))))
     (build-system gnu-build-system)
     (inputs `(("libcap-ng" ,libcap-ng)))
     (home-page "https://www.smartmontools.org/")
@@ -2131,24 +2147,19 @@ degradation and failure.")
 (define-public fdupes
   (package
     (name "fdupes")
-    (version "1.6.1")
+    (version "2.1.2")
     (source
      (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/adrianlopezroche/fdupes")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
+       (method url-fetch)
+       (uri (string-append "https://github.com/adrianlopezroche/fdupes/"
+                           "releases/download/v" version "/"
+                           "fdupes-" version ".tar.gz"))
        (sha256
-        (base32 "19b6vqblddaw8ccw4sn0qsqzbswlhrz8ia6n4m3hymvcxn8skpz9"))))
+        (base32 "1g9p50xhi2sp0hqxml4w2k0kq9jv988q2yxm347z5349dlxvap6d"))))
     (build-system gnu-build-system)
-    (arguments
-     '(#:phases (modify-phases %standard-phases
-                  (delete 'configure))
-       #:tests? #f ; no 'check' target
-       #:make-flags (list "CC=gcc"
-                          (string-append "PREFIX="
-                                         (assoc-ref %outputs "out")))))
+    (inputs
+     `(("ncurses" ,ncurses)
+       ("pcre2" ,pcre2)))
     (home-page "https://github.com/adrianlopezroche/fdupes")
     (synopsis "Identify duplicate files")
     (description
@@ -2195,13 +2206,13 @@ of supported upstream metrics systems simultaneously.")
 (define-public ansible
   (package
     (name "ansible")
-    (version "2.9.11")
+    (version "2.9.16")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "ansible" version))
        (sha256
-        (base32 "1c9ayh61qwasgncmlw7rjx5r4g5n2cpg1d5blgn53zg7xhrx1yc8"))))
+        (base32 "0j1icfqff25zm9sq6j41ipl6gcj3i67mb5bqbjf2f2q1yx6rm8sk"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-bcrypt" ,python-bcrypt)
@@ -2398,17 +2409,20 @@ lookup to YAML Mode.  You could enable the mode with @code{(add-hook
      `(#:phases (modify-phases %standard-phases
                   (delete 'configure)
                   (replace 'build
-                    (lambda _
-                      (invoke "make" "CC=gcc" "-Csrc")))
+                    (lambda* (#:key make-flags #:allow-other-keys)
+                      (apply invoke "make" "-Csrc" make-flags)))
                   (replace 'check
-                    (lambda _
-                      (invoke "make" "CC=gcc" "-Ctests")))
+                    (lambda* (#:key tests? make-flags #:allow-other-keys)
+                      (when tests?
+                        (apply invoke "make" "-Ctests" make-flags))
+                      #t))
                   (replace 'install
                     (lambda* (#:key outputs #:allow-other-keys)
                       (let* ((out (assoc-ref outputs "out"))
                              (bin (string-append out "/bin")))
                         (install-file "src/cpulimit" bin))
-                      #t)))))
+                      #t)))
+       #:make-flags (list (string-append "CC=" ,(cc-for-target)))))
     (home-page "https://github.com/opsengine/cpulimit")
     (synopsis "Limit CPU usage")
     (description
@@ -2705,7 +2719,7 @@ results (ndiff), and a packet generation and response analysis tool (nping).")
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/dagwieers/dstat")
+             (url "https://github.com/dstat-real/dstat")
              (commit (string-append "v" version))))
        (file-name (git-file-name "dstat" version))
        (sha256
@@ -2715,9 +2729,8 @@ results (ndiff), and a packet generation and response analysis tool (nping).")
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no make check
-       #:make-flags (let ((out (assoc-ref %outputs "out")))
-                      (list (string-append "DESTDIR=" out)
-                            "prefix=/"))
+       #:make-flags
+       (list (string-append "prefix=" (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'fix-python3-DeprecationWarning
@@ -2898,9 +2911,13 @@ shortcut syntax and completion options.")
     (version "4.8")
     (source (origin
               (method url-fetch)
-              (uri (string-append
-                    "https://archives.eyrie.org/software/kerberos/"
-                    "pam-krb5-" version ".tar.xz"))
+              (uri
+                (list (string-append
+                        "https://archives.eyrie.org/software/kerberos/"
+                        "pam-krb5-" version ".tar.xz")
+                      (string-append
+                        "https://archives.eyrie.org/software/ARCHIVE/"
+                        "pam-krb5/pam-krb5-" version ".tar.xz")))
               (patches (search-patches "pam-krb5-CVE-2020-10595.patch"))
               (sha256
                (base32
@@ -2934,7 +2951,7 @@ with @code{ChallengeResponseAuthentication} and @code{PrivilegeSeparation}
 enabled, and supports extensive configuration either by PAM options or in
 krb5.conf or both.  PKINIT is supported with recent versions of both MIT
 Kerberos and Heimdal and FAST is supported with recent MIT Kerberos.")
-    (home-page "https://www.eyrie.org/~eagle/software/pam-krb5")
+    (home-page "https://www.eyrie.org/~eagle/software/pam-krb5/")
     ;; Dual licenced under  a homebrew non-copyleft OR GPL (any version)
     ;; However, the tarball does not contain a copy of the GPL,  so unless
     ;; we put one in, we cannot distribute it under GPL without violating
@@ -2949,6 +2966,8 @@ Kerberos and Heimdal and FAST is supported with recent MIT Kerberos.")
              (commit (string-append "v" version))))
        (sha256
         (base32 "04f3jqg8ww4jxsf9c6ddcdgy2xbhkyp0b3l5f1hvvbv94p81rjxd"))
+       (patches
+        (search-patches "sunxi-tools-remove-sys-io.patch"))
        (modules '((guix build utils)))
        (snippet
         ;; Remove binaries contained in the tarball which are only for the
@@ -3107,7 +3126,7 @@ buffers.")
 (define-public igt-gpu-tools
   (package
     (name "igt-gpu-tools")
-    (version "1.24")
+    (version "1.25")
     (source
      (origin
        (method git-fetch)
@@ -3116,27 +3135,22 @@ buffers.")
              (commit (string-append "igt-gpu-tools-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1gpdjs5aj6vsnzwcjvw5bb120lgffvvshi4202phr0bzw3b92ky8"))))
-    (build-system gnu-build-system)
+        (base32 "1lvhkdhilw0fn4nzkpfwvrhiv8d92h811qs2v6ac3p5w7v86a9zm"))))
+    (build-system meson-build-system)
     (arguments
      `(#:tests? #f))            ; many of the tests try to load kernel modules
     (inputs
      `(("cairo" ,cairo)
        ("elfutils" ,elfutils)           ; libdw
        ("eudev" ,eudev)
-       ("glib" ,glib)
        ("kmod" ,kmod)
        ("libdrm" ,libdrm)
        ("libpciaccess" ,libpciaccess)
        ("libunwind" ,libunwind)
-       ("libxrandr" ,libxrandr)
-       ("openssl" ,openssl)
-       ("procps" ,procps)
-       ("util-macros" ,util-macros)))
+       ("procps" ,procps)))
     (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("libtool" ,libtool)
+     `(("bison" ,bison)
+       ("flex" ,flex)
        ("pkg-config" ,pkg-config)))
     (home-page "https://gitlab.freedesktop.org/drm/igt-gpu-tools")
     (synopsis "Tools for development and testing of the Intel DRM driver")
@@ -3374,14 +3388,14 @@ information tool.")
 (define-public nnn
   (package
     (name "nnn")
-    (version "3.3")
+    (version "3.5")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/jarun/nnn/releases/download/v"
                            version "/nnn-v" version ".tar.gz"))
        (sha256
-        (base32 "1jiaygylwrlz6rlls1q69xw10j6ypr96yshsbzisg0adk37lbchn"))))
+        (base32 "1ww18vvfjkvi36rcamw8kpix4bhk71w5bw9kmnh158crah1x8dp6"))))
     (build-system gnu-build-system)
     (inputs
      `(("ncurses" ,ncurses)
@@ -3389,15 +3403,23 @@ information tool.")
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (arguments
-     '(#:tests? #f                      ; no tests
+     `(#:tests? #f                      ; no tests
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure))           ; no configure script
+         (delete 'configure)            ; no configure script
+         (add-after 'unpack 'patch-pkg-config
+           (lambda _
+             (substitute* "Makefile"
+               (("pkg-config")
+                (or (which "pkg-config")
+                    (string-append ,(%current-target-system)
+                                   "-pkg-config"))))
+             #t)))
        #:make-flags
        (list
         (string-append "PREFIX="
                        (assoc-ref %outputs "out"))
-        "CC=gcc")))
+        (string-append "CC=" ,(cc-for-target)))))
     (home-page "https://github.com/jarun/nnn")
     (synopsis "Terminal file browser")
     (description "@command{nnn} is a fork of @command{noice}, a blazing-fast
@@ -3410,40 +3432,56 @@ make it a perfect utility on modern distros.")
 (define-public thermald
   (package
     (name "thermald")
-    (version "1.9.1")
+    (version "2.4.1")
     (source
      (origin
       (method git-fetch)
       (uri (git-reference
-             (url "https://github.com/01org/thermal_daemon")
+             (url "https://github.com/intel/thermal_daemon")
              (commit (string-append "v" version))))
       (file-name (git-file-name name version))
       (sha256
-       (base32 "0iagc3jqpnh6q2fa1gx4wx6r8qg0556j60xr159zqg95djr4dv99"))))
+       (base32 "0rlac7v1b59m7gh767hkd8a0r4p001nd24786fnmryygbxynd2s6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
-       (let ((out      (assoc-ref %outputs "out")))
-         (list (string-append "--sysconfdir="
-                              out "/etc")
-               (string-append "--with-dbus-sys-dir="
+       (let ((out (assoc-ref %outputs "out")))
+         (list (string-append "--with-dbus-sys-dir="
                               out "/etc/dbus-1/system.d")
-               "--localstatedir=/var"))))
+               "--localstatedir=/var"))
+       #:make-flags
+       (list "V=1")                     ; log build commands
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'bootstrap 'no-early-./configure
+           (lambda _
+             (setenv "NO_CONFIGURE" "yet")
+             ;; XXX thd_trip_point.h redefines "__STDC_LIMIT_MACROS" after
+             ;; <xz>/include/lzma.h.  ./configure forcibly appends -Werror
+             ;; to CXXFLAGS, overriding any -Wno-error we'd add.
+             (substitute* "configure.ac"
+               (("-Werror") ""))
+             #t)))))
     (native-inputs
      `(("autoconf" ,autoconf)
+       ("autoconf-archive" ,autoconf-archive)
        ("automake" ,automake)
        ("glib" ,glib "bin")             ; for glib-genmarshal, etc.
+       ("gtk-doc" ,gtk-doc)
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("dbus-glib" ,dbus-glib)
-       ("libxml2" ,libxml2)))
+       ("libevdev" ,libevdev)
+       ("libxml2" ,libxml2)
+       ("upower" ,upower)
+       ("xz" ,xz)))
     (home-page "https://01.org/linux-thermal-daemon/")
     (synopsis "CPU scaling for thermal management")
     (description "The Linux Thermal Daemon helps monitor and control temperature
 on systems running the Linux kernel.")
     ;; arm and aarch64 don't have cpuid.h.
     (supported-systems '("i686-linux" "x86_64-linux"))
-    (license license:gpl2+)))
+    (license license:gpl2)))
 
 (define-public masscan
   (package
@@ -3462,9 +3500,9 @@ on systems running the Linux kernel.")
     (inputs
      `(("libpcap" ,libpcap)))
     (arguments
-     '(#:test-target "regress"
+     `(#:test-target "regress"
        #:make-flags
-       (list "CC=gcc"
+       (list (string-append "CC=" ,(cc-for-target))
              (string-append "PREFIX=" (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
@@ -3592,7 +3630,7 @@ Python loading in HPC environments.")
   (let ((real-name "inxi"))
     (package
       (name "inxi-minimal")
-      (version "3.1.05-2")
+      (version "3.2.02-2")
       (source
        (origin
          (method git-fetch)
@@ -3601,7 +3639,7 @@ Python loading in HPC environments.")
                (commit version)))
          (file-name (git-file-name real-name version))
          (sha256
-          (base32 "1a7nl2wk49yz5hcrph692xh5phv1mdg1m5cbvgv3ya12c6r32pa2"))))
+          (base32 "0fwx798v9kwiwkgbj97w6rjdanwf7ap65vvq1fqy7gd9x78xcxsq"))))
       (build-system trivial-build-system)
       (inputs
        `(("bash" ,bash-minimal)
@@ -3694,6 +3732,8 @@ support forum.  It runs with the @code{/exec} command in most IRC clients.")
        ("perl-io-socket-ssl" ,perl-io-socket-ssl)
        ("perl-json-xs" ,perl-json-xs)
        ("perl-time-hires" ,perl-time-hires)
+       ("lvm2" ,lvm2)                   ; lvs
+       ("mdadm" ,mdadm)
        ;; TODO: Add more inputs:
        ;; ipmi-sensors
        ;; hddtemp
@@ -3771,26 +3811,20 @@ support forum.  It runs with the @code{/exec} command in most IRC clients.")
 (define-public solaar
   (package
     (name "solaar")
-    (version "0.9.2")
+    (version "1.0.4")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/pwr/Solaar")
+                    (url "https://github.com/pwr-Solaar/Solaar")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "085mfa13dap3wqik1dqlad0d7kff4rv7j4ljh99c7l8nhczkqgwm"))))
+                "15wzxxr2m5349kkvcs3k5clg1rsmvh6by2066qm4hlgvjwmigggy"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'fix-prefix-detection
-           (lambda _
-             (substitute* "setup.py"
-              (("'--prefix' in sys\\.argv")
-               "len([x.startswith('--prefix=') for x in sys.argv]) > 0"))
-             #t))
          (add-before 'build 'setenv-PATH
            (lambda _
              (setenv "PYTHONPATH" (string-append "lib:" (getenv "PYTHONPATH")))
@@ -3918,19 +3952,14 @@ tcpdump and snoop.")
 (define-public pam-mount
   (package
     (name "pam-mount")
-    (version "2.16")
+    (version "2.17")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/pam-mount/pam_mount/"
-                           version "/pam_mount-" version ".tar.xz"))
+                           "pam_mount-" version ".tar.xz"))
        (sha256
-        (base32
-         "1rvi4irb7ylsbhvx1cr6islm2xxw1a4b19q6z4a9864ndkm0f0mf"))
-       (patches
-        ;; Patch adding support for encrypted volumes in LUKS2 format.
-        ;; It comes from the Gentoo package definition for sys-auth/pam_mount.
-        (search-patches "pam-mount-luks2-support.patch"))))
+        (base32 "1q2n6a2ah6nghdn8i6ad2wj247njwb5nx48cggxknaa6lqxylidy"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("perl" ,perl)
@@ -3984,21 +4013,22 @@ supplied by the user when logging in.")
 (define-public jc
   (package
     (name "jc")
-    (version "1.11.8")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/kellyjonbrazil/jc")
-                    (commit (string-append "v" version))))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "0rkckbgm04ql4r48wjgljfiqvsz36n99yqcpcyna8lvlm8h4nmwa"))))
+    (version "1.13.4")
+    (source
+     (origin
+       ;; The PyPI tarball lacks the test suite.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/kellyjonbrazil/jc")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0rwvyyrdnw43pixp8h51rncq2inc9pbbj1j2191y5si00pjw34zr"))))
     (build-system python-build-system)
     (propagated-inputs
-     `(("python-ruamel.yaml" ,python-ruamel.yaml)
-       ("python-xmltodict" ,python-xmltodict)
-       ("python-pygments" ,python-pygments)))
+     `(("python-pygments" ,python-pygments)
+       ("python-ruamel.yaml" ,python-ruamel.yaml)
+       ("python-xmltodict" ,python-xmltodict)))
     (home-page "https://github.com/kellyjonbrazil/jc")
     (synopsis "Convert the output of command-line tools to JSON")
     (description "@code{jc} JSONifies the output of many CLI tools and
@@ -4101,3 +4131,218 @@ the system configuration; hosts only works when using the Guix package manager
 on a foreign distro.  @command{hosts} works with existing hosts files and
 entries, providing commands to add, remove, comment, and search.")
     (license license:expat)))
+
+(define-public nmrpflash
+  (package
+    (name "nmrpflash")
+    (version "0.9.14")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/jclehner/nmrpflash")
+         (commit (string-append "v" version))))
+       (sha256
+        (base32 "1fdjrxhjs96rdclbkld57xarf592slhkp79h46z833npxpn12ck1"))
+       (file-name (git-file-name name version))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libnl" ,libnl)
+       ("libpcap" ,libpcap)))
+    (arguments
+     `(#:tests? #f ; None exist
+       #:make-flags
+       (list (string-append "CC=" ,(cc-for-target))
+             (string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (add-before 'install 'prepare-install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (mkdir-p (string-append (assoc-ref outputs "out") "/bin"))
+             #t)))))
+    (home-page "https://github.com/jclehner/nmrpflash")
+    (synopsis "Netgear unbrick utility")
+    (description "This package provides a utility to flash a new firmware
+image to a Netgear device.  It has been tested on Netgear EX2700, EX6120,
+EX6150v2, DNG3700v2, R6100, R6220, R7000, D7000, WNR3500, R6400, R6800,
+R8000, R8500, WNDR3800, but is likely to be compatible with many other
+Netgear devices.")
+    (license license:gpl3+)))
+
+(define-public atop
+  (package
+    (name "atop")
+    (version "2.5.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://www.atoptool.nl/download/atop-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "0crzz4i2nabyh7d6xg7fvl65qls87nbca5ihidp3nijhrrbi14ab"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ; no test suite
+       #:make-flags
+       (list (string-append "CC=" ,(cc-for-target))
+             ;; The installer requires a choice between systemd or SysV.
+             "systemdinstall"
+             (string-append "DESTDIR=" (assoc-ref %outputs "out"))
+             (string-append "BINPATH=/bin")
+             (string-append "SBINPATH=/sbin")
+             (string-append "SYSDPATH=/etc/systemd/system")
+             (string-append "PMPATHD=/etc/systemd/system-sleep")
+             (string-append "MAN1PATH=/share/man/man1")
+             (string-append "MAN5PATH=/share/man/man5")
+             (string-append "MAN8PATH=/share/man/man8")
+             ;; Or else it tries to create /var/log/atop...
+             (string-append "LOGPATH="))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure) ; No ./configure script
+         (add-before 'build 'patch-build
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* "Makefile"
+               ;; We don't need to chown things in the build environment.
+               (("chown.*$") "")
+               ;; We can't toggle the setuid bit in the build environment.
+               (("chmod 04711") "chmod 0711")
+               ;; Otherwise, it creates a blank configuration file as a "default".
+               (("touch.*DEFPATH)/atop") "")
+               (("chmod.*DEFPATH)/atop") ""))
+             #t)))))
+    (inputs
+     `(("ncurses" ,ncurses)
+       ("python" ,python-wrapper) ; for `atopgpud`
+       ("zlib" ,zlib)))
+    (home-page "https://www.atoptool.nl/")
+    (synopsis "Linux performance monitoring console")
+    (description "Atop is an ASCII full-screen performance monitor for Linux
+that is capable of reporting the activity of all processes (even processes have
+finished during the monitoring interval), daily logging of system and process
+activity for long-term analysis, highlighting overloaded system resources by
+using colors, etc.  At regular intervals, it shows system-level activity related
+to the CPU, memory, swap, disks (including LVM) and network layers, and for
+every process (and thread) it shows e.g. the CPU utilization, memory growth,
+disk utilization, priority, username, state, and exit code.")
+    (license license:gpl2+)))
+
+;; TODO: Unvendor u-root (pkg: forth, golang, testutil).
+(define fiano
+  (package
+    (name "fiano")
+    (version "5.0.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/linuxboot/fiano.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "03ihdwwhb7g6bihx141cn0924sjs5ps6q3ps58pk1cg0g0srrr9h"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  (delete-file-recursively "vendor/golang.org")
+                  (delete-file-recursively "vendor/github.com")
+                  #t))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/linuxboot/fiano"
+       #:unpack-path "github.com/linuxboot/fiano"))
+    (native-inputs
+     `())
+    (inputs
+     `(("go-golang-org-x-text" ,go-golang-org-x-text)
+       ("go-github.com-ulikunitz-xz" ,go-github.com-ulikunitz-xz)))
+    (synopsis "UEFI image editor")
+    (description "This package provides a command-line UEFI image editor.")
+    (home-page "https://github.com/linuxboot/fiano")
+    (license license:bsd-3)))
+
+(define-public fiano-utk
+  (package
+    (inherit fiano)
+    (name "fiano-utk")
+    (arguments
+     `(#:import-path "github.com/linuxboot/fiano/cmds/utk"
+       #:unpack-path "github.com/linuxboot/fiano"))))
+
+(define-public fiano-fmap
+  (package
+    (inherit fiano)
+    (name "fiano-fmap")
+    (arguments
+     `(#:import-path "github.com/linuxboot/fiano/cmds/fmap"
+       #:unpack-path "github.com/linuxboot/fiano"))))
+
+(define-public novena-eeprom
+  (package
+    (name "novena-eeprom")
+    (version "2.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/xobs/novena-eeprom.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "00pd71mg0g20v0820ggp3ghf9nyj5s4wavaz9mkmrmsr91hcnf7i"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f   ; No tests exist
+       #:make-flags
+       (list (string-append "CC=" ,(cc-for-target)))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (out-bin (string-append out "/bin"))
+                    (out-share-man (string-append out "/share/man/man8")))
+               (install-file "novena-eeprom" out-bin)
+               (install-file "novena-eeprom.8" out-share-man)))))))
+    (inputs
+     `(("i2c-tools" ,i2c-tools)))
+    (synopsis "Novena EEPROM editor")
+    (description "This package provides an editor for the Novena EEPROM.
+Novena boards contain a device-dependent descriptive EEPROM that defines
+various parameters such as serial number, MAC address, and featureset.
+This program allows you to view and manipulate this EEPROM list.")
+    (home-page "https://github.com/xobs/novena-eeprom/")
+    (supported-systems '("armhf-linux"))
+    (license license:bsd-3)))
+
+(define-public lrzsz
+  (package
+    (name "lrzsz")
+    (version "0.12.20")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://www.ohse.de/uwe/releases/lrzsz-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "1wcgfa9fsigf1gri74gq0pa7pyajk12m4z69x7ci9c6x9fqkd2y2"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (setenv "CONFIG_SHELL" (which "bash"))
+             (invoke "./configure"
+              (string-append "--prefix="
+                             (assoc-ref outputs "out"))))))))
+    (synopsis "Implementation of XMODEM/YMODEM/ZMODEM transfer protocols")
+    (description "This package provides programs that transfer files using
+the XMODEM/YMODEM/ZMODEM file transfer protocols.")
+    (home-page "https://ohse.de/uwe/software/lrzsz.html")
+    (license license:gpl2+)))

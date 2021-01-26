@@ -3,6 +3,7 @@
 ;;; Copyright © 2018 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2018 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2019, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -25,6 +26,8 @@
   #:use-module (guix derivations)
   #:use-module (guix grafts)
   #:use-module (guix utils)
+  #:use-module (guix diagnostics)
+  #:use-module (guix i18n)
   #:use-module (rnrs bytevectors)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
@@ -32,6 +35,7 @@
   #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
+  #:use-module (ice-9 format)
   #:use-module (ice-9 match)
   #:export (gexp
             gexp?
@@ -45,6 +49,7 @@
             gexp-input-output
             gexp-input-native?
 
+            assume-valid-file-name
             local-file
             local-file?
             local-file-file
@@ -142,12 +147,17 @@
 
 ;; "G expressions".
 (define-record-type <gexp>
-  (make-gexp references modules extensions proc)
+  (make-gexp references modules extensions proc location)
   gexp?
   (references gexp-references)                    ;list of <gexp-input>
   (modules    gexp-self-modules)                  ;list of module names
   (extensions gexp-self-extensions)               ;list of lowerable things
-  (proc       gexp-proc))                         ;procedure
+  (proc       gexp-proc)                          ;procedure
+  (location   %gexp-location))                    ;location alist
+
+(define (gexp-location gexp)
+  "Return the source code location of GEXP."
+  (and=> (%gexp-location gexp) source-properties->location))
 
 (define (write-gexp gexp port)
   "Write GEXP on PORT."
@@ -160,6 +170,11 @@
    (write (apply (gexp-proc gexp)
                  (gexp-references gexp))
           port))
+
+  (let ((loc (gexp-location gexp)))
+    (when loc
+      (format port " ~a" (location->string loc))))
+
   (format port " ~a>"
           (number->string (object-address gexp) 16)))
 
@@ -400,9 +415,15 @@ Here TARGET is bound to the cross-compilation triplet or #f."
 (define (true file stat) #t)
 
 (define* (%local-file file promise #:optional (name (basename file))
-                      #:key recursive? (select? true))
+                      #:key
+                      (literal? #t) location
+                      recursive? (select? true))
   ;; This intermediate procedure is part of our ABI, but the underlying
   ;; %%LOCAL-FILE is not.
+  (when (and (not literal?) (not (string-prefix? "/" file)))
+    (warning (and=> location source-properties->location)
+             (G_ "resolving '~a' relative to current directory~%")
+             file))
   (%%local-file file promise name recursive? select?))
 
 (define (absolute-file-name file directory)
@@ -414,6 +435,12 @@ vicinity of DIRECTORY."
          ((string-prefix? "/" directory)
           (string-append directory "/" file))
          (else file))))
+
+(define-syntax-rule (assume-valid-file-name file)
+  "This is a syntactic keyword to tell 'local-file' that it can assume that
+the given file name is valid, even if it's not a string literal, and thus not
+warn about it."
+  file)
 
 (define-syntax local-file
   (lambda (s)
@@ -433,18 +460,28 @@ where FILE is the entry's absolute file name and STAT is the result of
 This is the declarative counterpart of the 'interned-file' monadic procedure.
 It is implemented as a macro to capture the current source directory where it
 appears."
-    (syntax-case s ()
+    (syntax-case s (assume-valid-file-name)
       ((_ file rest ...)
        (string? (syntax->datum #'file))
        ;; FILE is a literal, so resolve it relative to the source directory.
        #'(%local-file file
                       (delay (absolute-file-name file (current-source-directory)))
                       rest ...))
-      ((_ file rest ...)
-       ;; Resolve FILE relative to the current directory.
+      ((_ (assume-valid-file-name file) rest ...)
+       ;; FILE is not a literal, so resolve it relative to the current
+       ;; directory.  Since the user declared FILE is valid, do not pass
+       ;; #:literal? #f so that we do not warn about it later on.
        #'(%local-file file
                       (delay (absolute-file-name file (getcwd)))
                       rest ...))
+      ((_ file rest ...)
+       ;; Resolve FILE relative to the current directory.
+       (with-syntax ((location (datum->syntax s (syntax-source s))))
+        #`(%local-file file
+                       (delay (absolute-file-name file (getcwd)))
+                       rest ...
+                       #:location 'location
+                       #:literal? #f)))           ;warn if FILE is relative
       ((_)
        #'(syntax-error "missing file name"))
       (id
@@ -504,13 +541,15 @@ This is the declarative counterpart of 'text-file'."
   (options    computed-file-options))             ;list of arguments
 
 (define* (computed-file name gexp
-                        #:key guile (options '(#:local-build? #t)))
+                        #:key guile (local-build? #t) (options '()))
   "Return an object representing the store item NAME, a file or directory
-computed by GEXP.  OPTIONS is a list of additional arguments to pass
-to 'gexp->derivation'.
+computed by GEXP.  When LOCAL-BUILD? is #t (the default), it ensures the
+corresponding derivation is built locally.  OPTIONS may be used to pass
+additional arguments to 'gexp->derivation'.
 
 This is the declarative counterpart of 'gexp->derivation'."
-  (%computed-file name gexp guile options))
+  (let ((options* `(#:local-build? ,local-build? ,@options)))
+    (%computed-file name gexp guile options*)))
 
 (define-gexp-compiler (computed-file-compiler (file <computed-file>)
                                               system target)
@@ -709,22 +748,26 @@ whether this should be considered a \"native\" input or not."
 
 (set-record-type-printer! <gexp-output> write-gexp-output)
 
-(define* (gexp-attribute gexp self-attribute #:optional (equal? equal?))
+(define* (gexp-attribute gexp self-attribute #:optional (equal? equal?)
+                         #:key (validate (const #t)))
   "Recurse on GEXP and the expressions it refers to, summing the items
 returned by SELF-ATTRIBUTE, a procedure that takes a gexp.  Use EQUAL? as the
-second argument to 'delete-duplicates'."
+second argument to 'delete-duplicates'.  Pass VALIDATE every gexp and
+attribute that is traversed."
   (if (gexp? gexp)
       (delete-duplicates
-       (append (self-attribute gexp)
+       (append (let ((attribute (self-attribute gexp)))
+                 (validate gexp attribute)
+                 attribute)
                (append-map (match-lambda
                              (($ <gexp-input> (? gexp? exp))
-                              (gexp-attribute exp self-attribute))
+                              (gexp-attribute exp self-attribute
+                                              #:validate validate))
                              (($ <gexp-input> (lst ...))
                               (append-map (lambda (item)
-                                            (if (gexp? item)
-                                                (gexp-attribute item
-                                                                self-attribute)
-                                                '()))
+                                            (gexp-attribute item self-attribute
+                                                            #:validate
+                                                            validate))
                                           lst))
                              (_
                               '()))
@@ -750,7 +793,25 @@ false, meaning that GEXP is a plain Scheme object, return the empty list."
       (_
        (equal? m1 m2))))
 
-  (gexp-attribute gexp gexp-self-modules module=?))
+  (define (validate-modules gexp modules)
+    ;; Warn if MODULES, imported by GEXP, contains modules that in general
+    ;; should not be imported from the host because they vary from user to
+    ;; user and may thus be a source of non-reproducibility.  This includes
+    ;; (guix config) as well as modules that come with Guile.
+    (match (filter (match-lambda
+                     ((or ('guix 'config) ('ice-9 . _)) #t)
+                     (_ #f))
+                   modules)
+      (() #t)
+      (suspects
+       (warning (gexp-location gexp)
+                (N_ "importing module~{ ~a~} from the host~%"
+                    "importing modules~{ ~a~} from the host~%"
+                    (length suspects))
+                suspects))))
+
+  (gexp-attribute gexp gexp-self-modules module=?
+                  #:validate validate-modules))
 
 (define (gexp-extensions gexp)
   "Return the list of Guile extensions (packages) GEXP relies on.  If (gexp?
@@ -1056,7 +1117,8 @@ The other arguments are as for 'derivation'."
         (make-gexp (gexp-references exp)
                    (append modules (gexp-self-modules exp))
                    (gexp-self-extensions exp)
-                   (gexp-proc exp))))
+                   (gexp-proc exp)
+                   (gexp-location exp))))
 
   (mlet* %store-monad ( ;; The following binding forces '%current-system' and
                        ;; '%current-target-system' to be looked up at >>=
@@ -1255,18 +1317,7 @@ and in the current monad setting (system type, etc.)"
                    reference->sexp (gexp-references exp))))
     (return (apply (gexp-proc exp) args))))
 
-(define-syntax-rule (define-syntax-parameter-once name proc)
-  ;; Like 'define-syntax-parameter' but ensure the top-level binding for NAME
-  ;; does not get redefined.  This works around a race condition in a
-  ;; multi-threaded context with Guile <= 2.2.4: <https://bugs.gnu.org/27476>.
-  (eval-when (load eval expand compile)
-    (define name
-      (if (module-locally-bound? (current-module) 'name)
-          (module-ref (current-module) 'name)
-          (make-syntax-transformer 'name 'syntax-parameter
-                                   (list proc))))))
-
-(define-syntax-parameter-once current-imported-modules
+(define-syntax-parameter current-imported-modules
   ;; Current list of imported modules.
   (identifier-syntax '()))
 
@@ -1277,7 +1328,7 @@ environment."
                          (identifier-syntax modules)))
     body ...))
 
-(define-syntax-parameter-once current-imported-extensions
+(define-syntax-parameter current-imported-extensions
   ;; Current list of extensions.
   (identifier-syntax '()))
 
@@ -1386,7 +1437,8 @@ execution environment."
                       current-imported-modules
                       current-imported-extensions
                       (lambda #,formals
-                        #,sexp)))))))
+                        #,sexp)
+                      (current-source-location)))))))
 
 
 ;;;

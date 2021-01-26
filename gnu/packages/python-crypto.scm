@@ -8,7 +8,7 @@
 ;;; Copyright © 2015 Cyril Roelandt <tipecaml@gmail.com>
 ;;; Copyright © 2014, 2017 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015, 2016 David Thompson <davet@gnu.org>
-;;; Copyright © 2016, 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2014, 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015, 2016, 2017, 2019 Ricardo Wurmus <rekado@elephly.net>
@@ -16,7 +16,7 @@
 ;;; Copyright © 2016, 2017, 2020 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2017 Carlo Zancanaro <carlo@zancanaro.id.au>
 ;;; Copyright © 2018 Tomáš Čech <sleep_walker@gnu.org>
-;;; Copyright © 2018 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2018, 2021 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2018 Vagrant Cascadian <vagrant@debian.org>
 ;;; Copyright © 2018 Nam Nguyen <namn@berkeley.edu>
 ;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
@@ -61,20 +61,45 @@
   #:use-module (gnu packages swig)
   #:use-module (gnu packages time)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages xml)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (srfi srfi-1))
+
+(define-public python-potr
+  (package
+    (name "python-potr")
+    (version "1.0.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/python-otr/pure-python-otr")
+         (commit version)))
+       (file-name
+        (git-file-name name version))
+       (sha256
+        (base32 "1hzw6h01fm216nmipyylgz0zybd80w1xsk12m7djycnhqrnrvvv1"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-pycrypto" ,python-pycrypto)))
+    (synopsis "Python OTR Implementation")
+    (description "Python OTR is an Off-The-Record Protocol Implementation in
+Python.  It does not bind to libotr.")
+    (home-page "https://github.com/python-otr/pure-python-otr")
+    (license license:lgpl3+)))
 
 (define-public python-base58
   (package
     (name "python-base58")
-    (version "1.0.3")
+    (version "2.0.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "base58" version))
        (sha256
         (base32
-         "0q1yr0n5jaf17xq98m7dma6z4rh8p19ch55l1s09gi3rk5ckqycs"))))
+         "0yfaqp76kbdb62hikr5n4jkkfjfmii89grwfy6sw3fmsv5hrap1n"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-pyhamcrest" ,python-pyhamcrest)))
@@ -117,13 +142,13 @@ Password Scheme\"} by Niels Provos and David Mazieres.")
 (define-public python-passlib
   (package
     (name "python-passlib")
-    (version "1.7.2")
+    (version "1.7.4")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "passlib" version))
        (sha256
-        (base32 "1a5ngap7kq0b4azq8nlfg6xg5bcl1i0v1sbynhmbr631jgpnqrld"))))
+        (base32 "015y5qaw9qnxr29lg60dml1g5rbqd4586wy5n8m41ib55gvm1zfy"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-nose" ,python-nose)))
@@ -133,8 +158,8 @@ Password Scheme\"} by Niels Provos and David Mazieres.")
      `(#:phases
        (modify-phases %standard-phases
          (add-before 'check 'set-PYTHON_EGG_CACHE
-           ;; some tests require access to "$HOME/.cython"
-           (lambda* _ (setenv "PYTHON_EGG_CACHE" "/tmp") #t)))))
+           ;; Some tests require access to "$HOME/.cython".
+           (lambda _ (setenv "PYTHON_EGG_CACHE" "/tmp") #t)))))
     (home-page "https://bitbucket.org/ecollins/passlib")
     (synopsis "Comprehensive password hashing framework")
     (description
@@ -209,14 +234,13 @@ This package provides a Python interface for BLAKE2.")
 (define-public python-paramiko
   (package
     (name "python-paramiko")
-    (version "2.7.1")
+    (version "2.7.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "paramiko" version))
        (sha256
-        (base32
-         "17wx8lkhqxmddfdq7z7x45xqq2w3gwa974hpq1n3y0dqbn4r414j"))))
+        (base32 "0dahwq623jnna7gsr9j0mkwr9k2n1pvkapjryhcx508d5jxg8dkz"))))
     (build-system python-build-system)
     (arguments
      `(;; FIXME: Tests require many unpackaged libraries, see dev-requirements.txt.
@@ -263,7 +287,7 @@ Python interface around SSH networking concepts.")
     (description
      "This is an easy-to-use implementation of ECDSA cryptography (Elliptic
 Curve Digital Signature Algorithm), implemented purely in Python.  With this
-library, you can quickly create keypairs (signing key and verifying key), sign
+library, you can quickly create key pairs (signing key and verifying key), sign
 messages, and verify the signatures.  The keys and signatures are very short,
 making them easy to handle and incorporate into other protocols.")
     (license license:expat)))
@@ -452,13 +476,13 @@ risk.")
 (define-public python-certifi
   (package
     (name "python-certifi")
-    (version "2020.4.5.1")
+    (version "2020.11.8")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "certifi" version))
               (sha256
                (base32
-                "06b5gfs7wmmipln8f3z928d2mmx2j4b3x7pnqmj6cvmyfh8v7z2i"))))
+                "1x4w18gm71dbwys5g2mbcnbw27b3dvphj5d56icg5ys45h4yypgh"))))
     (build-system python-build-system)
     (arguments '(#:tests? #f))          ;no tests
     (home-page "https://certifi.io/")
@@ -474,14 +498,14 @@ is used by the Requests library to verify HTTPS requests.")
 (define-public python-cryptography-vectors
   (package
     (name "python-cryptography-vectors")
-    (version "2.9.2")
+    (version "3.1.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "cryptography_vectors" version))
        (sha256
         (base32
-         "1d4iykcv7cn9j399hczlxm5pzxmqy6d80h3j16dkjwlmv3293b4r"))))
+         "1xp2j79c1y8qj4b97ygx451gzp8l4cp830hnvg3zw8j134bcaaam"))))
     (build-system python-build-system)
     (home-page "https://github.com/pyca/cryptography")
     (synopsis "Test vectors for the cryptography package")
@@ -496,14 +520,14 @@ is used by the Requests library to verify HTTPS requests.")
 (define-public python-cryptography
   (package
     (name "python-cryptography")
-    (version "2.9.2")
+    (version "3.1.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "cryptography" version))
        (sha256
         (base32
-         "0af25w5mkd6vwns3r6ai1w5ip9xp0ms9s261zzssbpadzdr05hx0"))))
+         "0z81q4d1nangw3r0v5f41mfl4d9r04qnbayl5ll5v5jpcfhwd7wx"))))
     (build-system python-build-system)
     (inputs
      `(("openssl" ,openssl)))
@@ -718,18 +742,23 @@ ECB and OFB).")
 (define-public python-asn1crypto
   (package
     (name "python-asn1crypto")
-    (version "0.24.0")
+    (version "1.4.0")
     (source
-      (origin
+     (origin
        (method git-fetch)
        (uri (git-reference
-              (url "https://github.com/wbond/asn1crypto")
-              (commit version)))
-        (file-name (git-file-name name version))
-        (sha256
-         (base32
-          "10lai2cs5mnz3gpaffbw1m7b885ls8328q5wxm35vfmcip1f0xmb"))))
+             (url "https://github.com/wbond/asn1crypto")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "19abibn6jw20mzi1ln4n9jjvpdka8ygm4m439hplyrdfqbvgm01r"))))
     (build-system python-build-system)
+    (arguments
+     '(#:phases (modify-phases %standard-phases
+                  (replace 'check
+                    (lambda _
+                      (invoke "python" "run.py" "tests"))))))
     (home-page "https://github.com/wbond/asn1crypto")
     (synopsis "ASN.1 parser and serializer in Python")
     (description "asn1crypto is an ASN.1 parser and serializer with definitions
@@ -965,26 +994,34 @@ protocol (Javascript Object Signing and Encryption).")
 (define-public python-pycryptodome
   (package
     (name "python-pycryptodome")
-    (version "3.7.3")
+    (version "3.9.9")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pycryptodome" version))
        (sha256
         (base32
-         "0dh6ky5ngxayyn5f6n7gdamjl49g3khz6pdx9sdnag1zwi8248hs"))))
+         "1i4m74f88qj9ci8rpyzrbk2slmsdj5ipmwdkq6qk24byalm203li"))))
     (build-system python-build-system)
     (home-page "https://www.pycryptodome.org")
-    (synopsis "Cryptographic library for Python")
-    (description "This package provides a cryptographic library for Python.
+    (synopsis "Low-level cryptographic Python library")
+    (description
+     "PyCryptodome is a self-contained Python package of low-level
+cryptographic primitives.  It's not a wrapper to a separate C library like
+OpenSSL.  To the largest possible extent, algorithms are implemented in pure
+Python.  Only the pieces that are extremely critical to performance (e.g.,
+block ciphers) are implemented as C extensions.
 
-It brings the following enhancements with respect to the last official version
-of PyCrypto:
+You are expected to have a solid understanding of cryptography and security
+engineering to successfully use these primitives.  You must also be able to
+recognize that some are obsolete (e.g., TDES) or even insecure (RC4).
+
+It provides many enhancements over the last release of PyCrypto (2.6.1):
 
 @itemize
 @item Authenticated encryption modes (GCM, CCM, EAX, SIV, OCB)
 @item Accelerated AES on Intel platforms via AES-NI
-@item First class support for PyPy
+@item First-class support for PyPy
 @item Elliptic curves cryptography (NIST P-256 curve only)
 @item Better and more compact API (nonce and iv attributes for ciphers,
 automatic generation of random nonces and IVs, simplified CTR cipher mode, and
@@ -998,12 +1035,62 @@ more)
 @item Random numbers get sourced directly from the OS (and not from a CSPRNG
 in userspace)
 @item Cleaner RSA and DSA key generation (largely based on FIPS 186-4)
-@item Major clean ups and simplification of the code base
-@end itemize\n")
-    (license license:bsd-2)))
+@item Major clean-ups and simplification of the code base
+@end itemize
+
+This package provides drop-in compatibility with PyCrypto.  It is one of two
+PyCryptodome variants, the other being python-pycryptodomex.")
+    (license (list license:bsd-2
+                   license:public-domain)))) ; code inherited from PyCrypto
 
 (define-public python2-pycryptodome
   (package-with-python2 python-pycryptodome))
+
+(define-public python-pycryptodomex
+  (package (inherit python-pycryptodome)
+    (name "python-pycryptodomex")
+    (version (package-version python-pycryptodome))
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pycryptodomex" version))
+       (sha256
+        (base32 "0lbx4qk3xmwqiidhmkj8qa7bh2lf8bwzg0xjpsh2w5zqjrc7qnvv"))))
+    (description
+     "PyCryptodome is a self-contained Python package of low-level
+cryptographic primitives.  It's not a wrapper to a separate C library like
+OpenSSL.  To the largest possible extent, algorithms are implemented in pure
+Python.  Only the pieces that are extremely critical to performance (e.g.,
+block ciphers) are implemented as C extensions.
+
+You are expected to have a solid understanding of cryptography and security
+engineering to successfully use these primitives.  You must also be able to
+recognize that some are obsolete (e.g., TDES) or even insecure (RC4).
+
+It provides many enhancements over the last release of PyCrypto (2.6.1):
+
+@itemize
+@item Authenticated encryption modes (GCM, CCM, EAX, SIV, OCB)
+@item Accelerated AES on Intel platforms via AES-NI
+@item First-class support for PyPy
+@item Elliptic curves cryptography (NIST P-256 curve only)
+@item Better and more compact API (nonce and iv attributes for ciphers,
+automatic generation of random nonces and IVs, simplified CTR cipher mode, and
+more)
+@item SHA-3 (including SHAKE XOFs) and BLAKE2 hash algorithms
+@item Salsa20 and ChaCha20 stream ciphers
+@item scrypt and HKDF
+@item Deterministic (EC)DSA
+@item Password-protected PKCS#8 key containers
+@item Shamir’s Secret Sharing scheme
+@item Random numbers get sourced directly from the OS (and not from a CSPRNG
+in userspace)
+@item Cleaner RSA and DSA key generation (largely based on FIPS 186-4)
+@item Major clean-ups and simplification of the code base
+@end itemize
+
+PyCryptodomex is the stand-alone version of PyCryptodome that no longer
+provides drop-in compatibility with PyCrypto.")))
 
 (define-public python-m2crypto
   (package
@@ -1036,6 +1123,53 @@ through the Engine interface.")
     (package (inherit m2crypto)
              (propagated-inputs
               `(("python2-typing" ,python2-typing))))))
+
+(define-public python-pykeepass
+  (package
+    (name "python-pykeepass")
+    (version "3.2.1")
+    (source
+     (origin
+       (method git-fetch)
+       ;; Source tarball on PyPI doesn't include tests.
+       (uri (git-reference
+             (url "https://github.com/libkeepass/pykeepass")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1symxf4ahylynihnp9z4z3lh2vy65ipvg8s4hjrnn936hcaaxghk"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'make-kdbx-writable
+           ;; Tests have to write to the .kdbx files in the test directory.
+           (lambda _
+             (with-directory-excursion "tests"
+               (for-each make-file-writable (find-files "."))
+               #t)))
+         (add-before 'build 'patch-requirements
+           (lambda _
+             ;; Update requirements from dependency==version
+             ;; to dependency>=version.
+             (substitute* "setup.py"
+               (("==") ">="))
+             #t)))))
+    (propagated-inputs
+     `(("python-argon2-cffi" ,python-argon2-cffi)
+       ("python-construct" ,python-construct)
+       ("python-dateutil" ,python-dateutil)
+       ("python-future" ,python-future)
+       ("python-lxml" ,python-lxml)
+       ("python-pycryptodomex" ,python-pycryptodomex)))
+    (home-page "https://github.com/libkeepass/pykeepass")
+    (synopsis "Python library to interact with keepass databases")
+    (description
+     "This library allows you to write entries to a KeePass database.  It
+supports KDBX3 and KDBX4.")
+    ;; There are no copyright headers in the source code.  The LICENSE file
+    ;; indicates GPL3.
+    (license license:gpl3+)))
 
 (define-public python-pylibscrypt
   (package
@@ -1078,14 +1212,14 @@ none of them have everything that I'd like, so here's one more.  It uses
 (define-public python-libnacl
   (package
     (name "python-libnacl")
-    (version "1.6.1")
+    (version "1.7.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "libnacl" version))
        (sha256
         (base32
-         "0nv7n8nfswkhl614x5mllrkvaslraa0053q11iylb337cy43vb4v"))))
+         "0srx7i264v4dq9and8y6gpzzhrg8jpxs5iy9ggw4plimfj0rjfdm"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -1093,11 +1227,10 @@ none of them have everything that I'd like, so here's one more.  It uses
          (add-after 'unpack 'locate-libsodium
            (lambda* (#:key inputs #:allow-other-keys)
              (substitute* "libnacl/__init__.py"
-               (("(return ctypes.cdll.LoadLibrary\\(')libsodium.so('\\))"
-                 _ pre post)
-                (let ((libsodium (string-append (assoc-ref inputs "libsodium")
-                                                "/lib/libsodium.so")))
-                  (string-append pre libsodium post)))))))))
+               (("/usr/local/lib/libsodium.so")
+                (string-append (assoc-ref inputs "libsodium")
+                               "/lib/libsodium.so")))
+             #t)))))
     (native-inputs
      `(("python-pyhamcrest" ,python-pyhamcrest)))
     (inputs
@@ -1109,6 +1242,26 @@ functions exposed by @code{NaCl} library via @code{libsodium}.  It has
 been constructed to maintain extensive documentation on how to use
 @code{NaCl} as well as being completely portable.")
     (license license:asl2.0)))
+
+(define-public python-pyotp
+  (package
+    (name "python-pyotp")
+    (version "2.4.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pyotp" version))
+       (sha256
+        (base32 "0jsqfmx9i7j8z81r4zazv76xzy1fcq8v9s2r4kvx7ajfndq3z2h3"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/pyauth/pyotp")
+    (synopsis "Python One Time Password Library")
+    (description
+     "PyOTP is a Python library for generating and verifying one-time
+passwords.  It can be used to implement two-factor (2FA) or multi-factor
+(MFA) authentication methods in web applications and in other systems that
+require users to log in.")
+    (license license:expat)))
 
 (define-public python-scrypt
   (package
@@ -1414,14 +1567,13 @@ certificates, signing and building trust bundles.")
 (define-public python-jeepney
   (package
     (name "python-jeepney")
-    (version "0.4.2")
+    (version "0.4.3")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "jeepney" version))
         (sha256
-         (base32
-          "1fz9lb5fl831sijg2j0sbki698j2z6awbblas7mz3gp9jz2xi9hb"))))
+         (base32 "0vp3p1lqhqk2kd3254q5sxr50znmm2hmysc8a7g0fr1brihvhy9l"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-testpath" ,python-testpath)
@@ -1515,20 +1667,28 @@ signatures.")
 (define-public python-pgpy
   (package
     (name "python-pgpy")
-    (version "0.5.2")
+    (version "0.5.3")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "PGPy" version))
         (sha256
-         (base32
-          "0i4lqhzdwkjkim3wab0kqadx28z3r5ixlh6qxj4lif4gif56c0m7"))))
+         (base32 "11rrq15gmn6qbahli7czflfcngjl7zyybjlvk732my6axnf2d754"))))
     (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (invoke "pytest")))))))
     (native-inputs
      `(("python-cryptography" ,python-cryptography)
        ("python-pyasn1" ,python-pyasn1)
+       ("python-pytest" ,python-pytest)
        ("python-singledispatch" ,python-singledispatch)
-       ("python-six" ,python-six)))
+       ("python-six" ,python-six)
+       ("python-wheel" ,python-wheel)))
     (home-page "https://github.com/SecurityInnovation/PGPy")
     (synopsis "Python implementation of OpenPGP")
     (description

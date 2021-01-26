@@ -1,7 +1,8 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -30,15 +31,14 @@
 (define-public gnu-pw-mgr
   (package
     (name "gnu-pw-mgr")
-    (version "2.4.2")
+    (version "2.7.4")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://gnu/gnu-pw-mgr/gnu-pw-mgr-"
                           version ".tar.xz"))
       (sha256
-       (base32
-        "1yvdzc5w37qrjrkby5699ygj9bhkvgi3zk9k9jcjry1j6b7wdl17"))))
+       (base32 "0fhwvsmsqpw0vnivarfg63l8pgwqfv7d5wi6l80jpb41dj6qpjz8"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
@@ -47,6 +47,12 @@
            (lambda _
              (substitute* "tests/dom.test"
                (("/usr/bin/printf") (which "printf")))
+             #t))
+         (add-before 'check 'pre-check
+           (lambda _
+             ;; In the build environment, there is no /dev/tty.
+             (substitute* "tests/base.test"
+               (("/dev/tty") "/dev/null"))
              #t)))))
     (native-inputs
      `(("which" ,which)))

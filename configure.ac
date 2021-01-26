@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.68)
+AC_PREREQ([2.69])
 AC_INIT([GNU Guix],
   [m4_esyscmd([build-aux/git-version-gen .tarball-version])],
   [bug-guix@gnu.org], [guix],
@@ -29,35 +29,35 @@ GUIX_ASSERT_SUPPORTED_SYSTEM
 AM_CONDITIONAL([CROSS_COMPILING], [test "x$cross_compiling" = "xyes"])
 
 AC_ARG_WITH(store-dir,
-  AC_HELP_STRING([--with-store-dir=PATH],
+  AS_HELP_STRING([--with-store-dir=PATH],
     [file name of the store (defaults to /gnu/store)]),
   [storedir="$withval"],
   [storedir="/gnu/store"])
 AC_SUBST(storedir)
 
 AC_ARG_WITH([bash-completion-dir],
-  AC_HELP_STRING([--with-bash-completion-dir=DIR],
+  AS_HELP_STRING([--with-bash-completion-dir=DIR],
     [name of the Bash completion directory]),
   [bashcompletiondir="$withval"],
   [bashcompletiondir='${sysconfdir}/bash_completion.d'])
 AC_SUBST([bashcompletiondir])
 
 AC_ARG_WITH([zsh-completion-dir],
-  AC_HELP_STRING([--with-zsh-completion-dir=DIR],
+  AS_HELP_STRING([--with-zsh-completion-dir=DIR],
     [name of the Zsh completion directory]),
   [zshcompletiondir="$withval"],
   [zshcompletiondir='${datadir}/zsh/site-functions'])
 AC_SUBST([zshcompletiondir])
 
 AC_ARG_WITH([fish-completion-dir],
-  AC_HELP_STRING([--with-fish-completion-dir=DIR],
+  AS_HELP_STRING([--with-fish-completion-dir=DIR],
     [name of the Fish completion directory]),
   [fishcompletiondir="$withval"],
   [fishcompletiondir='${datadir}/fish/vendor_completions.d'])
 AC_SUBST([fishcompletiondir])
 
 AC_ARG_WITH([selinux-policy-dir],
-  AC_HELP_STRING([--with-selinux-policy-dir=DIR],
+  AS_HELP_STRING([--with-selinux-policy-dir=DIR],
     [name of the SELinux policy directory]),
   [selinux_policydir="$withval"],
   [selinux_policydir='${datadir}/selinux/'])
@@ -102,8 +102,11 @@ if test "x$GUILD" = "x"; then
 fi
 
 if test "x$GUILE_EFFECTIVE_VERSION" = "x2.2"; then
-  PKG_CHECK_MODULES([GUILE], [guile-2.2 >= 2.2.3])
+  PKG_CHECK_MODULES([GUILE], [guile-2.2 >= 2.2.6])
 fi
+
+dnl Get CFLAGS and LDFLAGS for libguile.
+GUILE_FLAGS
 
 dnl Installation directories for .scm and .go files.
 guilemoduledir="${datarootdir}/guile/site/$GUILE_EFFECTIVE_VERSION"
@@ -141,6 +144,28 @@ if test "x$guix_cv_have_recent_guile_gcrypt" != "xyes"; then
   AC_MSG_ERROR([A recent Guile-Gcrypt could not be found; please install it.])
 fi
 
+GUIX_CHECK_GUILE_GIT
+if test "x$guix_cv_have_recent_guile_git" != "xyes"; then
+  AC_MSG_ERROR([A recent Guile-Git could not be found; please install it.])
+fi
+
+dnl Check for Guile-zlib.
+GUILE_MODULE_AVAILABLE([have_guile_zlib], [(zlib)])
+if test "x$have_guile_zlib" != "xyes"; then
+  AC_MSG_ERROR([Guile-zlib is missing; please install it.])
+fi
+
+dnl Check for Guile-lzlib.
+GUILE_MODULE_AVAILABLE([have_guile_lzlib], [(lzlib)])
+if test "x$have_guile_lzlib" != "xyes"; then
+  AC_MSG_ERROR([Guile-lzlib is missing; please install it.])
+fi
+
+dnl Check for Guile-Avahi.
+GUILE_MODULE_AVAILABLE([have_guile_avahi], [(avahi)])
+AM_CONDITIONAL([HAVE_GUILE_AVAHI],
+  [test "x$have_guile_avahi" = "xyes"])
+
 dnl Guile-newt is used by the graphical installer.
 GUILE_MODULE_AVAILABLE([have_guile_newt], [(newt)])
 
@@ -159,10 +184,6 @@ AM_CONDITIONAL([ENABLE_INSTALLER],
 dnl Make sure we have a full-fledged Guile.
 GUIX_ASSERT_GUILE_FEATURES([regex posix socket net-db threads])
 
-dnl Make sure we don't suffer from the bug in 'equal?' wrt. syntax objects
-dnl found in 2.2.1.  See <https://bugs.gnu.org/29903>.
-GUIX_ASSERT_SYNTAX_OBJECT_EQUAL
-
 AC_PROG_SED
 
 dnl Decompressors, for use by the substituter and other modules.
@@ -172,24 +193,6 @@ AC_PATH_PROG([XZ], [xz])
 AC_SUBST([GZIP])
 AC_SUBST([BZIP2])
 AC_SUBST([XZ])
-
-AC_ARG_WITH([nix-prefix],
-  [AS_HELP_STRING([--with-nix-prefix=DIR],
-    [search for Nix in DIR (for testing purposes and '--disable-daemon' builds)])],
-  [case "$withval" in
-    yes|no) ;;
-    *)
-      NIX_PREFIX="$withval"
-      PATH="$NIX_PREFIX/bin:$PATH"; export PATH
-      AC_SUBST([NIX_PREFIX])
-      ;;
-   esac],
-  [])
-
-AC_PATH_PROG([NIX_HASH], [nix-hash])
-if test "x$guix_build_daemon$NIX_HASH" = "xno"; then
-   AC_MSG_ERROR([Nix programs not found; please install Nix or use `--with-nix-prefix'.])
-fi
 
 AC_ARG_WITH([nixpkgs],
   [AS_HELP_STRING([--with-nixpkgs=DIR],
@@ -244,27 +247,6 @@ esac
 
 AC_SUBST([LIBGCRYPT_PREFIX])
 AC_SUBST([LIBGCRYPT_LIBDIR])
-
-dnl Library name of zlib suitable for 'dynamic-link'.
-GUIX_LIBZ_LIBDIR([libz_libdir])
-if test "x$libz_libdir" = "x"; then
-  LIBZ="libz"
-else
-  LIBZ="$libz_libdir/libz"
-fi
-AC_MSG_CHECKING([for zlib's shared library name])
-AC_MSG_RESULT([$LIBZ])
-AC_SUBST([LIBZ])
-
-dnl Library name of lzlib suitable for 'dynamic-link'.
-GUIX_LIBLZ_FILE_NAME([LIBLZ])
-if test "x$LIBLZ" = "x"; then
-  LIBLZ="liblz"
-else
-  # Strip the .so or .so.1 extension since that's what 'dynamic-link' expects.
-  LIBLZ="`echo $LIBLZ | sed -es'/\.so\(\.[[0-9.]]\+\)\?//g'`"
-fi
-AC_SUBST([LIBLZ])
 
 dnl Check for Guile-SSH, for the (guix ssh) module.
 GUIX_CHECK_GUILE_SSH

@@ -461,7 +461,12 @@ channels in use and CONFIG-FILE, if it is true."
 
   (mbegin %store-monad
     (let ((config-file (cond ((string? config-file)
-                              (local-file config-file "configuration.scm"))
+                              ;; CONFIG-FILE has been passed typically via
+                              ;; 'guix system reconfigure CONFIG-FILE' so we
+                              ;; can assume it's valid: tell 'local-file' to
+                              ;; not emit a warning.
+                              (local-file (assume-valid-file-name config-file)
+                                          "configuration.scm"))
                              ((not config-file)
                               #f)
                              (else
@@ -783,7 +788,13 @@ executables, making them setuid-root.")))
 
 (define (packages->profile-entry packages)
   "Return a system entry for the profile containing PACKAGES."
-  (with-monad %store-monad
+  ;; XXX: 'mlet' is needed here for one reason: to get the proper
+  ;; '%current-target' and '%current-target-system' bindings when
+  ;; 'packages->manifest' is called, and thus when the 'package-inputs'
+  ;; etc. procedures are called on PACKAGES.  That way, conditionals in those
+  ;; inputs see the "correct" value of these two parameters.  See
+  ;; <https://issues.guix.gnu.org/44952>.
+  (mlet %store-monad ((_ (current-target-system)))
     (return `(("profile" ,(profile
                            (content (packages->manifest
                                      (delete-duplicates packages eq?)))))))))

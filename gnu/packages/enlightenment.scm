@@ -1,9 +1,9 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015 Tomáš Čech <sleep_walker@suse.cz>
 ;;; Copyright © 2015 Daniel Pimentel <d4n1@member.fsf.org>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Nikita <nikita@n0.is>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Timo Eisenmann <eisenmann@fn.de>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -31,8 +31,6 @@
   #:use-module (guix build-system python)
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
-  #:use-module (gnu packages avahi)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages bittorrent)
   #:use-module (gnu packages check)
   #:use-module (gnu packages code)
@@ -70,7 +68,7 @@
 (define-public efl
   (package
     (name "efl")
-    (version "1.24.3")
+    (version "1.25.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -78,10 +76,10 @@
                     version ".tar.xz"))
               (sha256
                (base32
-                "0ajwc8lmay5ai7nsrp778g393h0p4h98p4c22gic2w61fgkcd5fy"))))
+                "0svybbrvpf6q955y6fclxh3md64z0dgmh0x54x2j60503hhs071m"))))
     (build-system meson-build-system)
     (native-inputs
-     `(("check" ,check)
+     `(("check" ,check-0.14)
        ("gettext" ,gettext-minimal)
        ("pkg-config" ,pkg-config)))
     (inputs
@@ -116,8 +114,7 @@
     (propagated-inputs
      ;; All these inputs are in package config files in section
      ;; Requires.private.
-     `(("avahi" ,avahi)
-       ("dbus" ,dbus)
+     `(("dbus" ,dbus)
        ("elogind" ,elogind)
        ("eudev" ,eudev)
        ("fontconfig" ,fontconfig)
@@ -138,13 +135,9 @@
        ("wayland" ,wayland)
        ("zlib" ,zlib)))
     (arguments
-     `(#:configure-flags '("-Dsystemd=false"
-                           "-Delogind=true"
-                           "-Dembedded-lz4=false"
-                           "-Devas-loaders-disabler=json"
+     `(#:configure-flags '("-Dembedded-lz4=false"
                            "-Dbuild-examples=false"
                            "-Decore-imf-loaders-disabler=scim"
-                           "-Davahi=true"
                            "-Dglib=true"
                            "-Dmount-path=/run/setuid-programs/mount"
                            "-Dunmount-path=/run/setuid-programs/umount"
@@ -165,6 +158,7 @@
              (let ((curl    (assoc-ref inputs "curl"))
                    (pulse   (assoc-ref inputs "pulseaudio"))
                    (sndfile (assoc-ref inputs "libsndfile"))
+                   (elogind (assoc-ref inputs "elogind"))
                    (lib     "/lib/"))
                (substitute* "src/lib/ecore_con/ecore_con_url_curl.c"
                  (("libcurl.so.?" libcurl) ; libcurl.so.[45]
@@ -174,6 +168,9 @@
                   (string-append pulse lib libpulse))
                  (("libsndfile.so.1" libsnd)
                   (string-append sndfile lib libsnd)))
+               (substitute* "src/lib/elput/elput_logind.c"
+                 (("libelogind.so.0" libelogind)
+                  (string-append elogind "/lib/" libelogind)))
                #t)))
          (add-after 'unpack 'fix-install-paths
            (lambda _
@@ -182,6 +179,8 @@
                 "install_dir: join_paths(dir_data, 'dbus-1', 'services'))\n"))
              (substitute* "src/tests/elementary/meson.build"
                (("dir_data") "meson.source_root(), 'test-output'"))
+             (substitute* "data/eo/meson.build"
+               (("'usr', 'lib'") "'./' + dir_lib"))
              #t))
          (add-after 'unpack 'set-home-directory
            ;; FATAL: Cannot create run dir '/homeless-shelter/.run' - errno=2
@@ -199,7 +198,7 @@ removable devices or support for multimedia.")
 (define-public terminology
   (package
     (name "terminology")
-    (version "1.8.1")
+    (version "1.9.0")
     (source (origin
               (method url-fetch)
               (uri
@@ -207,7 +206,7 @@ removable devices or support for multimedia.")
                               "terminology/terminology-" version ".tar.xz"))
               (sha256
                (base32
-                "1fxqjf7g30ix4qxi6366rrax27s3maxq43z2vakwnhz4mp49m9h4"))
+                "0v74858yvrrfy0l2pq7yn6izvqhpkb9gw2jpd3a3khjwv8kw6frz"))
               (modules '((guix build utils)))
               ;; Remove the bundled fonts.
               (snippet
@@ -218,10 +217,11 @@ removable devices or support for multimedia.")
                   #t))))
     (build-system meson-build-system)
     (arguments
-     `(#:configure-flags (list "-Dtests=true"
-                               (string-append "-Dedje-cc="
-                                              (assoc-ref %build-inputs "efl")
-                                              "/bin/edje_cc"))
+     `(#:configure-flags
+       (let ((efl (assoc-ref %build-inputs "efl")))
+         (list "-Dtests=true"
+               (string-append "-Dedje-cc=" efl "/bin/edje_cc")
+               (string-append "-Deet=" efl "/bin/eet")))
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'set-home-directory
@@ -304,6 +304,7 @@ Libraries with some extra bells and whistles.")
        (let ((efl (assoc-ref %build-inputs "efl")))
          (list "-Dsystemd=false"
                "-Dpackagekit=false"
+               "-Dwl=true"
                (string-append "-Dedje-cc=" efl "/bin/edje_cc")
                (string-append "-Deldbus-codegen=" efl "/bin/eldbus-codegen")
                (string-append "-Deet=" efl "/bin/eet")))
@@ -315,7 +316,6 @@ Libraries with some extra bells and whistles.")
              (setenv "HOME" "/tmp")
              (let ((xkeyboard (assoc-ref inputs "xkeyboard-config"))
                    (setxkbmap (assoc-ref inputs "setxkbmap"))
-                   (utils     (assoc-ref inputs "util-linux"))
                    (libc      (assoc-ref inputs "libc"))
                    (bc        (assoc-ref inputs "bc"))
                    (efl       (assoc-ref inputs "efl")))
@@ -346,20 +346,18 @@ Libraries with some extra bells and whistles.")
                (substitute* "data/etc/meson.build"
                  (("/bin/mount") "/run/setuid-programs/mount")
                  (("/bin/umount") "/run/setuid-programs/umount")
-                 (("/usr/bin/eject") (string-append utils "/bin/eject")))
+                 (("/usr/bin/eject") "/run/current-system/profile/bin/eject"))
                (substitute* "src/bin/system/e_system_power.c"
                  (("systemctl") "loginctl"))
                #t))))))
     (native-inputs
      `(("gettext" ,gettext-minimal)
-       ("pkg-config" ,pkg-config)
-       ("util-linux" ,util-linux)))
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("alsa-lib" ,alsa-lib)
        ("bc" ,bc)
        ("bluez" ,bluez)
        ("dbus" ,dbus)
-       ("efl" ,efl)
        ("freetype" ,freetype)
        ("libxcb" ,libxcb)
        ("libxext" ,libxext)
@@ -367,7 +365,12 @@ Libraries with some extra bells and whistles.")
        ("puleseaudio" ,pulseaudio)
        ("setxkbmap" ,setxkbmap)
        ("xcb-util-keysyms" ,xcb-util-keysyms)
-       ("xkeyboard-config" ,xkeyboard-config)))
+       ("xkeyboard-config" ,xkeyboard-config)
+       ("xorg-server-xwayland" ,xorg-server-xwayland)))
+    (propagated-inputs
+     `(("efl" ,efl)
+       ("libxkbcommon" ,libxkbcommon)
+       ("wayland-protocols" ,wayland-protocols)))
     (home-page "https://www.enlightenment.org/about-enlightenment")
     (synopsis "Lightweight desktop environment")
     (description
@@ -378,22 +381,12 @@ embedded systems.")
     (license license:bsd-2)))
 
 (define-public enlightenment-wayland
-  (package
-    (inherit enlightenment)
-    (name "enlightenment-wayland")
-    (arguments
-     (substitute-keyword-arguments (package-arguments enlightenment)
-       ((#:configure-flags flags)
-        `(cons* "-Dwl=true" ,flags))))
-    (inputs
-     `(("wayland-protocols" ,wayland-protocols)
-       ("xorg-server-xwayland" ,xorg-server-xwayland)
-       ,@(package-inputs enlightenment)))))
+  (deprecated-package "enlightenment-wayland" enlightenment))
 
 (define-public python-efl
   (package
     (name "python-efl")
-    (version "1.24.0")
+    (version "1.25.0")
     (source
       (origin
         (method url-fetch)
@@ -401,17 +394,19 @@ embedded systems.")
                             "python/python-efl-" version ".tar.xz"))
         (sha256
          (base32
-          "1vk1cdd959gia4a9qzyq56a9zw3lqf9ck66k8c9g3c631mp5cfpy"))
+          "0bk161xwlz4dlv56r68xwkm8snzfifaxd1j7w2wcyyk4fgvnvq4r"))
         (modules '((guix build utils)))
         ;; Remove files generated by Cython
         (snippet
-          '(begin
-             (copy-file "efl/dbus_mainloop/e_dbus.c" "efl/dbus_mainloop/e_dbus.q")
-             (for-each delete-file (find-files "efl" ".*\\.c$"))
-             (delete-file "efl/eo/efl.eo_api.h")
-             (copy-file "efl/dbus_mainloop/e_dbus.q" "efl/dbus_mainloop/e_dbus.c")
-             (delete-file "efl/dbus_mainloop/e_dbus.q")
-             #t))))
+         '(begin
+            (for-each (lambda (file)
+                        (let ((generated-file
+                                (string-append (string-drop-right file 3) "c")))
+                          (when (file-exists? generated-file)
+                            (delete-file generated-file))))
+                      (find-files "efl" "\\.pyx$"))
+            (delete-file "efl/eo/efl.eo_api.h")
+            #t))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -476,7 +471,7 @@ Libraries stack (eo, evas, ecore, edje, emotion, ethumb and elementary).")
            (lambda _ (setenv "HOME" "/tmp") #t)))
        #:tests? #f)) ; tests require running dbus service
     (native-inputs
-     `(("check" ,check)
+     `(("check" ,check-0.14)
        ("gettext" ,gettext-minimal)
        ("pkg-config" ,pkg-config)))
     (inputs
@@ -572,20 +567,20 @@ directories.
 (define-public evisum
   (package
     (name "evisum")
-    (version "0.5.2")
+    (version "0.5.8")
     (source
       (origin
         (method url-fetch)
         (uri (string-append "https://download.enlightenment.org/rel/apps/"
                             "evisum/evisum-" version ".tar.xz"))
         (sha256
-         (base32
-          "1s2d61hjlyh212d9d7rpdlcv90lxsb8br89806wakgnadqygh9gc"))))
+         (base32 "0cg4vqd069h89k3wrvl550p29y3yzbdnvii58gwc8rghwym621jx"))))
     (build-system meson-build-system)
     (arguments
-     '(#:tests? #f))    ; no tests
+     '(#:tests? #f))                    ; no tests
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("gettext" ,gettext-minimal)
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("efl" ,efl)))
     (home-page "https://www.enlightenment.org")

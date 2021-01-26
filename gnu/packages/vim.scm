@@ -70,7 +70,7 @@
 (define-public vim
   (package
     (name "vim")
-    (version "8.2.1145")
+    (version "8.2.2067")
     (source (origin
              (method git-fetch)
              (uri (git-reference
@@ -79,7 +79,7 @@
              (file-name (git-file-name name version))
              (sha256
               (base32
-               "01z5hgi7m8d63gl1fgfn4p9rsdaqbl5xn4vr247nbxjq5x5hrs7a"))))
+               "02cd953h69k9klrcwi756namwg39ka7if9ccc399ihb1l5f3kr66"))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
@@ -92,6 +92,7 @@
                (("/usr/bin/nawk") (which "gawk")))
              (substitute* '("src/testdir/Makefile"
                             "src/testdir/test_normal.vim"
+                            "src/testdir/test_popupwin.vim"
                             "src/testdir/test_system.vim"
                             "src/testdir/test_terminal.vim"
                             "src/testdir/test_terminal2.vim")
@@ -109,7 +110,7 @@
              ;; Make sure the TERM environment variable is set for the tests
              (setenv "TERM" "xterm")
              #t))
-         (add-before 'check 'skip-failing-tests
+         (add-before 'check 'skip-or-fix-failing-tests
            (lambda _
              ;; This test assumes that PID 1 is run as root and that the user
              ;; running the test suite does not have permission to kill(1, 0)
@@ -120,22 +121,26 @@
              (substitute* "src/testdir/test_swap.vim"
                (("if !IsRoot\\(\\)") "if 0"))
 
-             ;; These tests fail on upstream's CI on FreeBSD because they are
-             ;; run as root.  They fail for us because PID 1 and the test suite
-             ;; are run by the same user.
-             (substitute* '("src/testdir/test_backup.vim"
-                            "src/testdir/test_writefile.vim")
-               (("CheckNotBSD") "throw 'Skipped: this test fails on Guix'")
-               (("'bsd'") "'unix'"))
-
-             ;; This test checks how the terminal looks after executing some
+             ;; These tests check how the terminal looks after executing some
              ;; actions.  The path of the bash binary is shown, which results in
              ;; a difference being detected.  Patching the expected result is
              ;; non-trivial due to the special format used, so skip the test.
              (substitute* "src/testdir/test_terminal.vim"
+               ((".*Test_open_term_from_cmd.*" line)
+                (string-append line "return\n"))
                ((".*Test_terminal_postponed_scrollback.*" line)
                 (string-append line "return\n")))
-             #t)))))
+             (substitute* "src/testdir/test_popupwin.vim"
+               ((".*Test_popup_drag_termwin.*" line)
+                (string-append line "return\n")))
+             #t))
+         (add-after 'install 'install-guix.vim
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((vimdir (string-append (assoc-ref outputs "out") "/share/vim")))
+               (mkdir-p vimdir)
+               (copy-file (assoc-ref inputs "guix.vim")
+                          (string-append vimdir "/vimrc"))
+               #t))))))
     (inputs
      `(("gawk" ,gawk)
        ("ncurses" ,ncurses)
@@ -143,6 +148,7 @@
        ("tcsh" ,tcsh)))                 ; For runtime/tools/vim32
     (native-inputs
      `(("libtool" ,libtool)
+       ("guix.vim" ,(search-auxiliary-file "guix.vim"))
 
        ;; For tests.
        ("tzdata" ,tzdata-for-tests)))
@@ -165,7 +171,7 @@ configuration files.")
   (package (inherit vim)
     (name "xxd")
     (arguments
-     `(#:make-flags '("CC=gcc")
+     `(#:make-flags (list ,(string-append "CC=" (cc-for-target)))
        #:tests? #f ; there are none
        #:phases
        (modify-phases %standard-phases
@@ -498,8 +504,7 @@ commit or run any Git arbitrary command.")
      '(#:install-plan
        '(("autoload" "share/vim/vimfiles/")
          ("doc" "share/vim/vimfiles/")
-         ("plugin" "share/vim/vimfiles/")
-         ("t" "share/vim/vimfiles/"))))
+         ("plugin" "share/vim/vimfiles/"))))
     (synopsis "Statusline for Vim")
     (description
      "@code{vim-airline} is an extensible statusline for Vim.
@@ -569,7 +574,7 @@ are detected, the user is notified.")
 (define-public editorconfig-vim
   (package
     (name "editorconfig-vim")
-    (version "0.3.3")
+    (version "1.1.1")
     (source
       (origin
         (method git-fetch)
@@ -579,27 +584,13 @@ are detected, the user is notified.")
         (file-name (git-file-name name version))
         (sha256
          (base32
-          "0vssfl1wjq0mv0p30c3dszwrh4yy90vwxmmdgqaxf5rykik7bdfd"))
-        (modules '((guix build utils)))
-        (snippet
-         '(begin
-            (delete-file-recursively "plugin/editorconfig-core-py") #t))))
+          "0mp80bi2m56bb93szw87vy6q5s85yk9g91sl4pr51316rgdv5kkv"))))
     (build-system copy-build-system)
     (arguments
-     '(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'patch-editorconfig-path
-           (lambda* (#:key inputs #:allow-other-keys)
-             (let ((editorconfig (assoc-ref inputs "editorconfig-core")))
-               (substitute* "plugin/editorconfig.vim"
-                 (("/opt") editorconfig))
-               #t))))
-       #:install-plan
+     '(#:install-plan
        '(("autoload" "share/vim/vimfiles/")
          ("doc" "share/vim/vimfiles/")
          ("plugin" "share/vim/vimfiles/"))))
-    (inputs
-     `(("editorconfig-core" ,editorconfig-core-c)))
     (home-page "https://editorconfig.org/")
     (synopsis "EditorConfig plugin for Vim")
     (description "EditorConfig makes it easy to maintain the correct coding
@@ -712,7 +703,7 @@ refactor Vim in order to:
 (define-public vifm
   (package
     (name "vifm")
-    (version "0.10.1")
+    (version "0.11")
     (source
       (origin
         (method url-fetch)
@@ -723,7 +714,7 @@ refactor Vim in order to:
                               "vifm-" version ".tar.bz2")))
         (sha256
          (base32
-          "0fyhxh7ndjn8fyjhj14ymkr3pjcs3k1xbs43g7xvvq85vdb6y04r"))))
+          "0rqyd424y0g5b5basw2ybb60r9gar4f40d1xgzr3c2dsy4jpwvyh"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--disable-build-timestamp")
@@ -793,13 +784,13 @@ With the package comes a plugin to use vifm as a vim file selector.")
 (define-public python-pynvim
   (package
     (name "python-pynvim")
-    (version "0.4.1")
+    (version "0.4.2")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "pynvim" version))
               (sha256
                (base32
-                "0n2cx22lrmbq7xk7356lyn6k77ryqvkxplw9k0fglk35ckb1isam"))))
+                "13qgwkqbx012j5spis1aw8rb120rw0zphgjy1j58irax8r6j1ikb"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-greenlet" ,python-greenlet)
@@ -813,13 +804,10 @@ also works as a library for connecting to and scripting neovim processes
 through its msgpack-rpc API.")
     (license license:asl2.0)))
 
-(define-public python2-pynvim
-  (package-with-python2 python-pynvim))
-
 (define-public vim-guix-vim
   (package
     (name "vim-guix-vim")
-    (version "0.1")
+    (version "0.1.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -828,7 +816,7 @@ through its msgpack-rpc API.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1f8h8m96fqh3f9hy87spgh9kdqzyxl11n9s3rywvyq5xhn489bnk"))))
+                "10bfy0dgwizxr56b4272b7sqajpr6lnz332pzx055dis2zzjap8z"))))
     (build-system copy-build-system)
     (arguments
      '(#:install-plan

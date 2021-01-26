@@ -3,7 +3,7 @@
 ;;; Copyright © 2015, 2016 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020, 2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Adam Massmann <massmannak@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -49,14 +49,14 @@
 (define-public xapian
   (package
     (name "xapian")
-    (version "1.4.16")
+    (version "1.4.18")
     ;; Note: When updating Xapian, remember to update xapian-bindings below.
     (source (origin
               (method url-fetch)
               (uri (string-append "https://oligarchy.co.uk/xapian/" version
                                   "/xapian-core-" version ".tar.xz"))
               (sha256
-               (base32 "0w5znrf9l5ahbxwg04358nzv0xsqnk42isah46j3jzpjkzsg4ds9"))))
+               (base32 "0xsb4ihf3p767f0zx9p4janwni6r9sg5j6lry0002i8hmnsdnv8r"))))
     (build-system gnu-build-system)
     (inputs `(("zlib" ,zlib)
               ("util-linux" ,util-linux "lib")))
@@ -94,7 +94,7 @@ rich set of boolean query operators.")
                                   "/xapian-bindings-" version ".tar.xz"))
               (sha256
                (base32
-                "06v2prlzwgbcsgjpmd7x2qczcp6dn7836h21bq3gmlnd2mnyr4c7"))))
+                "13ziql8027glgihgvnbsa75vkcn82g83mbihj60zf0njj170clpy"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--with-python3")
@@ -116,15 +116,14 @@ rich set of boolean query operators.")
 (define-public perl-search-xapian
   (package
     (name "perl-search-xapian")
-    (version "1.2.25.2")
+    (version "1.2.25.4")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://cpan/authors/id/O/OL/OLLY/"
                            "Search-Xapian-" version ".tar.gz"))
        (sha256
-        (base32
-         "0hpa8gi38j0ibq8af6dy69lm1bl5jnq76nsa69dbrzbr88l5m594"))))
+        (base32 "1pbl8pbgmbs3i8yik4p63g4pd9bhn0dp3d7l667dkvw0kccl66c7"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-devel-leak" ,perl-devel-leak)))

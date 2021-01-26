@@ -1,5 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Simon Tournier <zimon.toutoune@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -20,6 +22,7 @@
   #:use-module (guix ui)
   #:use-module (guix scripts package)
   #:use-module (guix scripts build)
+  #:use-module (guix transformations)
   #:use-module (guix scripts)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
@@ -35,6 +38,8 @@ This is an alias for 'guix package -u'.\n"))
   -p, --profile=PROFILE  use PROFILE instead of the user's default profile"))
   (display (G_ "
   -v, --verbosity=LEVEL  use the given verbosity LEVEL"))
+  (display (G_ "
+      --do-not-upgrade[=REGEXP] do not upgrade any packages matching REGEXP"))
   (newline)
   (show-build-options-help)
   (newline)
@@ -60,23 +65,20 @@ This is an alias for 'guix package -u'.\n"))
          ;; Preserve some of the 'guix package' options.
          (append (filter (lambda (option)
                            (any (cut member <> (option-names option))
-                                '("profile" "dry-run" "verbosity")))
+                                '("profile" "dry-run" "verbosity" "do-not-upgrade")))
                          %package-options)
 
                  %transformation-options
                  %standard-build-options)))
 
-(define (guix-upgrade . args)
+(define-command (guix-upgrade . args)
+  (synopsis "upgrade packages to their latest version")
+
   (define (handle-argument arg result arg-handler)
-    ;; Accept at most one non-option argument, and treat it as an upgrade
-    ;; regexp.
-    (match (assq-ref result 'upgrade)
-      (#f
-       (values (alist-cons 'upgrade arg
-                           (alist-delete 'upgrade result))
-               arg-handler))
-      (_
-       (leave (G_ "~A: extraneous argument~%") arg))))
+    ;; Treat non-option arguments as upgrade regexps.
+    (values (alist-cons 'upgrade arg
+                        (delete '(upgrade . #f) result))
+            arg-handler))
 
   (define opts
     (parse-command-line args %options

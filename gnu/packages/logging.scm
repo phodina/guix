@@ -3,7 +3,7 @@
 ;;; Copyright © 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2017 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Gábor Boskovits <boskovits@gmail.com>
 ;;; Copyright © 2019 Meiyo Peng <meiyo@riseup.net>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
@@ -165,9 +165,8 @@ commands, displaying the results via a web interface.")
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
-       (list "CC=gcc"
-             "PREFIX="
-             (string-append "DESTDIR="
+       (list (string-append "CC=" ,(cc-for-target))
+             (string-append "PREFIX="
                             (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
@@ -178,20 +177,20 @@ commands, displaying the results via a web interface.")
                  (("ncursesw\\/panel.h") "panel.h")
                  (("ncursesw\\/ncurses.h") "ncurses.h")))
              #t))
-         (delete 'configure))
+         (delete 'configure))           ; no configure script
        #:tests? #f)) ; no test suite (make check just runs cppcheck)
     (inputs `(("ncurses" ,ncurses)))
     (home-page "https://vanheusden.com/multitail/")
-    (synopsis "Monitor multiple logfiles")
+    (synopsis "Monitor multiple log files")
     (description
-     "MultiTail allows you to monitor logfiles and command output in multiple
-windows in a terminal, colorize, filter and merge.")
+     "MultiTail can monitor, color, filter, and merge log files and command
+output in multiple windows in a terminal.")
     (license license:gpl2+)))
 
 (define-public spdlog
   (package
     (name "spdlog")
-    (version "1.7.0")
+    (version "1.8.2")
     (source
      (origin
        (method git-fetch)
@@ -201,7 +200,7 @@ windows in a terminal, colorize, filter and merge.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "1ryaa22ppj60461hcdb8nk7jwj84arp4iw4lyw594py92g4vnx3j"))))
+         "03vmwbi9v7r3v8kzd0lj10fchp54kxbxwzfx7dp6qzkxjrvmx2dx"))))
     (build-system cmake-build-system)
     ;; TODO run benchmark. Currently not possible, as adding
     ;; (gnu packages benchmark) forms a dependency cycle
@@ -216,3 +215,19 @@ library.")
     ;; spdlog is under Expat license, but the bundled fmt library in
     ;; "include/spdlog/fmt/bundled" is under BSD 2 clause license.
     (license (list license:expat license:bsd-2))))
+
+(define-public spdlog-1.7
+  (package
+    (inherit spdlog)
+    (name "spdlog")
+    (version "1.7.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/gabime/spdlog")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1ryaa22ppj60461hcdb8nk7jwj84arp4iw4lyw594py92g4vnx3j"))))))

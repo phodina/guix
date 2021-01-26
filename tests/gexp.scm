@@ -30,6 +30,7 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bootstrap)
+  #:use-module ((guix diagnostics) #:select (guix-warning-port))
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-64)
@@ -722,10 +723,26 @@
                            (lambda (port)
                              (display "This is the second one." port))))))
         (build-drv #~(begin
-                       (use-modules (guix build store-copy))
+                       (use-modules (guix build store-copy)
+                                    (guix build utils)
+                                    (srfi srfi-1))
+
+                       (define (canonical-file? file)
+                         ;; Copied from (guix tests).
+                         (let ((st (lstat file)))
+                           (or (not (string-prefix? (%store-directory) file))
+                               (eq? 'symlink (stat:type st))
+                               (and (= 1 (stat:mtime st))
+                                    (zero? (logand #o222 (stat:mode st)))))))
 
                        (mkdir #$output)
-                       (populate-store '("graph") #$output))))
+                       (populate-store '("graph") #$output
+                                       #:deduplicate? #f)
+
+                       ;; Check whether 'populate-store' canonicalizes
+                       ;; permissions and timestamps.
+                       (unless (every canonical-file? (find-files #$output))
+                         (error "not canonical!" #$output)))))
     (mlet* %store-monad ((one (gexp->derivation "one" build-one))
                          (two (gexp->derivation "two" (build-two one)))
                          (drv (gexp->derivation "store-copy" build-drv
@@ -817,6 +834,17 @@
 (test-equal "gexp-modules and literal Scheme object"
   '()
   (gexp-modules #t))
+
+(test-assert "gexp-modules, warning"
+  (string-match "tests/gexp.scm:[0-9]+:[0-9]+: warning: \
+importing.* \\(guix config\\) from the host"
+                (call-with-output-string
+                  (lambda (port)
+                    (parameterize ((guix-warning-port port))
+                      (let* ((x (with-imported-modules '((guix config))
+                                  #~(+ 1 2 3)))
+                             (y #~(+ 39 #$x)))
+                        (gexp-modules y)))))))
 
 (test-assertm "gexp->derivation #:modules"
   (mlet* %store-monad
@@ -1413,7 +1441,7 @@
 
 (test-assert "printer"
   (string-match "^#<gexp \\(string-append .*#<package coreutils.*\
- \"/bin/uname\"\\) [[:xdigit:]]+>$"
+ \"/bin/uname\"\\) [[:graph:]]+tests/gexp\\.scm:[0-9]+:[0-9]+ [[:xdigit:]]+>$"
                 (with-output-to-string
                   (lambda ()
                     (write

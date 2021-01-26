@@ -2,11 +2,11 @@
 ;;; Copyright © 2013, 2014, 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2014, 2016 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2016 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Nikita <nikita@n0.is>
-;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2018, 2019 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2019, 2020 Marius Bakke <mbakke@fastmail.com>
@@ -30,29 +30,34 @@
 
 (define-module (gnu packages fontutils)
   #:use-module (gnu packages)
-  #:use-module (gnu packages compression)
+  #:use-module (gnu packages autotools)
+  #:use-module (gnu packages bison)
+  #:use-module (gnu packages build-tools)   ;for meson-0.55
   #:use-module (gnu packages check)
+  #:use-module (gnu packages compression)
+  #:use-module (gnu packages datastructures)
+  #:use-module (gnu packages flex)
+  #:use-module (gnu packages fonts)
+  #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages fribidi)
+  #:use-module (gnu packages gcc)
+  #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
+  #:use-module (gnu packages glib)
+  #:use-module (gnu packages gnome)
+  #:use-module (gnu packages gperf)
+  #:use-module (gnu packages gtk)
+  #:use-module (gnu packages image)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages man)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
-  #:use-module (gnu packages autotools)
-  #:use-module (gnu packages fonts)
-  #:use-module (gnu packages gettext)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
-  #:use-module (gnu packages image)
-  #:use-module (gnu packages bison)
-  #:use-module (gnu packages flex)
-  #:use-module (gnu packages glib)
-  #:use-module (gnu packages gperf)
-  #:use-module (gnu packages xorg)
-  #:use-module (gnu packages fribidi)
-  #:use-module (gnu packages gtk)
-  #:use-module (gnu packages xml)
   #:use-module (gnu packages sqlite)
-  #:use-module (gnu packages gnome)
-  #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages xdisorg)
+  #:use-module (gnu packages xml)
+  #:use-module (gnu packages xorg)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix download)
@@ -69,6 +74,7 @@
   (package
    (name "freetype")
    (version "2.10.1")
+   (replacement freetype/fixed)
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://savannah/freetype/freetype-"
@@ -97,10 +103,23 @@ anti-aliased glyph bitmap generation with 256 gray levels.")
    (license license:freetype)           ; some files have other licenses
    (home-page "https://www.freetype.org/")))
 
+(define freetype/fixed
+  ;; Security fix for CVE-2020-15999.
+  (package
+    (inherit freetype)
+    (version "2.10.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://savannah/freetype/freetype-"
+                           version ".tar.xz"))
+       (sha256
+        (base32 "112pyy215chg7f7fmp2l9374chhhpihbh8wgpj5nj6avj3c59a46"))))))
+
 (define-public ttfautohint
   (package
     (name "ttfautohint")
-    (version "1.5")
+    (version "1.8.3")
     (source
      (origin
        (method url-fetch)
@@ -108,8 +127,7 @@ anti-aliased glyph bitmap generation with 256 gray levels.")
                            version ".tar.gz"))
        (sha256
         (base32
-         "1lgghck46p33z3hg8dnl76jryig4fh6d8rhzms837zp7x4hyfkv4"))
-       (patches (list (search-patch "ttfautohint-source-date-epoch.patch")))))
+         "0zpqgihn3yh3v51ynxwr8asqrijvs4gv686clwv7bm8sawr4kfw7"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("flex" ,flex)
@@ -119,7 +137,8 @@ anti-aliased glyph bitmap generation with 256 gray levels.")
      `(("freetype" ,freetype)
        ("harfbuzz" ,harfbuzz)))
     (arguments
-     `(#:configure-flags '("--with-qt=no"))) ;no gui
+     `(#:configure-flags '("--disable-static"
+                           "--with-qt=no"))) ;no gui
     (synopsis "Automated font hinting")
     (description
      "ttfautohint provides a 99% automated hinting process and a platform for
@@ -146,7 +165,7 @@ scripts.")
     (inputs
      `(("zlib" ,zlib)))
     (arguments
-     `(#:make-flags '("CC=gcc")
+     `(#:make-flags '(,(string-append "CC=" (cc-for-target)))
        #:tests? #f                      ;no tests
        #:phases
        (modify-phases %standard-phases
@@ -156,7 +175,8 @@ scripts.")
              (let* ((out (assoc-ref outputs "out"))
                     (bin (string-append out "/bin")))
                (install-file "sfnt2woff" bin)
-               (install-file "woff2sfnt" bin)))))))
+               (install-file "woff2sfnt" bin))
+             #t)))))
     (synopsis "Convert between OpenType and WOFF fonts")
     (description
      "This package provides two tools:
@@ -263,32 +283,50 @@ work with most software requiring Type 1 fonts.")
   (package
     (name "woff2")
     (version "1.0.2")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/google/woff2")
-                    (commit (string-append "v" version))))
-              (file-name (string-append name "-" version ".git"))
-              (sha256
-               (base32
-                "13l4g536h0pr84ww4wxs2za439s0xp1va55g6l478rfbb1spp44y"))))
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/google/woff2")
+         (commit (string-append "v" version))))
+       (file-name
+        (git-file-name name version))
+       (sha256
+        (base32 "13l4g536h0pr84ww4wxs2za439s0xp1va55g6l478rfbb1spp44y"))))
     (build-system cmake-build-system)
+    (outputs '("out" "bin"))
+    (arguments
+     `(#:tests? #f                      ; No target
+       #:configure-flags
+       (list
+        (string-append "-DCMAKE_INSTALL_BINDIR="
+                       (assoc-ref %outputs "bin")
+                       "/bin")
+        (string-append "-DCMAKE_INSTALL_INCLUDEDIR="
+                       (assoc-ref %outputs "out")
+                       "/include")
+        (string-append "-DCMAKE_INSTALL_LIBDIR="
+                       (assoc-ref %outputs "out")
+                       "/lib"))
+       #:phases
+       (modify-phases %standard-phases
+         ;; To install both binaries and libraries.
+         (add-after 'unpack 'patch-installation
+           (lambda _
+             (substitute* "CMakeLists.txt"
+               (("NOT BUILD_SHARED_LIBS")
+                "BUILD_SHARED_LIBS"))
+             #t)))))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (inputs
-     `(("google-brotli" ,google-brotli)))
-    (arguments
-     ;; package has no tests
-     `(#:tests? #f
-       ;; we can’t have both, shared libraries and binaries, so turn off the
-       ;; former
-       #:configure-flags (list "-DBUILD_SHARED_LIBS=OFF")))
-    (synopsis "Compress TrueType fonts to WOFF2")
-    (description
-     "This package provides utilities for compressing/decompressing TrueType
-fonts to/from the WOFF2 format.")
-    (license license:asl2.0)
-    (home-page "https://github.com/google/woff2")))
+     `(("brotli" ,google-brotli)))
+    (synopsis "Libraries and tools for WOFF2 font format")
+    (description "WOFF2 provides libraries and tools to handle the Web Open
+Font Format (WOFF).")
+    (home-page "https://w3c.github.io/woff/woff2/")
+    (license license:expat)))
 
 (define-public fontconfig
   (package
@@ -538,6 +576,7 @@ using the above tables.")
   (package
     (name "libspiro")
     (version "20190731")
+    (replacement libspiro-20200505)
     (source
      (origin
       (method url-fetch)
@@ -555,6 +594,19 @@ using the above tables.")
 smooth contours with constant curvature at the spline joins.")
     (license license:gpl2+)
     (home-page "http://libspiro.sourceforge.net/")))
+
+(define libspiro-20200505
+  (package
+    (inherit libspiro)
+    (version "20200505")
+    (source
+     (origin
+      (method url-fetch)
+      (uri (string-append "https://github.com/fontforge/libspiro/releases"
+                          "/download/" version "/libspiro-dist-" version ".tar.gz"))
+      (sha256
+       (base32
+        "0j8fmyj4wz6mqk17dqs6f8jx0i52n68gv5px17qbrjnbilg9mih6"))))))
 
 (define-public libuninameslist
   (package
@@ -781,6 +833,50 @@ maintain the Noto Fonts project.")
                     "file://sample_texts/attributions.txt"
                     "See sample_texts/attributions.txt in the distribution.")))))
 
+(define-public fcft
+  (package
+    (name "fcft")
+    (version "2.3.2")
+    (home-page "https://codeberg.org/dnkl/fcft")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference (url home-page) (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0k2i57rakm4g86f7hbhkby8af0vv7v63a70lk3m58mkycpy5q2rm"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:meson ,meson-0.55))
+    (native-inputs
+     `(("check" ,check)
+       ("gcc" ,gcc-10)    ;TODO: Remove when the default compiler is > GCC 7.
+       ("pkg-config" ,pkg-config)
+       ("scdoc" ,scdoc)))
+    (propagated-inputs
+     `(;; Required by fcft.pc.
+       ("fontconfig" ,fontconfig)
+       ("freetype" ,freetype)
+       ("harfbuzz" ,harfbuzz)
+       ("pixman" ,pixman)
+       ("tllist" ,tllist)))
+    (synopsis "Font loading and glyph rasterization library")
+    (description
+     "@code{fcft} is a small font loading and glyph rasterization library
+built on-top of FontConfig, FreeType2 and pixman.
+
+It can load and cache fonts from a fontconfig-formatted name string, e.g.
+@code{Monospace:size=12}, optionally with user configured fallback fonts.
+
+After a font has been loaded, you can rasterize glyphs.  When doing so, the
+primary font is first considered.  If it does not have the requested glyph,
+the user configured fallback fonts (if any) are considered.  If none of the
+user configured fallback fonts has the requested glyph, the FontConfig
+generated list of fallback fonts are checked.")
+    ;; The code is distributed under the Expat license, but embeds Unicode
+    ;; data files carrying the Unicode license.
+    (license (list license:expat license:unicode))))
+
 (define-public fontmanager
   (package
    (name "fontmanager")
@@ -890,7 +986,7 @@ Unicode Charts.  It was developed for use with DejaVu Fonts project.")
 (define-public libraqm
   (package
     (name "libraqm")
-    (version "0.7.0")
+    (version "0.7.1")
     (source
      (origin
        (method url-fetch)
@@ -898,7 +994,7 @@ Unicode Charts.  It was developed for use with DejaVu Fonts project.")
                            "releases/download/v" version "/"
                            "raqm-" version ".tar.gz"))
        (sha256
-        (base32 "0hgry3fj2y3qaq2fnmdgd93ixkk3ns5jds4vglkiv2jfvpn7b1g2"))))
+        (base32 "0a4q9dziirb85sa9rmkamg2krdhd009di2vlz91njwxcp3q8qj46"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags (list "--disable-static")))
@@ -920,3 +1016,33 @@ It currently provides bidirectional text support (using FriBiDi),
 shaping (using HarfBuzz), and proper script itemization.  As a result, Raqm
 can support most writing systems covered by Unicode.")
     (license license:expat)))
+
+(define-public lcdf-typetools
+  (package
+    (name "lcdf-typetools")
+    (version "2.108")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/kohler/lcdf-typetools")
+                     (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0a6jqaqwq43ldjjjlnsh6mczs2la9363qav7v9fyrfzkfj8kw9ad"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       ;; This is only provided by the monolithic texlive distribution.
+       ;; FIXME: texlive-kpathsea doesn't come with the library and headers
+       (list "--without-kpathsea")))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)))
+    (home-page "https://lcdf.org/type/")
+    (synopsis "Multiple font manipulation tools")
+    (description "LCDF Typetools comprises several programs for manipulating
+PostScript Type 1, Type 1 Multiple Master, OpenType, and TrueType fonts.
+These tools are cfftot1, mmafm, mmpfb, otfinfo, otftotfm, t1dotlessj, t1lint,
+t1rawfm, t1reencode, t1testpage and ttftotype42.")
+    (license license:gpl2+)))

@@ -1,5 +1,5 @@
 # GNU Guix --- Functional package management for GNU
-# Copyright © 2013, 2014, 2015, 2019 Ludovic Courtès <ludo@gnu.org>
+# Copyright © 2013, 2014, 2015, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 #
 # This file is part of GNU Guix.
 #
@@ -28,7 +28,7 @@ tmpdir="t-archive-dir-$$"
 rm -f "$archive" "$archive_alt"
 rm -rf "$tmpdir"
 
-trap 'rm -f "$archive" "$archive_alt"; rm -rf "$tmpdir"' EXIT
+trap 'rm -f "$archive" "$archive_alt"; chmod -R +w "$tmpdir"; rm -rf "$tmpdir"' EXIT
 
 guix archive --export guile-bootstrap > "$archive"
 guix archive --export guile-bootstrap:out > "$archive_alt"
@@ -44,8 +44,7 @@ cmp "$archive" "$archive_alt"
 # Check the exit value upon import.
 guix archive --import < "$archive"
 
-if guix archive something-that-does-not-exist
-then false; else true; fi
+! guix archive something-that-does-not-exist
 
 # This one must not be listed as missing.
 guix build guile-bootstrap > "$archive"
@@ -62,8 +61,7 @@ cmp "$archive" "$archive_alt"
 
 # This is not a valid store file name, so an error.
 echo something invalid > "$archive"
-if guix archive --missing < "$archive"
-then false; else true; fi
+! guix archive --missing < "$archive"
 
 # Check '--extract'.
 guile -c "(use-modules (guix serialization))
@@ -79,5 +77,4 @@ guix archive -t < "$archive" | grep "^D /share/guile"
 guix archive -t < "$archive" | grep "^x /bin/guile"
 guix archive -t < "$archive" | grep "^r /share/guile.*/boot-9\.scm"
 
-if echo foo | guix archive --authorize
-then false; else true; fi
+! echo foo | guix archive --authorize

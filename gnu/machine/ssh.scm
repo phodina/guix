@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2019 Jakob L. Kreuze <zerodaysfordays@sdf.org>
-;;; Copyright © 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37,6 +37,7 @@
   #:use-module (guix ssh)
   #:use-module (guix store)
   #:use-module (guix utils)
+  #:use-module ((guix self) #:select (make-config.scm))
   #:use-module (gcrypt pk-crypto)
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
@@ -172,6 +173,8 @@ exist on the machine."
               (and (file-system-mount? fs)
                    (not (member (file-system-type fs)
                                 %pseudo-file-system-types))
+                   ;; Don't try to validate network file systems.
+                   (not (string-prefix? "nfs" (file-system-type fs)))
                    (not (memq 'bind-mount (file-system-flags fs)))))
             (operating-system-file-systems (machine-operating-system machine))))
 
@@ -343,6 +346,14 @@ by MACHINE."
 ;;; System deployment.
 ;;;
 
+(define not-config?
+  ;; Select (guix …) and (gnu …) modules, except (guix config).
+  (match-lambda
+    (('guix 'config) #f)
+    (('guix _ ...) #t)
+    (('gnu _ ...) #t)
+    (_ #f)))
+
 (define (machine-boot-parameters machine)
   "Monadic procedure returning a list of 'boot-parameters' for the generations
 of MACHINE's system profile, ordered from most recent to oldest."
@@ -351,8 +362,10 @@ of MACHINE's system profile, ordered from most recent to oldest."
 
   (define remote-exp
     (with-extensions (list guile-gcrypt)
-      (with-imported-modules (source-module-closure '((guix config)
-                                                      (guix profiles)))
+      (with-imported-modules `(((guix config) => ,(make-config.scm))
+                               ,@(source-module-closure
+                                  '((guix profiles))
+                                  #:select? not-config?))
         #~(begin
             (use-modules (guix config)
                          (guix profiles)
@@ -478,6 +491,12 @@ an environment type of 'managed-host."
                                  (raise roll-back-failure)))
                        (entries -> (map boot-parameters->menu-entry
                                         (list (second boot-parameters))))
+                       (locale -> (boot-parameters-locale
+                                   (second boot-parameters)))
+                       (crypto-dev -> (boot-parameters-store-crypto-devices
+                                       (second boot-parameters)))
+                       (store-dir -> (boot-parameters-store-directory-prefix
+                                      (second boot-parameters)))
                        (old-entries -> (map boot-parameters->menu-entry
                                             (drop boot-parameters 2)))
                        (bootloader -> (operating-system-bootloader
@@ -487,6 +506,9 @@ an environment type of 'managed-host."
                                    (bootloader-configuration-bootloader
                                     bootloader))
                                   bootloader entries
+                                  #:locale locale
+                                  #:store-crypto-devices crypto-dev
+                                  #:store-directory-prefix store-dir
                                   #:old-entries old-entries)))
                        (remote-result (machine-remote-eval machine remote-exp)))
     (when (eqv? 'error remote-result)

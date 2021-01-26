@@ -4,13 +4,15 @@
 ;;; Copyright © 2014 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
 ;;; Copyright © 2018 Lprndn <guix@lprndn.info>
-;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2019, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2020 Pierre Neidhardt <mail@ambrevar.xyz>
+;;; Copyright © 2020 Brendan Tildesley <mail@brendan.scot>
+;;; Copyright © 2021 Oleh Malyi <astroclubzp@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -33,6 +35,7 @@
   #:use-module (guix utils)
   #:use-module (guix download)
   #:use-module (guix git-download)
+  #:use-module (guix build-system qt)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (gnu packages)
@@ -67,8 +70,10 @@
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages serialization)
+  #:use-module (gnu packages sqlite)
   #:use-module (gnu packages tbb)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages video)
   #:use-module (gnu packages xiph)
   #:use-module (gnu packages xml)
@@ -165,6 +170,78 @@ without compromising the original code base and it makes use of a wide variety
 of external libraries that provide additional functionality.")
     (license license:gpl3+)))
 
+(define-public opencolorio
+  (package
+    (name "opencolorio")
+    (version "1.1.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/AcademySoftwareFoundation/OpenColorIO")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "12srvxca51czpfjl0gabpidj9n84mw78ivxy5w75qhq2mmc798sb"))
+       (file-name (git-file-name name version))
+       (modules '((guix build utils)))
+       (snippet
+        `(begin
+           ;; Remove bundled tarballs, patches, and .jars(!).  XXX: Upstream
+           ;; claims to have fixed USE_EXTERNAL_YAML, but it still fails with:
+           ;; https://github.com/AcademySoftwareFoundation/OpenColorIO/issues/517
+           ;; When removing it, also remove it from the licence field comment.
+           (for-each delete-file-recursively
+                     (filter
+                      (lambda (full-name)
+                        (let ((file (basename full-name)))
+                          (not (or (string-prefix? "yaml-cpp-0.3" file)
+                                   (string=? "unittest.h" file)))))
+                      (find-files "ext" ".*")))
+
+           #t))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags
+       (list (string-append "-DCMAKE_CXX_FLAGS="
+                            "-Wno-error=deprecated-declarations "
+                            "-Wno-error=unused-function")
+             "-DOCIO_BUILD_STATIC=OFF"
+             ;; "-DUSE_EXTERNAL_YAML=ON"
+             "-DUSE_EXTERNAL_TINYXML=ON"
+             "-DUSE_EXTERNAL_LCMS=ON")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-test-suite
+           (lambda _
+             (substitute* "src/core_tests/CMakeLists.txt"
+               (("/bin/sh") (which "bash")))
+             #t)))))
+    (native-inputs
+     `(("git" ,git)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     ;; XXX Adding freeglut, glew, ilmbase, mesa, and openimageio for
+     ;; ocioconvert fails: error: conflicting declaration ?typedef void
+     ;; (* PFNGLGETFRAGMENTMATERIALFVSGIXPROC)(GLenum, GLenum, GLfloat*)
+     `(("lcms" ,lcms)
+       ("openexr" ,openexr)
+       ("tinyxml" ,tinyxml)))
+    (home-page "https://opencolorio.org")
+    (synopsis "Color management for visual effects and animation")
+    (description
+     "OpenColorIO, or OCIO, is a complete color management solution geared
+towards motion picture production, with an emphasis on visual effects and
+computer animation.  It provides a straightforward and consistent user
+experience across all supporting applications while allowing for sophisticated
+back-end configuration options suitable for high-end production usage.
+
+OCIO is compatible with the @acronym{ACES, Academy Color Encoding
+Specification} and is @acronym{LUT, look-up table}-format agnostic, supporting
+many popular formats.")
+    (license (list license:expat        ; docs/ociotheme/static, ext/yaml-cpp-*
+                   license:zlib         ; src/core/md5
+                   license:bsd-3))))    ; the rest
+
 (define-public vtk
   (package
     (name "vtk")
@@ -176,38 +253,69 @@ of external libraries that provide additional functionality.")
                                   "/VTK-" version ".tar.gz"))
               (sha256
                (base32
-                "1fspgp8k0myr6p2a6wkc21ldcswb4bvmb484m12mxgk1a9vxrhrl"))))
+                "1fspgp8k0myr6p2a6wkc21ldcswb4bvmb484m12mxgk1a9vxrhrl"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  (for-each
+                    (lambda (dir)
+                      (delete-file-recursively
+                        (string-append "ThirdParty/" dir "/vtk" dir)))
+                    ;; ogg, pugixml depended upon unconditionally
+                    '("doubleconversion" "eigen" "expat" "freetype" "gl2ps"
+                      "glew" "hdf5" "jpeg" "jsoncpp" "libproj" "libxml2" "lz4"
+                      "netcdf" "png" "sqlite" "theora" "tiff" "zlib"))
+                  #t))))
     (build-system cmake-build-system)
     (arguments
      '(#:build-type "Release"           ;Build without '-g' to save space.
-       ;; -DVTK_USE_SYSTEM_NETCDF:BOOL=TRUE requires netcdf_cxx
-       #:configure-flags '("-DVTK_USE_SYSTEM_EXPAT:BOOL=TRUE"
+       #:configure-flags '(;"-DBUILD_TESTING:BOOL=TRUE"
+                           ;"-DVTK_MODULE_USE_EXTERNAL_vtkogg:BOOL=TRUE"    ; not honored
+                           "-DVTK_USE_SYSTEM_DOUBLECONVERSION:BOOL=TRUE"
+                           "-DVTK_USE_SYSTEM_EIGEN:BOOL=TRUE"
+                           "-DVTK_USE_SYSTEM_EXPAT:BOOL=TRUE"
                            "-DVTK_USE_SYSTEM_FREETYPE:BOOL=TRUE"
+                           "-DVTK_USE_SYSTEM_GL2PS:BOOL=TRUE"
+                           "-DVTK_USE_SYSTEM_GLEW:BOOL=TRUE"
                            "-DVTK_USE_SYSTEM_HDF5:BOOL=TRUE"
                            "-DVTK_USE_SYSTEM_JPEG:BOOL=TRUE"
                            "-DVTK_USE_SYSTEM_JSONCPP:BOOL=TRUE"
+                           "-DVTK_USE_SYSTEM_LIBPROJ:BOOL=TRUE"
                            "-DVTK_USE_SYSTEM_LIBXML2:BOOL=TRUE"
-                           "-DVTK_USE_SYSTEM_OGGTHEORA:BOOL=TRUE"
+                           "-DVTK_USE_SYSTEM_LZ4:BOOL=TRUE"
+                           "-DVTK_USE_SYSTEM_NETCDF:BOOL=TRUE"
                            "-DVTK_USE_SYSTEM_PNG:BOOL=TRUE"
+                           ;"-DVTK_USE_SYSTEM_PUGIXML:BOOL=TRUE"    ; breaks IO/CityGML
+                           "-DVTK_USE_SYSTEM_SQLITE:BOOL=TRUE"
+                           "-DVTK_USE_SYSTEM_THEORA:BOOL=TRUE"
                            "-DVTK_USE_SYSTEM_TIFF:BOOL=TRUE"
                            "-DVTK_USE_SYSTEM_ZLIB:BOOL=TRUE")
-       #:tests? #f))                              ;XXX: no "test" target
+       #:tests? #f))        ;XXX: test data not included
     (inputs
-     `(("libXt" ,libxt)
-       ("xorgproto" ,xorgproto)
-       ("libX11" ,libx11)
-       ("libxml2" ,libxml2)
-       ("mesa" ,mesa)
-       ("glu" ,glu)
+     `(("double-conversion" ,double-conversion)
+       ("eigen" ,eigen)
        ("expat" ,expat)
        ("freetype" ,freetype)
+       ("gl2ps" ,gl2ps)
+       ("glew" ,glew)
+       ("glu" ,glu)
        ("hdf5" ,hdf5)
        ("jpeg" ,libjpeg-turbo)
        ("jsoncpp" ,jsoncpp)
-       ("libogg" ,libogg)
+       ;("libogg" ,libogg)
        ("libtheora" ,libtheora)
+       ("libX11" ,libx11)
+       ("libxml2" ,libxml2)
+       ("libXt" ,libxt)
+       ("lz4" ,lz4)
+       ("mesa" ,mesa)
+       ("netcdf" ,netcdf)
        ("png" ,libpng)
+       ("proj" ,proj.4)
+       ;("pugixml" ,pugixml)
+       ("sqlite" ,sqlite)
        ("tiff" ,libtiff)
+       ("xorgproto" ,xorgproto)
        ("zlib" ,zlib)))
     (home-page "https://vtk.org/")
     (synopsis "Libraries for 3D computer graphics")
@@ -251,6 +359,8 @@ integrates with various databases on GUI toolkits such as Qt and Tk.")
               (sha256
                (base32
                 "06bc61r8myym4s8im10brdjfg4wxkrvsbhhl7vr1msdan2xddzi3"))
+              (patches
+               (search-patches "opencv-fix-build-of-grfmt_jpeg2000.cpp.patch"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -443,7 +553,7 @@ vision algorithms.  It can be used to do things like:
 (define-public vips
   (package
     (name "vips")
-    (version "8.7.4")
+    (version "8.10.5")
     (source
      (origin
        (method url-fetch)
@@ -451,33 +561,33 @@ vision algorithms.  It can be used to do things like:
              "https://github.com/libvips/libvips/releases/download/v"
              version "/vips-" version ".tar.gz"))
        (sha256
-        (base32 "01gjhcrl6zj7mcj1al717v5jsniahplqhz1xkfh2j78vyfl1hxff"))))
+        (base32 "1n6gw7cw66rfn1wdb92ydpkv7gfmjiinsg6d6gqxpdja6gsz5vm4"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)
-       ("gobject-introspection" ,gobject-introspection)))
+     `(("gobject-introspection" ,gobject-introspection)
+       ("pkg-config" ,pkg-config)))
     (inputs
-     `(("glib" ,glib)
+     `(("expat" ,expat)
+       ("fftw" ,fftw)
+       ("giflib" ,giflib)
+       ("glib" ,glib)
+       ("hdf5" ,hdf5)
+       ("imagemagick" ,imagemagick)
+       ("lcms" ,lcms)
+       ("libexif" ,libexif)
+       ("libgsf" ,libgsf)
        ("libjpeg" ,libjpeg-turbo)
        ("libpng" ,libpng)
        ("librsvg" ,librsvg)
        ("libtiff" ,libtiff)
-       ("libexif" ,libexif)
-       ("giflib" ,giflib)
-       ("libgsf" ,libgsf)
-       ("fftw" ,fftw)
-       ("poppler" ,poppler)
-       ("pango" ,pango)
-       ("lcms" ,lcms)
-       ("matio" ,matio)
+       ("libxml2" ,libxml2)
        ("libwebp" ,libwebp)
+       ("matio" ,matio)
        ("niftilib" ,niftilib)
        ("openexr" ,openexr)
        ("orc" ,orc)
-       ("imagemagick" ,imagemagick)
-       ("libxml2" ,libxml2)
-       ("expat" ,expat)
-       ("hdf5" ,hdf5)))
+       ("pango" ,pango)
+       ("poppler" ,poppler)))
     (home-page "https://libvips.github.io/libvips/")
     (synopsis "Multithreaded image processing system with low memory needs")
     (description
@@ -493,14 +603,14 @@ due to its architecture which automatically parallelises the image workflows.")
 (define-public gmic
   (package
     (name "gmic")
-    (version "2.9.1")
+    (version "2.9.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://gmic.eu/files/source/gmic_"
                            version ".tar.gz"))
        (sha256
-        (base32 "13axx7nwchn6ysgpvlw3fib474q4nrwv3qn20g3q03ldid0xvjah"))))
+        (base32 "14acph914a8lp6qqfmp319ggqjg3i3hmalmnpk3mp07m7vpv2p9q"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f))                    ;there are no tests
@@ -936,7 +1046,78 @@ full-featured UI aimed at clinical researchers.")
       (description "Metapixel is a program for generating photomosaics.  It can
 generate classical photomosaics, in which the source image is viewed as a
 matrix of equally sized rectangles for each of which a matching image is
-substitued, as well as collage-style photomosaics, in which rectangular parts
+substituted, as well as collage-style photomosaics, in which rectangular parts
 of the source image at arbitrary positions (i.e. not aligned to a matrix) are
 substituted by matching images.")
       (license license:gpl2))))
+
+(define-public scantailor-advanced
+  (let ((commit "3d1e74e6ace413733511086934a66f4e3f7a6027"))
+    (package
+      (name "scantailor-advanced")
+      (version (string-append "1.0.16-" (string-take commit 7)))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/4lex4/scantailor-advanced")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "0kixwjb2x457dq7927hkh34c803p7yh1pmn6n61rk9shqrcg492h"))))
+      (build-system qt-build-system)
+      (native-inputs
+       `(("qttools" ,qttools)))
+      (inputs
+       `(("boost" ,boost)
+         ("libjpeg" ,libjpeg-turbo)
+         ("libpng" ,libpng)
+         ("libtiff" ,libtiff)
+         ("qtbase" ,qtbase)
+         ("qtsvg" ,qtsvg)
+         ("zlib" ,zlib)))
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           ;; Some tests require a display and fail with offscreen mode.
+           (add-after 'unpack 'disable-failing-tests
+             (lambda _
+               (setenv "ARGS" "--exclude-regex \"imageproc_.*\"")
+               #t)))))
+      (home-page "https://github.com/4lex4/scantailor-advanced")
+      (synopsis "Clean up scanned pages")
+      (description "Scan Tailor is an interactive post-processing tool for
+scanned pages.  It performs operations such as page splitting, deskewing,
+adding/removing borders, and others.  You give it raw scans, and you get pages
+ready to be printed or assembled into a PDF or DJVU file.  Scanning, optical
+character recognition, and assembling multi-page documents are out of scope of
+this project.
+
+Scan Tailer Advanced is a fork of Scan Tailer that merges Scan Tailor Featured
+and Scan Tailor Enhanced versions as well as including many more bug fixes.")
+      (license license:gpl3+))))
+
+(define-public stiff
+  (package
+    (name "stiff")
+    (version "2.4.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://www.astromatic.net/download/stiff/stiff-"
+                           version ".tar.gz"))
+       (sha256
+        (base32 "14m92dskzw7bwsr64ha4p0mj3ndv13gwcbfic3qxrs3zq5353s7l"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("libtiff" ,libtiff)
+       ("zlib" ,zlib)
+       ("libjpeg-turbo" ,libjpeg-turbo)))
+    (home-page "https://www.astromatic.net/software/stiff")
+    (synopsis "Convert scientific FITS images to TIFF format")
+    (description
+     "STIFF is a program that converts scientific @acronym{FITS, Flexible Image
+Transport System} images to the more popular TIFF format for illustration
+purposes.")
+    (license license:gpl3+)))

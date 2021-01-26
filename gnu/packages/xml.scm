@@ -23,6 +23,11 @@
 ;;; Copyright © 2018 Jack Hill <jackhill@jackhill.us>
 ;;; Copyright © 2019 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;; Copyright © 2020 Paul Garlick <pgarlick@tourbillion-technology.com>
+;;; Copyright © 2020 Edouard Klein <edk@beaver-labs.com>
+;;; Copyright © 2020 Brett Gilio <brettg@gnu.org>
+;;; Copyright © 2020 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2021 Michael Rohleder <mike@rohleder.de>
+;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -41,16 +46,19 @@
 
 (define-module (gnu packages xml)
   #:use-module (gnu packages)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages documentation)
+  #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
-  #:use-module (gnu packages gnupg)
   #:use-module (gnu packages gnome)
+  #:use-module (gnu packages gnupg)
   #:use-module (gnu packages graphviz)
+  #:use-module (gnu packages gtk)
   #:use-module (gnu packages java)
   #:use-module (gnu packages nss)
   #:use-module (gnu packages perl)
@@ -65,10 +73,44 @@
   #:use-module (guix build-system ant)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system meson)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages pkg-config))
+
+(define-public libxmlb
+  (package
+    (name "libxmlb")
+    (version "0.1.15")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/hughsie/libxmlb")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1mb73pnfwqc4mm0lm16yfn0lj495h8hcciprb2v6wgy3ifnnjxib"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:glib-or-gtk? #t))
+    (native-inputs
+     `(("gobject-introspection" ,gobject-introspection)
+       ("gtk-doc" ,gtk-doc)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("appstream-glib" ,appstream-glib)
+       ("glib" ,glib)))
+    (synopsis "Library to help create and query binary XML blobs")
+    (description "Libxmlb library takes XML source, and converts it to a
+structured binary representation with a deduplicated string table; where the
+strings have the NULs included.  This allows an application to mmap the binary
+XML file, do an XPath query and return some strings without actually parsing
+the entire document.")
+    (home-page "https://github.com/hughsie/libxmlb")
+    (license license:lgpl2.1+)))
 
 (define-public expat
   (package
@@ -100,14 +142,14 @@ things the parser might find in the XML document (like start tags).")
 (define-public libebml
   (package
     (name "libebml")
-    (version "1.4.0")
+    (version "1.4.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://dl.matroska.org/downloads/libebml/"
                            "libebml-" version ".tar.xz"))
        (sha256
-        (base32 "1cy4hbk8qbxn4c6pwvlsvr1rp8vhfach9rwfg4c50qa94nlckaw0"))))
+        (base32 "0ckhf7wcfwik1c8ilwipdr9p7b58pvqvj8x54l6slqah81lwd53f"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags
@@ -180,7 +222,7 @@ project (but it is usable outside of the Gnome platform).")
     (source (origin
              (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/libxmlplusplus/libxmlplusplus.git")
+                   (url "https://github.com/libxmlplusplus/libxmlplusplus")
                    (commit version)))
              (file-name (git-file-name name version))
              (sha256
@@ -240,7 +282,7 @@ It uses libxml2 to access the XML files.")
     (source (origin
              (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/libxmlplusplus/libxmlplusplus.git")
+                   (url "https://github.com/libxmlplusplus/libxmlplusplus")
                    (commit version)))
              (file-name (git-file-name name version))
              (sha256
@@ -318,6 +360,86 @@ It uses libxml2 to access the XML files.")
      "Libxslt is an XSLT C library developed for the GNOME project.  It is
 based on libxml for XML parsing, tree manipulation and XPath support.")
     (license license:x11)))
+
+(define-public openjade
+  (package
+    (name "openjade")
+    (version "1.3.2")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/openjade/openjade/"
+                                  version "/" name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1l92sfvx1f0wmkbvzv1385y1gb3hh010xksi1iyviyclrjb7jb8x"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list (string-append "--enable-spincludedir="
+                            (assoc-ref %build-inputs "opensp")
+                            "/include/OpenSP")
+             (string-append "--enable-splibdir="
+                            (assoc-ref %build-inputs "opensp") "/lib")
+             ;; Workaround segfaults in OpenJade (see:
+             ;; https://bugs.launchpad.net/ubuntu/+source/openjade/+bug/1869734).
+             "CXXFLAGS=-O0")
+       #:parallel-build? #f             ;build fails otherwise
+       ;; The test suite fails with diff errors between the actual and
+       ;; expected results, like: (char<? #\a #\A) returning #t rather than
+       ;; #f (see: https://sourceforge.net/p/openjade/bugs/150/).
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'replace-deprecated-getopt
+           ;; See: https://sourceforge.net/p/openjade/bugs/140/.
+           (lambda _
+             (substitute* "msggen.pl"
+               (("use POSIX;") "use POSIX;\nuse Getopt::Std;")
+               (("do 'getopts.pl';") "")
+               (("&Getopts") "getopts"))
+             #t))
+         (add-after 'replace-deprecated-getopt 'fix-locale-lookup
+           ;; See: https://sourceforge.net/p/openjade/bugs/149/.
+           (lambda _
+             (substitute* "testsuite/expr-lang.dsl"
+               (("\\(language \"EN\" \"US\"\\)")
+                "(language \"EN\" \"US.UTF-8\")"))
+             #t))
+         (add-after 'install 'install-doc
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; TODO: Generate the manpage from source, with
+             ;; openjade-bootstrap and jadetex.  See the file docsrc/Makefile.
+             (let* ((out (assoc-ref outputs "out"))
+                    (man1 (string-append out "/share/man/man1")))
+               (install-file "docsrc/openjade.1" man1)
+               #t)))
+         (add-after 'install-doc 'install-dtds
+          (lambda* (#:key outputs #:allow-other-keys)
+            (let* ((out (assoc-ref outputs "out"))
+                   (dtd (string-append out "/sgml/dtd")))
+              (mkdir-p dtd)
+              (copy-recursively "dsssl" dtd)
+              #t)))
+         (delete 'check)
+         (add-after 'install 'check
+           (lambda* (#:key tests? out #:allow-other-keys)
+             (if tests?
+                 (with-directory-excursion "testsuite"
+                   (invoke "make"))
+                 (format #t "test suite not run~%"))
+             #t)))))
+    (inputs
+     `(("opensp" ,opensp)))
+    (native-inputs
+     `(("perl" ,perl)))
+    (home-page "http://openjade.sourceforge.net/")
+    (synopsis "ISO/IEC 10179:1996 standard DSSSL language implementation")
+    (description "OpenJade is an implementation of Document Style Semantics
+and Specification Language (DSSSL), a style language to format SGML or XML
+documents.  It contains backends for various formats such as RTF, HTML, TeX,
+MIF, SGML2SGML, and FOT.")
+    (license (license:non-copyleft "file://COPYING"
+                                   "See COPYING in the distribution."))))
 
 (define-public perl-graph-readwrite
   (package
@@ -953,14 +1075,14 @@ the form of functions.")
 (define-public pugixml
   (package
     (name "pugixml")
-    (version "1.10")
+    (version "1.11")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "https://github.com/zeux/pugixml/releases/download/v"
                           version "/pugixml-" version ".tar.gz"))
       (sha256
-       (base32 "02l7nllhydggf7s64d2x84kckbmwag4lsn28sc82953hnkxrkwsm"))))
+       (base32 "0b5apqiisq8yk51x0cwks4h2m0zd2zgjdy0w80qp9h5rccz3v496"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags '("-DBUILD_SHARED_LIBS=ON")
@@ -1042,14 +1164,14 @@ XSL-T processor.  It also performs any necessary post-processing.")
 (define-public xmlsec
   (package
     (name "xmlsec")
-    (version "1.2.30")
+    (version "1.2.31")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.aleksey.com/xmlsec/download/"
                                   "xmlsec1-" version ".tar.gz"))
               (sha256
                (base32
-                "1j5bf7ni45jghyrbf7a14wx2pvfara557zyry7g7h8840c5kd11d"))))
+                "09hbbaz2d9hw645q27apkjs1mdr6vd85x5z3c9hzgr1iri9bq44v"))))
     (build-system gnu-build-system)
     (propagated-inputs                  ; according to xmlsec1.pc
      `(("libxml2" ,libxml2)
@@ -1086,7 +1208,7 @@ Libxml2).")
 (define-public minixml
   (package
     (name "minixml")
-    (version "2.12")
+    (version "3.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/michaelrsweet/mxml/"
@@ -1094,14 +1216,14 @@ Libxml2).")
                                   "/mxml-" version ".tar.gz"))
               (sha256
                (base32
-                "0kq3wiycb40dcyswvajrqb1n5ffm5xcnsfxxaml92vhpl6x57yvb"))))
+                "0x698ayv00vrjg0yfm20lakpgl7m02x1fk2n09wygwk4973gd55q"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
        (list (string-append "LDFLAGS=-Wl,-rpath="
                             (assoc-ref %outputs "out") "/lib"))
        #:tests? #f))                    ; tests are run during build
-    (home-page "https://michaelrsweet.github.io/mxml")
+    (home-page "https://www.msweet.org/mxml/")
     (synopsis "Small XML parsing library")
     (description
      "Mini-XML is a small C library to read and write XML files and strings in
@@ -1222,7 +1344,15 @@ C++ programming language.")
            (substitute* "Makefile"
              (("^examples/schema1\\\\") "\\")
              (("^examples/valid1\\\\") "\\"))
-           #t)))))
+           #t))
+       (add-after 'install 'symlink-xmlstarlet
+         (lambda* (#:key outputs #:allow-other-keys)
+           ;; Other distros usually either rename or symlink the `xml' binary
+           ;; as `xmlstarlet', let's do it as well for compatibility.
+           (let* ((out (assoc-ref outputs "out"))
+                  (bin (string-append out "/bin")))
+             (symlink "xml" (string-append bin "/xmlstarlet"))
+             #t))))))
    (inputs
     `(("libxslt" ,libxslt)
       ("libxml2" ,libxml2)))
@@ -1391,6 +1521,42 @@ to read and write XML data.  A shared library is provided for parsing,
 generating, manipulating, and validating XML documents using the DOM, SAX, and
 SAX2 APIs.")
     (license license:asl2.0)))
+
+(define-public xlsxio
+  (package
+    (name "xlsxio")
+    (version "0.2.29")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/brechtsanders/xlsxio")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0jr6ggzhd8aakdvppcl8scy9j9jafg82zbzr4ih996sz8lrj90fn"))))
+    (native-inputs
+     `(("expat" ,expat)
+       ("make" ,gnu-make)
+       ("minizip" ,minizip)
+       ("which" ,which)))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (delete 'check)
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (invoke "make" "install"
+                     (string-append
+                      "PREFIX=" (assoc-ref outputs "out"))))))))
+    (synopsis "C library for reading and writing .xlsx files")
+    (description "XLSX I/O aims to provide a C library for reading and writing
+.xlsx files.  The .xlsx file format is the native format used by Microsoft(R)
+Excel(TM) since version 2007.")
+    (home-page "https://github.com/brechtsanders/xlsxio")
+    (license license:expat)))
 
 (define-public java-simple-xml
   (package
@@ -2049,7 +2215,7 @@ outputting XML data from Java code.")
 (define-public java-xstream
   (package
     (name "java-xstream")
-    (version "1.4.10")
+    (version "1.4.15")
     (source
      (origin
        (method git-fetch)
@@ -2061,7 +2227,7 @@ outputting XML data from Java code.")
                                   version)))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "12m2bw8bapdc1w0pni9wl5hh2y8jfdgcvxd464jl9917dsp3ai2n"))))
+        (base32 "1178qryrjwjp44439pi5dxzd32896r5zs429z1qhlc09951r7mi9"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "xstream.jar"
@@ -2123,6 +2289,95 @@ It converts the procedure call into an XML document, sends it to a remote
 server using HTTP, and gets back the response as XML.  This library provides a
 modular implementation of XML-RPC for C and C++.")
     (license (list license:psfl license:expat))))
+
+(define-public opensp
+  (package
+    (name "opensp")
+    (version "1.5.2")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/openjade/opensp/"
+                                  version "/OpenSP-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1khpasr6l0a8nfz6kcf3s81vgdab8fm2dj291n5r2s53k228kx2p"))))
+    (outputs '("out" "doc"))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("docbook-xml" ,docbook-xml-4.1.2)
+       ("docbook-xsl" ,docbook-xsl)
+       ("libxml2" ,libxml2)             ;for XML_CATALOG_DIR
+       ("xmlto" ,xmlto)
+       ;; Dependencies to regenerate the 'configure' script.
+       ("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("gettext" ,gettext-minimal)
+       ("libtool" ,libtool)))
+    (arguments
+     `( ;; Note: we cannot use '--enable-full-doc-build' as this would require
+       ;; Openjade, which in turn requires this package.
+
+       ;; Skip the tests that are known to fail (see:
+       ;; https://sourceforge.net/p/openjade/mailman/message/6182316/)
+       #:make-flags '("TESTS_THAT_FAIL=")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-docbook-paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((xmldoc (string-append (assoc-ref inputs "docbook-xml")
+                                          "/xml/dtd/docbook"))
+                   (xsldoc (string-append (assoc-ref inputs "docbook-xsl")
+                                          "/xml/xsl/docbook-xsl-"
+                                          ,(package-version docbook-xsl))))
+               (substitute* (find-files "docsrc" "\\.xml$")
+                 (("/usr/share/sgml/docbook/xml-dtd-4.1.2") xmldoc)
+                 (("http://.*/docbookx\\.dtd")
+                  (string-append xmldoc "/docbookx.dtd")))
+               #t)))
+         (add-after 'patch-docbook-paths 'delete-configure
+           ;; The configure script in the release was made with an older
+           ;; Autoconf and lacks support for the `--docdir' option.
+           (lambda _
+             (delete-file "configure")
+             #t))
+         (add-after 'delete-configure 'honor-docdir
+           ;; docdir is not honored due to being hardcoded in the various
+           ;; Makefile.am (see: https://sourceforge.net/p/openjade/bugs/147/).
+           (lambda _
+             (substitute* '("Makefile.am" "doc/Makefile.am" "docsrc/Makefile.am")
+               (("^docdir = .*") "docdir = @docdir@\n"))
+             #t))
+         (add-after 'delete-configure 'fix-tests-makefile.am
+           ;; Remove the trailing $(SHELL) from the TESTS_ENVIRONMENT variable
+           ;; definition. Otherwise, when targets are built using
+           ;; "$(am__check_pre) $(LOG_DRIVER) [...]", there would be two
+           ;; $(SHELL) expansion which fails the build.
+           (lambda _
+             (substitute* "tests/Makefile.am"
+               (("^\tOSGMLNORM=`echo osgmlnorm\\|sed '\\$\\(transform\\)'`\\\\")
+                "\tOSGMLNORM=`echo osgmlnorm|sed '$(transform)'`")
+               (("^\t\\$\\(SHELL\\)\n") ""))
+             #t)))))
+    ;; $SGML_CATALOG_FILES lists 'catalog' or 'CATALOG' or '*.cat' files found
+    ;; under the 'sgml' sub-directory of any given package.
+    (native-search-paths (list (search-path-specification
+                                (variable "SGML_CATALOG_FILES")
+                                (separator ":")
+                                (files '("sgml"))
+                                (file-pattern "^catalog$|^CATALOG$|^.*\\.cat$")
+                                (file-type 'regular))))
+    (home-page "http://openjade.sourceforge.net/")
+    (synopsis "Suite of SGML/XML processing tools")
+    (description "OpenSP is an object-oriented toolkit for SGML parsing and
+entity management.  It is a fork of James Clark's SP suite.  The tools it
+contains can be used to parse, validate, and normalize SGML and XML files.
+The central program included in this package is @code{onsgmls}, which replaces
+@code{sgmls}, @code{ospam}, @code{ospent}, @code{osgmlnorm}, and @code{osx}.")
+    (license
+     ;; expat license with added clause regarding advertising
+     (license:non-copyleft
+      "file://COPYING"
+      "See COPYING in the distribution."))))
 
 (define-public python-elementpath
   (package

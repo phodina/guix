@@ -4,13 +4,13 @@
 ;;; Copyright © 2014 Ian Denhardt <ian@zenhack.net>
 ;;; Copyright © 2013, 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015 David Thompson <davet@gnu.org>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017, 2018 Nikita <nikita@n0.is>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017–2019, 2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
@@ -125,15 +125,14 @@ in intelligent transportation networks.")
 (define-public p11-kit
   (package
     (name "p11-kit")
-    (version "0.23.20")
+    (version "0.23.22")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "https://github.com/p11-glue/p11-kit/releases/"
                           "download/" version "/p11-kit-" version ".tar.xz"))
       (sha256
-       (base32
-        "0131maw666ha4d6iyj13fkz18c4pnb3lw2xwv5kvkmnzqcj61n0l"))))
+       (base32 "1dn6br4v033d3gp2max9lsr3y4q0nj6iyr1yq3kzi8ym7lal13wa"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -166,7 +165,7 @@ living in the same process.")
   (package
     (name "gnutls")
     ;; XXX Unversion openconnect's "gnutls" input when ungrafting.
-    (replacement gnutls-3.6.14)
+    (replacement gnutls/fixed)
     (version "3.6.12")
     (source (origin
              (method url-fetch)
@@ -182,7 +181,8 @@ living in the same process.")
                "0jvca1qahn9lrwv6f5kfs95icirc15b2a8x9fzczyj996ipg3b5z"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? ,(not (hurd-target?))
+     `(#:tests? ,(not (or (%current-target-system)
+                          (hurd-target?)))
        ;; Ensure we don't keep a reference to net-tools.
        #:disallowed-references ,(if (hurd-target?) '() (list net-tools))
        #:configure-flags
@@ -254,10 +254,11 @@ required structures.")
     (properties '((ftp-server . "ftp.gnutls.org")
                   (ftp-directory . "/gcrypt/gnutls")))))
 
-(define-public gnutls-3.6.14
+;; Replacement package to fix multiple security vulnerabilities.
+(define-public gnutls/fixed
   (package
     (inherit gnutls)
-    (version "3.6.14")
+    (version "3.6.15")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnupg/gnutls/v"
@@ -267,7 +268,7 @@ required structures.")
                                        "gnutls-cross.patch"))
               (sha256
                (base32
-                "0qwxsfizynly0ns537vnhnlm5lh03la4vbsmz675n0n7vqd7ac2n"))))
+                "0n0m93ymzd0q9hbknxc2ycanz49sqlkyyf73g9fk7n787llc7a0f"))))
     (native-inputs
      `(,@(if (%current-target-system)             ;for cross-build
              `(("guile" ,guile-3.0))              ;to create .go files
@@ -286,7 +287,7 @@ required structures.")
   ;; Authentication of Named Entities.  This is required for GNS functionality
   ;; by GNUnet and gnURL.  This is done in an extra package definition
   ;; to have the choice between GnuTLS with Dane and without Dane.
-  (package/inherit gnutls
+  (package/inherit gnutls/fixed
     (name "gnutls-dane")
     (inputs `(("unbound" ,unbound)
               ,@(package-inputs gnutls)))))
@@ -306,7 +307,7 @@ required structures.")
   (package
    (name "openssl")
    (version "1.1.1f")
-   (replacement openssl-1.1.1g)
+   (replacement openssl-1.1.1i)
    (source (origin
              (method url-fetch)
              (uri (list (string-append "https://www.openssl.org/source/openssl-"
@@ -334,25 +335,33 @@ required structures.")
       #:disallowed-references ,(list (canonical-package perl))
       #:phases
       (modify-phases %standard-phases
-	,@(if (%current-target-system)
-	      '((add-before
-		    'configure 'set-cross-compile
-		  (lambda* (#:key target outputs #:allow-other-keys)
-		    (setenv "CROSS_COMPILE" (string-append target "-"))
-		    (setenv "CONFIGURE_TARGET_ARCH"
-			    (cond
-			     ((string-prefix? "i586" target)
-			      "hurd-x86")
-			     ((string-prefix? "i686" target)
-			      "linux-x86")
-			     ((string-prefix? "x86_64" target)
-			      "linux-x86_64")
-			     ((string-prefix? "arm" target)
-			      "linux-armv4")
-			     ((string-prefix? "aarch64" target)
-			      "linux-aarch64")))
-		    #t)))
-	      '())
+       ,@(if (%current-target-system)
+           '((add-before
+               'configure 'set-cross-compile
+               (lambda* (#:key target outputs #:allow-other-keys)
+                 (setenv "CROSS_COMPILE" (string-append target "-"))
+                 (setenv "CONFIGURE_TARGET_ARCH"
+                         (cond
+                           ((string-prefix? "i586" target)
+                            "hurd-x86")
+                           ((string-prefix? "i686" target)
+                            "linux-x86")
+                           ((string-prefix? "x86_64" target)
+                            "linux-x86_64")
+                           ((string-prefix? "mips64el" target)
+                            "linux-mips64")
+                           ((string-prefix? "arm" target)
+                            "linux-armv4")
+                           ((string-prefix? "aarch64" target)
+                            "linux-aarch64")
+                           ((string-prefix? "powerpc64le" target)
+                            "linux-ppc64le")
+                           ((string-prefix? "powerpc64" target)
+                            "linux-ppc64")
+                           ((string-prefix? "powerpc" target)
+                            "linux-ppc")))
+                 #t)))
+           '())
         (replace 'configure
           (lambda* (#:key outputs #:allow-other-keys)
             (let* ((out (assoc-ref outputs "out"))
@@ -363,8 +372,8 @@ required structures.")
                  (string-append (assoc-ref %build-inputs "coreutils")
                                 "/bin/env")))
               (invoke ,@(if (%current-target-system)
-			    '("./Configure")
-			    '("./config"))
+                          '("./Configure")
+                          '("./config"))
                       "shared"       ;build shared libraries
                       "--libdir=lib"
 
@@ -376,9 +385,9 @@ required structures.")
 
                       (string-append "--prefix=" out)
                       (string-append "-Wl,-rpath," lib)
-		      ,@(if (%current-target-system)
-			    '((getenv "CONFIGURE_TARGET_ARCH"))
-			    '())))))
+                      ,@(if (%current-target-system)
+                          '((getenv "CONFIGURE_TARGET_ARCH"))
+                          '())))))
         (add-after 'install 'move-static-libraries
           (lambda* (#:key outputs #:allow-other-keys)
             ;; Move static libraries to the "static" output.
@@ -430,10 +439,10 @@ required structures.")
    (license license:openssl)
    (home-page "https://www.openssl.org/")))
 
-(define openssl-1.1.1g
+(define openssl-1.1.1i
   (package
    (inherit openssl)
-   (version "1.1.1g")
+   (version "1.1.1i")
    (source (origin
              (method url-fetch)
              (uri (list (string-append "https://www.openssl.org/source/openssl-"
@@ -446,7 +455,7 @@ required structures.")
              (patches (search-patches "openssl-1.1-c-rehash-in.patch"))
              (sha256
               (base32
-               "0ikdcc038i7jk8h7asq5xcn8b1xc2rrbc88yfm4hqbz3y5s4gc6x"))))))
+               "0hjj1phcwkz69lx1lrvr9grhpl4y529mwqycqc1hdla1zqsnmgp8"))))))
 
 (define-public openssl-1.0
   (package
@@ -544,18 +553,18 @@ required structures.")
 (define-public libressl
   (package
     (name "libressl")
-    (version "3.0.2")
+    (version "3.1.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://openbsd/LibreSSL/"
                                   "libressl-" version ".tar.gz"))
               (sha256
                (base32
-                "13ir2lpxz8y1m151k7lrx306498nzfhwlvgkgv97v5cvywmifyyz"))))
+                "1504a1sf43frw43j14pij0q1f48rm5q86ggrlxxhw708qp7ds4rc"))))
     (build-system gnu-build-system)
     (arguments
-     ;; Do as if 'getentropy' was missing since older Linux kernels lack it
-     ;; and libc would return ENOSYS, which is not properly handled.
+     ;; Do as if 'getentropy' were missing: Linux kernels before 3.17 lack its
+     ;; underlying 'getrandom' system call and ENOSYS isn't properly handled.
      ;; See <https://lists.gnu.org/archive/html/guix-devel/2017-04/msg00235.html>.
      '(#:configure-flags '("ac_cv_func_getentropy=no"
                            ;; Provide a TLS-enabled netcat.
@@ -586,13 +595,13 @@ netcat implementation that supports TLS.")
   (package
     (name "python-acme")
     ;; Remember to update the hash of certbot when updating python-acme.
-    (version "1.3.0")
+    (version "1.10.1")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "acme" version))
               (sha256
                (base32
-                "03fjmg0fgfy7xfn3i8rzn9i0i4amajmijkash84qb8mlphgrxpn0"))))
+                "1n1g29f3qzy77xn06dss9nc92wndgm8phgjrvx740sy9xnd5bfzw"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -643,7 +652,7 @@ netcat implementation that supports TLS.")
               (uri (pypi-uri "certbot" version))
               (sha256
                (base32
-                "1n5i0k6kwmd6wvivshfl3k4djwcpwx390c39xmr2hhrgpk5r285w"))))
+                "1dww9m1a2p3a9vpxs5j29f8cdkqywqb4j70z3cnkpl7017yf77hd"))))
     (build-system python-build-system)
     (arguments
      `(,@(substitute-keyword-arguments (package-arguments python-acme)
@@ -949,7 +958,7 @@ coding footprint.")
 (define-public dehydrated
   (package
     (name "dehydrated")
-    (version "0.6.5")
+    (version "0.7.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -957,7 +966,7 @@ coding footprint.")
                     "v" version "/dehydrated-" version ".tar.gz"))
               (sha256
                (base32
-                "0dgskgbdd95p13jx6s13p77y15wngb5cm6p4305cf2s54w0bvahh"))))
+                "1yf4kldyd5y13r6qxrkcbbk74ykngq7jzy0351vb2r3ywp114pqw"))))
     (build-system trivial-build-system)
     (arguments
      `(#:modules ((guix build utils)

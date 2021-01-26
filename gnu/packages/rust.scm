@@ -4,11 +4,13 @@
 ;;; Copyright © 2016 Nikita <nikita@n0.is>
 ;;; Copyright © 2017 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2017, 2018 Nikolai Merinov <nikolai.merinov@member.fsf.org>
-;;; Copyright © 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2017, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Danny Milosavljevic <dannym+a@scratchpost.org>
 ;;; Copyright © 2019 Ivan Petkov <ivanppetkov@gmail.com>
-;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020, 2021 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2020 Matthew Kraai <kraai@ftbfs.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -421,7 +423,9 @@ test = { path = \"../libtest\" }
      `(("bison" ,bison) ; For the tests
        ("cmake" ,cmake-minimal)
        ("flex" ,flex) ; For the tests
-       ("gdb" ,gdb)   ; For the tests
+       ;; FIXME: Rust 1.27 and some later versions require GDB 8.2 specifically.
+       ;; See <https://bugs.gnu.org/37810>.  Use it on all Rusts for simplicity.
+       ("gdb" ,gdb-8.2) ; For the tests
        ("procps" ,procps) ; For the tests
        ("python-2" ,python-2)
        ("rustc-bootstrap" ,mrustc)
@@ -449,7 +453,8 @@ test = { path = \"../libtest\" }
             (variable "LIBRARY_PATH")
             (files '("lib" "lib64")))))
 
-    (synopsis "Compiler for the Rust progamming language")
+    (supported-systems '("x86_64-linux"))
+    (synopsis "Compiler for the Rust programming language")
     (description "Rust is a systems programming language that provides memory
 safety and thread safety guarantees.")
     (home-page "https://www.rust-lang.org")
@@ -614,7 +619,8 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
                      (lambda (file) (delete-manifest-file out file))
                      '("install.log"
                        "manifest-rust-docs"
-                       "manifest-rust-std-x86_64-unknown-linux-gnu"
+                       ,(string-append "manifest-rust-std-"
+                                       (nix-system->gnu-triplet-for-rust))
                        "manifest-rustc"))
                    (for-each
                      (lambda (file) (delete-manifest-file cargo-out file))
@@ -756,6 +762,9 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
           (patches (search-patches
                      "rust-coresimd-doctest.patch"
                      "rust-1.25-accept-more-detailed-gdb-lines.patch"))))
+      (inputs
+       (alist-replace "openssl" (list openssl)
+                      (package-inputs base-rust)))
       (arguments
        (substitute-keyword-arguments (package-arguments base-rust)
          ((#:phases phases)
@@ -798,7 +807,6 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
                    (("fn finds_author_git") "#[ignore]\nfn finds_author_git")
                    (("fn finds_local_author_git") "#[ignore]\nfn finds_local_author_git"))
                  #t))
-             ;; TODO(rebuild-rust): Remove this phase in rust-1.28 when rebuilding.
              (add-after 'patch-cargo-tests 'disable-cargo-test-for-nightly-channel
                (lambda* _
                  ;; This test failed to work on "nightly" channel builds
@@ -827,11 +835,6 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
                                    "rust-bootstrap-stage0-test.patch"
                                    "rust-1.25-accept-more-detailed-gdb-lines.patch"
                                    "rust-reproducible-builds.patch"))))
-      (native-inputs
-       ;; FIXME: Rust 1.27 and some later versions require GDB 8.2 specifically.
-       ;; See <https://bugs.gnu.org/37810>.
-       (alist-replace "gdb" (list gdb-8.2)
-                      (package-native-inputs base-rust)))
       (arguments
        (substitute-keyword-arguments (package-arguments base-rust)
          ((#:phases phases)
@@ -883,6 +886,8 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
                  (substitute* "src/test/run-pass/issue-44056.rs"
                    (("only-x86_64") "ignore-test"))
                  #t))
+             ;; This is no longer needed as of 1.28
+             (delete 'disable-cargo-test-for-nightly-channel)
              ;; The thinlto test should pass with llvm 6.
              (delete 'disable-thinlto-test))))))))
 
@@ -1145,14 +1150,13 @@ move around."
                    (setenv "CARGO_HOME" cargo-home)
                    #t))))))))))
 
-;; TODO(rebuild-rust): Switch to LLVM 9 in 1.38 instead of 1.40.
 (define-public rust-1.38
   (let ((base-rust
          (rust-bootstrapped-package rust-1.37 "1.38.0"
            "101dlpsfkq67p0hbwx4acqq6n90dj4bbprndizpgh1kigk566hk4")))
     (package
       (inherit base-rust)
-      #;(inputs
+      (inputs
         (alist-replace "llvm" (list llvm-9)
                        (package-inputs base-rust)))
       (arguments
@@ -1195,9 +1199,6 @@ move around."
            "1ba9llwhqm49w7sz3z0gqscj039m53ky9wxzhaj11z6yg1ah15yx")))
     (package
       (inherit base-rust)
-      (inputs
-        (alist-replace "llvm" (list llvm-9)
-                       (package-inputs base-rust)))
       (source
         (origin
           (inherit (package-source base-rust))
@@ -1252,8 +1253,6 @@ move around."
                  ,(patch-command-exec-tests-phase
                     '(match (find-files "src/test" "command-exec\\.rs")
                        ((file) file))))
-               ;; TODO(rebuild-rust): The test in question got fixed long ago.
-               (delete 'disable-cargo-test-for-nightly-channel)
                ;; The test got removed in commit 000fe63b6fc57b09828930cacbab20c2ee6e6d15
                ;; "Remove painful test that is not pulling its weight"
                (delete 'remove-unsupported-tests)))))))))
@@ -1317,5 +1316,78 @@ move around."
                      (string-append "#[ignore] " all)))
                  #t)))))))))
 
+(define-public rust-1.46
+  (rust-bootstrapped-package rust-1.45 "1.46.0"
+    "0a17jby2pd050s24cy4dfc0gzvgcl585v3vvyfilniyvjrqknsid"))
+
+(define-public rust-1.47
+  (let ((base-rust
+         (rust-bootstrapped-package rust-1.46 "1.47.0"
+          "07fqd2vp7cf1ka3hr207dnnz93ymxml4935vp74g4is79h3dz19i")))
+    (package
+      (inherit base-rust)
+      (inputs
+        (alist-replace "llvm" (list llvm-11)
+                       (package-inputs base-rust)))
+      (arguments
+       (substitute-keyword-arguments (package-arguments base-rust)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             ;; The source code got rearranged: libstd is now in the newly created library folder.
+             (replace 'patch-tests
+               (lambda* (#:key inputs #:allow-other-keys)
+                 (let ((bash (assoc-ref inputs "bash")))
+                   (substitute* "library/std/src/process.rs"
+                     (("\"/bin/sh\"") (string-append "\"" bash "/bin/sh\"")))
+                   ;; <https://lists.gnu.org/archive/html/guix-devel/2017-06/msg00222.html>
+                   (substitute* "library/std/src/sys/unix/process/process_common.rs"
+                     (("fn test_process_mask") "#[allow(unused_attributes)]
+    #[ignore]
+    fn test_process_mask"))
+                   #t)))
+             (delete 'patch-cargo-checksums)
+             (add-after 'patch-generated-file-shebangs 'patch-cargo-checksums
+               ;; Generate checksums after patching generated files (in
+               ;; particular, vendor/jemalloc/rep/Makefile).
+               (lambda* _
+                 (use-modules (guix build cargo-utils))
+                 (substitute* "Cargo.lock"
+                   (("(checksum = )\".*\"" all name)
+                    (string-append name "\"" ,%cargo-reference-hash "\"")))
+                 (generate-all-checksums "vendor")
+                 #t)))))))))
+
+(define-public rust-1.48
+  (let ((base-rust
+         (rust-bootstrapped-package rust-1.47 "1.48.0"
+           "0fz4gbb5hp5qalrl9lcl8yw4kk7ai7wx511jb28nypbxninkwxhf")))
+    (package
+      (inherit base-rust)
+      (source
+        (origin
+          (inherit (package-source base-rust))
+          ;; New patch required due to the second part of the source code rearrangement:
+          ;; the relevant source code is now in the compiler directory.
+          (patches (search-patches "rust-1.48-linker-locale.patch"))))
+      (arguments
+       (substitute-keyword-arguments (package-arguments base-rust)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             ;; Some tests got split out into separate files.
+             (replace 'patch-tests
+               (lambda* (#:key inputs #:allow-other-keys)
+                 (let ((bash (assoc-ref inputs "bash")))
+                   (substitute* "library/std/src/process/tests.rs"
+                     (("\"/bin/sh\"") (string-append "\"" bash "/bin/sh\"")))
+                   (substitute* "library/std/src/sys/unix/process/process_common/tests.rs"
+                     (("fn test_process_mask") "#[allow(unused_attributes)]
+    #[ignore]
+    fn test_process_mask"))
+                   #t))))))))))
+
+(define-public rust-1.49
+  (rust-bootstrapped-package rust-1.48 "1.49.0"
+    "0yf7kll517398dgqsr7m3gldzj0iwsp3ggzxrayckpqzvylfy2mm"))
+
 ;; TODO(staging): Bump this variable to the latest packaged rust.
-(define-public rust rust-1.39)
+(define-public rust rust-1.45)

@@ -1,11 +1,13 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016, 2017, 2018 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2017, 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Christopher Baines <mail@cbaines.net>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020 Julien Lepiller <julien@lepiller.eu>
+;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -27,7 +29,10 @@
   #:use-module (guix ui)
   #:use-module ((guix status) #:select (with-status-verbosity))
   #:use-module (guix store)
-  #:autoload   (guix store database) (register-path)
+  #:autoload   (guix base16) (bytevector->base16-string)
+  #:autoload   (guix store database)
+               (sqlite-register store-database-file call-with-database)
+  #:autoload   (guix build store-copy) (copy-store-item)
   #:use-module (guix describe)
   #:use-module (guix grafts)
   #:use-module (guix gexp)
@@ -43,7 +48,8 @@
   #:autoload   (guix scripts package) (delete-generations
                                        delete-matching-generations)
   #:autoload   (guix scripts pull) (channel-commit-hyperlink)
-  #:use-module (guix graph)
+  #:autoload   (guix graph) (export-graph node-type
+                             graph-backend-name %graph-backends)
   #:use-module (guix scripts graph)
   #:use-module (guix scripts system reconfigure)
   #:use-module (guix build utils)
@@ -127,12 +133,11 @@ BODY..., and restore them."
   (store-lift topologically-sorted))
 
 
-(define* (copy-item item references target
+(define* (copy-item item info target db
                     #:key (log-port (current-error-port)))
-  "Copy ITEM to the store under root directory TARGET and register it with
-REFERENCES as its set of references."
-  (let ((dest  (string-append target item))
-        (state (string-append target "/var/guix")))
+  "Copy ITEM to the store under root directory TARGET and populate DB with the
+given INFO, a <path-info> record."
+  (let ((dest (string-append target item)))
     (format log-port "copying '~a'...~%" item)
 
     ;; Remove DEST if it exists to make sure that (1) we do not fail badly
@@ -145,44 +150,48 @@ REFERENCES as its set of references."
                             #:directories? #t))
       (delete-file-recursively dest))
 
-    (copy-recursively item dest
-                      #:log (%make-void-port "w"))
+    (copy-store-item item target
+                     #:deduplicate? #t)
 
-    ;; Register ITEM; as a side-effect, it resets timestamps, etc.
-    ;; Explicitly use "TARGET/var/guix" as the state directory, to avoid
-    ;; reproducing the user's current settings; see
-    ;; <http://bugs.gnu.org/18049>.
-    (unless (register-path item
-                           #:prefix target
-                           #:state-directory state
-                           #:references references)
-      (leave (G_ "failed to register '~a' under '~a'~%")
-             item target))))
+    (sqlite-register db
+                     #:path item
+                     #:references (path-info-references info)
+                     #:deriver (path-info-deriver info)
+                     #:hash (string-append
+                             "sha256:"
+                             (bytevector->base16-string (path-info-hash info)))
+                     #:nar-size (path-info-nar-size info))))
 
 (define* (copy-closure item target
                        #:key (log-port (current-error-port)))
   "Copy ITEM and all its dependencies to the store under root directory
 TARGET, and register them."
   (mlet* %store-monad ((to-copy (topologically-sorted* (list item)))
-                       (refs    (mapm %store-monad references* to-copy))
-                       (info    (mapm %store-monad query-path-info*
-                                      (delete-duplicates
-                                       (append to-copy (concatenate refs)))))
+                       (info    (mapm %store-monad query-path-info* to-copy))
                        (size -> (reduce + 0 (map path-info-nar-size info))))
     (define progress-bar
       (progress-reporter/bar (length to-copy)
                              (format #f (G_ "copying to '~a'...")
                                      target)))
 
+    (define state
+      (string-append target "/var/guix"))
+
     (check-available-space size target)
 
-    (call-with-progress-reporter progress-bar
-      (lambda (report)
-        (let ((void (%make-void-port "w")))
-          (for-each (lambda (item refs)
-                      (copy-item item refs target #:log-port void)
-                      (report))
-                    to-copy refs))))
+    ;; Explicitly use "TARGET/var/guix" as the state directory to avoid
+    ;; reproducing the user's current settings; see
+    ;; <http://bugs.gnu.org/18049>.
+    (call-with-database (store-database-file #:prefix target
+                                             #:state-directory state)
+      (lambda (db)
+        (call-with-progress-reporter progress-bar
+          (lambda (report)
+            (let ((void (%make-void-port "w")))
+              (for-each (lambda (item info)
+                          (copy-item item info target db #:log-port void)
+                          (report))
+                        to-copy info))))))
 
     (return *unspecified*)))
 
@@ -271,28 +280,33 @@ expression in %STORE-MONAD."
 
 (define (report-shepherd-error error)
   "Report ERROR, a '&shepherd-error' error condition object."
-  (cond ((service-not-found-error? error)
-         (report-error (G_ "service '~a' could not be found~%")
-                       (service-not-found-error-service error)))
-        ((action-not-found-error? error)
-         (report-error (G_ "service '~a' does not have an action '~a'~%")
-                       (action-not-found-error-service error)
-                       (action-not-found-error-action error)))
-        ((action-exception-error? error)
-         (report-error (G_ "exception caught while executing '~a' \
+  (when error
+    (cond ((service-not-found-error? error)
+           (warning (G_ "service '~a' could not be found~%")
+                    (service-not-found-error-service error)))
+          ((action-not-found-error? error)
+           (warning (G_ "service '~a' does not have an action '~a'~%")
+                    (action-not-found-error-service error)
+                    (action-not-found-error-action error)))
+          ((action-exception-error? error)
+           (warning (G_ "exception caught while executing '~a' \
 on service '~a':~%")
-                       (action-exception-error-action error)
-                       (action-exception-error-service error))
-         (print-exception (current-error-port) #f
-                          (action-exception-error-key error)
-                          (action-exception-error-arguments error)))
-        ((unknown-shepherd-error? error)
-         (report-error (G_ "something went wrong: ~s~%")
-                       (unknown-shepherd-error-sexp error)))
-        ((shepherd-error? error)
-         (report-error (G_ "shepherd error~%")))
-        ((not error)                              ;not an error
-         #t)))
+                    (action-exception-error-action error)
+                    (action-exception-error-service error))
+           (print-exception (current-error-port) #f
+                            (action-exception-error-key error)
+                            (action-exception-error-arguments error)))
+          ((unknown-shepherd-error? error)
+           (warning (G_ "something went wrong: ~s~%")
+                    (unknown-shepherd-error-sexp error)))
+          ((shepherd-error? error)
+           (warning (G_ "shepherd error~%"))))
+
+    ;; Don't leave users out in the cold and explain what that means and what
+    ;; they can do.
+    (warning (G_ "some services could not be upgraded~%"))
+    (display-hint (G_ "To allow changes to all the system services to take
+effect, you will need to reboot."))))
 
 (define-syntax-rule (unless-file-not-found exp)
   (catch 'system-error
@@ -377,6 +391,10 @@ STORE is an open connection to the store."
          ;; Make the specified system generation the default entry.
          (params (first (profile-boot-parameters %system-profile
                                                  (list number))))
+         (locale (boot-parameters-locale params))
+         (store-crypto-devices (boot-parameters-store-crypto-devices params))
+         (store-directory-prefix
+          (boot-parameters-store-directory-prefix params))
          (old-generations
           (delv number (reverse (generation-numbers %system-profile))))
          (old-params (profile-boot-parameters
@@ -389,6 +407,9 @@ STORE is an open connection to the store."
           ((bootcfg (lower-object
                      ((bootloader-configuration-file-generator bootloader)
                       bootloader-config entries
+                      #:locale locale
+                      #:store-crypto-devices store-crypto-devices
+                      #:store-directory-prefix store-directory-prefix
                       #:old-entries old-entries)))
            (drvs -> (list bootcfg)))
         (mbegin %store-monad
@@ -659,38 +680,49 @@ checking this by themselves in their 'check' procedure."
 ;;; Action.
 ;;;
 
-(define* (system-derivation-for-action os base-image action
-                                       #:key image-size file-system-type
+(define* (system-derivation-for-action os action
+                                       #:key image-size image-type
                                        full-boot? container-shared-network?
-                                       mappings)
+                                       mappings label
+                                       volatile-root?)
   "Return as a monadic value the derivation for OS according to ACTION."
-  (case action
-    ((build init reconfigure)
-     (operating-system-derivation os))
-    ((container)
-     (container-script
-      os
-      #:mappings mappings
-      #:shared-network? container-shared-network?))
-    ((vm-image)
-     (system-qemu-image os #:disk-image-size image-size))
-    ((vm)
-     (system-qemu-image/shared-store-script os
-                                            #:full-boot? full-boot?
-                                            #:disk-image-size
-                                            (if full-boot?
-                                                image-size
-                                                (* 70 (expt 2 20)))
-                                            #:mappings mappings))
-    ((disk-image)
-     (lower-object
-      (system-image
-       (image
-        (inherit base-image)
-        (size image-size)
-        (operating-system os)))))
-    ((docker-image)
-     (system-docker-image os #:shared-network? container-shared-network?))))
+  (mlet %store-monad ((target (current-target-system)))
+    (case action
+      ((build init reconfigure)
+       (operating-system-derivation os))
+      ((container)
+       (container-script
+        os
+        #:mappings mappings
+        #:shared-network? container-shared-network?))
+      ((vm-image)
+       (system-qemu-image os #:disk-image-size image-size))
+      ((vm)
+       (system-qemu-image/shared-store-script os
+                                              #:full-boot? full-boot?
+                                              #:disk-image-size
+                                              (if full-boot?
+                                                  image-size
+                                                  (* 70 (expt 2 20)))
+                                              #:mappings mappings))
+      ((image disk-image)
+       (let* ((base-image (os->image os #:type image-type))
+              (base-target (image-target base-image)))
+         (when (eq? action 'disk-image)
+           (warning (G_ "'disk-image' is deprecated: use 'image' instead~%")))
+         (lower-object
+          (system-image
+           (image
+            (inherit (if label
+                         (image-with-label base-image label)
+                         base-image))
+            (target (or base-target target))
+            (size image-size)
+            (operating-system os)
+            (volatile-root? volatile-root?))))))
+      ((docker-image)
+       (system-docker-image os
+                            #:shared-network? container-shared-network?)))))
 
 (define (maybe-suggest-running-guix-pull)
   "Suggest running 'guix pull' if this has never been done before."
@@ -741,18 +773,21 @@ and TARGET arguments."
                          install-bootloader?
                          dry-run? derivations-only?
                          use-substitutes? bootloader-target target
-                         image-size file-system-type full-boot?
-                         container-shared-network?
+                         image-size image-type
+                         volatile-root?
+                         full-boot? label container-shared-network?
                          (mappings '())
                          (gc-root #f))
   "Perform ACTION for OS.  INSTALL-BOOTLOADER? specifies whether to install
 bootloader; BOOTLOADER-TAGET is the target for the bootloader; TARGET is the
 target root directory; IMAGE-SIZE is the size of the image to be built, for
-the 'vm-image' and 'disk-image' actions.  The root file system is created as a
-FILE-SYSTEM-TYPE file system.  FULL-BOOT? is used for the 'vm' action; it
-determines whether to boot directly to the kernel or to the bootloader.
-CONTAINER-SHARED-NETWORK? determines if the container will use a separate
-network namespace.
+the 'vm-image' and 'image' actions.  IMAGE-TYPE is the type of image to
+be built.  When VOLATILE-ROOT? is #t, the root file system is mounted
+volatile.
+
+FULL-BOOT? is used for the 'vm' action; it determines whether to
+boot directly to the kernel or to the bootloader.  CONTAINER-SHARED-NETWORK?
+determines if the container will use a separate network namespace.
 
 When DERIVATIONS-ONLY? is true, print the derivation file name(s) without
 building anything.
@@ -792,11 +827,11 @@ static checks."
       (check-initrd-modules os)))
 
   (mlet* %store-monad
-      ((target*   (current-target-system))
-       (image ->  (find-image file-system-type target*))
-       (sys       (system-derivation-for-action os image action
-                                                #:file-system-type file-system-type
+      ((sys       (system-derivation-for-action os action
+                                                #:label label
+                                                #:image-type image-type
                                                 #:image-size image-size
+                                                #:volatile-root? volatile-root?
                                                 #:full-boot? full-boot?
                                                 #:container-shared-network? container-shared-network?
                                                 #:mappings mappings))
@@ -835,7 +870,9 @@ static checks."
                  (upgrade-shepherd-services local-eval os)
                  (return (format #t (G_ "\
 To complete the upgrade, run 'herd restart SERVICE' to stop,
-upgrade, and restart each service that was not automatically restarted.\n"))))))
+upgrade, and restart each service that was not automatically restarted.\n")))
+                 (return (format #t (G_ "\
+Run 'herd status' to view the list of services on your system.\n"))))))
             ((init)
              (newline)
              (format #t (G_ "initializing operating system under '~a'...~%")
@@ -853,18 +890,28 @@ upgrade, and restart each service that was not automatically restarted.\n"))))))
                    (register-root* (list output) gc-root))
                  (return output)))))))))
 
-(define (export-extension-graph os port)
-  "Export the service extension graph of OS to PORT."
+(define (lookup-backend name)                     ;TODO: factorize
+  "Return the graph backend called NAME.  Raise an error if it is not found."
+  (or (find (lambda (backend)
+              (string=? (graph-backend-name backend) name))
+            %graph-backends)
+      (leave (G_ "~a: unknown backend~%") name)))
+
+(define* (export-extension-graph os port
+                                 #:key (backend (lookup-backend "graphviz")))
+  "Export the service extension graph of OS to PORT using BACKEND."
   (let* ((services (operating-system-services os))
          (system   (find (lambda (service)
                            (eq? (service-kind service) system-service-type))
                          services)))
     (export-graph (list system) (current-output-port)
+                  #:backend backend
                   #:node-type (service-node-type services)
                   #:reverse-edges? #t)))
 
-(define (export-shepherd-graph os port)
-  "Export the graph of shepherd services of OS to PORT."
+(define* (export-shepherd-graph os port
+                                #:key (backend (lookup-backend "graphviz")))
+  "Export the graph of shepherd services of OS to PORT using BACKEND."
   (let* ((services  (operating-system-services os))
          (pid1      (fold-services services
                                    #:target-type shepherd-root-service-type))
@@ -873,8 +920,20 @@ upgrade, and restart each service that was not automatically restarted.\n"))))))
                               (null? (shepherd-service-requirement service)))
                             shepherds)))
     (export-graph sinks (current-output-port)
+                  #:backend backend
                   #:node-type (shepherd-service-node-type shepherds)
                   #:reverse-edges? #t)))
+
+
+;;;
+;;; Images.
+;;;
+
+(define (list-image-types)
+  "Print the available image types."
+  (display (G_ "The available image types are:\n"))
+  (newline)
+  (format #t "~{   - ~a ~%~}" (map image-type-name (force %image-types))))
 
 
 ;;;
@@ -911,7 +970,7 @@ Some ACTIONS support additional ARGS.\n"))
   (display (G_ "\
    vm-image         build a freestanding virtual machine image\n"))
   (display (G_ "\
-   disk-image       build a disk image, suitable for a USB stick\n"))
+   image            build a Guix System image\n"))
   (display (G_ "\
    docker-image     build a Docker image\n"))
   (display (G_ "\
@@ -935,23 +994,29 @@ Some ACTIONS support additional ARGS.\n"))
                          apply STRATEGY (one of nothing-special, backtrace,
                          or debug) when an error occurs while reading FILE"))
   (display (G_ "
-      --file-system-type=TYPE
-                         for 'disk-image', produce a root file system of TYPE
-                         (one of 'ext4', 'iso9660')"))
+      --list-image-types list available image types"))
+  (display (G_ "
+  -t, --image-type=TYPE  for 'image', produce an image of TYPE"))
   (display (G_ "
       --image-size=SIZE  for 'vm-image', produce an image of SIZE"))
   (display (G_ "
       --no-bootloader    for 'init', do not install a bootloader"))
   (display (G_ "
+      --volatile         for 'image', make the root file system volatile"))
+  (display (G_ "
+      --label=LABEL      for 'image', label disk image with LABEL"))
+  (display (G_ "
       --save-provenance  save provenance information"))
   (display (G_ "
-      --share=SPEC       for 'vm', share host file system according to SPEC"))
+      --share=SPEC       for 'vm' and 'container', share host file system with
+                         read/write access according to SPEC"))
   (display (G_ "
-      --expose=SPEC      for 'vm', expose host file system according to SPEC"))
+      --expose=SPEC      for 'vm' and 'container', expose host file system
+                         directory as read-only according to SPEC"))
   (display (G_ "
   -N, --network          for 'container', allow containers to access the network"))
   (display (G_ "
-  -r, --root=FILE        for 'vm', 'vm-image', 'disk-image', 'container',
+  -r, --root=FILE        for 'vm', 'vm-image', 'image', 'container',
                          and 'build', make FILE a symlink to the result, and
                          register it as a garbage collector root"))
   (display (G_ "
@@ -962,6 +1027,10 @@ Some ACTIONS support additional ARGS.\n"))
       --target=TRIPLET   cross-build for TRIPLET--e.g., \"armel-linux-gnu\""))
   (display (G_ "
   -v, --verbosity=LEVEL  use the given verbosity LEVEL"))
+  (newline)
+  (display (G_ "
+      --graph-backend=BACKEND
+                         use BACKEND for 'extension-graphs' and 'shepherd-graph'"))
   (newline)
   (display (G_ "
   -h, --help             display this help and exit"))
@@ -994,10 +1063,14 @@ Some ACTIONS support additional ARGS.\n"))
                  (lambda (opt name arg result)
                    (alist-cons 'on-error (string->symbol arg)
                                result)))
-         (option '(#\t "file-system-type") #t #f
+         (option '(#\t "image-type") #t #f
                  (lambda (opt name arg result)
-                   (alist-cons 'file-system-type arg
+                   (alist-cons 'image-type (string->symbol arg)
                                result)))
+         (option '("list-image-types") #f #f
+                 (lambda (opt name arg result)
+                   (list-image-types)
+                   (exit 0)))
          (option '("image-size") #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'image-size (size->number arg)
@@ -1008,6 +1081,12 @@ Some ACTIONS support additional ARGS.\n"))
          (option '("no-bootloader" "no-grub") #f #f
                  (lambda (opt name arg result)
                    (alist-cons 'install-bootloader? #f result)))
+         (option '("volatile") #f #f
+                 (lambda (opt name arg result)
+                   (alist-cons 'volatile-root? #t result)))
+         (option '("label") #t #f
+                 (lambda (opt name arg result)
+                   (alist-cons 'label arg result)))
          (option '("full-boot") #f #f
                  (lambda (opt name arg result)
                    (alist-cons 'full-boot? #t result)))
@@ -1048,6 +1127,9 @@ Some ACTIONS support additional ARGS.\n"))
          (option '(#\r "root") #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'gc-root arg result)))
+         (option '("graph-backend") #t #f
+                 (lambda (opt name arg result)
+                   (alist-cons 'graph-backend arg result)))
          %standard-build-options))
 
 (define %default-options
@@ -1063,9 +1145,12 @@ Some ACTIONS support additional ARGS.\n"))
     (debug . 0)
     (verbosity . #f)                              ;default
     (validate-reconfigure . ,ensure-forward-reconfigure)
-    (file-system-type . "ext4")
+    (image-type . efi-raw)
     (image-size . guess)
-    (install-bootloader? . #t)))
+    (install-bootloader? . #t)
+    (label . #f)
+    (volatile-root? . #f)
+    (graph-backend . "graphviz")))
 
 (define (verbosity-level opts)
   "Return the verbosity level based on OPTS, the alist of parsed options."
@@ -1119,6 +1204,7 @@ resulting from command-line parsing."
 
          (dry?        (assoc-ref opts 'dry-run?))
          (bootloader? (assoc-ref opts 'install-bootloader?))
+         (label       (assoc-ref opts 'label))
          (target-file (match args
                         ((first second) second)
                         (_ #f)))
@@ -1126,6 +1212,9 @@ resulting from command-line parsing."
                       (and bootloader?
                            (bootloader-configuration-target
                             (operating-system-bootloader os)))))
+
+    (define (graph-backend)
+      (lookup-backend (assoc-ref opts 'graph-backend)))
 
     (with-store store
       (set-build-options-from-command-line store opts)
@@ -1141,9 +1230,11 @@ resulting from command-line parsing."
             (set-guile-for-build (default-guile))
             (case action
               ((extension-graph)
-               (export-extension-graph os (current-output-port)))
+               (export-extension-graph os (current-output-port)
+                                       #:backend (graph-backend)))
               ((shepherd-graph)
-               (export-shepherd-graph os (current-output-port)))
+               (export-shepherd-graph os (current-output-port)
+                                      #:backend (graph-backend)))
               (else
                (unless (memq action '(build init))
                  (warn-about-old-distro #:suggested-command
@@ -1158,8 +1249,11 @@ resulting from command-line parsing."
                                (assoc-ref opts 'skip-safety-checks?)
                                #:validate-reconfigure
                                (assoc-ref opts 'validate-reconfigure)
-                               #:file-system-type (assoc-ref opts 'file-system-type)
+                               #:image-type (lookup-image-type-by-name
+                                             (assoc-ref opts 'image-type))
                                #:image-size (assoc-ref opts 'image-size)
+                               #:volatile-root?
+                               (assoc-ref opts 'volatile-root?)
                                #:full-boot? (assoc-ref opts 'full-boot?)
                                #:container-shared-network?
                                (assoc-ref opts 'container-shared-network?)
@@ -1169,6 +1263,7 @@ resulting from command-line parsing."
                                                         (_ #f))
                                                       opts)
                                #:install-bootloader? bootloader?
+                               #:label label
                                #:target target-file
                                #:bootloader-target bootloader-target
                                #:gc-root (assoc-ref opts 'gc-root)))))
@@ -1233,14 +1328,16 @@ argument list and OPTS is the option alist."
     ;; need an operating system configuration file.
     (else (process-action command args opts))))
 
-(define (guix-system . args)
+(define-command (guix-system . args)
+  (synopsis "build and deploy full operating systems")
+
   (define (parse-sub-command arg result)
     ;; Parse sub-command ARG and augment RESULT accordingly.
     (if (assoc-ref result 'action)
         (alist-cons 'argument arg result)
         (let ((action (string->symbol arg)))
           (case action
-            ((build container vm vm-image disk-image reconfigure init
+            ((build container vm vm-image image disk-image reconfigure init
               extension-graph shepherd-graph
               list-generations describe
               delete-generations roll-back
@@ -1273,7 +1370,8 @@ argument list and OPTS is the option alist."
         (exit 1))
 
       (case action
-        ((build container vm vm-image disk-image docker-image reconfigure)
+        ((build container vm vm-image image disk-image docker-image
+                reconfigure)
          (unless (or (= count 1)
                      (and expr (= count 0)))
            (fail)))

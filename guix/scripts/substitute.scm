@@ -2,6 +2,7 @@
 ;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2018 Kyle Meyer <kyle@kyleam.com>
+;;; Copyright © 2020 Christopher Baines <mail@cbaines.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -20,12 +21,18 @@
 
 (define-module (guix scripts substitute)
   #:use-module (guix ui)
+  #:use-module (guix scripts)
+  #:use-module (guix narinfo)
   #:use-module (guix store)
   #:use-module (guix utils)
   #:use-module (guix combinators)
   #:use-module (guix config)
   #:use-module (guix records)
-  #:use-module ((guix serialization) #:select (restore-file))
+  #:use-module (guix diagnostics)
+  #:use-module (guix i18n)
+  #:use-module ((guix serialization) #:select (restore-file dump-file))
+  #:autoload   (guix store deduplication) (dump-file/deduplicate)
+  #:autoload   (guix scripts discover) (read-substitute-urls)
   #:use-module (gcrypt hash)
   #:use-module (guix base32)
   #:use-module (guix base64)
@@ -38,10 +45,10 @@
                           (open-connection-for-uri
                            . guix:open-connection-for-uri)
                           store-path-abbreviation byte-count->string))
+  #:autoload   (gnutls) (error/invalid-session)
   #:use-module (guix progress)
   #:use-module ((guix build syscalls)
                 #:select (set-thread-name))
-  #:autoload   (guix lzlib) (lzlib-available?)
   #:use-module (ice-9 rdelim)
   #:use-module (ice-9 regex)
   #:use-module (ice-9 match)
@@ -62,31 +69,11 @@
   #:use-module (web request)
   #:use-module (web response)
   #:use-module (guix http-client)
-  #:export (narinfo-signature->canonical-sexp
-
-            narinfo?
-            narinfo-path
-            narinfo-uris
-            narinfo-uri-base
-            narinfo-compressions
-            narinfo-file-hashes
-            narinfo-file-sizes
-            narinfo-hash
-            narinfo-size
-            narinfo-references
-            narinfo-deriver
-            narinfo-system
-            narinfo-signature
-
-            narinfo-hash->sha256
-            narinfo-best-uri
-
-            lookup-narinfos
+  #:export (lookup-narinfos
             lookup-narinfos/diverse
-            read-narinfo
-            write-narinfo
 
             %allow-unauthenticated-substitutes?
+            %error-to-file-descriptor-4?
 
             substitute-urls
             guix-substitute))
@@ -123,11 +110,7 @@ disabled!~%"))
   ;; purposes, and should be avoided otherwise.
   (make-parameter
    (and=> (getenv "GUIX_ALLOW_UNAUTHENTICATED_SUBSTITUTES")
-          (cut string-ci=? <> "yes"))
-   (lambda (value)
-     (when value
-       (warn-about-missing-authentication))
-     value)))
+          (cut string-ci=? <> "yes"))))
 
 (define %narinfo-ttl
   ;; Number of seconds during which cached narinfo lookups are considered
@@ -137,7 +120,7 @@ disabled!~%"))
 
 (define %narinfo-negative-ttl
   ;; Likewise, but for negative lookups---i.e., cached lookup failures (404).
-  (* 3 3600))
+  (* 1 3600))
 
 (define %narinfo-transient-error-ttl
   ;; Likewise, but for transient errors such as 504 ("Gateway timeout").
@@ -146,10 +129,6 @@ disabled!~%"))
 (define %narinfo-expired-cache-entry-removal-delay
   ;; How often we want to remove files corresponding to expired cache entries.
   (* 7 24 3600))
-
-(define fields->alist
-  ;; The narinfo format is really just like recutils.
-  recutils->alist)
 
 (define %fetch-timeout
   ;; Number of seconds after which networking is considered "slow".
@@ -190,9 +169,14 @@ again."
         (sigaction SIGALRM SIG_DFL)
         (apply values result)))))
 
-(define* (fetch uri #:key (buffered? #t) (timeout? #t))
+(define* (fetch uri #:key (buffered? #t) (timeout? #t)
+                (keep-alive? #f) (port #f))
   "Return a binary input port to URI and the number of bytes it's expected to
-provide."
+provide.
+
+When PORT is true, use it as the underlying I/O port for HTTP transfers; when
+PORT is false, open a new connection for URI.  When KEEP-ALIVE? is true, the
+connection (typically PORT) is kept open once data has been fetched from URI."
   (case (uri-scheme uri)
     ((file)
      (let ((port (open-file (uri-path uri)
@@ -208,7 +192,7 @@ provide."
        ;;   sudo tc qdisc add dev eth0 root netem delay 1500ms
        ;; and then cancel with:
        ;;   sudo tc qdisc del dev eth0 root
-       (let ((port #f))
+       (let ((port port))
          (with-timeout (if timeout?
                            %fetch-timeout
                            0)
@@ -219,187 +203,15 @@ provide."
            (begin
              (when (or (not port) (port-closed? port))
                (set! port (guix:open-connection-for-uri
-                           uri #:verify-certificate? #f))
-               (unless (or buffered? (not (file-port? port)))
-                 (setvbuf port 'none)))
+                           uri #:verify-certificate? #f)))
+             (unless (or buffered? (not (file-port? port)))
+               (setvbuf port 'none))
              (http-fetch uri #:text? #f #:port port
+                         #:keep-alive? keep-alive?
                          #:verify-certificate? #f))))))
     (else
      (leave (G_ "unsupported substitute URI scheme: ~a~%")
             (uri->string uri)))))
-
-
-(define-record-type <narinfo>
-  (%make-narinfo path uri-base uris compressions file-sizes file-hashes
-                 nar-hash nar-size references deriver system
-                 signature contents)
-  narinfo?
-  (path         narinfo-path)
-  (uri-base     narinfo-uri-base)        ;URI of the cache it originates from
-  (uris         narinfo-uris)            ;list of strings
-  (compressions narinfo-compressions)    ;list of strings
-  (file-sizes   narinfo-file-sizes)      ;list of (integers | #f)
-  (file-hashes  narinfo-file-hashes)
-  (nar-hash     narinfo-hash)
-  (nar-size     narinfo-size)
-  (references   narinfo-references)
-  (deriver      narinfo-deriver)
-  (system       narinfo-system)
-  (signature    narinfo-signature)      ; canonical sexp
-  ;; The original contents of a narinfo file.  This field is needed because we
-  ;; want to preserve the exact textual representation for verification purposes.
-  ;; See <https://lists.gnu.org/archive/html/guix-devel/2014-02/msg00340.html>
-  ;; for more information.
-  (contents     narinfo-contents))
-
-(define (narinfo-hash->sha256 hash)
-  "If the string HASH denotes a sha256 hash, return it as a bytevector.
-Otherwise return #f."
-  (and (string-prefix? "sha256:" hash)
-       (nix-base32-string->bytevector (string-drop hash 7))))
-
-(define (narinfo-signature->canonical-sexp str)
-  "Return the value of a narinfo's 'Signature' field as a canonical sexp."
-  (match (string-split str #\;)
-    ((version host-name sig)
-     (let ((maybe-number (string->number version)))
-       (cond ((not (number? maybe-number))
-              (leave (G_ "signature version must be a number: ~s~%")
-                     version))
-             ;; Currently, there are no other versions.
-             ((not (= 1 maybe-number))
-              (leave (G_ "unsupported signature version: ~a~%")
-                     maybe-number))
-             (else
-              (let ((signature (utf8->string (base64-decode sig))))
-                (catch 'gcry-error
-                  (lambda ()
-                    (string->canonical-sexp signature))
-                  (lambda (key proc err)
-                    (leave (G_ "signature is not a valid \
-s-expression: ~s~%")
-                           signature))))))))
-    (x
-     (leave (G_ "invalid format of the signature field: ~a~%") x))))
-
-(define (narinfo-maker str cache-url)
-  "Return a narinfo constructor for narinfos originating from CACHE-URL.  STR
-must contain the original contents of a narinfo file."
-  (lambda (path urls compressions file-hashes file-sizes
-                nar-hash nar-size references deriver system
-                signature)
-    "Return a new <narinfo> object."
-    (define len (length urls))
-    (%make-narinfo path cache-url
-                   ;; Handle the case where URL is a relative URL.
-                   (map (lambda (url)
-                          (or (string->uri url)
-                              (string->uri
-                               (string-append cache-url "/" url))))
-                        urls)
-                   compressions
-                   (match file-sizes
-                     (()        (make-list len #f))
-                     ((lst ...) (map string->number lst)))
-                   (match file-hashes
-                     (()        (make-list len #f))
-                     ((lst ...) (map string->number lst)))
-                   nar-hash
-                   (and=> nar-size string->number)
-                   (string-tokenize references)
-                   (match deriver
-                     ((or #f "") #f)
-                     (_ deriver))
-                   system
-                   (false-if-exception
-                    (and=> signature narinfo-signature->canonical-sexp))
-                   str)))
-
-(define* (read-narinfo port #:optional url
-                       #:key size)
-  "Read a narinfo from PORT.  If URL is true, it must be a string used to
-build full URIs from relative URIs found while reading PORT.  When SIZE is
-true, read at most SIZE bytes from PORT; otherwise, read as much as possible.
-
-No authentication and authorization checks are performed here!"
-  (let ((str (utf8->string (if size
-                               (get-bytevector-n port size)
-                               (get-bytevector-all port)))))
-    (alist->record (call-with-input-string str fields->alist)
-                   (narinfo-maker str url)
-                   '("StorePath" "URL" "Compression"
-                     "FileHash" "FileSize" "NarHash" "NarSize"
-                     "References" "Deriver" "System"
-                     "Signature")
-                   '("URL" "Compression" "FileSize" "FileHash"))))
-
-(define (narinfo-sha256 narinfo)
-  "Return the sha256 hash of NARINFO as a bytevector, or #f if NARINFO lacks a
-'Signature' field."
-  (define %mandatory-fields
-    ;; List of fields that must be signed.  If they are not signed, the
-    ;; narinfo is considered unsigned.
-    '("StorePath" "NarHash" "References"))
-
-  (let ((contents (narinfo-contents narinfo)))
-    (match (string-contains contents "Signature:")
-      (#f #f)
-      (index
-       (let* ((above-signature (string-take contents index))
-              (signed-fields (match (call-with-input-string above-signature
-                                      fields->alist)
-                               (((fields . values) ...) fields))))
-         (and (every (cut member <> signed-fields) %mandatory-fields)
-              (sha256 (string->utf8 above-signature))))))))
-
-(define* (valid-narinfo? narinfo #:optional (acl (current-acl))
-                         #:key verbose?)
-  "Return #t if NARINFO's signature is not valid."
-  (or (%allow-unauthenticated-substitutes?)
-      (let ((hash      (narinfo-sha256 narinfo))
-            (signature (narinfo-signature narinfo))
-            (uri       (uri->string (first (narinfo-uris narinfo)))))
-        (and hash signature
-             (signature-case (signature hash acl)
-               (valid-signature #t)
-               (invalid-signature
-                (when verbose?
-                  (format (current-error-port)
-                          "invalid signature for substitute at '~a'~%"
-                          uri))
-                #f)
-               (hash-mismatch
-                (when verbose?
-                  (format (current-error-port)
-                          "hash mismatch for substitute at '~a'~%"
-                          uri))
-                #f)
-               (unauthorized-key
-                (when verbose?
-                  (format (current-error-port)
-                          "substitute at '~a' is signed by an \
-unauthorized party~%"
-                          uri))
-                #f)
-               (corrupt-signature
-                (when verbose?
-                  (format (current-error-port)
-                          "corrupt signature for substitute at '~a'~%"
-                          uri))
-                #f))))))
-
-(define (write-narinfo narinfo port)
-  "Write NARINFO to PORT."
-  (put-bytevector port (string->utf8 (narinfo-contents narinfo))))
-
-(define (narinfo->string narinfo)
-  "Return the external representation of NARINFO."
-  (call-with-output-string (cut write-narinfo narinfo <>)))
-
-(define (string->narinfo str cache-uri)
-  "Return the narinfo represented by STR.  Assume CACHE-URI as the base URI of
-the cache STR originates form."
-  (call-with-input-string str (cut read-narinfo <> cache-uri)))
 
 (define (narinfo-cache-file cache-url path)
   "Return the name of the local file that contains an entry for PATH.  The
@@ -480,27 +292,33 @@ indicates that PATH is unavailable at CACHE-URL."
     (build-request (string->uri url) #:method 'GET #:headers headers)))
 
 (define (at-most max-length lst)
-  "If LST is shorter than MAX-LENGTH, return it; otherwise return its
-MAX-LENGTH first elements."
+  "If LST is shorter than MAX-LENGTH, return it and the empty list; otherwise
+return its MAX-LENGTH first elements and its tail."
   (let loop ((len 0)
              (lst lst)
              (result '()))
     (match lst
       (()
-       (reverse result))
+       (values (reverse result) '()))
       ((head . tail)
        (if (>= len max-length)
-           (reverse result)
+           (values (reverse result) lst)
            (loop (+ 1 len) tail (cons head result)))))))
 
 (define* (http-multiple-get base-uri proc seed requests
                             #:key port (verify-certificate? #t)
+                            (open-connection guix:open-connection-for-uri)
+                            (keep-alive? #t)
                             (batch-size 1000))
   "Send all of REQUESTS to the server at BASE-URI.  Call PROC for each
 response, passing it the request object, the response, a port from which to
 read the response body, and the previous result, starting with SEED, à la
-'fold'.  Return the final result.  When PORT is specified, use it as the
-initial connection on which HTTP requests are sent."
+'fold'.  Return the final result.
+
+When PORT is specified, use it as the initial connection on which HTTP
+requests are sent; otherwise call OPEN-CONNECTION to open a new connection for
+a URI.  When KEEP-ALIVE? is false, close the connection port before
+returning."
   (let connect ((port     port)
                 (requests requests)
                 (result   seed))
@@ -509,10 +327,9 @@ initial connection on which HTTP requests are sent."
 
     ;; (format (current-error-port) "connecting (~a requests left)..."
     ;;         (length requests))
-    (let ((p (or port (guix:open-connection-for-uri
-                       base-uri
-                       #:verify-certificate?
-                       verify-certificate?))))
+    (let ((p (or port (open-connection base-uri
+                                       #:verify-certificate?
+                                       verify-certificate?))))
       ;; For HTTPS, P is not a file port and does not support 'setvbuf'.
       (when (file-port? p)
         (setvbuf p 'block (expt 2 16)))
@@ -537,7 +354,8 @@ initial connection on which HTTP requests are sent."
           (()
            (match (drop requests processed)
              (()
-              (close-port p)
+              (unless keep-alive?
+                (close-port p))
               (reverse result))
              (remainder
               (connect p remainder result))))
@@ -579,18 +397,18 @@ if file doesn't exist, and the narinfo otherwise."
 
 (define* (open-connection-for-uri/maybe uri
                                         #:key
-                                        (verify-certificate? #f)
+                                        fresh?
                                         (time %fetch-timeout))
-  "Open a connection to URI and return a port to it, or, if connection failed,
-print a warning and return #f."
+  "Open a connection to URI via 'open-connection-for-uri/cached' and return a
+port to it, or, if connection failed, print a warning and return #f.  Pass
+#:fresh? to 'open-connection-for-uri/cached'."
   (define host
     (uri-host uri))
 
   (catch #t
     (lambda ()
-      (guix:open-connection-for-uri uri
-                                    #:verify-certificate? verify-certificate?
-                                    #:timeout time))
+      (open-connection-for-uri/cached uri #:timeout time
+                                      #:fresh? fresh?))
     (match-lambda*
       (('getaddrinfo-error error)
        (unless (hash-ref %unreachable-hosts host)
@@ -656,7 +474,7 @@ print a warning and return #f."
                 (get-bytevector-n port len)
                 (read-to-eof port))
             (cache-narinfo! url (hash-part->path hash-part) #f
-                            (if (= 404 code)
+                            (if (or (= 404 code) (= 202 code))
                                 ttl
                                 %narinfo-transient-error-ttl))
             result))))
@@ -664,23 +482,26 @@ print a warning and return #f."
   (define (do-fetch uri)
     (case (and=> uri uri-scheme)
       ((http https)
-       (let ((requests (map (cut narinfo-request url <>) paths)))
-         (match (open-connection-for-uri/maybe uri)
-           (#f
-            '())
-           (port
-            (update-progress!)
-            ;; Note: Do not check HTTPS server certificates to avoid depending
-            ;; on the X.509 PKI.  We can do it because we authenticate
-            ;; narinfos, which provides a much stronger guarantee.
-            (let ((result (http-multiple-get uri
-                                             handle-narinfo-response '()
-                                             requests
-                                             #:verify-certificate? #f
-                                             #:port port)))
-              (close-port port)
-              (newline (current-error-port))
-              result)))))
+       ;; Note: Do not check HTTPS server certificates to avoid depending
+       ;; on the X.509 PKI.  We can do it because we authenticate
+       ;; narinfos, which provides a much stronger guarantee.
+       (let* ((requests (map (cut narinfo-request url <>) paths))
+              (result   (call-with-cached-connection uri
+                          (lambda (port)
+                            (if port
+                                (begin
+                                  (update-progress!)
+                                  (http-multiple-get uri
+                                                     handle-narinfo-response '()
+                                                     requests
+                                                     #:open-connection
+                                                     open-connection-for-uri/cached
+                                                     #:verify-certificate? #f
+                                                     #:port port))
+                                '()))
+                          open-connection-for-uri/maybe)))
+         (newline (current-error-port))
+         result))
       ((file #f)
        (let* ((base  (string-append (uri-path uri) "/"))
               (files (map (compose (cut string-append base <> ".narinfo")
@@ -712,22 +533,6 @@ information is available locally."
         cached
         (let ((missing (fetch-narinfos cache missing)))
           (append cached (or missing '()))))))
-
-(define (equivalent-narinfo? narinfo1 narinfo2)
-  "Return true if NARINFO1 and NARINFO2 are equivalent--i.e., if they describe
-the same store item.  This ignores unnecessary metadata such as the Nar URL."
-  (and (string=? (narinfo-hash narinfo1)
-                 (narinfo-hash narinfo2))
-
-       ;; The following is not needed if all we want is to download a valid
-       ;; nar, but it's necessary if we want valid narinfo.
-       (string=? (narinfo-path narinfo1)
-                 (narinfo-path narinfo2))
-       (equal? (narinfo-references narinfo1)
-               (narinfo-references narinfo2))
-
-       (= (narinfo-size narinfo1)
-          (narinfo-size narinfo2))))
 
 (define (lookup-narinfos/diverse caches paths authorized?)
   "Look up narinfos for PATHS on all of CACHES, a list of URLS, in that order.
@@ -889,8 +694,14 @@ expected by the daemon."
   "Reply to COMMAND, a query as written by the daemon to this process's
 standard input.  Use ACL as the access-control list against which to check
 authorized substitutes."
-  (define (valid? obj)
-    (valid-narinfo? obj acl))
+  (define valid?
+    (if (%allow-unauthenticated-substitutes?)
+        (begin
+          (warn-about-missing-authentication)
+
+          (const #t))
+        (lambda (obj)
+          (valid-narinfo? obj acl))))
 
   (match (string-tokenize command)
     (("have" paths ..1)
@@ -908,66 +719,105 @@ authorized substitutes."
     (wtf
      (error "unknown `--query' command" wtf))))
 
-(define %compression-methods
-  ;; Known compression methods and a thunk to determine whether they're
-  ;; supported.  See 'decompressed-port' in (guix utils).
-  `(("gzip"  . ,(const #t))
-    ("lzip"  . ,lzlib-available?)
-    ("xz"    . ,(const #t))
-    ("bzip2" . ,(const #t))
-    ("none"  . ,(const #t))))
+(define %max-cached-connections
+  ;; Maximum number of connections kept in cache by
+  ;; 'open-connection-for-uri/cached'.
+  16)
 
-(define (supported-compression? compression)
-  "Return true if COMPRESSION, a string, denotes a supported compression
-method."
-  (match (assoc-ref %compression-methods compression)
-    (#f         #f)
-    (supported? (supported?))))
+(define open-connection-for-uri/cached
+  (let ((cache '()))
+    (lambda* (uri #:key fresh? timeout verify-certificate?)
+      "Return a connection for URI, possibly reusing a cached connection.
+When FRESH? is true, delete any cached connections for URI and open a new one.
+Return #f if URI's scheme is 'file' or #f.
 
-(define (compresses-better? compression1 compression2)
-  "Return true if COMPRESSION1 generally compresses better than COMPRESSION2;
-this is a rough approximation."
-  (match compression1
-    ("none" #f)
-    ("gzip" (string=? compression2 "none"))
-    (_      (or (string=? compression2 "none")
-                (string=? compression2 "gzip")))))
+When true, TIMEOUT is the maximum number of milliseconds to wait for
+connection establishment.  When VERIFY-CERTIFICATE? is true, verify HTTPS
+server certificates."
+      (define host (uri-host uri))
+      (define scheme (uri-scheme uri))
+      (define key (list host scheme (uri-port uri)))
 
-(define (narinfo-best-uri narinfo)
-  "Select the \"best\" URI to download NARINFO's nar, and return three values:
-the URI, its compression method (a string), and the compressed file size."
-  (define choices
-    (filter (match-lambda
-              ((uri compression file-size)
-               (supported-compression? compression)))
-            (zip (narinfo-uris narinfo)
-                 (narinfo-compressions narinfo)
-                 (narinfo-file-sizes narinfo))))
+      (and (not (memq scheme '(file #f)))
+           (match (assoc-ref cache key)
+             (#f
+              ;; Open a new connection to URI and evict old entries from
+              ;; CACHE, if any.
+              (let-values (((socket)
+                            (guix:open-connection-for-uri
+                             uri
+                             #:verify-certificate? verify-certificate?
+                             #:timeout timeout))
+                           ((new-cache evicted)
+                            (at-most (- %max-cached-connections 1) cache)))
+                (for-each (match-lambda
+                            ((_ . port)
+                             (false-if-exception (close-port port))))
+                          evicted)
+                (set! cache (alist-cons key socket new-cache))
+                socket))
+             (socket
+              (if (or fresh? (port-closed? socket))
+                  (begin
+                    (false-if-exception (close-port socket))
+                    (set! cache (alist-delete key cache))
+                    (open-connection-for-uri/cached uri #:timeout timeout
+                                                    #:verify-certificate?
+                                                    verify-certificate?))
+                  (begin
+                    ;; Drain input left from the previous use.
+                    (drain-input socket)
+                    socket))))))))
 
-  (define (file-size<? c1 c2)
-    (match c1
-      ((uri1 compression1 (? integer? file-size1))
-       (match c2
-         ((uri2 compression2 (? integer? file-size2))
-          (< file-size1 file-size2))
-         (_ #t)))
-      ((uri compression1 #f)
-       (match c2
-         ((uri2 compression2 _)
-          (compresses-better? compression1 compression2))))
-      (_ #f)))                                    ;we can't tell
+(define* (call-with-cached-connection uri proc
+                                      #:optional
+                                      (open-connection
+                                       open-connection-for-uri/cached))
+  (let ((port (open-connection uri)))
+    (catch #t
+      (lambda ()
+        (proc port))
+      (lambda (key . args)
+        ;; If PORT was cached and the server closed the connection in the
+        ;; meantime, we get EPIPE.  In that case, open a fresh connection and
+        ;; retry.  We might also get 'bad-response or a similar exception from
+        ;; (web response) later on, once we've sent the request, or a
+        ;; ERROR/INVALID-SESSION from GnuTLS.
+        (if (or (and (eq? key 'system-error)
+                     (= EPIPE (system-error-errno `(,key ,@args))))
+                (and (eq? key 'gnutls-error)
+                     (eq? (first args) error/invalid-session))
+                (memq key '(bad-response bad-header bad-header-component)))
+            (proc (open-connection uri #:fresh? #t))
+            (apply throw key args))))))
 
-  (match (sort choices file-size<?)
-    (((uri compression file-size) _ ...)
-     (values uri compression file-size))))
+(define-syntax-rule (with-cached-connection uri port exp ...)
+  "Bind PORT with EXP... to a socket connected to URI."
+  (call-with-cached-connection uri (lambda (port) exp ...)))
 
 (define* (process-substitution store-item destination
-                               #:key cache-urls acl print-build-trace?)
+                               #:key cache-urls acl
+                               deduplicate? print-build-trace?)
   "Substitute STORE-ITEM (a store file name) from CACHE-URLS, and write it to
-DESTINATION as a nar file.  Verify the substitute against ACL."
+DESTINATION as a nar file.  Verify the substitute against ACL, and verify its
+hash against what appears in the narinfo.  When DEDUPLICATE? is true, and if
+DESTINATION is in the store, deduplicate its files.  Print a status line on
+the current output port."
   (define narinfo
     (lookup-narinfo cache-urls store-item
-                    (cut valid-narinfo? <> acl)))
+                    (if (%allow-unauthenticated-substitutes?)
+                        (const #t)
+                        (cut valid-narinfo? <> acl))))
+
+  (define destination-in-store?
+    (string-prefix? (string-append (%store-prefix) "/")
+                    destination))
+
+  (define (dump-file/deduplicate* . args)
+    ;; Make sure deduplication looks at the right store (necessary in test
+    ;; environments).
+    (apply dump-file/deduplicate
+           (append args (list #:store (%store-prefix)))))
 
   (unless narinfo
     (leave (G_ "no valid substitute for '~a'~%")
@@ -975,18 +825,17 @@ DESTINATION as a nar file.  Verify the substitute against ACL."
 
   (let-values (((uri compression file-size)
                 (narinfo-best-uri narinfo)))
-    ;; Tell the daemon what the expected hash of the Nar itself is.
-    (format #t "~a~%" (narinfo-hash narinfo))
-
     (unless print-build-trace?
       (format (current-error-port)
               (G_ "Downloading ~a...~%") (uri->string uri)))
 
     (let*-values (((raw download-size)
-                   ;; Note that Hydra currently generates Nars on the fly
-                   ;; and doesn't specify a Content-Length, so
-                   ;; DOWNLOAD-SIZE is #f in practice.
-                   (fetch uri #:buffered? #f #:timeout? #f))
+                   ;; 'guix publish' without '--cache' doesn't specify a
+                   ;; Content-Length, so DOWNLOAD-SIZE is #f in this case.
+                   (with-cached-connection uri port
+                     (fetch uri #:buffered? #f #:timeout? #f
+                            #:port port
+                            #:keep-alive? #t)))
                   ((progress)
                    (let* ((dl-size  (or download-size
                                         (and (equal? compression "none")
@@ -1000,15 +849,28 @@ DESTINATION as a nar file.  Verify the substitute against ACL."
                                          (uri->string uri) dl-size
                                          (current-error-port)
                                          #:abbreviation nar-uri-abbreviation))))
-                     (progress-report-port reporter raw)))
+                     ;; Keep RAW open upon completion so we can later reuse
+                     ;; the underlying connection.
+                     (progress-report-port reporter raw #:close? #f)))
                   ((input pids)
                    ;; NOTE: This 'progress' port of current process will be
                    ;; closed here, while the child process doing the
                    ;; reporting will close it upon exit.
                    (decompressed-port (string->symbol compression)
-                                      progress)))
+                                      progress))
+
+                  ;; Compute the actual nar hash as we read it.
+                  ((algorithm expected)
+                   (narinfo-hash-algorithm+value narinfo))
+                  ((hashed get-hash)
+                   (open-hash-input-port algorithm input)))
       ;; Unpack the Nar at INPUT into DESTINATION.
-      (restore-file input destination)
+      (restore-file hashed destination
+                    #:dump-file (if (and destination-in-store?
+                                         deduplicate?)
+                                    dump-file/deduplicate*
+                                    dump-file))
+      (close-port hashed)
       (close-port input)
 
       ;; Wait for the reporter to finish.
@@ -1016,7 +878,19 @@ DESTINATION as a nar file.  Verify the substitute against ACL."
 
       ;; Skip a line after what 'progress-reporter/file' printed, and another
       ;; one to visually separate substitutions.
-      (display "\n\n" (current-error-port)))))
+      (display "\n\n" (current-error-port))
+
+      ;; Check whether we got the data announced in NARINFO.
+      (let ((actual (get-hash)))
+        (if (bytevector=? actual expected)
+            ;; Tell the daemon that we're done.
+            (format (current-output-port) "success ~a ~a~%"
+                    (narinfo-hash narinfo) (narinfo-size narinfo))
+            ;; The actual data has a different hash than that in NARINFO.
+            (format (current-output-port) "hash-mismatch ~a ~a ~a~%"
+                    (hash-algorithm-name algorithm)
+                    (bytevector->nix-base32-string expected)
+                    (bytevector->nix-base32-string actual)))))))
 
 
 ;;;
@@ -1078,9 +952,40 @@ found."
      ;; daemon.
      '("http://ci.guix.gnu.org"))))
 
+;; In order to prevent using large number of discovered local substitute
+;; servers, limit the local substitute urls list size.
+(define %max-substitute-urls 50)
+
+(define* (randomize-substitute-urls urls
+                                    #:key
+                                    (max %max-substitute-urls))
+  "Return a list containing MAX urls from URLS, picked randomly. If URLS list
+is shorter than MAX elements, then it is directly returned."
+  (define (random-item list)
+    (list-ref list (random (length list))))
+
+  (if (<= (length urls) max)
+      urls
+      (let loop ((res '())
+                 (urls urls))
+        (if (eq? (length res) max)
+            res
+            (let ((url (random-item urls)))
+              (loop (cons url res) (delete url urls)))))))
+
+(define %local-substitute-urls
+  ;; If the following option is passed to the daemon, use the substitutes list
+  ;; provided by "guix discover" process.
+  (let* ((option (find-daemon-option "discover"))
+         (discover? (and option (string=? option "yes"))))
+    (if discover?
+     (randomize-substitute-urls (read-substitute-urls))
+     '())))
+
 (define substitute-urls
   ;; List of substitute URLs.
-  (make-parameter %default-substitute-urls))
+  (make-parameter (append %local-substitute-urls
+                          %default-substitute-urls)))
 
 (define (client-terminal-columns)
   "Return the number of columns in the client's terminal, if it is known, or a
@@ -1096,8 +1001,15 @@ default value."
   (unless (string->uri uri)
     (leave (G_ "~a: invalid URI~%") uri)))
 
-(define (guix-substitute . args)
-  "Implement the build daemon's substituter protocol."
+(define %error-to-file-descriptor-4?
+  ;; Whether to direct 'current-error-port' to file descriptor 4 like
+  ;; 'guix-daemon' expects.
+  (make-parameter #t))
+
+(define-command (guix-substitute . args)
+  (category internal)
+  (synopsis "implement the build daemon's substituter protocol")
+
   (define print-build-trace?
     (match (or (find-daemon-option "untrusted-print-extended-build-trace")
                (find-daemon-option "print-extended-build-trace"))
@@ -1105,70 +1017,83 @@ default value."
       ((= string->number number) (> number 0))
       (_ #f)))
 
-  (mkdir-p %narinfo-cache-directory)
-  (maybe-remove-expired-cache-entries %narinfo-cache-directory
-                                      cached-narinfo-files
-                                      #:entry-expiration
-                                      cached-narinfo-expiration-time
-                                      #:cleanup-period
-                                      %narinfo-expired-cache-entry-removal-delay)
-  (check-acl-initialized)
+  (define deduplicate?
+    (find-daemon-option "deduplicate"))
 
-  ;; Starting from commit 22144afa in Nix, we are allowed to bail out directly
-  ;; when we know we cannot substitute, but we must emit a newline on stdout
-  ;; when everything is alright.
-  (when (null? (substitute-urls))
-    (exit 0))
+  ;; The daemon's agent code opens file descriptor 4 for us and this is where
+  ;; stderr should go.
+  (parameterize ((current-error-port (if (%error-to-file-descriptor-4?)
+                                         (fdopen 4 "wl")
+                                         (current-error-port))))
+    ;; Redirect diagnostics to file descriptor 4 as well.
+    (guix-warning-port (current-error-port))
 
-  ;; Say hello (see above.)
-  (newline)
-  (force-output (current-output-port))
+    (mkdir-p %narinfo-cache-directory)
+    (maybe-remove-expired-cache-entries %narinfo-cache-directory
+                                        cached-narinfo-files
+                                        #:entry-expiration
+                                        cached-narinfo-expiration-time
+                                        #:cleanup-period
+                                        %narinfo-expired-cache-entry-removal-delay)
+    (check-acl-initialized)
 
-  ;; Sanity-check SUBSTITUTE-URLS so we can provide a meaningful error message.
-  (for-each validate-uri (substitute-urls))
+    ;; Sanity-check SUBSTITUTE-URLS so we can provide a meaningful error
+    ;; message.
+    (for-each validate-uri (substitute-urls))
 
-  ;; Attempt to install the client's locale, mostly so that messages are
-  ;; suitably translated.
-  (match (or (find-daemon-option "untrusted-locale")
-             (find-daemon-option "locale"))
-    (#f     #f)
-    (locale (false-if-exception (setlocale LC_ALL locale))))
+    ;; Attempt to install the client's locale so that messages are suitably
+    ;; translated.  LC_CTYPE must be a UTF-8 locale; it's the case by default
+    ;; so don't change it.
+    (match (or (find-daemon-option "untrusted-locale")
+               (find-daemon-option "locale"))
+      (#f     #f)
+      (locale (false-if-exception (setlocale LC_MESSAGES locale))))
 
-  (catch 'system-error
-    (lambda ()
-      (set-thread-name "guix substitute"))
-    (const #t))                                   ;GNU/Hurd lacks 'prctl'
+    (catch 'system-error
+      (lambda ()
+        (set-thread-name "guix substitute"))
+      (const #t))                                 ;GNU/Hurd lacks 'prctl'
 
-  (with-networking
-   (with-error-handling                           ; for signature errors
-     (match args
-       (("--query")
-        (let ((acl (current-acl)))
-          (let loop ((command (read-line)))
-            (or (eof-object? command)
-                (begin
-                  (process-query command
-                                 #:cache-urls (substitute-urls)
-                                 #:acl acl)
-                  (loop (read-line)))))))
-       (("--substitute" store-path destination)
-        ;; Download STORE-PATH and add store it as a Nar in file DESTINATION.
-        ;; Specify the number of columns of the terminal so the progress
-        ;; report displays nicely.
-        (parameterize ((current-terminal-columns (client-terminal-columns)))
-          (process-substitution store-path destination
-                                #:cache-urls (substitute-urls)
-                                #:acl (current-acl)
-                                #:print-build-trace? print-build-trace?)))
-       ((or ("-V") ("--version"))
-        (show-version-and-exit "guix substitute"))
-       (("--help")
-        (show-help))
-       (opts
-        (leave (G_ "~a: unrecognized options~%") opts))))))
+    (with-networking
+     (with-error-handling                         ; for signature errors
+       (match args
+         (("--query")
+          (let ((acl (current-acl)))
+            (let loop ((command (read-line)))
+              (or (eof-object? command)
+                  (begin
+                    (process-query command
+                                   #:cache-urls (substitute-urls)
+                                   #:acl acl)
+                    (loop (read-line)))))))
+         (("--substitute")
+          ;; Download STORE-PATH and store it as a Nar in file DESTINATION.
+          ;; Specify the number of columns of the terminal so the progress
+          ;; report displays nicely.
+          (parameterize ((current-terminal-columns (client-terminal-columns)))
+            (let loop ()
+              (match (read-line)
+                ((? eof-object?)
+                 #t)
+                ((= string-tokenize ("substitute" store-path destination))
+                 (process-substitution store-path destination
+                                       #:cache-urls (substitute-urls)
+                                       #:acl (current-acl)
+                                       #:deduplicate? deduplicate?
+                                       #:print-build-trace?
+                                       print-build-trace?)
+                 (loop))))))
+         ((or ("-V") ("--version"))
+          (show-version-and-exit "guix substitute"))
+         (("--help")
+          (show-help))
+         (opts
+          (leave (G_ "~a: unrecognized options~%") opts)))))))
 
 ;;; Local Variables:
 ;;; eval: (put 'with-timeout 'scheme-indent-function 1)
+;;; eval: (put 'with-cached-connection 'scheme-indent-function 2)
+;;; eval: (put 'call-with-cached-connection 'scheme-indent-function 1)
 ;;; End:
 
 ;;; substitute.scm ends here

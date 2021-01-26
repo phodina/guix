@@ -35,6 +35,8 @@
   #:use-module (gnu packages bootloaders)
   #:use-module (gnu packages commencement)       ;for 'guile-final'
   #:use-module (gnu packages cryptsetup)
+  #:use-module (gnu packages emacs)
+  #:use-module (gnu packages emacs-xyz)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages ocr)
   #:use-module (gnu packages openbox)
@@ -61,10 +63,12 @@
             %test-separate-home-os
             %test-raid-root-os
             %test-encrypted-root-os
+            %test-encrypted-root-not-boot-os
             %test-btrfs-root-os
             %test-btrfs-root-on-subvolume-os
             %test-jfs-root-os
             %test-f2fs-root-os
+            %test-lvm-separate-home-os
 
             %test-gui-installed-os
             %test-gui-installed-os-encrypted
@@ -218,7 +222,7 @@ reboot\n")
                            #:imported-modules '((gnu services herd)
                                                 (gnu installer tests)
                                                 (guix combinators))))
-                      (installation-disk-image-file-system-type "ext4")
+                      (installation-image-type 'efi-raw)
                       (install-size 'guess)
                       (target-size (* 2200 MiB)))
   "Run SCRIPT (a shell script following the system installation procedure) in
@@ -228,10 +232,6 @@ packages defined in installation-os."
 
   (mlet* %store-monad ((_      (set-grafting #f))
                        (system (current-system))
-                       (target (current-target-system))
-                       (base-image -> (find-image
-                                       installation-disk-image-file-system-type
-                                       target))
 
                        ;; Since the installation system has no network access,
                        ;; we cheat a little bit by adding TARGET to its GC
@@ -239,18 +239,20 @@ packages defined in installation-os."
                        ;; succeed.  Also add guile-final, which is pulled in
                        ;; through provenance.drv and may not always be present.
                        (target (operating-system-derivation target-os))
+                       (base-image ->
+                                   (os->image
+                                    (operating-system-with-gc-roots
+                                     os (list target guile-final))
+                                    #:type (lookup-image-type-by-name
+                                            installation-image-type)))
                        (image ->
-                        (system-image
-                         (image
-                          (inherit base-image)
-                          (size install-size)
-                          (operating-system
-                            (operating-system-with-gc-roots
-                             os (list target guile-final)))
-                          ;; Do not compress to speed-up the tests.
-                          (compression? #f)
-                          ;; Don't provide substitutes; too big.
-                          (substitutable? #f)))))
+                              (system-image
+                               (image
+                                (inherit base-image)
+                                (size install-size)
+
+                                ;; Don't provide substitutes; too big.
+                                (substitutable? #f)))))
     (define install
       (with-imported-modules '((guix build utils)
                                (gnu build marionette))
@@ -270,16 +272,16 @@ packages defined in installation-os."
                  "-no-reboot"
                  "-m" "1200"
                  #$@(cond
-                     ((string=? "ext4" installation-disk-image-file-system-type)
+                     ((eq? 'efi-raw installation-image-type)
                       #~("-drive"
                          ,(string-append "file=" #$image
                                          ",if=virtio,readonly")))
-                     ((string=? "iso9660" installation-disk-image-file-system-type)
+                     ((eq? 'uncompressed-iso9660 installation-image-type)
                       #~("-cdrom" #$image))
                      (else
                       (error
-                       "unsupported installation-disk-image-file-system-type:"
-                       installation-disk-image-file-system-type)))
+                       "unsupported installation-image-type:"
+                       installation-image-type)))
                  "-drive"
                  ,(string-append "file=" #$output ",if=virtio")
                  ,@(if (file-exists? "/dev/kvm")
@@ -443,8 +445,8 @@ reboot\n")
                                    %minimal-os-on-vda-source
                                    #:script
                                    %simple-installation-script-for-/dev/vda
-                                   #:installation-disk-image-file-system-type
-                                   "iso9660"))
+                                   #:installation-image-type
+                                   'uncompressed-iso9660))
                          (command (qemu-command/writable-image image)))
       (run-basic-test %minimal-os-on-vda command name)))))
 
@@ -794,6 +796,193 @@ build (current-guix) and then store a couple of full system images.")
                                                %encrypted-root-installation-script))
                          (command (qemu-command/writable-image image)))
       (run-basic-test %encrypted-root-os command "encrypted-root-os"
+                      #:initialization enter-luks-passphrase)))))
+
+
+;;;
+;;; Separate /home on LVM
+;;;
+
+;; Since LVM support in guix currently doesn't allow root-on-LVM we use /home on LVM
+(define-os-with-source (%lvm-separate-home-os %lvm-separate-home-os-source)
+  (use-modules (gnu) (gnu tests))
+
+  (operating-system
+    (host-name "separate-home-on-lvm")
+    (timezone "Europe/Paris")
+    (locale "en_US.utf8")
+
+    (bootloader (bootloader-configuration
+                 (bootloader grub-bootloader)
+                 (target "/dev/vdb")))
+    (kernel-arguments '("console=ttyS0"))
+
+    (mapped-devices (list (mapped-device
+                           (source "vg0")
+                           (target "vg0-home")
+                           (type lvm-device-mapping))))
+    (file-systems (cons* (file-system
+                           (device (file-system-label "root-fs"))
+                           (mount-point "/")
+                           (type "ext4"))
+                         (file-system
+                           (device "/dev/mapper/vg0-home")
+                           (mount-point "/home")
+                           (type "ext4")
+                           (dependencies mapped-devices))
+                        %base-file-systems))
+    (users %base-user-accounts)
+    (services (cons (service marionette-service-type
+                             (marionette-configuration
+                              (imported-modules '((gnu services herd)
+                                                  (guix combinators)))))
+                    %base-services))))
+
+(define %lvm-separate-home-installation-script
+  "\
+. /etc/profile
+set -e -x
+guix --version
+
+export GUIX_BUILD_OPTIONS=--no-grafts
+parted --script /dev/vdb mklabel gpt \\
+  mkpart primary ext2 1M 3M \\
+  mkpart primary ext2 3M 1.6G \\
+  mkpart primary 1.6G 3.2G \\
+  set 1 boot on \\
+  set 1 bios_grub on
+pvcreate /dev/vdb3
+vgcreate vg0 /dev/vdb3
+lvcreate -L 1.6G -n home vg0
+vgchange -ay
+mkfs.ext4 -L root-fs /dev/vdb2
+mkfs.ext4 /dev/mapper/vg0-home
+mount /dev/vdb2 /mnt
+mkdir /mnt/home
+mount /dev/mapper/vg0-home /mnt/home
+df -h /mnt /mnt/home
+herd start cow-store /mnt
+mkdir /mnt/etc
+cp /etc/target-config.scm /mnt/etc/config.scm
+guix system init /mnt/etc/config.scm /mnt --no-substitutes
+sync
+reboot\n")
+
+(define %test-lvm-separate-home-os
+  (system-test
+   (name "lvm-separate-home-os")
+   (description
+    "Test functionality of an OS installed with a LVM /home partition")
+   (value
+    (mlet* %store-monad ((image   (run-install %lvm-separate-home-os
+                                               %lvm-separate-home-os-source
+                                               #:script
+                                               %lvm-separate-home-installation-script
+                                               #:packages (list lvm2-static)
+                                               #:target-size (* 3200 MiB)))
+                         (command (qemu-command/writable-image image)))
+      (run-basic-test %lvm-separate-home-os
+                      `(,@command) "lvm-separate-home-os")))))
+
+
+;;;
+;;; LUKS-encrypted root file system and /boot in a non-encrypted partition.
+;;;
+
+(define-os-with-source (%encrypted-root-not-boot-os
+                        %encrypted-root-not-boot-os-source)
+  ;; The OS we want to install.
+  (use-modules (gnu) (gnu tests) (srfi srfi-1))
+
+  (operating-system
+    (host-name "bootroot")
+    (timezone "Europe/Madrid")
+    (locale "en_US.UTF-8")
+
+    (bootloader (bootloader-configuration
+                 (bootloader grub-bootloader)
+                 (target "/dev/vdb")))
+
+    (mapped-devices (list (mapped-device
+                           (source
+                            (uuid "12345678-1234-1234-1234-123456789abc"))
+                           (target "root")
+                           (type luks-device-mapping))))
+    (file-systems (cons* (file-system
+                           (device (file-system-label "my-boot"))
+                           (mount-point "/boot")
+                           (type "ext4"))
+                         (file-system
+                           (device "/dev/mapper/root")
+                           (mount-point "/")
+                           (type "ext4"))
+                         %base-file-systems))
+    (users (cons (user-account
+                  (name "alice")
+                  (group "users")
+                  (supplementary-groups '("wheel" "audio" "video")))
+                 %base-user-accounts))
+    (services (cons (service marionette-service-type
+                             (marionette-configuration
+                              (imported-modules '((gnu services herd)
+                                                  (guix combinators)))))
+                    %base-services))))
+
+(define %encrypted-root-not-boot-installation-script
+  ;; Shell script for an installation with boot not encrypted but root
+  ;; encrypted.
+  (format #f "\
+. /etc/profile
+set -e -x
+guix --version
+
+export GUIX_BUILD_OPTIONS=--no-grafts
+ls -l /run/current-system/gc-roots
+parted --script /dev/vdb mklabel gpt \\
+  mkpart primary ext2 1M 3M \\
+  mkpart primary ext2 3M 50M \\
+  mkpart primary ext2 50M 1.6G \\
+  set 1 boot on \\
+  set 1 bios_grub on
+echo -n \"~a\" | cryptsetup luksFormat --uuid=\"~a\" -q /dev/vdb3 -
+echo -n \"~a\" | cryptsetup open --type luks --key-file - /dev/vdb3 root
+mkfs.ext4 -L my-root /dev/mapper/root
+mkfs.ext4 -L my-boot /dev/vdb2
+mount LABEL=my-root /mnt
+mkdir /mnt/boot
+mount LABEL=my-boot /mnt/boot
+echo \"Checking mounts\"
+mount
+herd start cow-store /mnt
+mkdir /mnt/etc
+cp /etc/target-config.scm /mnt/etc/config.scm
+guix system build /mnt/etc/config.scm
+guix system init /mnt/etc/config.scm /mnt --no-substitutes
+sync
+echo \"Debugging info\"
+blkid
+cat /mnt/boot/grub/grub.cfg
+reboot\n"
+          %luks-passphrase "12345678-1234-1234-1234-123456789abc"
+          %luks-passphrase))
+
+(define %test-encrypted-root-not-boot-os
+  (system-test
+   (name "encrypted-root-not-boot-os")
+   (description
+    "Test the manual installation on an OS with / in an encrypted partition
+but /boot on a different, non-encrypted partition.  This test is expensive in
+terms of CPU and storage usage since we need to build (current-guix) and then
+store a couple of full system images.")
+   (value
+    (mlet* %store-monad
+        ((image (run-install %encrypted-root-not-boot-os
+                             %encrypted-root-not-boot-os-source
+                             #:script
+                             %encrypted-root-not-boot-installation-script))
+         (command (qemu-command/writable-image image)))
+      (run-basic-test %encrypted-root-not-boot-os command
+                      "encrypted-root-not-boot-os"
                       #:initialization enter-luks-passphrase)))))
 
 
@@ -1211,6 +1400,16 @@ build (current-guix) and then store a couple of full system images.")
                         #$marionette)
       (screenshot "installer-run.ppm")
 
+      (unless #$encrypted?
+        ;; At this point, user partitions are formatted and the installer is
+        ;; waiting for us to start the final step: generating the
+        ;; configuration file, etc.  Set a fixed UUID on the swap partition
+        ;; that matches what 'installation-target-os-for-gui-tests' expects.
+        (marionette-eval* '(invoke #$(file-append util-linux "/sbin/swaplabel")
+                                   "-U" "11111111-2222-3333-4444-123456789abc"
+                                   "/dev/vda2")
+                          #$marionette))
+
       (marionette-eval* '(conclude-installation installer-socket)
                         #$marionette)
 
@@ -1257,8 +1456,12 @@ build (current-guix) and then store a couple of full system images.")
                            '("wheel" "audio" "video"))))
                    %base-user-accounts))
     ;; The installer does not create a swap device in guided mode with
-    ;; encryption support.
-    (swap-devices (if encrypted? '() '("/dev/vda2")))
+    ;; encryption support.  The installer produces a UUID for the partition;
+    ;; this "UUID" is explicitly set in 'gui-test-program' to the value shown
+    ;; below.
+    (swap-devices (if encrypted?
+                      '()
+                      (list (uuid "11111111-2222-3333-4444-123456789abc"))))
     (services (cons (service dhcp-client-service-type)
                     (operating-system-user-services %minimal-os-on-vda)))))
 
@@ -1273,7 +1476,8 @@ build (current-guix) and then store a couple of full system images.")
     ;; graphical installer are available.
     (packages (append
                (list openbox awesome i3-wm i3status
-                     dmenu st ratpoison xterm)
+                     dmenu st ratpoison xterm
+                     emacs emacs-exwm emacs-desktop-environment)
                %base-packages))
     (services
      (append
@@ -1309,18 +1513,19 @@ build (current-guix) and then store a couple of full system images.")
                                #:os installation-os-for-gui-tests
                                #:install-size install-size
                                #:target-size target-size
-                               #:installation-disk-image-file-system-type
-                               "iso9660"
+                               #:installation-image-type
+                               'uncompressed-iso9660
                                #:gui-test
                                (lambda (marionette)
                                  (gui-test-program
                                   marionette
                                   #:desktop? desktop?
                                   #:encrypted? encrypted?))))
-         (command (qemu-command/writable-image image)))
+         (command (qemu-command/writable-image image #:memory-size 512)))
       (run-basic-test target-os command name
                       #:initialization (and encrypted? enter-luks-passphrase)
-                      #:root-password %root-password)))))
+                      #:root-password %root-password
+                      #:desktop? desktop?)))))
 
 (define %test-gui-installed-os
   (guided-installation-test

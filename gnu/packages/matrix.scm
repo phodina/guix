@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2020 Alex ter Weele <alex.ter.weele@gmail.com>
 ;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2020, 2021 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -60,13 +61,13 @@ an LDAP server.")
 (define-public synapse
   (package
     (name "synapse")
-    (version "1.14.0")
+    (version "1.25.0")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "matrix-synapse" version))
               (sha256
                (base32
-                "09drdqcjvpk9s3hq5rx9yxsxq0wak5fg5gfaiqfnbnxav2c2v7kq"))))
+                "0382qcsmgvg24p0xvb37kn3y1kd3bn363kblgwg58iy92df0pga4"))))
     (build-system python-build-system)
     ;; TODO Run tests with ‘PYTHONPATH=. trial3 tests’.
     (propagated-inputs
@@ -108,6 +109,7 @@ an LDAP server.")
        ("python-txacme" ,python-txacme)
        ("python-pysaml2" ,python-pysaml2)
        ("python-lxml" ,python-lxml)
+       ("python-packaging" ,python-packaging)
        ;; sentry-sdk, jaeger-client, and opentracing could be included, but
        ;; all are monitoring aids and not essential.
        ("python-pyjwt" ,python-pyjwt)))

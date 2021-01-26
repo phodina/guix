@@ -170,7 +170,8 @@ for the process."
     (pivot-root root put-old)
     (chdir "/")
     (umount "real-root" MNT_DETACH)
-    (rmdir "real-root")))
+    (rmdir "real-root")
+    (chmod "/" #o755)))
 
 (define* (initialize-user-namespace pid host-uids
                                     #:key (guest-uid 0) (guest-gid 0))
@@ -243,7 +244,8 @@ that host UIDs (respectively GIDs) map to in the namespace."
              (match (read child)
                ('ready
                 (purify-environment)
-                (when (memq 'mnt namespaces)
+                (when (and (memq 'mnt namespaces)
+                           (not (string=? root "/")))
                   (catch #t
                     (lambda ()
                       (mount-file-systems root mounts

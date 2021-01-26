@@ -32,17 +32,17 @@
   #:use-module ((guix gexp) #:select (lower-object))
   #:use-module (guix scripts)
   #:use-module (guix scripts build)
+  #:use-module (guix transformations)
   #:use-module (gnu build linux-container)
   #:use-module (gnu build accounts)
+  #:use-module ((guix build syscalls) #:select (set-network-interface-up))
   #:use-module (gnu system linux-container)
   #:use-module (gnu system file-systems)
   #:use-module (gnu packages)
   #:use-module (gnu packages bash)
   #:use-module ((gnu packages bootstrap)
                 #:select (bootstrap-executable %bootstrap-guile))
-  #:use-module (ice-9 format)
   #:use-module (ice-9 match)
-  #:use-module (ice-9 rdelim)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-11)
   #:use-module (srfi srfi-26)
@@ -321,7 +321,7 @@ for the corresponding packages."
                    (manifest-entry-output e2))))
 
   (define transform
-    (cut (options->transformation opts) store <>))
+    (options->transformation opts))
 
   (define* (package->manifest-entry* package #:optional (output "out"))
     (package->manifest-entry (transform package) output))
@@ -477,6 +477,7 @@ WHILE-LIST."
                             (group-entry (gid 65534) ;the overflow GID
                                          (name "overflow"))))
             (home-dir (password-entry-directory passwd))
+            (logname  (password-entry-name passwd))
             (environ  (filter (match-lambda
                                 ((variable . value)
                                  (find (cut regexp-exec <> variable)
@@ -528,6 +529,10 @@ WHILE-LIST."
                       ;; The same variables as in Nix's 'build.cc'.
                       '("TMPDIR" "TEMPDIR" "TMP" "TEMP"))
 
+            ;; Some programs expect USER and/or LOGNAME to be set.
+            (setenv "LOGNAME" logname)
+            (setenv "USER" logname)
+
             ;; Create a dummy home directory.
             (mkdir-p home-dir)
             (setenv "HOME" home-dir)
@@ -544,6 +549,16 @@ WHILE-LIST."
             (write-passwd (list passwd))
             (write-group groups)
 
+            (unless network?
+              ;; When isolated from the network, provide a minimal /etc/hosts
+              ;; to resolve "localhost".
+              (call-with-output-file "/etc/hosts"
+                (lambda (port)
+                  (display "127.0.0.1 localhost\n" port)))
+
+              ;; Allow local AF_INET communications.
+              (set-network-interface-up "lo"))
+
             ;; For convenience, start in the user's current working
             ;; directory or, if unmapped, the home directory.
             (chdir (if map-cwd?
@@ -559,7 +574,11 @@ WHILE-LIST."
             (primitive-exit/status
              ;; A container's environment is already purified, so no need to
              ;; request it be purified again.
-             (launch-environment command profile manifest #:pure? #f)))
+             (launch-environment command
+                                 (if link-profile?
+                                     (string-append home-dir "/.guix-profile")
+                                     profile)
+                                 manifest #:pure? #f)))
           #:guest-uid uid
           #:guest-gid gid
           #:namespaces (if network?
@@ -656,7 +675,7 @@ message if any test fails."
   (let* ((root (if (string-prefix? "/" root)
                    root
                    (string-append (canonicalize-path (dirname root))
-                                  "/" root))))
+                                  "/" (basename root)))))
     (catch 'system-error
       (lambda ()
         (symlink target root)
@@ -673,7 +692,10 @@ message if any test fails."
 ;;; Entry point.
 ;;;
 
-(define (guix-environment . args)
+(define-command (guix-environment . args)
+  (category development)
+  (synopsis "spawn one-off software environments")
+
   (with-error-handling
     (let* ((opts       (parse-args args))
            (pure?      (assoc-ref opts 'pure))

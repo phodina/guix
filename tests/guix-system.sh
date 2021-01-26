@@ -1,5 +1,5 @@
 # GNU Guix --- Functional package management for GNU
-# Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+# Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 # Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 # Copyright © 2018 Chris Marusich <cmmarusich@gmail.com>
 #
@@ -204,7 +204,8 @@ cat > "$tmpfile" <<EOF
       (shepherd-service
         (provision '(buggy!))
         (requirement '(does-not-exist))
-        (start #t)))))
+        (start #t)))
+    (description "Buggy.")))
 
 (operating-system
   $OS_BASE
@@ -261,8 +262,8 @@ guix system vm "$tmpfile" -d | grep '\.drv$'
 drv1="`guix system vm "$tmpfile" -d`"
 drv2="`guix system vm "$tmpfile" -d`"
 test "$drv1" = "$drv2"
-drv1="`guix system disk-image --file-system-type=iso9660 "$tmpfile" -d`"
-drv2="`guix system disk-image --file-system-type=iso9660 "$tmpfile" -d`"
+drv1="`guix system image -t iso9660 "$tmpfile" -d`"
+drv2="`guix system image -t iso9660 "$tmpfile" -d`"
 test "$drv1" = "$drv2"
 
 make_user_config "group-that-does-not-exist" "users"
@@ -297,10 +298,27 @@ EOF
 guix system build "$tmpdir/config.scm" -n
 (cd "$tmpdir"; guix system build "config.scm" -n)
 
+# Check that we get a warning when passing 'local-file' a non-literal relative
+# file name.
+cat > "$tmpdir/config.scm" <<EOF
+(use-modules (guix))
+
+(define (bad-local-file file)
+  (local-file file))
+
+(bad-local-file "whatever.scm")
+EOF
+! guix system build "$tmpdir/config.scm" -n
+guix system build "$tmpdir/config.scm" -n 2>&1 | \
+    grep "config\.scm:4:2: warning:.*whatever.*relative to current directory"
+
 # Searching.
 guix system search tor | grep "^name: tor"
 guix system search tor | grep "^shepherdnames: tor"
 guix system search anonym network | grep "^name: tor"
+guix system search . > "$tmpdir/search"
+test $(wc -l < "$tmpdir/search") -gt 500
+rm "$tmpdir/search"
 
 # Below, use -n (--dry-run) for the tests because if we actually tried to
 # build these images, the commands would take hours to run in the worst case.
@@ -320,5 +338,8 @@ guix system -n vm gnu/system/examples/vm-image.tmpl
 guix system -n vm-image gnu/system/examples/vm-image.tmpl
 # This invocation was taken care of in the loop above:
 # guix system -n disk-image gnu/system/examples/bare-bones.tmpl
-guix system -n disk-image --file-system-type=iso9660 gnu/system/examples/bare-bones.tmpl
+guix system -n disk-image -t iso9660 gnu/system/examples/bare-bones.tmpl
 guix system -n docker-image gnu/system/examples/docker-image.tmpl
+
+# Verify that at least the raw image type is available.
+guix system --list-image-types | grep "raw"

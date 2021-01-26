@@ -1,15 +1,17 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015, 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2019 Meiyo Peng <meiyo.peng@gmail.com>
+;;; Copyright © 2019, 2020 Miguel Ángel Arruga Vivas <rosen644835@gmail.com>
 ;;; Copyright © 2020 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Florian Pelz <pelzflorian@pelzflorian.de>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <jannek@gnu.org>
+;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -38,24 +40,28 @@
   #:use-module ((guix utils) #:select (substitute-keyword-arguments))
   #:use-module (guix i18n)
   #:use-module (guix diagnostics)
+  #:use-module (gnu packages admin)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages cross-base)
+  #:use-module (gnu packages cryptsetup)
+  #:use-module (gnu packages disk)
+  #:use-module (gnu packages file-systems)
+  #:use-module (gnu packages firmware)
+  #:use-module (gnu packages gawk)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages guile-xyz)
-  #:use-module (gnu packages admin)
   #:use-module (gnu packages hurd)
-  #:use-module (gnu packages linux)
-  #:use-module (gnu packages pciutils)
-  #:use-module (gnu packages package-management)
   #:use-module (gnu packages less)
-  #:use-module (gnu packages zile)
-  #:use-module (gnu packages nano)
-  #:use-module (gnu packages gawk)
+  #:use-module (gnu packages linux)
   #:use-module (gnu packages man)
+  #:use-module (gnu packages nano)
+  #:use-module (gnu packages nvi)
+  #:use-module (gnu packages package-management)
+  #:use-module (gnu packages pciutils)
   #:use-module (gnu packages texinfo)
-  #:use-module (gnu packages compression)
-  #:use-module (gnu packages firmware)
+  #:use-module (gnu packages zile)
   #:use-module (gnu services)
   #:use-module (gnu services shepherd)
   #:use-module (gnu services base)
@@ -106,6 +112,7 @@
             operating-system-store-file-system
             operating-system-user-mapped-devices
             operating-system-boot-mapped-devices
+            operating-system-bootloader-crypto-devices
             operating-system-activation-script
             operating-system-user-accounts
             operating-system-shepherd-service-names
@@ -141,8 +148,11 @@
             boot-parameters-root-device
             boot-parameters-bootloader-name
             boot-parameters-bootloader-menu-entries
+            boot-parameters-store-crypto-devices
             boot-parameters-store-device
+            boot-parameters-store-directory-prefix
             boot-parameters-store-mount-point
+            boot-parameters-locale
             boot-parameters-kernel
             boot-parameters-kernel-arguments
             boot-parameters-initrd
@@ -159,6 +169,7 @@
             %base-packages-interactive
             %base-packages-linux
             %base-packages-networking
+            %base-packages-disk-utilities
             %base-packages-utils
             %base-firmware
             %default-kernel-arguments))
@@ -281,16 +292,24 @@ directly by the user."
   ;; Because we will use the 'store-device' to create the GRUB search command,
   ;; the 'store-device' has slightly different semantics than 'root-device'.
   ;; The 'store-device' can be a file system uuid, a file system label, or #f,
-  ;; but it cannot be a device path such as "/dev/sda3", since GRUB would not
-  ;; understand that.  The 'root-device', on the other hand, corresponds
+  ;; but it cannot be a device file name such as "/dev/sda3", since GRUB would
+  ;; not understand that.  The 'root-device', on the other hand, corresponds
   ;; exactly to the device field of the <file-system> object representing the
-  ;; OS's root file system, so it might be a device path like "/dev/sda3".
+  ;; OS's root file system, so it might be a device file name like
+  ;; "/dev/sda3".  The 'store-directory-prefix' field contains #f or the store
+  ;; file name inside the 'store-device' as it is seen by GRUB, e.g. it would
+  ;; contain "/storefs" if the store is located in that subvolume of a btrfs
+  ;; partition.
   (root-device      boot-parameters-root-device)
   (bootloader-name  boot-parameters-bootloader-name)
   (bootloader-menu-entries                        ;list of <menu-entry>
    boot-parameters-bootloader-menu-entries)
   (store-device     boot-parameters-store-device)
   (store-mount-point boot-parameters-store-mount-point)
+  (store-directory-prefix boot-parameters-store-directory-prefix)
+  (store-crypto-devices boot-parameters-store-crypto-devices
+                        (default '()))
+  (locale           boot-parameters-locale)
   (kernel           boot-parameters-kernel)
   (kernel-arguments boot-parameters-kernel-arguments)
   (initrd           boot-parameters-initrd)
@@ -316,11 +335,20 @@ file system labels."
       ((? bytevector? bv)                         ;old format
        (bytevector->uuid bv 'dce))
       ((? string? device)
-       ;; It used to be that we would not distinguish between labels and
-       ;; device names.  Try to infer the right thing here.
-       (if (string-prefix? "/dev/" device)
-           device
-           (file-system-label device)))))
+       (if (string-contains device ":/")
+           device ; nfs-root
+           ;; It used to be that we would not distinguish between labels and
+           ;; device names.  Try to infer the right thing here.
+           (if (string-prefix? "/" device)
+               device
+               (file-system-label device))))))
+  (define uuid-sexp->uuid
+    (match-lambda
+      (('uuid (? symbol? type) (? bytevector? bv))
+       (bytevector->uuid bv type))
+      (x
+       (warning (G_ "unrecognized uuid ~a at '~a'~%") x (port-filename port))
+       #f)))
 
   (match (read port)
     (('boot-parameters ('version 0)
@@ -366,6 +394,11 @@ file system labels."
          ((_ args) args)
          (#f       '())))
 
+      (locale
+       (match (assq 'locale rest)
+         ((_ locale) locale)
+         (#f         #f)))
+
       (store-device
        ;; Linux device names like "/dev/sda1" are not suitable GRUB device
        ;; identifiers, so we just filter them out.
@@ -377,6 +410,34 @@ file system labels."
            (device-sexp->device device))
           (_                                      ;the old format
            root-device))))
+
+      (store-directory-prefix
+       (match (assq 'store rest)
+         (('store . store-data)
+          (match (assq 'directory-prefix store-data)
+            (('directory-prefix prefix) prefix)
+            ;; No directory-prefix found.
+            (_ #f)))
+         (_
+          ;; No store found, old format.
+          #f)))
+
+      (store-crypto-devices
+       (match (assq 'store rest)
+         (('store . store-data)
+          (match (assq 'crypto-devices store-data)
+            (('crypto-devices (devices ...))
+             (map uuid-sexp->uuid devices))
+            (('crypto-devices dev)
+             (warning (G_ "unrecognized crypto-devices ~S at '~a'~%")
+                      dev (port-filename port))
+             '())
+            (_
+             ;; No crypto-devices found.
+             '())))
+         (_
+          ;; No store found, old format.
+          '())))
 
       (store-mount-point
        (match (assq 'store rest)
@@ -442,9 +503,9 @@ marked as 'needed-for-boot'."
     (let ((device (file-system-device fs)))
       (if (string? device)                        ;title is 'device
           (filter (lambda (md)
-                    (string=? (string-append "/dev/mapper/"
-                                             (mapped-device-target md))
-                              device))
+                    (any (cut string=? device <>)
+                         (map (cut string-append "/dev/mapper" <>)
+                              (mapped-device-targets md))))
                   (operating-system-mapped-devices os))
           '())))
 
@@ -464,11 +525,12 @@ marked as 'needed-for-boot'."
 
 (define (mapped-device-users device file-systems)
   "Return the subset of FILE-SYSTEMS that use DEVICE."
-  (let ((target (string-append "/dev/mapper/" (mapped-device-target device))))
+  (let ((targets (map (cut string-append "/dev/mapper/" <>)
+                      (mapped-device-targets device))))
     (filter (lambda (fs)
               (or (member device (file-system-dependencies fs))
                   (and (string? (file-system-device fs))
-                       (string=? (file-system-device fs) target))))
+                       (any (cut string=? (file-system-device fs) <>) targets))))
             file-systems)))
 
 (define (operating-system-user-mapped-devices os)
@@ -490,6 +552,26 @@ from the initrd."
              (let ((users (mapped-device-users md file-systems)))
                (any file-system-needed-for-boot? users)))
            devices)))
+
+(define (operating-system-bootloader-crypto-devices os)
+  "Return the subset of mapped devices that the bootloader must open.
+Only devices specified by uuid are supported."
+  (define (valid-crypto-device? dev)
+    (or (uuid? dev)
+        (begin
+          (warning (G_ "\
+mapped-device '~a' may not be mounted by the bootloader.~%")
+                   dev)
+          #f)))
+  (filter-map (match-lambda
+                ((and (= mapped-device-type type)
+                      (= mapped-device-source source))
+                 (and (eq? luks-device-mapping type)
+                      (valid-crypto-device? source)
+                      source))
+                (_ #f))
+              ;; XXX: Ordering is important, we trust the returned one.
+              (operating-system-boot-mapped-devices os)))
 
 (define (device-mapping-services os)
   "Return the list of device-mapping services for OS as a list."
@@ -632,6 +714,8 @@ bookkeeping."
                            (operating-system-file-systems os)))
           (pam-root-service (operating-system-pam-services os))
           (operating-system-etc-service os)
+          (service setuid-program-service-type
+                   (operating-system-setuid-programs os))
           (service profile-service-type (operating-system-packages os)))))
 
 (define* (operating-system-services os)
@@ -688,7 +772,7 @@ of PROVENANCE-SERVICE-TYPE to its services."
  (cons* procps psmisc which
         (@ (gnu packages admin) shadow) ;for 'passwd'
 
-        guile-3.0
+        guile-3.0-latest
 
         ;; The packages below are also in %FINAL-INPUTS, so take them from
         ;; there to avoid duplication.
@@ -706,6 +790,7 @@ of PROVENANCE-SERVICE-TYPE to its services."
 (define %base-packages-interactive
   ;; Default set of common interactive packages.
   (list less zile nano
+        nvi
         man-db
         info-reader                     ;the standalone Info reader (no Perl)
         bash-completion
@@ -723,6 +808,19 @@ of PROVENANCE-SERVICE-TYPE to its services."
         ;; wireless-tools is deprecated in favor of iw, but it's still what
         ;; many people are familiar with, so keep it around.
         iw wireless-tools))
+
+(define %base-packages-disk-utilities
+  ;; A well-rounded set of packages for interacting with disks, partitions
+  ;; and filesystems.
+  (list parted gptfdisk ddrescue
+        ;; We used to provide fdisk from GNU fdisk, but as of version 2.0.0a
+        ;; it pulls Guile 1.8, which takes unreasonable space; furthermore
+        ;; util-linux's fdisk is already available, in %base-packages-linux.
+        cryptsetup mdadm
+        dosfstools
+        btrfs-progs
+        f2fs-tools
+        jfsutils))
 
 (define %base-packages
   ;; Default set of packages globally visible.  It should include anything
@@ -747,9 +845,21 @@ This is the GNU system.  Welcome.\n")
   "Return the default /etc/hosts file."
   (plain-file "hosts" (local-host-aliases host-name)))
 
+(define (validated-sudoers-file file)
+  "Return a copy of FILE, a sudoers file, after checking that it is
+syntactically correct."
+  (computed-file "sudoers"
+                 (with-imported-modules '((guix build utils))
+                   #~(begin
+                       (use-modules (guix build utils))
+
+                       (invoke #+(file-append sudo "/sbin/visudo")
+                               "--check" "--file" #$file)
+                       (copy-file #$file #$output)))))
+
 (define* (operating-system-etc-service os)
-  "Return a <service> that builds containing the static part of the /etc
-directory."
+  "Return a <service> that builds a directory containing the static part of
+the /etc directory."
   (let* ((login.defs
           (plain-file "login.defs"
                       (string-append
@@ -873,7 +983,9 @@ fi\n")))
        ("timezone" ,(plain-file "timezone" (operating-system-timezone os)))
        ("localtime" ,(file-append tzdata "/share/zoneinfo/"
                                   (operating-system-timezone os)))
-       ,@(if sudoers `(("sudoers" ,sudoers)) '())
+       ,@(if sudoers
+             `(("sudoers" ,(validated-sudoers-file sudoers)))
+             '())
        ,@(if hurd
              `(("login" ,(file-append hurd "/etc/login"))
                ("motd"  ,(file-append hurd "/etc/motd"))
@@ -1196,6 +1308,8 @@ a list of <menu-entry>, to populate the \"old entries\" menu."
   (let* ((file-systems    (operating-system-file-systems os))
          (root-fs         (operating-system-root-file-system os))
          (root-device     (file-system-device root-fs))
+         (locale          (operating-system-locale os))
+         (crypto-devices  (operating-system-bootloader-crypto-devices os))
          (params          (operating-system-boot-parameters
                            os root-device
                            #:system-kernel-arguments? #t))
@@ -1208,6 +1322,8 @@ a list of <menu-entry>, to populate the \"old entries\" menu."
 
     (generate-config-file bootloader-conf (list entry)
                           #:old-entries old-entries
+                          #:locale locale
+                          #:store-crypto-devices crypto-devices
                           #:store-directory-prefix
 			  (btrfs-store-subvolume-file-name file-systems))))
 
@@ -1246,6 +1362,9 @@ such as '--root' and '--load' to <boot-parameters>."
   (let* ((initrd          (and (not (operating-system-hurd os))
                                (operating-system-initrd-file os)))
          (store           (operating-system-store-file-system os))
+         (file-systems    (operating-system-file-systems os))
+         (crypto-devices  (operating-system-bootloader-crypto-devices os))
+         (locale          (operating-system-locale os))
          (bootloader      (bootloader-configuration-bootloader
                            (operating-system-bootloader os)))
          (bootloader-name (bootloader-name bootloader))
@@ -1264,7 +1383,10 @@ such as '--root' and '--load' to <boot-parameters>."
      (bootloader-name bootloader-name)
      (bootloader-menu-entries
       (bootloader-configuration-menu-entries (operating-system-bootloader os)))
+     (locale locale)
      (store-device (ensure-not-/dev (file-system-device store)))
+     (store-directory-prefix (btrfs-store-subvolume-file-name file-systems))
+     (store-crypto-devices crypto-devices)
      (store-mount-point (file-system-mount-point store)))))
 
 (define (device->sexp device)
@@ -1316,11 +1438,17 @@ being stored into the \"parameters\" file)."
                              (or (and=> (operating-system-bootloader os)
                                         bootloader-configuration-menu-entries)
                                  '())))
+                     (locale #$(boot-parameters-locale params))
                      (store
                       (device
                        #$(device->sexp (boot-parameters-store-device params)))
                       (mount-point #$(boot-parameters-store-mount-point
-                                      params))))
+                                      params))
+                      (directory-prefix
+                       #$(boot-parameters-store-directory-prefix params))
+                      (crypto-devices
+                       #$(map device->sexp
+                              (boot-parameters-store-crypto-devices params)))))
                   #:set-load-path? #f)))
 
 (define-gexp-compiler (operating-system-compiler (os <operating-system>)

@@ -3,7 +3,7 @@
 ;;; Copyright © 2016, 2017 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2017, 2020 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
@@ -34,11 +34,14 @@
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
-  #:use-module ((guix build utils) #:select (alist-replace))
+  #:use-module ((guix build utils) #:select (alist-replace delete-file-recursively))
   #:use-module (gnu packages)
+  #:use-module (gnu packages admin)
   #:use-module (gnu packages autotools)
   #:use-module ((gnu packages base) #:prefix base:)
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages boost)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages cross-base)
   #:use-module (gnu packages dejagnu)
   #:use-module (gnu packages flex)
@@ -47,6 +50,7 @@
   #:use-module (gnu packages guile)
   #:use-module (gnu packages libftdi)
   #:use-module (gnu packages libusb)
+  #:use-module (gnu packages messaging)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
@@ -457,40 +461,36 @@ languages are C and C++.")
      ,@(package-arguments gdb)))))
 
 (define-public libjaylink
-  ;; No release tarballs available.
-  (let ((commit "699b7001d34a79c8e7064503dde1bede786fd7f0")
-        (revision "2"))
-    (package
-      (name "libjaylink")
-      (version (string-append "0.1.0-" revision "."
-                              (string-take commit 7)))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://git.zapb.de/libjaylink.git")
-                      (commit commit)))
-                (file-name (string-append name "-" version "-checkout"))
-                (sha256
-                 (base32
-                  "034872d44myycnzn67v5b8ixrgmg8sk32aqalvm5x7108w2byww1"))))
-      (build-system gnu-build-system)
-      (native-inputs
-       `(("autoconf" ,autoconf)
-         ("automake" ,automake)
-         ("libtool" ,libtool)
-         ("pkg-config" ,pkg-config)))
-      (inputs
-       `(("libusb" ,libusb)))
-      (home-page "https://repo.or.cz/w/libjaylink.git")
-      (synopsis "Library to interface Segger J-Link devices")
-      (description "libjaylink is a shared library written in C to access
+  (package
+    (name "libjaylink")
+    (version "0.2.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://repo.or.cz/libjaylink.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0ndyfh51hiqyv2yscpj6qd091w7myxxjid3a6rx8f6k233vy826q"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libusb" ,libusb)))
+    (home-page "https://repo.or.cz/w/libjaylink.git")
+    (synopsis "Library to interface Segger J-Link devices")
+    (description "libjaylink is a shared library written in C to access
 SEGGER J-Link and compatible devices.")
-      (license license:gpl2+))))
+    (license license:gpl2+)))
 
 (define-public jimtcl
   (package
     (name "jimtcl")
-    (version "0.79")
+    (version "0.80")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -499,17 +499,26 @@ SEGGER J-Link and compatible devices.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1k88hz0v3bi19xdvlp0i9nsx38imzwpjh632w7326zwbv2wldf0h"))))
+                "06rn60cx9sapc175vxvan87b8j5rkhh5gvvz7343xznzwlr0wcgk"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
-         ;; Doesn't use autoconf.
          (replace 'configure
+         ;; This package doesn't use autoconf.
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (invoke "./configure"
-                       (string-append "--prefix=" out))))))))
+                       (string-append "--prefix=" out)))))
+         (add-before 'check 'delete-failing-tests
+           (lambda _
+             ;; XXX All but 1 TTY tests fail (Inappropriate ioctl for device).
+             (delete-file "tests/tty.test")
+             #t))
+         )))
+    (native-inputs
+     ;; For tests.
+     `(("inetutils" ,inetutils)))       ; for hostname
     (home-page "http://jim.tcl.tk/index.html")
     (synopsis "Small footprint Tcl implementation")
     (description "Jim is a small footprint implementation of the Tcl programming
@@ -517,67 +526,72 @@ language.")
     (license license:bsd-2)))
 
 (define-public openocd
-  (package
-    (name "openocd")
-    (version "0.10.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "mirror://sourceforge/openocd/openocd/"
-                                  version "/openocd-" version ".tar.gz"))
-              (sha256
-               (base32
-                "09p57y3c2spqx4vjjlz1ljm1lcd0j9q8g76ywxqgn3yc34wv18zd"))
-              ;; FIXME: Remove after nrf52 patch is merged.
-              (patches
-               (search-patches "openocd-nrf52.patch"))))
-    (build-system gnu-build-system)
-    (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("libtool" ,libtool)
-       ("pkg-config" ,pkg-config)))
-    (inputs
-     `(("hidapi" ,hidapi)
-       ("jimtcl" ,jimtcl)
-       ("libftdi" ,libftdi)
-       ("libjaylink" ,libjaylink)
-       ("libusb-compat" ,libusb-compat)))
-    (arguments
-     '(#:configure-flags
-       (append (list "--disable-werror"
-                     "--enable-sysfsgpio"
-                     "--disable-internal-jimtcl"
-                     "--disable-internal-libjaylink")
-               (map (lambda (programmer)
-                      (string-append "--enable-" programmer))
-                    '("amtjtagaccel" "armjtagew" "buspirate" "ftdi"
-                      "gw16012" "jlink" "opendous" "osbdm"
-                      "parport" "aice" "cmsis-dap" "dummy" "jtag_vpi"
-                      "remote-bitbang" "rlink" "stlink" "ti-icdi" "ulink"
-                      "usbprog" "vsllink" "usb-blaster-2" "usb_blaster"
-                      "presto" "openjtag")))
-       #:phases
-       (modify-phases %standard-phases
-         ;; Required because of patched sources.
-         (add-before 'configure 'autoreconf
-           (lambda _ (invoke "autoreconf" "-vfi") #t))
-         (add-after 'autoreconf 'change-udev-group
-           (lambda _
-             (substitute* "contrib/60-openocd.rules"
-               (("plugdev") "dialout"))
-             #t))
-         (add-after 'install 'install-udev-rules
-           (lambda* (#:key outputs #:allow-other-keys)
-             (install-file "contrib/60-openocd.rules"
-                           (string-append
-                            (assoc-ref outputs "out")
-                            "/lib/udev/rules.d/"))
-             #t)))))
-    (home-page "http://openocd.org")
-    (synopsis "On-Chip Debugger")
-    (description "OpenOCD provides on-chip programming and debugging support
+  (let ((commit "9a877a83a1c8b1f105cdc0de46c5cbc4d9e8799e")
+        (revision "0"))
+    (package
+      (name "openocd")
+      (version (string-append "0.10.0-" revision "."
+                              (string-take commit 7)))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://git.code.sf.net/p/openocd/code")
+                      (commit commit)))
+                (file-name (string-append name "-" version "-checkout"))
+                (sha256
+                 (base32
+                  "1q536cp80v2bcy6xwk08f1r2ljyw13jchx3a1z7d3ni3vqql7rc6"))))
+      (build-system gnu-build-system)
+      (native-inputs
+       `(("autoconf" ,autoconf)
+         ("automake" ,automake)
+         ("libtool" ,libtool)
+         ("which" ,base:which)
+         ("pkg-config" ,pkg-config)))
+      (inputs
+       `(("hidapi" ,hidapi)
+         ("jimtcl" ,jimtcl)
+         ("libftdi" ,libftdi)
+         ("libjaylink" ,libjaylink)
+         ("libusb-compat" ,libusb-compat)))
+      (arguments
+       '(#:configure-flags
+         (append (list "LIBS=-lutil"
+                       "--disable-werror"
+                       "--enable-sysfsgpio"
+                       "--disable-internal-jimtcl"
+                       "--disable-internal-libjaylink")
+                 (map (lambda (programmer)
+                        (string-append "--enable-" programmer))
+                      '("amtjtagaccel" "armjtagew" "buspirate" "ftdi"
+                        "gw16012" "jlink" "opendous" "osbdm"
+                        "parport" "aice" "cmsis-dap" "dummy" "jtag_vpi"
+                        "remote-bitbang" "rlink" "stlink" "ti-icdi" "ulink"
+                        "usbprog" "vsllink" "usb-blaster-2" "usb_blaster"
+                        "presto" "openjtag")))
+         #:phases
+         (modify-phases %standard-phases
+           (replace 'bootstrap
+             (lambda _
+               (patch-shebang "bootstrap")
+               (invoke "./bootstrap" "nosubmodule")))
+           (add-after 'autoreconf 'change-udev-group
+             (lambda _
+               (substitute* "contrib/60-openocd.rules"
+                 (("plugdev") "dialout"))
+               #t))
+           (add-after 'install 'install-udev-rules
+             (lambda* (#:key outputs #:allow-other-keys)
+               (install-file "contrib/60-openocd.rules"
+                             (string-append
+                              (assoc-ref outputs "out")
+                              "/lib/udev/rules.d/"))
+               #t)))))
+      (home-page "http://openocd.org")
+      (synopsis "On-Chip Debugger")
+      (description "OpenOCD provides on-chip programming and debugging support
 with a layered architecture of JTAG interface and TAP support.")
-    (license license:gpl2+)))
+      (license license:gpl2+))))
 
 ;; The commits for all propeller tools are the stable versions published at
 ;; https://github.com/propellerinc/propgcc in the release_1_0.  According to
@@ -1013,8 +1027,8 @@ the Raspberry Pi chip.")
       (home-page "https://github.com/puppeh/vc4-toolchain/"))))
 
 (define-public gcc-vc4
-  (let ((commit "165f6d0e11d2e76ee799533bb45bd5c92bf60dc2")
-        (xgcc (cross-gcc "vc4-elf" #:xbinutils binutils-vc4)))
+  (let ((commit "0fe4b83897341742f9df65797474cb0feab4b377")
+        (xgcc (cross-gcc "vc4-elf" #:xgcc gcc-6 #:xbinutils binutils-vc4)))
     (package (inherit xgcc)
       (name "gcc-vc4")
       (source (origin
@@ -1028,7 +1042,10 @@ the Raspberry Pi chip.")
                                           "-checkout"))
                 (sha256
                  (base32
-                  "13h30qjcwnlz6lfma1d82nnvfmjnhh7abkagip4vly6vm5fpnvf2"))))
+                  "0kvaq4s0assvinmmicwqp07d0wwldcw0fv6f4k13whp3q5909jnr"))
+                (patches
+                 (search-patches "gcc-6-fix-buffer-size.patch"
+                                 "gcc-6-fix-isl-includes.patch"))))
       (native-inputs
         `(("flex" ,flex)
           ,@(package-native-inputs xgcc)))
@@ -1161,14 +1178,14 @@ SPI, I2C, JTAG.")
 (define-public fc-host-tools
   (package
     (name "fc-host-tools")
-    (version "11")
+    (version "14")
     (source (origin
               (method url-fetch)
               (uri (string-append "ftp://ftp.freecalypso.org/pub/GSM/"
                                   "FreeCalypso/fc-host-tools-r" version ".tar.bz2"))
               (sha256
                (base32
-                "0s87lp6gd8i8ivrdd7mnnalysr65035nambcm992rgla7sk76sj1"))))
+                "09ccd76khfvlx4dwi9dhrzl5mm68402mlych0g7f9ncfr5jzyf26"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; No tests exist.
@@ -1282,6 +1299,12 @@ and displaying decoded target responses.
 @item fcup-smsendmult: Send multiple short messages via SMS in one go
 @item fcup-smsendpdu: Send multiple short messages given in PDU format via SMS
 @item sms-pdu-decode: Decode PDU format messages
+@item fc-dspromdump: Dump DSP ROM.
+@item pcm-sms-decode: Decode /pcm/SMS binary files read out of FFS maintained
+by Pirelli DP-L10.  Display the SMS in human-readable form.
+@item srec-regions: Parse S-record (TI's *.m0), identify the set of
+discontiguous regions into which this SREC image deposits bits, and list
+these identified regions.
 @end enumerate")
     (home-page "https://www.freecalypso.org/")
     (license license:public-domain)))
@@ -1351,3 +1374,149 @@ simplifies configuration and is also pluggable: you can write your own west
 this feature to provide conveniences for building applications, flashing and
 debugging them, and more.")
     (license license:expat)))
+
+(define-public ebusd
+  (package
+    (name "ebusd")
+    (version "3.4")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/john30/ebusd")
+                     (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "0iva70bam7wdx60bpd3an9kxr28zxlvp3vprivgqshwwdhqa0hzp"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-config
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((config-destination
+                    (string-append (assoc-ref outputs "out")
+                                   "/share/ebusd")))
+               (copy-recursively (string-append (assoc-ref inputs "config")
+                                                "/ebusd-2.1.x")
+                                 config-destination)
+               #t))))))
+    (inputs
+     `(("mosquitto" ,mosquitto)))
+    (native-inputs
+     `(("automake" ,automake)
+       ("autoconf" ,autoconf)
+       ("config"
+        ,(origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/john30/ebusd-configuration")
+                     (commit "666c0f6b9c4d7545eff7f43ab28a1c7baeab7913")))
+              (file-name "config-checkout")
+              (sha256
+               (base32
+                "0yxnx8p4lbk614l16854r9s9d8s9c7ixgczfs8mph94xz0wkda7x"))))))
+    (synopsis "Daemon for communicating with eBUS devices")
+    (description "This package provides @command{ebusd}, a daemon for
+handling communication with eBUS devices connected to a 2-wire bus system
+(\"energy bus\" used by numerous heating systems).")
+    (home-page "https://ebusd.eu/")
+    (license license:gpl3+)))
+
+(define-public ucsim
+  (package
+    (name "ucsim")
+    (version "0.6-pre67")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "http://mazsola.iit.uni-miskolc.hu/ucsim/download/unix/"
+                    "devel/ucsim-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0aahj9pbfjphjrm4hgs9pfmp6d5aikaq4yvxlrvhywjinnnf0qp1"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags '("--enable-avr-port"
+                           "--enable-m6809-port"
+                           "--enable-p1516-port"
+                           "--enable-st7-port")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-makefiles
+           (lambda _
+             (substitute* (find-files "." "(\\.mk$|\\.in$)")
+               (("/bin/sh") (which "sh")))
+             #t))
+         (add-after 'install 'remove-empty-directory
+           (lambda* (#:key outputs #:allow-other-keys)
+             (delete-file-recursively
+              (string-append (assoc-ref outputs "out") "/share/man"))
+             #t)))))
+    (native-inputs
+     `(("bison" ,bison)
+       ("flex" ,flex)))
+    (home-page "http://mazsola.iit.uni-miskolc.hu/ucsim/")
+    (synopsis "Simulators for various microcontroller families")
+    (description "μCsim is a collection of software simulators for
+microcontrollers in the Atmel AVR; Intel MCS-51 (8051); Motorola 68HC08 and
+6809; P1516; Padauk PDK13, PDK14 and PDK15; STMicroelectronics ST7 and STM8;
+and Zilog Z80 families, plus many of their variants.")
+    (license license:gpl2+)))
+
+(define-public sdcc
+  (package
+    (name "sdcc")
+    (version "4.0.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://sourceforge/sdcc/sdcc"
+                    "/" version "/sdcc-src-" version ".tar.bz2"))
+              (sha256
+               (base32
+                "042fxw5mnsfhpc0z9lxfsw88kdkm32pwrxacp88kj2n2dy0814a8"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Remove non-free source files
+                  (delete-file-recursively "device/non-free")
+                  ;; Remove bundled μCsim source
+                  (delete-file-recursively "sim")
+                  #t))
+              (patches (search-patches "sdcc-disable-non-free-code.patch"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("bison" ,bison)
+       ("boost" ,boost)
+       ("flex" ,flex)
+       ("python-2" ,python-2)
+       ("texinfo" ,texinfo)
+       ("zlib" ,zlib)))
+    (arguments
+     `(;; GPUTILS is required for the PIC ports, but the licensing status of
+       ;; some of the files contained in its distribution is unclear (see
+       ;; https://issues.guix.gnu.org/44557).  For this reason it is not yet
+       ;; available as a package in Guix.
+       #:configure-flags
+       '("--disable-pic14-port" "--disable-pic16-port" "--disable-ucsim")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-makefiles
+           (lambda _
+             (substitute* (find-files "." "(\\.mk$|\\.in$)")
+               (("/bin/sh") (which "sh")))
+             #t)))))
+    (home-page "http://sdcc.sourceforge.net")
+    (synopsis "C compiler suite for 8-bit microcontrollers")
+    (description "SDCC is a retargetable, optimizing Standard C compiler suite
+that targets 8-bit microcontrollers in the Intel MCS-51 (8051); Motorola
+68HC08; Padauk PDK13, PDK14 and PDK15; STMicroelectronics STM8; and Zilog Z80
+families, plus many of their variants.")
+    (license (list license:gpl2+
+                   license:gpl3+
+                   license:lgpl2.0+
+                   license:lgpl2.1+
+                   license:lgpl3+
+                   license:public-domain
+                   license:zlib))))

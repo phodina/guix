@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2016, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
@@ -10,7 +10,7 @@
 ;;; Copyright © 2017, 2018, 2019 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2018 Jonathan Brielmaier <jonathan.brielmaier@web.de>
+;;; Copyright © 2018, 2020 Jonathan Brielmaier <jonathan.brielmaier@web.de>
 ;;; Copyright © 2019 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2020 Marcin Karpezo <sirmacik@wioo.waw.pl>
 ;;;
@@ -42,6 +42,7 @@
   #:use-module (ice-9 match)
   #:use-module (gnu packages)
   #:use-module (gnu packages aidc)
+  #:use-module (gnu packages aspell)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bison)
@@ -712,19 +713,19 @@ text documents, vector drawings, presentations and spreadsheets.")
 (define-public libmwaw
   (package
     (name "libmwaw")
-    (version "0.3.15")
+    (version "0.3.17")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://sourceforge/libmwaw/libmwaw/libmwaw-"
                           version "/libmwaw-" version ".tar.xz"))
-      (sha256 (base32
-               "1cdhm9yhanyv3w4vr73zhgyynmkhhkp3dyld7m11jd2yy04vnh04"))))
+      (sha256
+       (base32 "074ipcq9w7jbd5x316dzclddgia2ydw098ph9d7p3d713pmkf5cf"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
        ("pkg-config" ,pkg-config)))
-    (propagated-inputs                  ; in Requires field of .pkg
+    (propagated-inputs                  ; in Requires field of .pc file
      `(("librevenge" ,librevenge)))
     (inputs
      `(("boost" ,boost)
@@ -739,14 +740,14 @@ spreadsheet documents.")
 (define-public libstaroffice
   (package
     (name "libstaroffice")
-    (version "0.0.6")
+    (version "0.0.7")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/fosnola/libstaroffice/releases/download/"
                            version "/libstaroffice-" version ".tar.xz"))
        (sha256 (base32
-                "1i0ykl0c94lc1qzb5mbyf9jr7qw8p38ja424whmhgrllh7ny203b"))))
+                "1ny8411273k2bq7mnpmcvri3rd46b2j67wfypqkp3y8nhanv0kzr"))))
     (build-system gnu-build-system)
     (inputs
      `(("librevenge" ,librevenge)
@@ -762,14 +763,14 @@ from the old StarOffice (.sdc, .sdw, ...).")
 (define-public libwps
   (package
     (name "libwps")
-    (version "0.4.10")
+    (version "0.4.12")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://sourceforge/" name "/" name "/"
                           name "-" version "/" name "-" version ".tar.xz"))
       (sha256 (base32
-               "1ji9zd4wxmas03g8jyx0ih0amrqfazm5874a2v9rd7va50sf088l"))))
+               "1nsfacqp5sfkyayw7q0wp68lidksd1wjdix8qmsbf0vdl19gn6p2"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
@@ -971,6 +972,41 @@ library.")
     (license
      (list license:gpl2 license:mpl1.1 license:cc-by4.0 license:lgpl2.1 license:asl2.0))))
 
+(define-public hunspell-dict-de
+  (package
+    (name "hunspell-dict-de")
+    (version "20161207")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://www.j3e.de/ispell/igerman98/dict/"
+                           "igerman98-" version ".tar.bz2"))
+       (sha256
+        (base32 "1a3055hp2bc4q4nlg3gmg0147p3a1zlfnc65xiv2v9pyql1nya8p"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:make-flags '("hunspell/de_DE.dic")
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (replace 'install              ;no install target
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (share (string-append out "/share/hunspell/")))
+               (install-file "hunspell/de_DE.aff" share)
+               (install-file "hunspell/de_DE.dic" share)
+               #t))))
+       #:tests? #f))        ; no tests
+    (native-inputs
+     `(("hunspell" ,hunspell)
+       ("ispell" ,ispell)
+       ("perl" ,perl)))
+    (synopsis "Hunspell dictionary for German (de_DE)")
+    (description "This package provides a dictionary for the Hunspell
+spell-checking library.")
+    (home-page "https://www.j3e.de/ispell/igerman98/")
+    (license (list license:gpl2 license:gpl3))))
+
 (define-public hyphen
   (package
     (name "hyphen")
@@ -1049,7 +1085,7 @@ converting QuarkXPress file format.  It supports versions 3.1 to 4.1.")
 (define-public libreoffice
   (package
     (name "libreoffice")
-    (version "6.4.5.2")
+    (version "6.4.7.2")
     (source
      (origin
        (method url-fetch)
@@ -1058,8 +1094,7 @@ converting QuarkXPress file format.  It supports versions 3.1 to 4.1.")
          "https://download.documentfoundation.org/libreoffice/src/"
          (version-prefix version 3) "/libreoffice-" version ".tar.xz"))
        (sha256
-        (base32
-         "1v4ili9j8d0xfj3q69niski1v65icg8xi09ip2bsk343rawwck3a"))))
+        (base32 "0i3654rmzs8aazj8j3dmxamilslfrki0y4sksg3n1zygc2ddfk83"))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
      `(("bison" ,bison)
@@ -1067,13 +1102,15 @@ converting QuarkXPress file format.  It supports versions 3.1 to 4.1.")
        ("flex" ,flex)
        ("pkg-config" ,pkg-config)
        ("python" ,python-wrapper)
-       ("which" ,which)))
+       ("which" ,which)
+       ("ziptime" ,ziptime)))
     (inputs
      `(("bluez" ,bluez)
        ("boost" ,boost)
        ("clucene" ,clucene)
        ("cups" ,cups)
        ("dbus-glib" ,dbus-glib)
+       ("firebird" ,firebird)
        ("fontconfig" ,fontconfig)
        ("fontforge" ,fontforge)
        ("gconf" ,gconf)
@@ -1142,121 +1179,130 @@ converting QuarkXPress file format.  It supports versions 3.1 to 4.1.")
        ("xmlsec" ,xmlsec-nss)
        ("zip" ,zip)))
     (arguments
-     `(#:tests? #f ; Building the tests already fails.
+     `(#:tests? #f                     ; Building the tests already fails.
        #:make-flags '("build-nocheck") ; Do not build unit tests, which fails.
        #:phases
-         (modify-phases %standard-phases
-           (add-before 'configure 'prepare-src
-             (lambda* (#:key inputs #:allow-other-keys)
-               (substitute*
-                   (list "sysui/CustomTarget_share.mk"
-                         "solenv/gbuild/gbuild.mk"
-                         "solenv/gbuild/platform/unxgcc.mk")
-                 (("/bin/sh") (which "sh")))
+       (modify-phases %standard-phases
+         (add-before 'configure 'prepare-src
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute*
+                 (list "sysui/CustomTarget_share.mk"
+                       "solenv/gbuild/gbuild.mk"
+                       "solenv/gbuild/platform/unxgcc.mk")
+               (("/bin/sh") (which "sh")))
 
-               ;; Use store references for strictly necessary commands,
-               ;; but not for optional tools like ‘gdb’ and ‘valgrind’.
-               (for-each (lambda (command)
-                           (substitute* "desktop/scripts/soffice.sh"
-                             (((format #f"~a " command))
-                              (format #f "~a " (which command)))))
-                         (list "dirname" "grep" "uname"))
+             ;; Use store references for strictly necessary commands,
+             ;; but not for optional tools like ‘gdb’ and ‘valgrind’.
+             (for-each (lambda (command)
+                         (substitute* "desktop/scripts/soffice.sh"
+                           (((format #f"~a " command))
+                            (format #f "~a " (which command)))))
+                       (list "dirname" "grep" "uname"))
 
-               ;; GPGME++ headers are installed in a gpgme++ subdirectory, but
-               ;; files in "xmlsecurity/source/gpg/" and elsewhere expect to
-               ;; find them on the include path without a prefix.
-               (substitute* '("xmlsecurity/Library_xsec_xmlsec.mk"
-                              "comphelper/Library_comphelper.mk")
-                 (("\\$\\$\\(INCLUDE\\)")
-                  (string-append "$$(INCLUDE) -I"
-                                 (assoc-ref inputs "gpgme")
-                                 "/include/gpgme++")))
+             ;; GPGME++ headers are installed in a gpgme++ subdirectory, but
+             ;; files in "xmlsecurity/source/gpg/" and elsewhere expect to
+             ;; find them on the include path without a prefix.
+             (substitute* '("xmlsecurity/Library_xsec_xmlsec.mk"
+                            "comphelper/Library_comphelper.mk")
+               (("\\$\\$\\(INCLUDE\\)")
+                (string-append "$$(INCLUDE) -I"
+                               (assoc-ref inputs "gpgme")
+                               "/include/gpgme++")))
 
-               ;; /usr/bin/xdg-open doesn't exist on Guix System.
-               (substitute* '("shell/source/unix/exec/shellexec.cxx"
-                              "shell/source/unix/misc/senddoc.sh")
-                 (("/usr/bin/xdg-open")
-                  (string-append (assoc-ref inputs "xdg-utils")
-                                 "/bin/xdg-open")))
+             ;; /usr/bin/xdg-open doesn't exist on Guix System.
+             (substitute* '("shell/source/unix/exec/shellexec.cxx"
+                            "shell/source/unix/misc/senddoc.sh")
+               (("/usr/bin/xdg-open")
+                (string-append (assoc-ref inputs "xdg-utils")
+                               "/bin/xdg-open")))
 
-               #t))
-           (add-after 'install 'bin-and-desktop-install
-             ;; Create 'soffice' and 'libreoffice' symlinks to the executable
-             ;; script.
-             (lambda* (#:key outputs #:allow-other-keys)
-               (let ((out (assoc-ref outputs "out")))
-                 (define (symlink-output src dst)
-                   (mkdir-p (dirname (string-append out dst)))
-                   (symlink (string-append out src) (string-append out dst)))
-                 (define (install src dst)
-                   (let ((dst (string-append out dst)))
-                     (mkdir-p (dirname dst))
-                     (copy-file src dst)))
-                 (define (install-desktop-file app)
-                   (let ((src (string-append "/lib/libreoffice/share/xdg/"
-                                             app ".desktop"))
-                         (dst (string-append "/share/applications/libreoffice-"
-                                             app ".desktop")))
-                     (substitute* (string-append out src)
-                       (("Exec=libreoffice[0-9]+\\.[0-9]+ ")
-                        (string-append "Exec=" out "/bin/libreoffice "))
-                       (("Icon=libreoffice.*")
-                        (string-append "Icon=" app "\n"))
-                       (("LibreOffice [0-9]+\\.[0-9]+")
-                        "LibreOffice"))
-                     (symlink-output src dst)))
-                 (define (install-appdata app)
-                   (install-file (string-append
-                                    "sysui/desktop/appstream-appdata/"
-                                    "libreoffice-" app ".appdata.xml")
-                                   (string-append out "/share/appdata")))
-                 (symlink-output "/lib/libreoffice/program/soffice"
-                                 "/bin/soffice")
-                 (symlink-output "/lib/libreoffice/program/soffice"
-                                 "/bin/libreoffice")
-                 (install "workdir/CustomTarget/sysui/share/libreoffice/openoffice.keys"
-                          "/share/mime-info/libreoffice.keys")
-                 (install "workdir/CustomTarget/sysui/share/libreoffice/openoffice.mime"
-                          "/share/mime-info/libreoffice.mime")
-                 (install
-                  "workdir/CustomTarget/sysui/share/libreoffice/openoffice.org.xml"
-                  "/share/mime/packages/libreoffice.xml")
-                 (for-each install-desktop-file
-                           '("base" "calc" "draw" "impress" "writer"
-                             "math" "startcenter"))
-                 (for-each install-appdata
-                           '("base" "calc" "draw" "impress" "writer"))
-                 (mkdir-p (string-append out "/share/icons/hicolor"))
-                 (copy-recursively "sysui/desktop/icons/hicolor"
-                                   (string-append out "/share/icons/hicolor")))
-               #t)))
+             #t))
+         (add-after 'install 'reset-zip-timestamps
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (for-each (lambda (file)
+                           (invoke "ziptime" file))
+                         ;; So many different extensions for .zip files.
+                         (find-files out "\\.(bau|dat|otp|ott|zip)$")))))
+         (add-after 'install 'bin-and-desktop-install
+           ;; Create 'soffice' and 'libreoffice' symlinks to the executable
+           ;; script.
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (define (symlink-output src dst)
+                 (mkdir-p (dirname (string-append out dst)))
+                 (symlink (string-append out src) (string-append out dst)))
+               (define (install src dst)
+                 (let ((dst (string-append out dst)))
+                   (mkdir-p (dirname dst))
+                   (copy-file src dst)))
+               (define (install-desktop-file app)
+                 (let ((src (string-append "/lib/libreoffice/share/xdg/"
+                                           app ".desktop"))
+                       (dst (string-append "/share/applications/libreoffice-"
+                                           app ".desktop")))
+                   (substitute* (string-append out src)
+                     (("Exec=libreoffice[0-9]+\\.[0-9]+ ")
+                      (string-append "Exec=" out "/bin/libreoffice "))
+                     (("Icon=libreoffice.*")
+                      (string-append "Icon=" app "\n"))
+                     (("LibreOffice [0-9]+\\.[0-9]+")
+                      "LibreOffice"))
+                   (symlink-output src dst)))
+               (define (install-appdata app)
+                 (install-file (string-append
+                                "sysui/desktop/appstream-appdata/"
+                                "libreoffice-" app ".appdata.xml")
+                               (string-append out "/share/appdata")))
+               (symlink-output "/lib/libreoffice/program/soffice"
+                               "/bin/soffice")
+               (symlink-output "/lib/libreoffice/program/soffice"
+                               "/bin/libreoffice")
+               (install "workdir/CustomTarget/sysui/share/libreoffice/openoffice.keys"
+                        "/share/mime-info/libreoffice.keys")
+               (install "workdir/CustomTarget/sysui/share/libreoffice/openoffice.mime"
+                        "/share/mime-info/libreoffice.mime")
+               (install
+                "workdir/CustomTarget/sysui/share/libreoffice/openoffice.org.xml"
+                "/share/mime/packages/libreoffice.xml")
+               (for-each install-desktop-file
+                         '("base" "calc" "draw" "impress" "writer"
+                           "math" "startcenter"))
+               (for-each install-appdata
+                         '("base" "calc" "draw" "impress" "writer"))
+               (mkdir-p (string-append out "/share/icons/hicolor"))
+               (copy-recursively "sysui/desktop/icons/hicolor"
+                                 (string-append out "/share/icons/hicolor")))
+             #t)))
        #:configure-flags
-        (list
-          "--enable-release-build"
-          ;; Avoid using all cpu cores by default
-          (format #f "--with-parallelism=~d" (parallel-job-count))
-          "--disable-fetch-external" ; disable downloads
-          "--with-system-libs" ; enable all --with-system-* flags
-          (string-append "--with-boost-libdir="
-                         (assoc-ref %build-inputs "boost") "/lib")
-          ;; Avoid undefined symbols required by boost::spirit
-          "LDFLAGS=-lboost_system"
-          ;; Avoid a dependency on ucpp.
-          "--with-idlc-cpp=cpp"
-          ;; The fonts require an external tarball (crosextrafonts).
-          ;; They should not be needed when system fonts are available.
-          "--without-fonts"
-          ;; With java, the build fails since sac.jar is missing.
-          "--without-java"
-          ;; FIXME: Enable once the corresponding inputs are packaged.
-          "--disable-coinmp"
-          "--disable-firebird-sdbc" ; embedded firebird
-          ;; XXX: PDFium support requires fetching an external tarball and
-          ;; patching the build scripts to work with GCC5.  Try enabling this
-          ;; when our default compiler is >=GCC 6.
-          "--disable-pdfium"
-          "--without-doxygen"
-          "--enable-build-opensymbol")))
+       (list
+        "--enable-release-build"
+        ;; Avoid using all cpu cores by default
+        (format #f "--with-parallelism=~d" (parallel-job-count))
+        "--disable-fetch-external"      ; disable downloads
+        "--with-system-libs"            ; enable all --with-system-* flags
+        (string-append "--with-boost-libdir="
+                       (assoc-ref %build-inputs "boost") "/lib")
+        ;; Avoid undefined symbols required by boost::spirit
+        "LDFLAGS=-lboost_system"
+        ;; Avoid a dependency on ucpp.
+        "--with-idlc-cpp=cpp"
+        ;; The fonts require an external tarball (crosextrafonts).
+        ;; They should not be needed when system fonts are available.
+        "--without-fonts"
+        ;; With java, the build fails since sac.jar is missing.
+        "--without-java"
+        ;; FIXME: Enable once the corresponding inputs are packaged.
+        "--disable-coinmp"
+        ;; This could (Debian does this) be a separate output containing only
+        ;; program/libfirebird_sdbclo.so, if there's a way to point to it.
+        "--enable-firebird-sdbc"
+        ;; XXX: PDFium support requires fetching an external tarball and
+        ;; patching the build scripts to work with GCC5.  Try enabling this
+        ;; when our default compiler is >=GCC 6.
+        "--disable-pdfium"
+        "--without-doxygen"
+        "--enable-build-opensymbol")))
     (home-page "https://www.libreoffice.org/")
     (synopsis "Office suite")
     (description "LibreOffice is a comprehensive office suite.  It contains

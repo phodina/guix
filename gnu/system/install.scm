@@ -1,10 +1,11 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Florian Pelz <pelzflorian@pelzflorian.de>
+;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -33,6 +34,7 @@
   #:use-module ((guix store) #:select (%store-prefix))
   #:use-module (gnu installer)
   #:use-module (gnu system locale)
+  #:use-module (gnu services avahi)
   #:use-module (gnu services dbus)
   #:use-module (gnu services networking)
   #:use-module (gnu services shepherd)
@@ -41,18 +43,13 @@
   #:use-module (gnu packages bash)
   #:use-module (gnu packages bootloaders)
   #:use-module (gnu packages certs)
-  #:use-module (gnu packages file-systems)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages linux)
-  #:use-module (gnu packages ssh)
-  #:use-module (gnu packages cryptsetup)
   #:use-module (gnu packages package-management)
-  #:use-module (gnu packages disk)
   #:use-module (gnu packages texinfo)
-  #:use-module (gnu packages compression)
-  #:use-module (gnu packages nvi)
   #:use-module (gnu packages xorg)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-26)
@@ -175,43 +172,17 @@ manual."
   ;; Sub-directory used as the backing store for copy-on-write.
   "/tmp/guix-inst")
 
-(define (make-cow-store target)
-  "Return a gexp that makes the store copy-on-write, using TARGET as the
-backing store.  This is useful when TARGET is on a hard disk, whereas the
-current store is on a RAM disk."
-
-  (define (set-store-permissions directory)
-    ;; Set the right perms on DIRECTORY to use it as the store.
-    #~(begin
-        (chown #$directory 0 30000)             ;use the fixed 'guixbuild' GID
-        (chmod #$directory #o1775)))
-
-  #~(begin
-      ;; Bind-mount TARGET's /tmp in case we need space to build things.
-      (let ((tmpdir (string-append #$target "/tmp")))
-        (mkdir-p tmpdir)
-        (mount tmpdir "/tmp" "none" MS_BIND))
-
-      (let* ((rw-dir (string-append target #$%backing-directory))
-             (work-dir (string-append rw-dir "/../.overlayfs-workdir")))
-        (mkdir-p rw-dir)
-        (mkdir-p work-dir)
-        (mkdir-p "/.rw-store")
-        #$(set-store-permissions #~rw-dir)
-        #$(set-store-permissions "/.rw-store")
-
-        ;; Mount the overlay, then atomically make it the store.
-        (mount "none" "/.rw-store" "overlay" 0
-               (string-append "lowerdir=" #$(%store-prefix) ","
-                              "upperdir=" rw-dir ","
-                              "workdir=" work-dir))
-        (mount "/.rw-store" #$(%store-prefix) "" MS_MOVE)
-        (rmdir "/.rw-store"))))
-
 (define cow-store-service-type
   (shepherd-service-type
    'cow-store
    (lambda _
+     (define (import-module? module)
+       ;; Since we don't use deduplication support in 'populate-store', don't
+       ;; import (guix store deduplication) and its dependencies, which
+       ;; includes Guile-Gcrypt.
+       (and (guix-module-name? module)
+            (not (equal? module '(guix store deduplication)))))
+
      (shepherd-service
       (requirement '(root-file-system user-processes))
       (provision '(cow-store))
@@ -222,20 +193,28 @@ the given target.")
       ;; This is meant to be explicitly started by the user.
       (auto-start? #f)
 
-      (start #~(case-lambda
-                 ((target)
-                  #$(make-cow-store #~target)
-                  target)
-                 (else
-                  ;; Do nothing, and mark the service as stopped.
-                  #f)))
+      (modules `((gnu build install)
+                 ,@%default-modules))
+      (start
+       (with-imported-modules (source-module-closure
+                               '((gnu build install))
+                               #:select? import-module?)
+         #~(case-lambda
+             ((target)
+              (mount-cow-store target #$%backing-directory)
+              target)
+             (else
+              ;; Do nothing, and mark the service as stopped.
+              #f))))
       (stop #~(lambda (target)
                 ;; Delete the temporary directory, but leave everything
                 ;; mounted as there may still be processes using it since
                 ;; 'user-processes' doesn't depend on us.  The 'user-file-systems'
                 ;; service will unmount TARGET eventually.
                 (delete-file-recursively
-                 (string-append target #$%backing-directory))))))))
+                 (string-append target #$%backing-directory))))))
+   (description "Make the store copy-on-write, with writes going to \
+the given target.")))
 
 (define (cow-store-service)
   "Return a service that makes the store copy-on-write, such that writes go to
@@ -367,6 +346,10 @@ Access documentation at any time by pressing Alt-F2.\x1b[0m
           ;; The usual services.
           (syslog-service)
 
+          ;; Use the Avahi daemon to discover substitute servers on the local
+          ;; network.  It can be faster than fetching from remote servers.
+          (service avahi-service-type)
+
           ;; The build daemon.  Register the default substitute server key(s)
           ;; as trusted to allow the installation process to use substitutes by
           ;; default.
@@ -467,11 +450,18 @@ Access documentation at any time by pressing Alt-F2.\x1b[0m
     (host-name "gnu")
     (timezone "Europe/Paris")
     (locale "en_US.utf8")
+    (name-service-switch %mdns-host-lookup-nss)
     (bootloader (bootloader-configuration
                  (bootloader grub-bootloader)
                  (target "/dev/sda")))
     (label (string-append "GNU Guix installation "
                           (package-version guix)))
+
+    ;; XXX: The AMD Radeon driver is reportedly broken, which makes kmscon
+    ;; non-functional:
+    ;; <https://lists.gnu.org/archive/html/guix-devel/2019-03/msg00441.html>.
+    ;; Thus, blacklist it.
+    (kernel-arguments '("quiet" "modprobe.blacklist=radeon"))
 
     (file-systems
      ;; Note: the disk image build code overrides this root file system with
@@ -518,27 +508,14 @@ Access documentation at any time by pressing Alt-F2.\x1b[0m
      ;; Explicitly allow for empty passwords.
      (base-pam-services #:allow-empty-passwords? #t))
 
-    (packages (cons* glibc ;for 'tzselect' & co.
-                     parted gptfdisk ddrescue
-                     fontconfig
-                     font-dejavu font-gnu-unifont
-                     grub                  ;mostly so xrefs to its manual work
-                     cryptsetup
-                     mdadm
-                     dosfstools         ;mkfs.fat, for the UEFI boot partition
-                     btrfs-progs
-                     f2fs-tools
-                     jfsutils
-                     openssh    ;we already have sshd, having ssh/scp can help
-                     wireless-tools iw wpa-supplicant-minimal iproute
-                     ;; XXX: We used to have GNU fdisk here, but as of version
-                     ;; 2.0.0a, that pulls Guile 1.8, which takes unreasonable
-                     ;; space; furthermore util-linux's fdisk is already
-                     ;; available here, so we keep that.
-                     bash-completion
-                     nvi                          ;:wq!
-                     nss-certs ; To access HTTPS, use git, etc.
-                     %base-packages))))
+    (packages (append
+                (list glibc         ; for 'tzselect' & co.
+                      fontconfig
+                      font-dejavu font-gnu-unifont
+                      grub          ; mostly so xrefs to its manual work
+                      nss-certs)    ; To access HTTPS, use git, etc.
+                %base-packages-disk-utilities
+                %base-packages))))
 
 (define* (os-with-u-boot os board #:key (bootloader-target "/dev/mmcblk0")
                          (triplet "arm-linux-gnueabihf"))

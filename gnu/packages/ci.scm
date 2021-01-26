@@ -39,6 +39,7 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages perl-compression)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages sqlite)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages version-control)
@@ -46,9 +47,29 @@
   #:use-module (gnu packages xml)
   #:use-module (guix build-system gnu))
 
+;; Guile-Sqlite3 package adding SQL query logging support.
+;; Remove it when next Guile-Sqlite3 release is out.
+(define-public guile-sqlite3-dev
+  (let ((commit "22ef45d268de7707cbbb943c404f9b0c1668e2e1")
+        (revision "1"))
+    (package
+      (inherit guile-sqlite3)
+      (name "guile-sqlite3")
+      (version (git-version "0.1.2" revision commit))
+      (home-page "https://notabug.org/mothacehe/guile-sqlite3.git")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url home-page)
+                      (commit commit)))
+                (sha256
+                 (base32
+                  "1q90f8zhw9n1c39szd2ba7aj5fi92m09pnlv0z7jbhnnjam5jwcd"))
+                (file-name (string-append name "-" version "-checkout")))))))
+
 (define-public cuirass
-  (let ((commit "d3329551fe2b90a454617da0f241e51fb4a72c58")
-        (revision "42"))
+  (let ((commit "697fa14584551d9595cd042f1ffeba240e45a127")
+        (revision "56"))
     (package
       (name "cuirass")
       (version (git-version "0.0.1" revision commit))
@@ -60,7 +81,7 @@
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "03ylkfwjk3qjl8pbml9gjz0skfq42klv3xbh9jpnf7rxillmcf20"))))
+                  "0gw9cja8fiyra9vnn3y384gwanvsqdq6gwjcvmz91sy5lvfwv34m"))))
       (build-system gnu-build-system)
       (arguments
        '(#:modules ((guix build utils)
@@ -73,7 +94,7 @@
          #:phases
          (modify-phases %standard-phases
            (add-after 'unpack 'disable-repo-tests
-             (λ _
+             (lambda _
                ;; Disable tests that use a connection to the Guix daemon.
                (substitute* "Makefile.am"
                  (("tests/repo.scm \\\\") "\\"))
@@ -93,8 +114,10 @@
                       (git    (assoc-ref inputs "guile-git"))
                       (bytes  (assoc-ref inputs "guile-bytestructures"))
                       (fibers (assoc-ref inputs "guile-fibers"))
+                      (zlib   (assoc-ref inputs "guile-zlib"))
                       (guix   (assoc-ref inputs "guix"))
-                      (deps   (list gcrypt json sqlite git bytes fibers guix))
+                      (deps   (list gcrypt json sqlite git bytes fibers
+                                    zlib guix))
                       (guile  (assoc-ref %build-inputs "guile"))
                       (effective (read-line
                                   (open-pipe* OPEN_READ
@@ -120,12 +143,13 @@
                    `("GUILE_LOAD_COMPILED_PATH" ":" prefix (,objs)))
                  #t))))))
       (inputs
-       `(("guile" ,@(assoc-ref (package-native-inputs guix) "guile"))
+       `(("guile" ,guile-3.0/libgc-7)
          ("guile-fibers" ,guile-fibers)
          ("guile-gcrypt" ,guile-gcrypt)
          ("guile-json" ,guile-json-4)
-         ("guile-sqlite3" ,guile-sqlite3)
+         ("guile-sqlite3" ,guile-sqlite3-dev)
          ("guile-git" ,guile-git)
+         ("guile-zlib" ,guile-zlib)
          ;; FIXME: this is propagated by "guile-git", but it needs to be among
          ;; the inputs to add it to GUILE_LOAD_PATH.
          ("guile-bytestructures" ,guile-bytestructures)

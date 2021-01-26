@@ -4,7 +4,7 @@
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015, 2016, 2017 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2016 Raimon Grau <raimonster@gmail.com>
-;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2016 Eric Bavier <bavier@member.fsf.org>
@@ -13,7 +13,7 @@
 ;;; Copyright © 2016 Benz Schenk <benz.schenk@uzh.ch>
 ;;; Copyright © 2016, 2017 Pjotr Prins <pjotr.guix@thebird.nl>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
-;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2017, 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017, 2018, 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2017, 2019 Gábor Boskovits <boskovits@gmail.com>
@@ -39,6 +39,9 @@
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Jesse Dowell <jessedowell@gmail.com>
+;;; Copyright © 2020 Hamzeh Nasajpour <h.nasajpour@pantherx.org>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -95,6 +98,9 @@
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gnupg)
+  #:use-module (gnu packages golang)
+  #:use-module (gnu packages graphviz)
+  #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
   #:use-module (gnu packages libevent)
@@ -106,6 +112,7 @@
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages nettle)
   #:use-module (gnu packages openldap)
+  #:use-module (gnu packages onc-rpc)
   #:use-module (gnu packages password-utils)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
@@ -119,10 +126,14 @@
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages readline)
+  #:use-module (gnu packages ruby)
   #:use-module (gnu packages samba)
   #:use-module (gnu packages serialization)
+  #:use-module (gnu packages shells)
+  #:use-module (gnu packages sphinx)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages ssh)
+  #:use-module (gnu packages tcl)
   #:use-module (gnu packages textutils)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages valgrind)
@@ -131,17 +142,423 @@
   #:use-module (gnu packages xml)
   #:use-module (ice-9 match))
 
+(define-public axel
+  (package
+    (name "axel")
+    (version "2.17.10")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/axel-download-accelerator/axel/"
+                           "releases/download/v" version "/"
+                           "axel-" version ".tar.xz"))
+       (sha256
+        (base32 "0kmlqk04sgkshsll4r9w3k0rvrgz0gpk987618r50khwl484zss6"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("gettext" ,gettext-minimal)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libressl" ,libressl)))
+    (home-page "https://github.com/axel-download-accelerator/axel")
+    (synopsis "Light command line download accelerator")
+    (description
+     "Axel tries to accelerate the download process by using multiple
+connections per file, and can also balance the load between different
+servers.  It tries to be as light as possible, so it might be useful
+on byte-critical systems.  It supports HTTP, HTTPS, FTP and FTPS
+protocols.")
+    (license license:gpl2+)))
+
+;; This package does not have a release yet.
+;; But this is required to provide a feature in PipeWire.
+(define-public libcamera
+  (package
+    (name "libcamera")
+    (version "0.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "git://linuxtv.org/libcamera.git")
+         (commit "74c8b508338ccdd0780aa1e067a1e8fcb9ee326b")))
+       (file-name
+        (git-file-name name version))
+       (sha256
+        (base32 "0d9lp8b9gyxh4jwfh55kp8zl1xyyg32z684v3y29378zpksncss1"))))
+    (build-system meson-build-system)
+    (outputs '("out" "doc"))
+    (arguments
+     `(#:glib-or-gtk? #t     ; To wrap binaries and/or compile schemas
+       #:configure-flags
+       (list
+        "-Dv4l2=true")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'disable-failing-tests
+           (lambda _
+             (substitute* "test/meson.build"
+               (("\\['list-cameras',                    'list-cameras.cpp'\\],")
+                ""))
+             #t))
+         (add-after 'install 'move-doc
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (assoc-ref outputs "doc")))
+               (mkdir-p (string-append doc "/share"))
+               (rename-file
+                (string-append out "/share/doc")
+                (string-append doc "/share/doc"))
+               #t))))))
+    (native-inputs
+     `(("dot" ,graphviz)
+       ("doxygen" ,doxygen)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)
+       ("sphinx" ,python-sphinx)
+       ("yaml" ,python-pyyaml)))
+    (inputs
+     `(("boost" ,boost)
+       ("glib" ,glib)
+       ("gstreamer" ,gst-plugins-base)
+       ("gnutls" ,gnutls)
+       ("libtiff" ,libtiff)
+       ("openssl" ,openssl)
+       ("qt5" ,qtbase)
+       ("udev" ,eudev)))
+    (synopsis "Camera stack and framework")
+    (description "LibCamera is a complex camera support library for GNU+Linux,
+Android, and ChromeOS.")
+    (home-page "https://libcamera.org/")
+    (license license:lgpl2.1+)))
+
+(define-public libnice
+  (package
+    (name "libnice")
+    (version "0.1.18")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "https://libnice.freedesktop.org/releases/"
+                       name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1x3kj9b3dy9m2h6j96wgywfamas1j8k2ca43k5v82kmml9dx5asy"))))
+    (build-system meson-build-system)
+    (outputs '("out" "doc"))
+    (arguments
+     `(#:glib-or-gtk? #t     ; To wrap binaries and/or compile schemas
+       #:configure-flags
+       (list
+        "-Dgtk_doc=enabled")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'disable-failing-test
+           (lambda _
+             (substitute* "tests/meson.build"
+               ;; ‘test-set-port-range.c:66:main: assertion failed:
+               ;; (nice_agent_gather_candidates (agent, stream1))’
+               (("'test-set-port-range'") "#"))
+             #t))
+         (add-after 'install 'move-docs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (assoc-ref outputs "doc")))
+               (mkdir-p (string-append doc "/share"))
+               (rename-file
+                (string-append out "/share/gtk-doc")
+                (string-append doc "/share/gtk-doc"))
+               #t))))))
+    (native-inputs
+     `(("glib:bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("gtk-doc" ,gtk-doc)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("gstreamer" ,gstreamer)
+       ("gst-plugins-base" ,gst-plugins-base)
+       ("libnsl" ,libnsl)))
+    (propagated-inputs
+     `(("glib" ,glib)
+       ("glib-networking" ,glib-networking)
+       ("gnutls" ,gnutls)))
+    (synopsis "GLib ICE implementation")
+    (description "LibNice is a library that implements the Interactive
+Connectivity Establishment (ICE) standard (RFC 5245 & RFC 8445).  It provides a
+GLib-based library, libnice, as well as GStreamer elements to use it.")
+    (home-page "https://libnice.freedesktop.org/")
+    (license
+     ;; This project is dual-licensed.
+     (list
+      license:lgpl2.1+
+      license:mpl1.1))))
+
+(define-public rtmpdump
+  ;; There are no tags in the repository, and the project is unlikely to
+  ;; make new releases.  Take a recent commit for multiple security fixes
+  ;; as well as GnuTLS compatibility.
+  (let ((commit "c5f04a58fc2aeea6296ca7c44ee4734c18401aa3")
+        (revision "0")
+        (version "2.4"))                ;as mentioned in README and man pages
+    (package
+      (name "rtmpdump")
+      (version (git-version version revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://git.ffmpeg.org/rtmpdump")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "07ias612jgmxpam9h418kvlag32da914jsnjsfyafklpnh8gdzjb"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f                    ; no tests
+         #:make-flags
+         (list
+          ;; The ‘validate-runpath’ phase fails to find librtmp.so.0.
+          (string-append "LDFLAGS=-Wl,-rpath="
+                         (assoc-ref %outputs "out") "/lib")
+          (string-append "prefix=" (assoc-ref %outputs "out")))
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'omit-static-library
+             (lambda _
+               (substitute* "librtmp/Makefile"
+                 (("cp librtmp\\.a .*") ; don't install it
+                  "")
+                 (("librtmp\\.a ")      ; don't build it
+                  ""))
+               #t))
+           (add-after 'unpack 'prefer-gnutls
+             (lambda _
+               (substitute* '("Makefile" "librtmp/Makefile")
+                 (("CRYPTO=OPENSSL")
+                  "#CRYPTO=OPENSSL")
+                 (("#CRYPTO=GNUTLS")
+                  "CRYPTO=GNUTLS"))))
+           (delete 'configure))))
+      (inputs
+       `(("gnutls" ,gnutls)
+         ("zlib" ,zlib)))
+      (synopsis "Tools and library for handling RTMP streams")
+      (description "RTMPdump is a toolkit for RTMP streams.  All forms of RTMP are
+supported, including rtmp://, rtmpt://, rtmpe://, rtmpte://, and rtmps://.")
+      (home-page "https://rtmpdump.mplayerhq.hu/")
+      (license
+       (list
+        ;; Library.
+        license:lgpl2.1+
+        ;; Others.
+        license:gpl2+)))))
+
+(define-public srt
+  (package
+    (name "srt")
+    (version "1.4.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/Haivision/srt")
+         (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "01nx3a35hzq2x0dvp2n2b86phpdy1z83kdraag7aq3hmc7f8iagg"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags
+       (list
+        (string-append "-DCMAKE_INSTALL_BINDIR="
+                       (assoc-ref %outputs "out") "/bin")
+        "-DCMAKE_INSTALL_INCLUDEDIR=include"
+        "-DENABLE_STATIC=OFF"
+        "-DENABLE_UNITTESTS=ON")))
+    (native-inputs
+     `(("gtest" ,googletest)
+       ("pkg-config" ,pkg-config)
+       ("tclsh" ,tcl)))
+    (propagated-inputs
+     `(("openssl" ,openssl)))
+    (synopsis "Secure Reliable Transport")
+    (description "SRT is a transport technology that optimizes streaming
+performance across unpredictable networks, such as the Internet.")
+    (home-page "https://www.srtalliance.org/")
+    (license license:mpl2.0)))
+
+;; FFmpeg, GStreamer, and VLC don't support SRT 1.4.2 yet.
+(define-public srt-1.4.1
+  (package
+    (inherit srt)
+    (name "srt")
+    (version "1.4.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/Haivision/srt")
+         (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "01xaq44j95kbgqfl41pnybvqy0yq6wd4wdw88ckylzf0nzp977xz"))))))
+
+(define-public lksctp-tools
+  (package
+    (name "lksctp-tools")
+    (version "1.0.18")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/sctp/lksctp-tools")
+         (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1x4fwzrlzvfa3vcpja97m8w5g9ir2zrh4zs7zksminrnmdrs0dsr"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("linux-headers" ,linux-libre-headers)))
+    (synopsis "Linux SCTP helper library")
+    (description "Lksctp-tools project provides a user space library for SCTP
+(libsctp) including C language header files (netinet/sctp.h) for accessing SCTP
+specific application programming interfaces not provided by the standard
+sockets, and also some helper utilities around SCTP.")
+    (home-page "http://lksctp.sourceforge.net/")
+    (license
+     (list
+      ;; Library.
+      license:lgpl2.1+
+      ;; Others.
+      license:gpl2+))))
+
+(define-public knockd
+  (package
+    (name "knockd")
+    (version "0.7")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://www.zeroflux.org/proj/knock/files/knock-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "193qcpsy7v51c6awhg9652l5blyz8vp6n7y6fi7l4rhh6af4ff4r"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("libpcap" ,libpcap)))
+    (home-page "https://www.zeroflux.org/projects/knock")
+    (synopsis "Small port-knock daemon")
+    (description "@command{knockd} is a port-knock daemon.  It listens to all traffic on
+an ethernet or PPP interface, looking for special \"knock\" sequences of @dfn{port-hits}
+(UDP/TCP packets sent to a server port).  This port need not be open, since knockd listens
+at the link-layer level.")
+    (license license:gpl2+)))
+
+(define-public nng
+  (package
+    (name "nng")
+    (version "1.3.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/nanomsg/nng")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0a4jg8alh2h0rw6fb4dqpvk4hgl2a7h76mq7g34fy89qh9sgg1a4"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "-DNNG_ENABLE_COVERAGE=ON"
+             "-DNNG_ENABLE_TLS=ON"
+             "-DBUILD_SHARED_LIBS=ON")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'disable-failing-tests
+           (lambda _
+             ;; These tests require network access.
+             (substitute* "tests/CMakeLists.txt"
+               (("add_nng_test1\\(httpclient 60 NNG_SUPP_HTTP\\)") "")
+               (("add_nng_test1\\(resolv 10 NNG_STATIC_LIB\\)") "")
+               (("add_nng_test\\(tls 60\\)") ""))
+             #t)))))
+    (native-inputs
+     `(("ksh" ,oksh)))
+    (inputs
+     `(("mbedtls" ,mbedtls-apache)))
+    (synopsis "Lightweight messaging library")
+    (description "NNG project is a rewrite of the scalability protocols library
+known as libnanomsg, and adds significant new capabilities, while retaining
+compatibility with the original.  It is a lightweight, broker-less library,
+offering a simple API to solve common recurring messaging problems, such as
+publish/subscribe, RPC-style request/reply, or service discovery.")
+    (home-page "https://nng.nanomsg.org/")
+    (license license:expat)))
+
+(define-public nanomsg
+  (package
+    (name "nanomsg")
+    (version "1.1.5")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/nanomsg/nanomsg")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "01ddfzjlkf2dgijrmm3j3j8irccsnbgfvjcnwslsfaxnrmrq5s64"))))
+    (build-system cmake-build-system)
+    (outputs '("out" "doc"))
+    (arguments
+     `(#:configure-flags
+       (list
+        "-DNN_ENABLE_COVERAGE=ON")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'move-docs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (assoc-ref outputs "doc")))
+               (mkdir-p (string-append doc "/share/doc"))
+               (rename-file
+                (string-append out "/share/doc/nanomsg")
+                (string-append doc "/share/doc/nanomsg"))
+               #t))))))
+    (native-inputs
+     `(("asciidoctor" ,ruby-asciidoctor)
+       ("pkg-config" ,pkg-config)))
+    (synopsis "Scalable socket library")
+    (description "Nanomsg is a socket library that provides several common
+communication patterns.  It aims to make the networking layer fast, scalable,
+and easy to use.  Implemented in C, it works on a wide range of operating
+systems with no further dependencies.")
+    (home-page "https://nanomsg.org/")
+    (license (license:non-copyleft "file:///COPYING"))))
+
 (define-public blueman
   (package
     (name "blueman")
-    (version "2.1.3")
+    (version "2.1.4")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/blueman-project/blueman/releases"
                            "/download/" version "/blueman-" version ".tar.xz"))
        (sha256
-        (base32 "1pngqbwapbvywhkmflapqvs0wa0af7d1a87wy56l5hg2r462xl1v"))))
+        (base32 "1nk46s1s8yrlqv37sc7la05nnn7sdgqhkrcdm98qin34llwkv70x"))))
     (build-system glib-or-gtk-build-system)
     (arguments
      `(#:configure-flags (list "--enable-polkit"
@@ -285,6 +702,13 @@ or, more generally, MAC addresses of the same category of hardware.")
     (arguments
      '(#:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'patch-iproute2
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let* ((iproute (assoc-ref inputs "iproute"))
+                    (ip (string-append iproute "/sbin/ip")))
+               (substitute* "misc/client-hook.iproute"
+                 (("/sbin/ip") ip))
+               #t)))
          ;; The checkconf test in src/ requires network access.
          (add-before
           'check 'disable-checkconf-test
@@ -292,6 +716,8 @@ or, more generally, MAC addresses of the same category of hardware.")
             (substitute* "src/Makefile"
               (("^TESTS = .*") "TESTS = \n"))
             #t)))))
+    (inputs
+     `(("iproute" ,iproute)))
     (home-page "https://www.remlab.net/miredo/")
     (synopsis "Teredo IPv6 tunneling software")
     (description
@@ -484,19 +910,19 @@ transparently check connection attempts against an access control list.")
     (license (license:non-copyleft "file://DISCLAIMER"
                                    "See the file DISCLAIMER in the distribution."))))
 
-
 (define-public zeromq
   (package
     (name "zeromq")
-    (version "4.3.2")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/zeromq/libzmq/releases"
-                                  "/download/v" version "/zeromq-" version ".tar.gz"))
-              (sha256
-               (base32
-                "0qzp80ky4y2k7k1ya09v9gkivvfbz2km813snrb8jhnn634bbmzb"))))
+    (version "4.3.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/zeromq/libzmq/releases"
+                           "/download/v" version "/zeromq-" version ".tar.gz"))
+       (sha256
+        (base32 "1rf3jmi36ms8jh2g5cvi253h43l6xdfq0r7mvp95va7mi4d014y5"))))
     (build-system gnu-build-system)
+    (arguments '(#:configure-flags '("--disable-static")))
     (home-page "https://zeromq.org")
     (synopsis "Library for message-based applications")
     (description
@@ -527,10 +953,14 @@ more.")
        #:phases (modify-phases %standard-phases
                   (add-before 'check 'patch-tests
                     (lambda _
-                      ;; XXX FIXME: Disable the zproc test, which fails on some
-                      ;; hardware: <https://github.com/zeromq/czmq/issues/2007>.
                       (substitute* "src/czmq_selftest.c"
+                        ;; Disable the zproc test, which fails on some hardware
+                        ;; (see: https://github.com/zeromq/czmq/issues/2007).
                         (("\\{ \"zproc\", zproc_test.*")
+                         "")
+                        ;; Also disable the zarmour test, which fails as well
+                        ;; (see: https://github.com/zeromq/czmq/issues/2125).
+                        (("\\{ \"zarmour\", zarmour_test.*")
                          ""))
                       #t)))))
     (inputs
@@ -668,14 +1098,14 @@ receiving NDP messages.")
 (define-public ethtool
   (package
     (name "ethtool")
-    (version "5.8")
+    (version "5.10")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://kernel.org/software/network/"
                                   "ethtool/ethtool-" version ".tar.xz"))
               (sha256
                (base32
-                "0ikmz36bdfwxscsfcgjmyzg70hwr8i3wpdhcp1vmk3q4ip858frg"))))
+                "1kygjg6g90017k53b8342i59cpwgidalqpa3gdilqyrhm6b56zc1"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -860,7 +1290,7 @@ test_parse_format_ipv(4(|_listen_all|_mapped_ipv6)|6)\\);")
        #:test-target "test"))
     (inputs `(("net-tools" ,net-tools)
               ("zlib" ,zlib)))
-    (native-inputs `(("check" ,check)
+    (native-inputs `(("check" ,check-0.14)
                      ("pkg-config" ,pkg-config)))
     (home-page "https://code.kryo.se/iodine/")
     (synopsis "Tunnel IPv4 data through a DNS server")
@@ -874,18 +1304,21 @@ and up to 1 Mbit/s downstream.")
 (define-public whois
   (package
     (name "whois")
-    (version "5.5.6")
+    (version "5.5.7")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "mirror://debian/pool/main/w/whois/"
-                           "whois_" version ".tar.xz"))
+       (method git-fetch)
+       (uri (git-reference
+              (url "https://github.com/rfc1036/whois")
+              (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "0kpi981zjczvdcxfcq455c529vlaxa73x8kbm530z5b01h0fk8fb"))))
+        (base32 "1w3d0ffl0ng1m4i10k968kk4xicviq24w5vwl6d8dhja61d7yd2r"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no test suite
-       #:make-flags (list "CC=gcc"
+       #:make-flags (list (string-append "CC=" ,(cc-for-target))
+                          (string-append "PKG_CONFIG=" ,(pkg-config-for-target))
                           (string-append "prefix=" (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
@@ -916,24 +1349,27 @@ of the same name.")
 (define-public wireshark
   (package
     (name "wireshark")
-    (version "3.2.5")
+    (version "3.4.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.wireshark.org/download/src/wireshark-"
                            version ".tar.xz"))
        (sha256
-        (base32 "0h69m9maq6w5gik4gamv4kfqrr37hmi4kpwh225y1k36awm0b2dx"))))
+        (base32 "1i548w6zv6ni5n22rs90a12aakyq811493dxmadlcsj2krr6i66y"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'remove-failing-test
-           ;; Test 31/32 fails with errors like "Program reassemble_test is
-           ;; not available".  Skipping it for now.
+           ;; Skip test suite failing with "Program reassemble_test is not
+           ;; available" and alike errors.  Also skip test suite failing with
+           ;; "AssertionError: Program extcap/sdjournal is not available"
+           ;; error.'
            (lambda _
              (substitute* "CMakeLists.txt"
-               (("suite_unittests" all) (string-append "# " all)))
+               (("suite_unittests" all) (string-append "# " all))
+               (("suite_extcaps" all) (string-append "# " all)))
              #t)))
        ;; Build process chokes during `validate-runpath' phase.
        ;;
@@ -1083,8 +1519,9 @@ handling network namespaces in Go.")
 
 (define-public go-sctp
   ;; docker-libnetwork-cmd-proxy requires this exact commit.
-  (let ((commit "07191f837fedd2f13d1ec7b5f885f0f3ec54b1cb")
-        (revision "1"))
+  ;; This commit is mentioned in docker-libnetwork-cmd-proxy's vendor.conf.
+  (let ((commit "6e2cb1366111dcf547c13531e3a263a067715847")
+        (revision "2"))
     (package
       (name "go-sctp")
       (version (git-version "0.0.0" revision commit))
@@ -1096,10 +1533,11 @@ handling network namespaces in Go.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "1mk9ncm10gwi5pn5wcw4skbyf4qg7n5qdf1mim4gf3mrckvi6g6h"))))
+                  "1ba90fmpdwxa1ba4hrsjhi3gfy3pwmz7x8amw1p5dc9p5a7nnqrb"))))
       (build-system go-build-system)
       (arguments
-       `(#:import-path "github.com/ishidawataru/sctp"))
+       `(#:tests? #f    ; Test suite is flakey.
+         #:import-path "github.com/ishidawataru/sctp"))
       (home-page "https://github.com/ishidawataru/sctp")
       (synopsis "SCTP library for the Go programming language")
       (description "This library provides methods for using the stream control
@@ -1143,14 +1581,16 @@ application stack itself.")
 (define-public httpstat
   (package
     (name "httpstat")
-    (version "1.2.1")
+    (version "1.3.1")
     (source
      (origin
-       (method url-fetch)
-       (uri (pypi-uri "httpstat" version))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/reorx/httpstat")
+             (commit version)))
+       (file-name (git-file-name name version))
        (sha256
-        (base32
-         "1chw2nk56vaq87aba012a270k9na06hfx1pfbsrc3jfvlc2kb9hb"))))
+        (base32 "0cw8299a080m42slsimz31xs0gjnh833gpbj2dsr4hkcinrn4iyd"))))
     (build-system python-build-system)
     (inputs `(("curl" ,curl)))
     (arguments
@@ -1162,7 +1602,10 @@ application stack itself.")
                (("ENV_CURL_BIN.get\\('curl'\\)")
                 (string-append "ENV_CURL_BIN.get('"
                                (assoc-ref inputs "curl")
-                               "/bin/curl')")))
+                               "/bin/curl')"))
+               ;; "curl -w time_*" units seems to have
+               ;; changed from seconds to nanoseconds.
+               (("d\\[k\\] \\* 1000") "d[k] / 1000"))
              #t)))))
     (home-page "https://github.com/reorx/httpstat")
     (synopsis "Visualize curl statistics")
@@ -1176,17 +1619,21 @@ TCP connection, TLS handshake and so on) in the terminal.")
 (define-public squid
   (package
     (name "squid")
-    (version "4.12")
+    (version "4.13")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://www.squid-cache.org/Versions/v4/squid-"
                            version ".tar.xz"))
        (sha256
-        (base32 "05z34ysy2zn7as11vd365xxhh36bm1ysiwcbr0i0f0nwng406apl"))))
+        (base32 "1q1ywpic6s7dfjj3cwzcfgscc4zq0aih462gyas7j1z683ss14b8"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases
+     '(#:configure-flags
+       ;; disable -march=native in build for reproducibility; see
+       ;; https://wiki.squid-cache.org/KnowledgeBase/IllegalInstructionError
+       (list "--disable-arch-native")
+       #:phases
        (modify-phases %standard-phases
          (add-before 'build 'fix-true-path
            (lambda* (#:key inputs #:allow-other-keys)
@@ -1217,7 +1664,7 @@ reusing frequently-requested web pages.")
 (define-public bwm-ng
   (package
     (name "bwm-ng")
-    (version "0.6.2")
+    (version "0.6.3")
     (source
      (origin
        (method git-fetch)
@@ -1226,7 +1673,7 @@ reusing frequently-requested web pages.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0k906wb4pw3dcqpcwnni78lahzi3bva483f8c17sjykic7as4y5n"))))
+        (base32 "1gpp2l3w479h1w5skjra5xy0gxd24kvmk6i4psbkafnv2399la4k"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1435,7 +1882,7 @@ private (reserved).")
 (define-public perl-net-dns
  (package
   (name "perl-net-dns")
-  (version "1.24")
+  (version "1.28")
   (source
     (origin
       (method url-fetch)
@@ -1446,7 +1893,7 @@ private (reserved).")
         (string-append "mirror://cpan/authors/id/N/NL/NLNETLABS/Net-DNS-"
                        version ".tar.gz")))
       (sha256
-       (base32 "0qyy5k4k0llqjjmkkfg96919gqybdc1z5fy9047n9imidjxc59hi"))))
+       (base32 "0kh2qbhxv005pqb35mdk2bld7cg7xnxl12qvdwv30sgd91aqica7"))))
   (build-system perl-build-system)
   (inputs
     `(("perl-digest-hmac" ,perl-digest-hmac)))
@@ -1630,30 +2077,6 @@ It is intended primarily for use in testing.")
   (description "Net::CIDR::Lite merges IPv4 or IPv6 CIDR addresses.")
   (license license:gpl1+)))
 
-;; TODO: Use the geolite-mirror-simple.pl script from the example
-;; directory to stay current with the databases. How?
-(define-public perl-geo-ip
- (package
-  (name "perl-geo-ip")
-  (version "1.51")
-  (source
-    (origin
-      (method url-fetch)
-      (uri (string-append
-             "mirror://cpan/authors/id/M/MA/MAXMIND/Geo-IP-"
-             version
-             ".tar.gz"))
-      (sha256
-        (base32
-          "1fka8fr7fw6sh3xa9glhs1zjg3s2gfkhi7n7da1l2m2wblqj0c0n"))))
-  (build-system perl-build-system)
-  (home-page "https://metacpan.org/release/Geo-IP")
-  (synopsis
-    "Look up location and network information by IP Address in Perl")
-  (description "The Perl module @code{Geo::IP}.  It looks up location and
-network information by IP Address.")
-  (license license:perl-license)))
-
 (define-public perl-io-socket-inet6
  (package
   (name "perl-io-socket-inet6")
@@ -1687,7 +2110,7 @@ sockets in Perl.")
 (define-public libproxy
   (package
     (name "libproxy")
-    (version "0.4.15")
+    (version "0.4.17")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/libproxy/libproxy/"
@@ -1695,7 +2118,7 @@ sockets in Perl.")
                                   version ".tar.xz"))
               (sha256
                (base32
-                "0kvdrazlzwia876w988cmlypp253gwy6idlh8mjk958c29jb8kb5"))))
+                "01cbgz6lc3v59sldqk96l1281kp2qxnsa2qwlf2ikvjlyr1gi2dw"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1754,14 +2177,14 @@ HTTP proxies.")
 (define-public enet
   (package
     (name "enet")
-    (version "1.3.15")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "http://enet.bespin.org/download/"
-                                  "enet-" version ".tar.gz"))
-              (sha256
-               (base32
-                "1yxxf9bkx6dx3j8j70fj17c05likyfibb1419ls74hp58qrzdgas"))))
+    (version "1.3.17")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://enet.bespin.org/download/"
+                           "enet-" version ".tar.gz"))
+       (sha256
+        (base32 "1p6f9mby86af6cs7pv6h48032ip9g32c05cb7d9mimam8lchz3x3"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1848,14 +2271,14 @@ that block port 22.")
 (define-public iperf
   (package
     (name "iperf")
-    (version "3.7")
+    (version "3.9")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://downloads.es.net/pub/iperf"
                                   "/iperf-" version ".tar.gz"))
               (sha256
                 (base32
-                 "033is7b5grfbiil98jxlz4ixp9shm44x6hy8flpsyz1i4h108inq"))))
+                 "0f601avdmzpwsa3lbi0ppjhkrdipm5wifhhxy5czf99370k3mdi4"))))
     (build-system gnu-build-system)
     (synopsis "TCP, UDP and SCTP bandwidth measurement tool")
     (description
@@ -2303,14 +2726,14 @@ can be whipped up with little effort.")
 (define-public mtr
   (package
     (name "mtr")
-    (version "0.93")
+    (version "0.94")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "ftp://ftp.bitwizard.nl/mtr/"
                            "mtr-" version ".tar.gz"))
        (sha256
-        (base32 "03gid8g4r6a9r40855s4345xm1bylj2kfqkicjwxpmvvccyng712"))))
+        (base32 "1glxvlqskcmjkxlqk9i12hcfaxb389cx2n8ji7776gmix3aq4z1z"))))
     (build-system gnu-build-system)
     (inputs
      `(("libcap" ,libcap)
@@ -2608,6 +3031,19 @@ asynchronous model using a modern C++ approach.")
                  (base32
                   "1idd9b4f2pnhcpk1bh030hqg5zq25gkwxd53xi3c0cj242w7sp2j"))
                 (file-name (git-file-name name version))))
+      (inputs
+       `(("openssl" ,openssl)))
+      (arguments
+       '(#:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'patch-crypto-paths
+             (lambda* (#:key inputs #:allow-other-keys)
+               (substitute* "shadowsocks/shell.py"
+                 (("config\\.get\\('libopenssl', None\\)")
+                  (format #f "config.get('libopenssl', ~s)"
+                          (string-append
+                           (assoc-ref inputs "openssl")
+                           "/lib/libssl.so")))))))))
       (build-system python-build-system)
       (synopsis "Fast tunnel proxy that helps you bypass firewalls")
       (description
@@ -2626,14 +3062,14 @@ Features:
 (define-public net-snmp
   (package
     (name "net-snmp")
-    (version "5.8")
+    (version "5.9")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/net-snmp/net-snmp/"
                                   version "/net-snmp-" version ".tar.gz"))
               (sha256
                (base32
-                "1pvajzj9gmj56dmwix0ywmkmy2pglh6nny646hkm7ghfhh03bz5j"))
+                "0wb0vyafpspw3mcifkjjmf17r1r80kjvslycscb8nvaxz1k3lc04"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -2680,12 +3116,15 @@ Features:
                                " -NET")))
              #t)))))
     (inputs
-     `(("perl" ,perl)
+     `(("libnl" ,libnl)
+       ("ncurses" ,ncurses)             ; for the ‘apps’
        ("openssl" ,openssl)
-       ("libnl" ,libnl)))
-    ;; These inputs are only needed for tests.
+       ("perl" ,perl)))
     (native-inputs
-     `(("net-tools" ,net-tools)
+     `(("pkg-config" ,pkg-config)
+
+       ;; For tests only.
+       ("net-tools" ,net-tools)
        ("coreutils" ,coreutils)
        ("grep" ,grep)))
     (home-page "http://www.net-snmp.org/")
@@ -2914,9 +3353,9 @@ communication over HTTP.")
        ("pcre2" ,pcre2)
        ("sobjectizer" ,sobjectizer)))
     (propagated-inputs
-     `(("asio", asio)
+     `(("asio" ,asio)
        ("fmt" ,fmt)
-       ("http-parser", http-parser)))
+       ("http-parser" ,http-parser)))
     (arguments
      `(#:configure-flags '("-DRESTINIO_INSTALL=on")
        #:tests? #f ; TODO: The tests are called from the root CMakelist, need RESTINIO_TEST=on.
@@ -3072,14 +3511,14 @@ maximum extent possible.")
 (define-public batctl
   (package
    (name "batctl")
-   (version "2020.1")
+   (version "2020.4")
    (source
     (origin
      (method url-fetch)
      (uri (string-append "https://downloads.open-mesh.org/batman/releases/batman-adv-"
                          version "/batctl-" version ".tar.gz"))
      (sha256
-      (base32 "0fy252q1my3a57v6pfz8i97h6zv7v03di01dhwjkj47pqnx1rqm3"))))
+      (base32 "05rrpfbpdhxn5zgdps849qls2ifis6a94cjryb60d4y1nc2n0d7w"))))
    (inputs
     `(("libnl" ,libnl)))
    (native-inputs
@@ -3105,7 +3544,7 @@ module @code{batman-adv}, for Layer 2.")
 (define-public pagekite
   (package
     (name "pagekite")
-    (version "1.5.2.200603")
+    (version "1.5.2.200725")
     (source
      (origin
        (method git-fetch)
@@ -3114,7 +3553,7 @@ module @code{batman-adv}, for Layer 2.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "08rcyr54dssnpand6y26f8x9cjmd91hr44my08kxw70s5iqiwizv"))))
+        (base32 "0lig1i42bn9isw848vnml5qhcaa04x1dr2hb075bm0a3439kv3rr"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -3317,15 +3756,14 @@ thousands of connections is clearly realistic with today's hardware.")
 (define-public lldpd
   (package
     (name "lldpd")
-    (version "1.0.5")
+    (version "1.0.8")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://media.luffy.cx/files/lldpd/lldpd-"
                            version ".tar.gz"))
        (sha256
-        (base32
-         "16fbqrs3l976gdslx647nds8x7sz4h5h3h4l4yxzrayvyh9b5lrd"))
+        (base32 "1vrxr8lgkw7q6ixaaili6ac7i0j0326194s498n2dxihdvkh1llq"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -3339,6 +3777,7 @@ thousands of connections is clearly realistic with today's hardware.")
         "--with-privsep-group=nogroup"
         "--localstatedir=/var"
         "--enable-pie"
+        "--disable-static"
         "--without-embedded-libevent"
         (string-append "--with-systemdsystemunitdir="
                        (assoc-ref %outputs "out")
@@ -3406,3 +3845,121 @@ hashcash stamps efficiently.
 This package contains a command-line tool for computing and verifying hashcash
 stamps.")
     (license license:public-domain)))
+
+(define-public nbd
+  (package
+    (name "nbd")
+    (version "3.21")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append "mirror://sourceforge/nbd/nbd/" version
+                            "/nbd-" version ".tar.xz"))
+        (sha256
+         (base32 "1ydylvvayi4w2d08flji9q03sl7y8hn0c26vsay3nwwikprqls77"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("glib" ,glib)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("which" ,which)))
+    (home-page "https://nbd.sourceforge.io/")
+    (synopsis "NBD client and server")
+    (description "This package provides the NBD (Network Block Devices)
+client and server.  It allows you to use remote block devices over a TCP/IP
+network.")
+    (license license:gpl2)))
+
+(define-public yggdrasil
+  (package
+    (name "yggdrasil")
+    (version "0.3.15")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/yggdrasil-network/yggdrasil-go")
+         (commit (string-append "v" version))
+         (recursive? #t)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0gk7gy8yq5nrnblv4imxzzm2hac4ri0hlw19ajfbc1zll5kj32gf"))
+       (patches (search-patches "yggdrasil-extra-config.patch"))))
+    (build-system go-build-system)
+    (arguments
+     '(#:import-path "github.com/yggdrasil-network/yggdrasil-go"
+       ;; TODO: figure out how tests are run
+       #:tests? #f
+       #:install-source? #f
+       #:phases (modify-phases %standard-phases
+                  (replace 'build
+                    (lambda _
+                      (for-each
+                       (lambda (c)
+                         (invoke
+                          "go" "build" "-v" "-ldflags=-s -w"
+                          (string-append
+                           "github.com/yggdrasil-network/yggdrasil-go/cmd/" c)))
+                       (list "yggdrasil" "yggdrasilctl"))
+                      #t))
+                  (replace 'install
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out"))
+                             (bin (string-append out "/bin/"))
+                             (doc (string-append out "/share/doc/yggdrasil/")))
+                        (mkdir-p bin)
+                        (for-each
+                         (lambda (f)
+                           (install-file f bin))
+                         (list "yggdrasil" "yggdrasilctl"))
+                        (mkdir-p doc)
+                        (copy-recursively
+                         (string-append
+                          "src/github.com/yggdrasil-network/yggdrasil-go/"
+                          "doc/yggdrasil-network.github.io")
+                         doc))
+                      #t)))))
+    ;; https://github.com/kardianos/minwinsvc is windows only
+    (propagated-inputs
+     `(("go-github-com-arceliar-phony" ,go-github-com-arceliar-phony)
+       ("go-github-com-cheggaaa-pb" ,go-github-com-cheggaaa-pb)
+       ("go-github-com-gologme-log" ,go-github-com-gologme-log)
+       ("go-github-com-hashicorp-go-syslog" ,go-github-com-hashicorp-go-syslog)
+       ("go-github-com-hjson-hjson-go" ,go-github-com-hjson-hjson-go)
+       ("go-github-com-kardianos-minwinsvc" ,go-github-com-kardianos-minwinsvc)
+       ("go-github-com-mitchellh-mapstructure"
+        ,go-github-com-mitchellh-mapstructure)
+       ("go-golang-org-x-crypto" ,go-golang-org-x-crypto)
+       ("go-golang-org-x-net" ,go-golang-org-x-net)
+       ("go-golang-org-x-text" ,go-golang-org-x-text)
+       ("go-golang-zx2c4-com-wireguard" ,go-golang-zx2c4-com-wireguard)
+       ("go-netlink" ,go-netlink)
+       ("go-netns" ,go-netns)))
+    (home-page "https://yggdrasil-network.github.io/blog.html")
+    (synopsis
+     "Experiment in scalable routing as an encrypted IPv6 overlay network")
+    (description
+     "Yggdrasil is an early-stage implementation of a fully end-to-end encrypted
+IPv6 network.  It is lightweight, self-arranging, supported on multiple
+platforms and allows pretty much any IPv6-capable application to communicate
+securely with other Yggdrasil nodes.  Yggdrasil does not require you to have
+IPv6 Internet connectivity - it also works over IPv4.")
+    (license
+     ;; As a special exception to the GNU Lesser General Public License
+     ;; version 3 ("LGPL3"), the copyright holders of this Library give you
+     ;; permission to convey to a third party a Combined Work that links
+     ;; statically or dynamically to this Library without providing any Minimal
+     ;; Corresponding Source or Minimal Application Code as set out in 4d or
+     ;; providing the installation information set out in section 4e, provided
+     ;; that you comply with the other provisions of LGPL3 and provided that you
+     ;; meet, for the Application the terms and conditions of the license(s)
+     ;; which apply to the Application. Except as stated in this special
+     ;; exception, the provisions of LGPL3 will continue to comply in full to
+     ;; this Library. If you modify this Library, you may apply this exception
+     ;; to your version of this Library, but you are not obliged to do so. If
+     ;; you do not wish to do so, delete this exception statement from your
+     ;; version. This exception does not (and cannot) modify any license terms
+     ;; which apply to the Application, with which you must still comply
+     license:lgpl3)))

@@ -26,7 +26,7 @@ AC_DEFUN([GUIX_SYSTEM_TYPE], [
   AC_REQUIRE([AC_CANONICAL_HOST])
   AC_PATH_PROG([SED], [sed])
 
-  AC_ARG_WITH(system, AC_HELP_STRING([--with-system=SYSTEM],
+  AC_ARG_WITH(system, AS_HELP_STRING([--with-system=SYSTEM],
     [Platform identifier (e.g., `i686-linux').]),
     [guix_system="$withval"],
     [case "$host_cpu" in
@@ -78,7 +78,7 @@ dnl Assert that this is a system to which the distro is ported.
 AC_DEFUN([GUIX_ASSERT_SUPPORTED_SYSTEM], [
   AC_REQUIRE([GUIX_SYSTEM_TYPE])
 
-  AC_ARG_WITH([courage], [AC_HELP_STRING([--with-courage],
+  AC_ARG_WITH([courage], [AS_HELP_STRING([--with-courage],
     [Assert that even if this platform is unsupported, you will be
 courageous and port the GNU System distribution to it (see
 "GNU Distribution" in the manual.)])],
@@ -116,26 +116,6 @@ AC_DEFUN([GUIX_ASSERT_GUILE_FEATURES], [
       AC_MSG_ERROR([$GUILE does not support feature '$guix_guile_feature', which is required.])
     fi
   done
-])
-
-dnl GUIX_ASSERT_SYNTAX_OBJECT_EQUAL
-dnl
-dnl Guile 2.2.1 was a brown-paper-bag release where 'equal?' wouldn't work
-dnl for syntax objects, which broke gexps.  Unfortunately Fedora 25 provides it.
-dnl Reject it.
-AC_DEFUN([GUIX_ASSERT_SYNTAX_OBJECT_EQUAL], [
-  AC_CACHE_CHECK([whether 'equal?' works for syntax objects],
-    [ac_cv_guix_syntax_object_equal],
-    [if "$GUILE" -c '(exit (equal? (syntax x) (syntax x)))'
-     then
-       ac_cv_guix_syntax_object_equal=yes
-     else
-       ac_cv_guix_syntax_object_equal=no
-     fi])
-  if test "x$ac_cv_guix_syntax_object_equal" != xyes; then
-    # This bug was present in Guile 2.2.1 only.
-    AC_MSG_ERROR(['equal?' does not work for syntax object; upgrade to Guile 2.2.2 or later.])
-  fi
 ])
 
 dnl GUIX_CHECK_GUILE_SSH
@@ -181,14 +161,23 @@ dnl GUIX_CHECK_GUILE_JSON
 dnl
 dnl Check whether a recent-enough Guile-JSON is available.
 AC_DEFUN([GUIX_CHECK_GUILE_JSON], [
-  dnl Check whether we're using Guile-JSON 3.x, which uses a JSON-to-Scheme
-  dnl mapping different from that of earlier versions.
+  dnl Check whether we're using Guile-JSON 4.3+, which provides
+  dnl 'define-json-mapping'.
   AC_CACHE_CHECK([whether Guile-JSON is available and recent enough],
     [guix_cv_have_recent_guile_json],
     [GUILE_CHECK([retval],
-      [(use-modules (json) (ice-9 match))
-       (match (json-string->scm \"[[ { \\\"a\\\": 42 } ]]\")
-         (#((("a" . 42))) #t))])
+      [(use-modules (json))
+
+       (define-json-mapping <frob> make-frob
+         frob?
+	 json->frob
+	 (a frob-a)
+	 (b frob-b \"bee\"))
+
+       (exit
+        (equal? (json->frob
+                 (open-input-string \"{ \\\"a\\\": 1, \\\"bee\\\": 2 }\"))
+                (make-frob 1 2)))])
      if test "$retval" = 0; then
        guix_cv_have_recent_guile_json="yes"
      else
@@ -212,6 +201,28 @@ AC_DEFUN([GUIX_CHECK_GUILE_GCRYPT], [
        guix_cv_have_recent_guile_gcrypt="yes"
      else
        guix_cv_have_recent_guile_gcrypt="no"
+     fi])
+])
+
+dnl GUIX_CHECK_GUILE_GIT
+dnl
+dnl Check whether a recent-enough Guile-Git is available.
+AC_DEFUN([GUIX_CHECK_GUILE_GIT], [
+  dnl Check whether we're using Guile-Git 0.3.0 or later.  0.3.0
+  dnl introduced SSH authentication support and more.
+  AC_CACHE_CHECK([whether Guile-Git is available and recent enough],
+    [guix_cv_have_recent_guile_git],
+    [GUILE_CHECK([retval],
+      [(use-modules (git) (git auth) (git submodule))
+       (let ((auth (%make-auth-ssh-agent)))
+         repository-close!
+	 object-lookup-prefix
+         (make-clone-options
+          #:fetch-options (make-fetch-options auth)))])
+     if test "$retval" = 0; then
+       guix_cv_have_recent_guile_git="yes"
+     else
+       guix_cv_have_recent_guile_git="no"
      fi])
 ])
 
@@ -340,32 +351,6 @@ AC_DEFUN([GUIX_LIBGCRYPT_LIBDIR], [
        guix_cv_libgcrypt_libdir=""
      fi])
   $1="$guix_cv_libgcrypt_libdir"
-])
-
-dnl GUIX_LIBZ_LIBDIR VAR
-dnl
-dnl Attempt to determine libz's LIBDIR; store the result in VAR.
-AC_DEFUN([GUIX_LIBZ_LIBDIR], [
-  AC_REQUIRE([PKG_PROG_PKG_CONFIG])
-  AC_CACHE_CHECK([zlib's library directory],
-    [guix_cv_libz_libdir],
-    [guix_cv_libz_libdir="`$PKG_CONFIG zlib --variable=libdir 2> /dev/null`"])
-  $1="$guix_cv_libz_libdir"
-])
-
-dnl GUIX_LIBLZ_FILE_NAME VAR
-dnl
-dnl Attempt to determine liblz's absolute file name; store the result in VAR.
-AC_DEFUN([GUIX_LIBLZ_FILE_NAME], [
-  AC_REQUIRE([PKG_PROG_PKG_CONFIG])
-  AC_CACHE_CHECK([lzlib's file name],
-    [guix_cv_liblz_libdir],
-    [old_LIBS="$LIBS"
-     LIBS="-llz"
-     AC_LINK_IFELSE([AC_LANG_SOURCE([int main () { return LZ_decompress_open(); }])],
-       [guix_cv_liblz_libdir="`ldd conftest$EXEEXT | grep liblz | sed '-es/.*=> \(.*\) .*$/\1/g'`"])
-     LIBS="$old_LIBS"])
-  $1="$guix_cv_liblz_libdir"
 ])
 
 dnl GUIX_CURRENT_LOCALSTATEDIR

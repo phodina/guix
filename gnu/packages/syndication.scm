@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2016, 2017, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;;
@@ -21,12 +21,15 @@
 (define-module (gnu packages syndication)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module (guix packages)
   #:use-module (guix build-system cargo)
   #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
   #:use-module (gnu packages)
+  #:use-module (gnu packages autotools)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages check)
   #:use-module (gnu packages crates-io)
   #:use-module (gnu packages curl)
@@ -53,7 +56,7 @@
 (define-public newsboat
   (package
     (name "newsboat")
-    (version "2.20.1")
+    (version "2.22.1")
     (source
      (origin
        (method url-fetch)
@@ -61,13 +64,7 @@
                            "/newsboat-" version ".tar.xz"))
        (sha256
         (base32
-         "0rimjikni96m52vhymgsg1b9g99af6ggyzd1lpvhgqsznxwj0y42"))
-       (modules '((guix build utils)))
-       (snippet
-        '(begin
-           (substitute* "rust/libnewsboat/Cargo.toml"
-             (("= 1.0.17") "1.0.17"))
-           #t))))
+         "1476fmfw2hkrjwyr3f7k9316lzwnn2b1dbc51rybcxipqlfg8849"))))
     (build-system cargo-build-system)
     (native-inputs
      `(("gettext" ,gettext-minimal)
@@ -77,7 +74,7 @@
        ("asciidoctor" ,ruby-asciidoctor)))
     (inputs
      `(("curl" ,curl)
-       ("json-c" ,json-c-0.13)
+       ("json-c" ,json-c)
        ("libxml2" ,libxml2)
        ("ncurses" ,ncurses)
        ("stfl" ,stfl)
@@ -93,20 +90,16 @@
         ("rust-chrono" ,rust-chrono-0.4)
         ("rust-clap" ,rust-clap-2)
         ("rust-curl-sys" ,rust-curl-sys-0.4)
-        ("rust-dirs" ,rust-dirs-2.0)
-        ("rust-gettext-rs" ,rust-gettext-rs-0.4)
-        ("rust-gettext-sys" ,rust-gettext-sys-0.19)
+        ("rust-cxx" ,rust-cxx-0.5)
+        ("rust-cxx-build" ,rust-cxx-build-0.5)
+        ("rust-gettext-rs" ,rust-gettext-rs-0.5)
         ("rust-libc" ,rust-libc-0.2)
-        ("rust-libz-sys" ,rust-libz-sys-1.0)
         ("rust-natord" ,rust-natord-1.0)
-        ("rust-nom" ,rust-nom-5)
-        ("rust-once-cell" ,rust-once-cell-1.2)
-        ("rust-percent-encoding" ,rust-percent-encoding-2.1)
-        ("rust-rand" ,rust-rand-0.6)
-        ("rust-smallvec" ,rust-smallvec-0.6)
-        ("rust-url" ,rust-url-2.1)
-        ("rust-unicode-width" ,rust-unicode-width-0.1)
-        ("rust-xdg" ,rust-xdg-2.2))
+        ("rust-nom" ,rust-nom-6)
+        ("rust-once-cell" ,rust-once-cell-1)
+        ("rust-rand" ,rust-rand-0.7)
+        ("rust-url" ,rust-url-2)
+        ("rust-unicode-width" ,rust-unicode-width-0.1))
        #:cargo-development-inputs
        (("rust-tempfile" ,rust-tempfile-3)
         ("rust-proptest" ,rust-proptest-0.9)
@@ -118,6 +111,11 @@
              ;; Don't keep the whole tarball in the vendor directory
              (delete-file-recursively
                (string-append vendor-dir "/" ,name "-" ,version ".tar.xz"))
+             #t))
+         (add-after 'unpack 'patch-source
+           (lambda _
+             (substitute* "Makefile"
+               (("Cargo.lock") ""))
              #t))
          (replace 'build
            (lambda* args
@@ -169,6 +167,9 @@ file system, and many more features.")
                '("asciidoctor" "openssl"))
        ;; For building documentation.
        ("asciidoc" ,asciidoc)))
+    (inputs
+     `(("json-c" ,json-c-0.13)
+       ,@(alist-delete "json-c" (package-inputs newsboat))))
     (arguments
      '(#:phases
        (modify-phases %standard-phases
@@ -183,15 +184,16 @@ file system, and many more features.")
 (define-public liferea
   (package
     (name "liferea")
-    (version "1.12.8")
+    (version "1.13.4")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://github.com/lwindolf/liferea/"
-                           "releases/download/v" version "/liferea-"
-                           version ".tar.bz2"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/lwindolf/liferea/")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "1xm5if831llkjcmbq4w9ssgqjgy3zlb5n9y7kh54xpy6afafbsh7"))))
+        (base32 "1g9463bvswsm899j6dfhslcg6np70m5wq143mjicr24zy8d17bm7"))))
     (build-system glib-or-gtk-build-system)
     (arguments
      `(#:phases
@@ -206,15 +208,19 @@ file system, and many more features.")
                    (gi-typelib-path   (getenv "GI_TYPELIB_PATH"))
                    (python-path       (getenv "PYTHONPATH")))
                (wrap-program (string-append out "/bin/liferea")
-                             `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))
-                             `("PYTHONPATH" ":" prefix (,python-path))))
-            #t)))))
+                 `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))
+                 `("PYTHONPATH" ":" prefix (,python-path))))
+             #t)))))
     (native-inputs
-     `(("gettext" ,gettext-minimal)
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("gettext" ,gettext-minimal)
        ("glib:bin" ,glib "bin")
        ("gobject-introspection" ,gobject-introspection)
        ("intltool" ,intltool)
-       ("pkg-config" ,pkg-config)))
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)
+       ("which" ,which)))
     (inputs
      `(("glib-networking" ,glib-networking)
        ("gnome-keyring" ,gnome-keyring)

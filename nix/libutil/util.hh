@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <signal.h>
+#include <map>
 #include <functional>
 
 #include <cstdio>
@@ -264,6 +265,31 @@ public:
     void setKillSignal(int signal);
 };
 
+/* An "agent" is a helper program that runs in the background and that we talk
+   to over pipes, such as the "guix offload" program.  */
+struct Agent
+{
+    /* Pipes for talking to the agent. */
+    Pipe toAgent;
+
+    /* Pipe for the agent's standard output/error. */
+    Pipe fromAgent;
+
+    /* Pipe for build standard output/error--e.g., for build processes started
+       by "guix offload".  */
+    Pipe builderOut;
+
+    /* The process ID of the agent. */
+    Pid pid;
+
+    /* The command and arguments passed to the agent along with a list of
+       environment variable name/value pairs.  */
+    Agent(const string &command, const Strings &args,
+	  const std::map<string, string> &env = std::map<string, string>());
+
+    ~Agent();
+};
+
 
 /* Kill all processes running under the specified uid by sending them
    a SIGKILL. */
@@ -295,6 +321,8 @@ void closeMostFDs(const set<int> & exceptions);
 /* Set the close-on-exec flag for the given file descriptor. */
 void closeOnExec(int fd);
 
+/* Common initialisation performed in child processes. */
+void commonChildInit(Pipe & logPipe);
 
 /* User interruption. */
 

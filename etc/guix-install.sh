@@ -4,6 +4,10 @@
 # Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 # Copyright © 2018 Efraim Flashner <efraim@flashner.co.il>
 # Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+# Copyright © 2020 Morgan Smith <Morgan.J.Smith@outlook.com>
+# Copyright © 2020 Simon Tournier <zimon.toutoune@gmail.com>
+# Copyright © 2020 Daniel Brooks <db48x@db48x.net>
+# Copyright © 2021 Jakub Kądziołka <kuba@kadziolka.net>
 #
 # This file is part of GNU Guix.
 #
@@ -53,10 +57,12 @@ REQUIRE=(
 
 PAS=$'[ \033[32;1mPASS\033[0m ] '
 ERR=$'[ \033[31;1mFAIL\033[0m ] '
+WAR=$'[ \033[33;1mWARN\033[0m ] '
 INF="[ INFO ] "
 
 DEBUG=0
 GNU_URL="https://ftp.gnu.org/gnu/guix/"
+#GNU_URL="https://alpha.gnu.org/gnu/guix/"
 OPENPGP_SIGNING_KEY_ID="3CE464558A84FDC69DB40CFB090B11993D9AEBB5"
 
 # This script needs to know where root's home directory is.  However, we
@@ -111,7 +117,7 @@ chk_gpg_keyring()
     # systems where gpg has never been used, causing errors and confusion.
     gpg --dry-run --list-keys ${OPENPGP_SIGNING_KEY_ID} >/dev/null 2>&1 || (
         _err "${ERR}Missing OpenPGP public key.  Fetch it with this command:"
-        echo "  wget https://sv.gnu.org/people/viewgpg.php?user_id=15145 -qO - | sudo -i gpg --import -"
+        echo "  wget 'https://sv.gnu.org/people/viewgpg.php?user_id=15145' -qO - | sudo -i gpg --import -"
         exit 1
     )
 }
@@ -150,6 +156,10 @@ chk_init_sys()
         _msg "${INF}init system is: sysv-init"
         INIT_SYS="sysv-init"
         return 0
+    elif [[ $(openrc --version 2>/dev/null) =~ \(OpenRC\) ]]; then
+        _msg "${INF}init system is: OpenRC"
+        INIT_SYS="openrc"
+        return 0
     else
         INIT_SYS="NA"
         _err "${ERR}Init system could not be detected."
@@ -174,9 +184,9 @@ chk_sys_arch()
         aarch64)
             local arch=aarch64
             ;;
-	armv7l)
-	    local arch=armhf
-	    ;;
+        armv7l)
+            local arch=armhf
+            ;;
         *)
             _err "${ERR}Unsupported CPU type: ${arch}"
             exit 1
@@ -194,6 +204,19 @@ chk_sys_arch()
     ARCH_OS="${arch}-${os}"
 }
 
+chk_sys_nscd()
+{ # Check if nscd is up and suggest to start it or install it
+    if [ "$(type -P pidof)" ]; then
+        if [ ! "$(pidof nscd)" ]; then
+            _msg "${WAR}We recommend installing and/or starting your distribution 'nscd' service"
+            _msg "${WAR}Please read 'info guix \"Application Setup\"' about \"Name Service Switch\""
+        fi
+    else
+        _msg "${INF}We cannot determine if your distribution 'nscd' service is running"
+        _msg "${INF}Please read 'info guix \"Application Setup\"' about \"Name Service Switch\""
+    fi
+}
+
 # ------------------------------------------------------------------------------
 #+MAIN
 
@@ -208,11 +231,11 @@ guix_get_bin_list()
 
     # Filter only version and architecture
     bin_ver_ls=("$(wget -qO- "$gnu_url" \
-        | sed -n -e 's/.*guix-binary-\([0-9.]*\)\..*.tar.xz.*/\1/p' \
+        | sed -n -e 's/.*guix-binary-\([0-9.]*[a-z0-9]*\)\..*.tar.xz.*/\1/p' \
         | sort -Vu)")
 
-    latest_ver="$(echo "$bin_ver_ls" \
-                       | grep -oP "([0-9]{1,2}\.){2}[0-9]{1,2}" \
+    latest_ver="$(echo "${bin_ver_ls[0]}" \
+                       | grep -oE "([0-9]{1,2}\.){2}[0-9]{1,2}[a-z0-9]*" \
                        | tail -n1)"
 
     default_ver="guix-binary-${latest_ver}.${ARCH_OS}"
@@ -225,7 +248,7 @@ guix_get_bin_list()
     fi
 
     # Use default to download according to the list and local ARCH_OS.
-    BIN_VER="$default_ver"
+    BIN_VER="${default_ver}"
 }
 
 guix_get_bin()
@@ -249,7 +272,7 @@ guix_get_bin()
         exit 1
     fi
 
-    pushd $dl_path >/dev/null
+    pushd "${dl_path}" >/dev/null
     gpg --verify "${bin_ver}.tar.xz.sig" >/dev/null 2>&1
     if [[ "$?" -eq 0 ]]; then
         _msg "${PAS}Signature is valid."
@@ -268,8 +291,7 @@ sys_create_store()
     _debug "--- [ $FUNCNAME ] ---"
 
     cd "$tmp_path"
-    tar --warning=no-timestamp \
-        --extract \
+    tar --extract \
         --file "$pkg" &&
     _msg "${PAS}unpacked archive"
 
@@ -358,15 +380,15 @@ sys_enable_guix_daemon()
                  /etc/systemd/system/;
               chmod 664 /etc/systemd/system/guix-daemon.service;
 
-	      # Work around <https://bugs.gnu.org/36074>, present in 1.0.1.
-	      sed -i /etc/systemd/system/guix-daemon.service \
-	          -e "s/GUIX_LOCPATH='/'GUIX_LOCPATH=/";
+              # Work around <https://bugs.gnu.org/36074>, present in 1.0.1.
+              sed -i /etc/systemd/system/guix-daemon.service \
+                  -e "s/GUIX_LOCPATH='/'GUIX_LOCPATH=/";
 
-	      # Work around <https://bugs.gnu.org/35671>, present in 1.0.1.
-	      if ! grep en_US /etc/systemd/system/guix-daemon.service >/dev/null;
-	      then sed -i /etc/systemd/system/guix-daemon.service \
-		       -e 's/^Environment=\(.*\)$/Environment=\1 LC_ALL=en_US.UTF-8';
-	      fi;
+              # Work around <https://bugs.gnu.org/35671>, present in 1.0.1.
+              if ! grep en_US /etc/systemd/system/guix-daemon.service >/dev/null;
+              then sed -i /etc/systemd/system/guix-daemon.service \
+                       -e 's/^Environment=\(.*\)$/Environment=\1 LC_ALL=en_US.UTF-8';
+              fi;
 
               systemctl daemon-reload &&
                   systemctl enable guix-daemon &&
@@ -384,6 +406,16 @@ sys_enable_guix_daemon()
                   service guix-daemon start; } &&
                 _msg "${PAS}enabled Guix daemon via sysv"
             ;;
+        openrc)
+            { mkdir -p /etc/init.d;
+              cp "${ROOT_HOME}/.config/guix/current/etc/openrc/guix-daemon" \
+                 /etc/init.d/guix-daemon;
+              chmod 775 /etc/init.d/guix-daemon;
+
+              rc-update add guix-daemon default &&
+                  rc-service guix-daemon start; } &&
+                _msg "${PAS}enabled Guix daemon via OpenRC"
+            ;;
         NA|*)
             _msg "${ERR}unsupported init system; run the daemon manually:"
             echo "  ${ROOT_HOME}/.config/guix/current/bin/guix-daemon --build-users-group=guixbuild"
@@ -396,7 +428,7 @@ sys_enable_guix_daemon()
     ln -sf "${var_guix}/bin/guix"  "$local_bin"
 
     [ -e "$info_path" ] || mkdir -p "$info_path"
-    for i in ${var_guix}/share/info/*; do
+    for i in "${var_guix}"/share/info/*; do
         ln -sf "$i" "$info_path"
     done
 }
@@ -423,14 +455,12 @@ sys_create_init_profile()
     cat <<"EOF" > /etc/profile.d/guix.sh
 # _GUIX_PROFILE: `guix pull` profile
 _GUIX_PROFILE="$HOME/.config/guix/current"
-if [ -L $_GUIX_PROFILE ]; then
-  export PATH="$_GUIX_PROFILE/bin${PATH:+:}$PATH"
-  # Export INFOPATH so that the updated info pages can be found
-  # and read by both /usr/bin/info and/or $GUIX_PROFILE/bin/info
-  # When INFOPATH is unset, add a trailing colon so that Emacs
-  # searches 'Info-default-directory-list'.
-  export INFOPATH="$_GUIX_PROFILE/share/info:$INFOPATH"
-fi
+export PATH="$_GUIX_PROFILE/bin${PATH:+:}$PATH"
+# Export INFOPATH so that the updated info pages can be found
+# and read by both /usr/bin/info and/or $GUIX_PROFILE/bin/info
+# When INFOPATH is unset, add a trailing colon so that Emacs
+# searches 'Info-default-directory-list'.
+export INFOPATH="$_GUIX_PROFILE/share/info:$INFOPATH"
 
 # GUIX_PROFILE: User's default profile
 GUIX_PROFILE="$HOME/.guix-profile"
@@ -444,6 +474,26 @@ export GUIX_PROFILE GUIX_LOCPATH
 export XDG_DATA_DIRS="$GUIX_PROFILE/share:${XDG_DATA_DIRS:-/usr/local/share/:/usr/share/}"
 EOF
 }
+
+sys_create_shell_completion()
+{ # Symlink supported shell completions system-wide
+
+    var_guix=/var/guix/profiles/per-user/root/current-guix
+    bash_completion=/etc/bash_completion.d
+    zsh_completion=/usr/share/zsh/site-functions
+    fish_completion=/usr/share/fish/vendor_completions.d
+
+    { # Just in case
+        for dir_shell in $bash_completion $zsh_completion $fish_completion; do
+            [ -d "$dir_shell" ] || mkdir -p $dir_shell
+        done;
+
+        ln -sf ${var_guix}/etc/bash_completion.d/* "$bash_completion";
+        ln -sf ${var_guix}/share/zsh/site-functions/* "$zsh_completion";
+        ln -sf ${var_guix}/share/fish/vendor_completions.d/* "$fish_completion"; } &&
+        _msg "${PAS}installed shell completion"
+}
+
 
 welcome()
 {
@@ -488,6 +538,7 @@ main()
     chk_gpg_keyring
     chk_init_sys
     chk_sys_arch
+    chk_sys_nscd
 
     _msg "${INF}system is ${ARCH_OS}"
 
@@ -502,6 +553,7 @@ main()
     sys_enable_guix_daemon
     sys_authorize_build_farms
     sys_create_init_profile
+    sys_create_shell_completion
 
     _msg "${INF}cleaning up ${tmp_path}"
     rm -r "${tmp_path}"

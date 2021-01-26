@@ -20,12 +20,14 @@
 ;;; Copyright © 2019 Robert Vollmert <rob@vllmrt.net>
 ;;; Copyright © 2019 Jacob MacDonald <jaccarmac@gmail.com>
 ;;; Copyright © 2019,2020 John Soo <jsoo1@asu.edu>
-;;; Copyright © 2019 Kyle Meyer <kyle@kyleam.com>
+;;; Copyright © 2019, 2020 Kyle Meyer <kyle@kyleam.com>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2020 Brett Gilio <brettg@gnu.org>
 ;;; Copyright © 2020 JoJo <jo@jo.zone>
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Alexandru-Sergiu Marton <brown121407@member.fsf.org>
+;;; Copyright © 2020 Carlo Holl <carloholl@gmail.com>
+;;; Copyright © 2020 Christopher Lemmer Webber <cwebber@dustycloud.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -50,6 +52,7 @@
   #:use-module (gnu packages gl)
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages haskell)
   #:use-module (gnu packages haskell-apps)
   #:use-module (gnu packages haskell-check)
   #:use-module (gnu packages haskell-crypto)
@@ -71,7 +74,8 @@
   #:use-module (guix git-download)
   #:use-module (guix utils)
   #:use-module ((guix licenses) #:prefix license:)
-  #:use-module (guix packages))
+  #:use-module (guix packages)
+  #:use-module (srfi srfi-1))
 
 (define-public ghc-abstract-deque
   (package
@@ -327,6 +331,8 @@ tool lex or flex for C/C++.")
         (base32
          "1avh4a419h9d2zsslg6j8hm87ppgsgqafz8ll037rk2yy1g4jl7b"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories ("alsa-lib")))
     (inputs
      `(("ghc-extensible-exceptions" ,ghc-extensible-exceptions)
        ("alsa-lib" ,alsa-lib)))
@@ -799,6 +805,7 @@ Haskell @code{ByteString}s.")
         (base32
          "0hgvlqcr852hfp52jp99snhbj550mvxxpi8qn15d8ml9aqhyl2lr"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (native-inputs
      `(("ghc-quickcheck" ,ghc-quickcheck)
        ("ghc-hspec" ,ghc-hspec)
@@ -856,6 +863,7 @@ than @code{base-compat}, which has no dependencies.")
         (base32
          "0srlws74yiraqaapgcjd9p5d1fwb3zr9swcz74jpjm55fls2nn37"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (home-page "https://github.com/haskell-foundation/foundation")
     (synopsis "Basic primitives for Foundation starter pack")
     (description
@@ -902,6 +910,7 @@ available in later versions of base to a wider (older) range of compilers.")
         (base32
          "1zk728sd09hh2r4xwz4lazsrrgg5cshydn64932sm0vckplndk73"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (home-page "https://github.com/nikita-volkov/base-prelude")
     (synopsis "The most complete prelude formed solely from the Haskell's base
 package")
@@ -987,6 +996,32 @@ drop-in replacement for the standard Prelude.
 Users wishing to have an improved Prelude can use BasicPrelude.  Developers
 wishing to create a new prelude should use CorePrelude.")
     (license license:expat)))
+
+(define-public ghc-bencode
+  (package
+    (name "ghc-bencode")
+    (version "0.6.1.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/bencode/bencode-"
+             version ".tar.gz"))
+       (sha256
+        (base32 "0znv0y3b3zm5jvhlvj5f5s7y93db67j9yd59w1bnrw2pqv30gqaq"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-transformers-compat" ,ghc-transformers-compat)))
+    (native-inputs
+     `(("ghc-hspec" ,ghc-hspec)
+       ("ghc-quickcheck" ,ghc-quickcheck)))
+    (home-page "https://hackage.haskell.org/package/bencode")
+    (synopsis "Parsers and printers for bencoded data")
+    (description
+     "This library provides parsers and printers for bencoded data.  Bencode
+is the encoding used by the peer-to-peer file sharing system BitTorrent for
+storing and transmitting loosely structured data.")
+    (license license:bsd-3)))
 
 (define-public ghc-bifunctors
   (package
@@ -1517,7 +1552,7 @@ call stacks with different versions of the compiler.")
   (package
     (name "ghc-case-insensitive")
     (version "1.2.0.11")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -1543,6 +1578,118 @@ constructor which can be parameterised by a string-like type like:
 @code{String}, @code{ByteString}, @code{Text}, etc.  Comparisons of values of
 the resulting type will be insensitive to cases.")
     (license license:bsd-3)))
+
+(define-public ghc-cassava
+  (package
+    (name "ghc-cassava")
+    (version "0.5.2.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/cassava/cassava-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "01h1zrdqb313cjd4rqm1107azzx4czqi018c2djf66a5i7ajl3dk"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-attoparsec" ,ghc-attoparsec)
+       ("ghc-hashable" ,ghc-hashable)
+       ("ghc-scientific" ,ghc-scientific)
+       ("ghc-unordered-containers" ,ghc-unordered-containers)
+       ("ghc-vector" ,ghc-vector)
+       ("ghc-only" ,ghc-only)
+       ("ghc-text-short" ,ghc-text-short)
+       ("ghc-bytestring-builder" ,ghc-bytestring-builder)))
+    (native-inputs
+     `(("ghc-hunit" ,ghc-hunit)
+       ("ghc-quickcheck" ,ghc-quickcheck)
+       ("ghc-quickcheck-instances" ,ghc-quickcheck-instances)
+       ("ghc-test-framework" ,ghc-test-framework)
+       ("ghc-test-framework-hunit" ,ghc-test-framework-hunit)
+       ("ghc-test-framework-quickcheck2" ,ghc-test-framework-quickcheck2)))
+    (arguments
+     `(#:cabal-revision
+       ("1"
+        "1ph8rf91z4nf1ryrh9s4gd1kq98jlgk2manwddkpch8k0n9xvfk4")
+       #:configure-flags '("--flags=-bytestring--lt-0_10_4")))
+    (home-page "https://github.com/haskell-hvr/cassava")
+    (synopsis "CSV parsing and encoding library")
+    (description
+     "@code{cassava} is a library for parsing and encoding
+@url{https://tools.ietf.org/html/rfc4180, RFC 4180} compliant @url{https://
+en.wikipedia.org/wiki/Comma-separated_values, comma-separated values (CSV)}
+data, which is a textual line-oriented format commonly used for exchanging
+tabular data.
+
+@code{cassava}'s API includes support for:
+
+@itemize @bullet
+
+@item
+Index-based record-conversion
+@item
+Name-based record-conversion
+@item
+Typeclass directed conversion of fields and records
+@item
+Built-in field-conversion instances for standard types
+@item
+Customizable record-conversion instance derivation via GHC generics
+@item
+Low-level @url{https://hackage.haskell.org/package/bytestring), bytestring}
+builders (see @url{https://hackage.haskell.org/package/cassava-0.5.2.0/docs/
+Data-Csv-Builder.html, Data.Csv.Builder})
+@item
+Incremental decoding and encoding API (see @url{https://hackage.haskell.org/
+package/cassava-0.5.2.0/docs/Data-Csv-Incremental.html, Data.Csv.Incremental})
+@item
+Streaming API for constant-space decoding (see @url{https://hackage.haskell.org/
+package/cassava-0.5.2.0/docs/Data-Csv-Streaming.html, Data.Csv.Streaming})
+@end itemize
+
+Moreover, this library is designed to be easy to use; for instance, here's a
+very simple example of encoding CSV data:
+
+@verbatim
+>>> Data.Csv.encode [(\"John\",27),(\"Jane\",28)]
+\"John,27\r\nJane,28\r\n\"
+@end verbatim
+")
+    (license license:bsd-3)))
+
+(define-public ghc-cassava-megaparsec
+  (package
+    (name "ghc-cassava-megaparsec")
+    (version "2.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/cassava-megaparsec/"
+             "cassava-megaparsec-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "0q4skw98nzy6icmgpwqvgw0c5pqcgi25rf7nmwh2pksvv94pi3p3"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-cassava" ,ghc-cassava)
+       ("ghc-megaparsec" ,ghc-megaparsec)
+       ("ghc-unordered-containers" ,ghc-unordered-containers)
+       ("ghc-vector" ,ghc-vector)))
+    (native-inputs
+     `(("ghc-hspec" ,ghc-hspec)
+       ("ghc-hspec-megaparsec" ,ghc-hspec-megaparsec)))
+    (home-page "https://github.com/stackbuilders/cassava-megaparsec")
+    (synopsis "Megaparsec parser for CSV files that plays nicely with Cassava")
+    (description
+     "Alternative parser for the Cassava package written with Megaparsec that
+provides for better error messages at the expense of some speed.")
+    (license license:expat)))
 
 (define-public ghc-cborg
   (package
@@ -2061,6 +2208,7 @@ of the C library.")
         (base32
          "0cbkmgrcnwgigg6z88y3c09gm7g6dwm7gzbgr53h8k1xik29s9hf"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (home-page
      "http://community.haskell.org/~ndm/cmdargs/")
     (synopsis "Command line argument processing")
@@ -2262,6 +2410,7 @@ concurrent threads.  Can be used for progress displays etc.")
                (base32
                 "18izjgff4pmrknc8py06yvg3g6x27nx0rzmlwjxcflwm5v4szpw4"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-exceptions" ,ghc-exceptions)
        ("ghc-lifted-base" ,ghc-lifted-base)
@@ -2599,6 +2748,36 @@ a vocabulary for working with them.")
 @code{ghc-contravariant} package.")
     (license license:expat)))
 
+(define-public ghc-control-monad-free
+  (package
+    (name "ghc-control-monad-free")
+    (version "0.6.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/"
+             "package/control-monad-free/control-monad-free-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "1habgf7byffqf1rqjkzpihvdhclaafgqsqpfpwp3fgpj5ayk1j33"))))
+    (build-system haskell-build-system)
+    (home-page "https://github.com/pepeiborra/control-monad-free")
+    (synopsis "Free monads and monad transformers")
+    (description
+     "This package provides datatypes to construct Free monads, Free monad
+transformers, and useful instances.  In addition it provides the constructs to
+avoid quadratic complexity of left associative bind, as explained in:
+
+@itemize @bullet
+@item
+Janis Voigtlander, @cite{Asymptotic Improvement of Computations over
+Free Monads, MPC'08}
+@end itemize")
+    (license license:public-domain)))
+
 (define-public ghc-convertible
   (package
     (name "ghc-convertible")
@@ -2624,6 +2803,30 @@ times, and the like.  The conversions perform bounds checking and return a
 pure @code{Either} value.  This means that you need not remember which specific
 function performs the conversion you desire.")
     (license license:bsd-3)))
+
+(define-public ghc-csv
+  (package
+    (name "ghc-csv")
+    (version "0.1.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/csv/csv-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "00767ai09wm7f0yzmpqck3cpgxncpr9djnmmz5l17ajz69139x4c"))))
+    (build-system haskell-build-system)
+    (home-page "http://hackage.haskell.org/package/csv")
+    (synopsis "CSV loader and dumper")
+    (description
+     "This library parses and dumps documents that are formatted according to
+RFC 4180, @cite{The common Format and MIME Type for Comma-Separated
+Values (CSV) Files}.  This format is used, among many other things, as a
+lingua franca for spreadsheets, and for certain web services.")
+    (license license:expat)))
 
 (define-public ghc-data-accessor
   (package
@@ -2922,6 +3125,35 @@ is an implementation of the D-Bus protocol in Haskell.  It can be used
 to add D-Bus support to Haskell applications, without the awkward
 interfaces common to foreign bindings.")
     (license license:asl2.0)))
+
+(define-public ghc-decimal
+  (package
+    (name "ghc-decimal")
+    (version "0.5.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/Decimal/Decimal-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "0k7kh05mr2f54w1lpgq1nln0h8k6s6h99dyp5jzsb9cfbb3aap2p"))))
+    (build-system haskell-build-system)
+    (native-inputs
+     `(("ghc-hunit" ,ghc-hunit)
+       ("ghc-quickcheck" ,ghc-quickcheck)
+       ("ghc-test-framework" ,ghc-test-framework)
+       ("ghc-test-framework-quickcheck2" ,ghc-test-framework-quickcheck2)
+       ("ghc-test-framework-hunit" ,ghc-test-framework-hunit)))
+    (home-page "https://github.com/PaulJohnson/Haskell-Decimal")
+    (synopsis "Decimal numbers with variable precision")
+    (description
+     "A decimal number has an integer mantissa and a negative exponent.
+The exponent can be interpreted as the number of decimal places in the
+value.")
+    (license license:bsd-3)))
 
 (define-public ghc-deepseq-generics
   (package
@@ -3234,7 +3466,7 @@ disk space usage.")
 (define-public ghc-distributive
   (package
     (name "ghc-distributive")
-    (version "0.6.1")
+    (version "0.6.2")
     (source
      (origin
        (method url-fetch)
@@ -3244,7 +3476,7 @@ disk space usage.")
              ".tar.gz"))
        (sha256
         (base32
-         "1wnayzzb4vk8rhh9gzhdpd9f64366k4vmbhximavmqqmp3cv2jbp"))))
+         "1j93zkfffm6s16kgr0j0z87y5ds28rw0r2gyc5ncwcylvrqy4kl2"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-tagged" ,ghc-tagged)
@@ -3333,16 +3565,18 @@ Writer monad), where list append quickly becomes too expensive.")
     (build-system haskell-build-system)
     (arguments `(#:tests? #f))          ; FIXME: missing test framework
     (inputs
-     `(("ghc-syb" ,ghc-syb)
-       ("ghc-paths" ,ghc-paths)
-       ("ghc-base-compat" ,ghc-base-compat)
+     `(("ghc-base-compat" ,ghc-base-compat)
        ("ghc-code-page" ,ghc-code-page)
-       ("ghc-hunit" ,ghc-hunit)
-       ("ghc-hspec" ,ghc-hspec)
+       ("ghc-paths" ,ghc-paths)
+       ("ghc-syb" ,ghc-syb)))
+    (native-inputs
+     `(("ghc-hunit" ,ghc-hunit)
        ("ghc-quickcheck" ,ghc-quickcheck)
-       ("ghc-stringbuilder" ,ghc-stringbuilder)
+       ("ghc-hspec" ,ghc-hspec)
+       ("ghc-mockery" ,ghc-mockery)
+       ("ghc-setenv" ,ghc-setenv)
        ("ghc-silently" ,ghc-silently)
-       ("ghc-setenv" ,ghc-setenv)))
+       ("ghc-stringbuilder" ,ghc-stringbuilder)))
     (home-page
      "https://github.com/sol/doctest#readme")
     (synopsis "Test interactive Haskell examples")
@@ -4088,7 +4322,7 @@ consuming feeds in both RSS (Really Simple Syndication) and Atom format.")
   (package
     (name "ghc-fgl")
     (version "5.7.0.1")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -4205,7 +4439,7 @@ file contents, and more.")
 (define-public ghc-filepath-bytestring
   (package
     (name "ghc-filepath-bytestring")
-    (version "1.4.2.1.1")
+    (version "1.4.2.1.6")
     (source
      (origin
        (method url-fetch)
@@ -4214,7 +4448,7 @@ file contents, and more.")
               "filepath-bytestring-" version ".tar.gz"))
        (sha256
         (base32
-         "06shdskjj391hb9295slm9gg2rbn5fdq5v6fg0mgn3yl5dv8q5dx"))))
+         "11xrrzdkm5i96dazbz0gi1qp8nnj2lwbnxzwy7f4cnahskz4f4g7"))))
     (build-system haskell-build-system)
     (native-inputs
      `(("ghc-quickcheck" ,ghc-quickcheck)))
@@ -4335,6 +4569,7 @@ completely unverified though.")
         (base32
          "19qjmzc7gaxfwgqbgy0kq4vhbxvh3qjnwsxnc7pzwws2if5bv80b"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs `(("ghc-mwc-randam" ,ghc-mwc-random)
               ("ghc-primitive" ,ghc-primitive)
               ("ghc-vector" ,ghc-vector)
@@ -4377,6 +4612,7 @@ and are often as efficient as hand-written folds.")
              (substitute* "tests/Test/Foundation/Number.hs"
                ((", testDividible proxy") ""))
              #t)))))
+    (outputs '("out" "static" "doc"))
     (inputs `(("ghc-basement" ,ghc-basement)))
     (home-page "https://github.com/haskell-foundation/foundation")
     (synopsis "Alternative prelude with batteries and no dependencies")
@@ -4413,6 +4649,7 @@ Foundation has the following goals:
         (base32
          "0vlf3f2ckl3cr7z2zl8c9c8qkdlfgvmh04gxkp2fg0z9dz80nlyb"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-prelude-extras" ,ghc-prelude-extras)
        ("ghc-profunctors" ,ghc-profunctors)
@@ -4479,6 +4716,7 @@ specific Windows, Mac, and Linux file system event notification.")
         (base32
          "0vdg9qdq35jl3m11a87wk8cq1y71qm4i1g1b2pxki0wk70yw20a4"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-th-abstraction" ,ghc-th-abstraction)))
     (native-inputs
@@ -4558,6 +4796,7 @@ and @code{withBaseCase}) or implicitly (@code{genericArbitrary'}).")
         (base32
          "160knr2phnzh2gldfv954lz029jzc7y8kz5xpmbf4z3vb5ngm6fw"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-sop-core" ,ghc-sop-core)
        ("ghc-transformers-compat" ,ghc-transformers-compat)))
@@ -5204,7 +5443,7 @@ Happy works in a similar way to the yacc tool for C.")
   (package
     (name "ghc-hashable")
     (version "1.2.7.0")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -5391,6 +5630,7 @@ package are to parse or generate Haskell 98 code.")
         (base32
          "0q1y8n3d82gid9bcx8wxsqqmj9mq11fg3gp5yzpfbw958dhi3j9f"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("cpphs" ,cpphs)
        ("ghc-happy" ,ghc-happy)
@@ -5509,8 +5749,8 @@ Vim.")
     (build-system haskell-build-system)
     (home-page "https://hackage.haskell.org/package/hex")
     (synopsis "Convert strings into hexadecimal and back")
-    (description "This package provides conversion functions between
-bytestrings and their hexademical representation.")
+    (description "This package converts between bytestrings and their
+hexadecimal string representation.")
     (license license:bsd-3)))
 
 (define-public ghc-highlighting-kate
@@ -5623,6 +5863,62 @@ feature, allowing applications to subscribe to notifications when a file is
 accessed or modified.")
     (license license:bsd-3)))
 
+(define-public ghc-hledger-lib
+  (package
+    (name "ghc-hledger-lib")
+    (version "1.14.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/hledger-lib/hledger-lib-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "1w6qp01cak6spnpldm01czlm6i5a2alw47w76875l2nagrc4rfp2"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-ansi-terminal" ,ghc-ansi-terminal)
+       ("ghc-base-compat-batteries" ,ghc-base-compat-batteries)
+       ("ghc-blaze-markup" ,ghc-blaze-markup)
+       ("ghc-call-stack" ,ghc-call-stack)
+       ("ghc-cassava" ,ghc-cassava)
+       ("ghc-cassava-megaparsec" ,ghc-cassava-megaparsec)
+       ("ghc-cmdargs" ,ghc-cmdargs)
+       ("ghc-data-default" ,ghc-data-default)
+       ("ghc-decimal" ,ghc-decimal)
+       ("ghc-easytest" ,ghc-easytest)
+       ("ghc-extra" ,ghc-extra)
+       ("ghc-file-embed" ,ghc-file-embed)
+       ("ghc-glob" ,ghc-glob)
+       ("ghc-hashtables" ,ghc-hashtables)
+       ("ghc-megaparsec" ,ghc-megaparsec)
+       ("ghc-mtl-compat" ,ghc-mtl-compat)
+       ("ghc-old-time" ,ghc-old-time)
+       ("ghc-parser-combinators" ,ghc-parser-combinators)
+       ("ghc-pretty-show" ,ghc-pretty-show)
+       ("ghc-regex-tdfa" ,ghc-regex-tdfa)
+       ("ghc-safe" ,ghc-safe)
+       ("ghc-split" ,ghc-split)
+       ("ghc-tabular" ,ghc-tabular)
+       ("ghc-uglymemo" ,ghc-uglymemo)
+       ("ghc-utf8-string" ,ghc-utf8-string)))
+    (native-inputs `(("ghc-doctest" ,ghc-doctest)))
+    (home-page "https://hledger.org")
+    (synopsis "Reusable library providing the core functionality of hledger")
+    (description
+     "A reusable library containing hledger's core functionality.
+This is used by most hledger* packages so that they support the same common
+file formats, command line options, reports etc.
+
+hledger is a robust, cross-platform set of tools for tracking money, time, or
+any other commodity, using double-entry accounting and a simple, editable file
+format, with command-line, terminal and web interfaces.  It is a Haskell
+rewrite of Ledger, and one of the leading implementations of Plain Text
+Accounting.")
+    (license license:gpl3)))
+
 (define-public ghc-hmatrix
   (package
     (name "ghc-hmatrix")
@@ -5636,6 +5932,8 @@ accessed or modified.")
        (sha256
         (base32 "1sqy1aci5zfagkb34mz3xdil7cl96z4b4cx28cha54vc5sx1lhpg"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories ("lapack")))
     (inputs
      `(("ghc-random" ,ghc-random)
        ("ghc-split" ,ghc-split)
@@ -5667,6 +5965,8 @@ numerical computations based on BLAS and LAPACK.")
        (sha256
         (base32 "0v6dla426x4ywaq59jm89ql1i42n39iw6z0j378xwb676v9kfxhm"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories ("gsl")))
     (inputs
      `(("ghc-hmatrix" ,ghc-hmatrix)
        ("ghc-vector" ,ghc-vector)
@@ -5822,6 +6122,34 @@ are described in a file named @code{package.yaml}.  Both @code{cabal2nix} and
 @code{package.yaml}.")
     (license license:expat)))
 
+(define-public ghc-hspec-megaparsec
+  (package
+    (name "ghc-hspec-megaparsec")
+    (version "2.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/"
+             "package/hspec-megaparsec/hspec-megaparsec-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "0w8nn2rh01lkiwsiyqh3gviklhfmy0245rakj94dmliyljw8skfg"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-hspec-expectations" ,ghc-hspec-expectations)
+       ("ghc-megaparsec" ,ghc-megaparsec)))
+    (native-inputs
+     `(("ghc-hspec" ,ghc-hspec)))
+    (home-page "https://github.com/mrkkrp/hspec-megaparsec")
+    (synopsis "Utility functions for testing Megaparsec parsers with Hspec")
+    (description
+     "Provides a small set of helper functions for testing Megaparsec parsers
+with Hspec.")
+    (license license:bsd-3)))
+
 (define-public ghc-hs-bibutils
   (package
     (name "ghc-hs-bibutils")
@@ -5884,7 +6212,8 @@ handler built in.")
                 "183bgl5jcx5y2r94lviqfw0a5w9089nxjd1z40k8vx9y2h60pm6j"))))
     (build-system haskell-build-system)
     (arguments
-     `(#:configure-flags '("-fsystem-lua")))
+     `(#:configure-flags '("-fsystem-lua")
+       #:extra-directories ("lua")))
     (inputs
      `(("lua" ,lua)
        ("ghc-exceptions" ,ghc-exceptions)
@@ -6494,6 +6823,8 @@ instances for conversion to and from JSON .ipynb files.")
        (sha256
         (base32 "0khmfwql4vwj55idsxmhjhrbqzfir3g9wm5lmpvnf77mm95cfpdz"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories ("wireless-tools")))
     (inputs
      `(("wireless-tools" ,wireless-tools)))
     (home-page "https://github.com/jaor/iwlib")
@@ -6539,6 +6870,7 @@ JSON (JavaScript Object Notation) is a lightweight data-interchange format.")
                (base32
                 "0qacrnz2qcykj3f6c4k2p8qd31pa2slpv3ykfblgizrfh3401q6x"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-zlib" ,ghc-zlib)
        ("ghc-vector" ,ghc-vector)
@@ -6672,6 +7004,7 @@ with @code{wc} (for a web service).")
         (base32
          "1gpkc53l2cggnfrgg5k4ih82rycjbdvpj9pnbi5cq8ms0dbvs4a7"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-base-orphans" ,ghc-base-orphans)
        ("ghc-bifunctors" ,ghc-bifunctors)
@@ -6820,6 +7153,7 @@ Music Player Daemon.")
         (base32
          "12gsh994pr13bsybwlravmi21la66dyw74pk74yfw2pnz682wv10"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc")) ; documentation is 39M
     (native-inputs
      `(("ghc-alex" ,ghc-alex)
        ("ghc-happy" ,ghc-happy)))
@@ -6876,11 +7210,12 @@ compiler versions.")
            #t))))
     (build-system haskell-build-system)
     (arguments
-     `(#:configure-flags `("--flags=system-libyaml")))
+     `(#:configure-flags `("--flags=system-libyaml")
+       #:extra-directories ("libyaml+static")))
     (inputs
      `(("ghc-conduit" ,ghc-conduit)
        ("ghc-resourcet" ,ghc-resourcet)
-       ("libyaml" ,libyaml)))
+       ("libyaml+static" ,libyaml+static)))
     (home-page "https://github.com/snoyberg/yaml#readme")
     (synopsis "Low-level, streaming YAML interface.")
     (description "This package provides a Haskell wrapper over the
@@ -7141,6 +7476,48 @@ logic programming monad.  An adaptation of the two-continuation implementation
 found in the paper \"Backtracking, Interleaving, and Terminating Monad
 Transformers\" available @uref{http://okmij.org/ftp/papers/LogicT.pdf,
 online}.")
+    (license license:bsd-3)))
+
+(define-public ghc-lucid
+  (package
+    (name "ghc-lucid")
+    (version "2.9.12")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/lucid/lucid-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "156wniydd1hlb7rygbm95zln8ky8lai8rn2apkkv0rax9cdw6jrh"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-blaze-builder" ,ghc-blaze-builder)
+       ("ghc-hashable" ,ghc-hashable)
+       ("ghc-mmorph" ,ghc-mmorph)
+       ("ghc-unordered-containers" ,ghc-unordered-containers)))
+    (native-inputs
+     `(("ghc-hunit" ,ghc-hunit)
+       ("ghc-hspec" ,ghc-hspec)
+       ("ghc-bifunctors" ,ghc-bifunctors)))
+    (arguments
+     `(#:cabal-revision
+       ("1"
+        "1f0whk5ncanxfjjanrf6rqyncig2xgc5mh2j0sqy3nrlyjr9aqq9")))
+    (home-page "https://github.com/chrisdone/lucid")
+    (synopsis "Haskell DSL for rendering HTML")
+    (description "Clear to write, read and edit Haskell DSL for HTML.
+
+@itemize @bullet
+@item
+Names are consistent, and do not conflict with base or are keywords
+(all have suffix @code{-}).
+@item
+Same combinator can be used for attributes and elements
+(e.g. @code{style_}).
+@end itemize")
     (license license:bsd-3)))
 
 (define-public ghc-lzma
@@ -7900,6 +8277,7 @@ the @code{mtl-tf} package.")
         (base32
          "1bqy982lpdb83lacfy76n8kqw5bvd31avxj25kg8gkgycdh0g0ma"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs `(("ghc-unordered-containers" ,ghc-unordered-containers)
               ("ghc-hashable" ,ghc-hashable)
               ("ghc-vector" ,ghc-vector)
@@ -7947,6 +8325,28 @@ definitions and utilities, such as monoid actions, monoid coproducts,
 semi-direct products, \"deletable\" monoids, \"split\" monoids, and
 \"cut\" monoids.")
     (license license:bsd-3)))
+
+(define-public ghc-mountpoints
+  (package
+    (name "ghc-mountpoints")
+    (version "1.0.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/mountpoints/mountpoints-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "1hnm31pqcffphyc463wf0vbik9fzm5lb2r4wjdc1y4dqzmjdzz37"))))
+    (build-system haskell-build-system)
+    (home-page
+     "http://hackage.haskell.org/package/mountpoints")
+    (synopsis "Haskell library for listing mount points")
+    (description "This library provides Haskell bindings for checking
+currently mounted filesystems.")
+    (license license:lgpl2.1+)))
 
 (define-public ghc-mtl-compat
   (package
@@ -8090,7 +8490,8 @@ between 2 and 3 times faster than the Mersenne Twister.")
           "0gsyyaqyh5r9zc0rhwpj5spyd6i4w2vj61h4nihgmmh0yyqvf3z5"))))
     (build-system haskell-build-system)
     (arguments
-     '(#:phases
+     '(#:extra-directories ("ncurses")
+       #:phases
        (modify-phases %standard-phases
          (add-before 'build 'fix-includes
            (lambda _
@@ -8116,7 +8517,7 @@ ncurses.")
   (package
     (name "ghc-network")
     (version "2.8.0.1")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -8206,11 +8607,41 @@ getting a list of all the network interfaces and their respective
 IPv4, IPv6 and MAC addresses.")
     (license license:bsd-3)))
 
+(define-public ghc-network-multicast
+  (package
+    (name "ghc-network-multicast")
+    (version "0.3.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/network-multicast/network-multicast-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "0whvi0pbwjy6dbwfdf9rv1j3yr3lcmfp3q7a8pwq63g537l4l2l3"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-network" ,ghc-network)
+       ("ghc-network-bsd" ,ghc-network-bsd)))
+    (home-page
+     "http://hackage.haskell.org/package/network-multicast")
+    (synopsis "Simple multicast library for Haskell")
+    (description
+     "This package provides the Network.Multicast Haskell module for
+sending UDP datagrams over multicast (class D) addresses.")
+    ;; Note that this is technically under CC0 1.0 and Expat, though it's not
+    ;; totally clear what the breakdown is.  Since CC0 1.0 is effectively
+    ;; "public domain with a minimal fallback license", figuring marking it
+    ;; as effectively Expat is probably correct.
+    (license license:expat)))
+
 (define-public ghc-network-uri
   (package
     (name "ghc-network-uri")
     (version "2.6.1.0")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -8413,6 +8844,38 @@ old @code{time} library.  For new projects, the newer
 @uref{https://hackage.haskell.org/package/time, time library} is recommended.")
     (license license:bsd-3)))
 
+(define-public ghc-only
+  (package
+    (name "ghc-only")
+    (version "0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/Only/Only-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "0rdj3a629fk2vp121jq8mf2smkblrz5w3cxhlsyx6my2x29s2ymb"))))
+    (build-system haskell-build-system)
+    (arguments
+     `(#:cabal-revision
+       ("1"
+        "1ahk7p34kmh041mz7lyc10nhcxgv2i4z8nvzxvqm2x34gslmsbzr")))
+    (home-page "https://hackage.haskell.org/package/Only")
+    (synopsis "The 1-tuple type or single-value collection")
+    (description
+     "This package provides a canonical anonymous 1-tuple type missing from
+Haskell for attaching typeclass instances.
+
+There is also the @url{https://hackage.haskell.org/package/OneTuple, OneTuple
+package} which by using a boxed @code{data}-type provides a 1-tuple type which
+has laziness properties which are more faithful to the ones of Haskell's
+native tuples; whereas the primary purpose of @code{Only} is to provide the
+traditionally so named type-wrapper for attaching typeclass instances.")
+    (license license:bsd-3)))
+
 (define-public ghc-opengl
   (package
     (name "ghc-opengl")
@@ -8458,6 +8921,8 @@ version 1.3).")
         (base32
          "0zgllb4bcash2i2cispa3j565aw3dpxs41ghmhpvyvi4a6xmyldx"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories ("glu")))
     (inputs
      `(("ghc-half" ,ghc-half)
        ("ghc-fixed" ,ghc-fixed)
@@ -8692,6 +9157,45 @@ require aeson
     (description "Safe conversions between textual types")
     (license license:isc)))
 
+(define-public ghc-text-short
+  (package
+    (name "ghc-text-short")
+    (version "0.1.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/text-short/text-short-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "0xyrxlb602z8bc9sr2y1fag0x56a20yj5qrkvy7iwc6hnznrynxz"))))
+    (build-system haskell-build-system)
+    (inputs `(("ghc-hashable" ,ghc-hashable)))
+    (native-inputs
+     `(("ghc-tasty" ,ghc-tasty)
+       ("ghc-tasty-quickcheck" ,ghc-tasty-quickcheck)
+       ("ghc-tasty-hunit" ,ghc-tasty-hunit)
+       ("ghc-quickcheck-instances"
+        ,ghc-quickcheck-instances)))
+    (arguments
+     `(#:cabal-revision
+       ("2"
+        "17cb7p0qywf2dsrq3g8qb3ssknd9wl5k0nc2pxz9gc3l8rxpkw51")))
+    (home-page "https://hackage.haskell.org/package/text-short")
+    (synopsis "Memory-efficient representation of Unicode text strings")
+    (description "This package provides the @code{ShortText} type which
+is suitable for keeping many short strings in memory.  This is similar
+to how @code{ShortByteString} relates to @code{ByteString}.
+
+The main difference between @code{Text} and @code{ShortText} is that
+@code{ShortText} uses UTF-8 instead of UTF-16 internally and also doesn't
+support zero-copy slicing (thereby saving 2 words).  Consequently, the memory
+footprint of a (boxed) @{ShortText} value is 4 words (2 words when unboxed)
+plus the length of the UTF-8 encoded payload.")
+    (license license:bsd-3)))
+
 (define-public ghc-doclayout
   (package
     (name "ghc-doclayout")
@@ -8734,6 +9238,17 @@ code.  It was designed for use in @code{Pandoc}.")
         (base32
          "0dpjrr40h54cljzhvixyym07z792a9izg6b9dmqpjlgcg4rj0xx8"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'find-library
+           (lambda _
+             (substitute* "test/Tests/Command.hs"
+               (("= dynlibEnv")
+                (format #f "= [(\"LD_LIBRARY_PATH\" , \"~a/dist/build\")]"
+                        (getcwd))))
+             #t)))))
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-aeson" ,ghc-aeson)
        ("ghc-aeson-pretty" ,ghc-aeson-pretty)
@@ -8796,6 +9311,117 @@ definition lists, tables, and other features.  A compatibility mode is
 provided for those who need a drop-in replacement for Markdown.pl.")
     (license license:gpl2+)))
 
+(define-public pandoc
+  (package
+    (inherit ghc-pandoc)
+    (name "pandoc")
+    (arguments
+     `(#:configure-flags
+       (list "-fstatic"
+             ;; Do not build trypandoc; this is the default but it's better to
+             ;; be explicit.
+             "-f-trypandoc"
+             ;; TODO: Without these we cannot link the Haskell libraries
+             ;; statically.  It would be nice if we could also build the
+             ;; shared libraries.
+             "--disable-shared"
+             "--disable-executable-dynamic"
+             ;; That's where we place all static libraries
+             "--extra-lib-dirs=static-libs/"
+             "--ghc-option=-static")
+       #:modules ((guix build haskell-build-system)
+                  (guix build utils)
+                  (ice-9 match)
+                  (srfi srfi-1))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'create-simple-paths-module
+           (lambda* (#:key outputs #:allow-other-keys)
+             (call-with-output-file "Paths_pandoc.hs"
+               (lambda (port)
+                 (format port "\
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE NoRebindableSyntax #-}
+{-# OPTIONS_GHC -fno-warn-missing-import-lists #-}
+module Paths_pandoc (version,getDataDir,getDataFileName) where
+import Prelude
+import Data.Version (Version(..))
+import System.Info
+version :: Version
+version = Version [~a] []
+
+datadir :: FilePath
+datadir = \"~a/share/\" ++
+  arch ++ \"-\" ++
+  os ++ \"-\" ++
+  compilerName ++ \"-~a/pandoc-~a\"
+
+getDataDir :: IO FilePath
+getDataDir = return datadir
+
+getDataFileName :: FilePath -> IO FilePath
+getDataFileName name = do
+  dir <- getDataDir
+  return (dir ++ \"/\" ++ name)
+"
+                         (string-map (lambda (chr) (if (eq? chr #\.) #\, chr))
+                                     ,(package-version ghc-pandoc))
+                         (assoc-ref outputs "out")
+                         ,(package-version ghc)
+                         ,(package-version ghc-pandoc))))
+             #t))
+         (add-after 'unpack 'prepare-static-libraries
+           (lambda* (#:key inputs #:allow-other-keys)
+             (mkdir-p (string-append (getcwd) "/static-libs"))
+             (for-each
+              (lambda (input)
+                (when (or (string-prefix? "static-" (car input))
+                          (string-prefix? "ghc" (car input)))
+                  (match (find-files (cdr input) "\\.a$")
+                    ((and (first . rest) libs)
+                     (for-each (lambda (lib)
+                                 (let ((target (string-append (getcwd) "/static-libs/"
+                                                              (basename lib))))
+                                   (unless (file-exists? target)
+                                     (symlink first target))))
+                               libs))
+                    (_ #f))))
+              inputs)
+             #t))
+         (delete 'check)
+         (add-after 'install 'post-install-check
+           (assoc-ref %standard-phases 'check)))))
+    (outputs '("out" "lib" "static" "doc"))
+    (inputs
+     (let* ((direct-inputs (package-inputs ghc-pandoc))
+            (all-static-inputs
+             (map (lambda (pkg)
+                    (list (string-append "static-" (package-name pkg))
+                          pkg "static"))
+                  (delete-duplicates
+                   (append (map cadr direct-inputs)
+                           (filter (lambda (pkg)
+                                     (string-prefix? "ghc-" (package-name pkg)))
+                                   (package-closure
+                                    (map cadr direct-inputs))))))))
+       `(("zlib:static" ,zlib "static")
+         ,@all-static-inputs
+         ,@direct-inputs)))
+    (native-inputs
+     (let* ((direct-inputs (package-native-inputs ghc-pandoc))
+            (all-static-inputs
+             (map (lambda (pkg)
+                    (list (string-append "static-" (package-name pkg))
+                          pkg "static"))
+                  (delete-duplicates
+                   (append (map cadr direct-inputs)
+                           (filter (lambda (pkg)
+                                     (string-prefix? "ghc-" (package-name pkg)))
+                                   (package-closure
+                                    (map cadr direct-inputs))))))))
+       `(,@all-static-inputs
+         ,@direct-inputs)))))
+
 (define-public ghc-pandoc-citeproc
   (package
     (name "ghc-pandoc-citeproc")
@@ -8855,6 +9481,109 @@ and also has a mode for converting bibliographic databases a YAML format
 suitable for inclusion in pandoc YAML metadata.")
     (license license:bsd-3)))
 
+(define-public pandoc-citeproc
+  (package (inherit ghc-pandoc-citeproc)
+    (name "pandoc-citeproc")
+    (arguments
+     `(#:configure-flags
+       (list "-fstatic"
+             "--disable-shared"
+             "--disable-executable-dynamic"
+             ;; That's where we place all static libraries
+             "--extra-lib-dirs=static-libs/"
+             "--ghc-option=-static")
+       #:modules ((guix build haskell-build-system)
+                  (guix build utils)
+                  (ice-9 match)
+                  (srfi srfi-1))
+       #:phases
+       (modify-phases %standard-phases
+         ;; Many YAML tests (44) are failing do to changes in ghc-yaml:
+         ;; <https://github.com/jgm/pandoc-citeproc/issues/342>.
+         (add-before 'configure 'patch-tests
+           (lambda _
+             (substitute* "tests/test-pandoc-citeproc.hs"
+               (("let allTests = citeprocTests \\+\\+ biblio2yamlTests")
+                "let allTests = citeprocTests"))))
+         ;; Tests need to be run after installation.
+         (delete 'check)
+         (add-after 'install 'post-install-check
+           (assoc-ref %standard-phases 'check))
+         (add-after 'unpack 'create-simple-paths-module
+           (lambda* (#:key outputs #:allow-other-keys)
+             (call-with-output-file "Paths_pandoc_citeproc.hs"
+               (lambda (port)
+                 (format port "\
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE NoRebindableSyntax #-}
+{-# OPTIONS_GHC -fno-warn-missing-import-lists #-}
+module Paths_pandoc_citeproc (version,getDataFileName) where
+import Prelude
+import Data.Version (Version(..))
+import System.Info
+version :: Version
+version = Version [~a] []
+
+datadir :: FilePath
+datadir = \"~a/share/\" ++
+  arch ++ \"-\" ++
+  os ++ \"-\" ++
+  compilerName ++ \"-~a/pandoc-citeproc-~a\"
+
+getDataDir :: IO FilePath
+getDataDir = return datadir
+
+getDataFileName :: FilePath -> IO FilePath
+getDataFileName name = do
+  dir <- getDataDir
+  return (dir ++ \"/\" ++ name)
+"
+                         (string-map (lambda (chr) (if (eq? chr #\.) #\, chr))
+                                     ,(package-version ghc-pandoc-citeproc))
+                         (assoc-ref outputs "out")
+                         ,(package-version ghc)
+                         ,(package-version ghc-pandoc-citeproc))))
+             #t))
+         (add-after 'unpack 'prepare-static-libraries
+           (lambda* (#:key inputs #:allow-other-keys)
+             (mkdir-p (string-append (getcwd) "/static-libs"))
+             (for-each
+              (lambda (input)
+                (when (or (string-prefix? "static-" (car input))
+                          (string-prefix? "ghc" (car input)))
+                  (match (find-files (cdr input) "\\.a$")
+                    ((and (first . rest) libs)
+                     (for-each (lambda (lib)
+                                 (let ((target (string-append (getcwd) "/static-libs/"
+                                                              (basename lib))))
+                                   (unless (file-exists? target)
+                                     (symlink first target))))
+                               libs))
+                    (_ #f))))
+              inputs)
+             #t)))))
+    (inputs
+     (let* ((direct-inputs
+             (cons `("ghc-pandoc" ,pandoc)
+                   (alist-delete "ghc-pandoc"
+                                 (package-inputs ghc-pandoc-citeproc))))
+            (all-static-inputs
+             (map (lambda (pkg)
+                    (list (string-append "static-" (package-name pkg))
+                          pkg "static"))
+                  (delete-duplicates
+                   (append (map cadr direct-inputs)
+                           (filter (lambda (pkg)
+                                     (string-prefix? "ghc-" (package-name pkg)))
+                                   (package-closure
+                                    (map cadr direct-inputs))))))))
+       `(("zlib:static" ,zlib "static")
+         ("pandoc" ,pandoc "lib")
+         ,@all-static-inputs
+         ,@direct-inputs)))
+    (outputs '("out" "lib" "static" "doc"))
+    (synopsis "Pandoc filter for bibliographic references")))
+
 (define-public ghc-pandoc-types
   (package
     (name "ghc-pandoc-types")
@@ -8868,6 +9597,26 @@ suitable for inclusion in pandoc YAML metadata.")
                (base32
                 "1d6ygq991ddria71l7hg9yd7lq94sjy4m71rdws1v8hq943c4d0q"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         ;; None of the directory names are actually used.  By generating a
+         ;; simpler module without references to store names we avoid
+         ;; introducing references in the pandoc executable.
+         (add-after 'unpack 'create-simple-paths-module
+           (lambda _
+             (call-with-output-file "Paths_pandoc_types.hs"
+               (lambda (port)
+                 (format port "\
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE NoRebindableSyntax #-}
+{-# OPTIONS_GHC -fno-warn-missing-import-lists #-}
+module Paths_pandoc_types (version) where
+import Data.Version (Version(..))
+version :: Version
+version = Version [~a] []
+" (string-map (lambda (chr) (if (eq? chr #\.) #\, chr)) ,version))))
+             #t)))))
     (inputs
      `(("ghc-syb" ,ghc-syb)
        ("ghc-aeson" ,ghc-aeson)
@@ -8890,7 +9639,7 @@ building up, manipulating and serialising @code{Pandoc} structures.")
   (package
     (name "ghc-parallel")
     (version "3.2.2.0")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -9056,7 +9805,7 @@ files/directories, and more.")
   (package
     (name "ghc-paths")
     (version "0.1.0.12")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -9137,6 +9886,8 @@ rules.")
         (base32
          "0xcyi1fivwg7a92mch5bcqzmrfxzqj42rmb3m8kgs61x4qwpxj82"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories ("pcre")))
     (inputs
      `(("pcre" ,pcre)))
     (native-inputs
@@ -9660,7 +10411,7 @@ Show instance.")
   (package
     (name "ghc-primitive")
     (version "0.6.4.0")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -9727,6 +10478,7 @@ API.")
         (base32
          "1dx3nkc27yxsrbrhh3iwhq7dl1xn6bj7n62yx6nh8vmpbg62lqvl"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-base-orphans" ,ghc-base-orphans)
        ("ghc-bifunctors" ,ghc-bifunctors)
@@ -9929,7 +10681,7 @@ usable.")
   (package
     (name "ghc-random")
     (version "1.1")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -10005,6 +10757,7 @@ includes efficient implementations for common data types.")
         (base32
          "0q4m2fa7wkgxs0grir8rlqwibasmi3s1x7c107ynndwfm62nzv0a"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs `(("ghc-hashable" ,ghc-hashable)
               ("ghc-vector" ,ghc-vector)
               ("ghc-unordered-containers" ,ghc-unordered-containers)
@@ -10279,6 +11032,8 @@ this problem.")
                (base32
                 "1h16w994g9s62iwkdqa7bar2n9cfixmkzz2rm8svm960qr57valf"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories ("pcre")))
     (inputs
      `(("ghc-regex-base" ,ghc-regex-base)
        ("pcre" ,pcre)))
@@ -10350,6 +11105,7 @@ Haskell library @code{regex-base}.")
         (base32
          "03yhpqrqz977nwlnhnyz9dacnbzw8xb6j18h365rkgmbc05sb3hf"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-regex-base" ,ghc-regex-base)))
     (home-page "https://github.com/haskell-hvr/regex-tdfa")
@@ -10438,6 +11194,7 @@ normal mtl transformers.")
         (base32
          "1jbqif6k249rkknm2zwk8v8jil3kgi9ar53358v8l4ffx346rm82"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-rebase" ,ghc-rebase)))
     (home-page "https://github.com/nikita-volkov/rerebase")
@@ -11108,6 +11865,7 @@ class, forming lattice-like structure.")
         (base32
          "016hc4imr9l4szs3p7f1aahvxr5wv4clvr3qzrm3nibssg5vrs61"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-base-orphans" ,ghc-base-orphans)
        ("ghc-transformers-compat" ,ghc-transformers-compat)
@@ -11597,7 +12355,7 @@ used for example by QuickCheck, see quickcheck-special."  )
   (package
     (name "ghc-split")
     (version "0.2.3.3")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -12132,7 +12890,7 @@ building Scalable Vector Graphics (SVG).")
   (package
     (name "ghc-syb")
     (version "0.7.1")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -12287,6 +13045,49 @@ Unlike the filepath package, this package does not simply reuse String,
 increasing type safety.")
     (license license:expat)))
 
+(define-public ghc-tabular
+  (package
+    (name "ghc-tabular")
+    (version "0.2.2.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/tabular/tabular-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "1ysgq7rrks7f98nnvxil8xz1q27hxdgz4szbjhqwzbwd209dmy0k"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-csv" ,ghc-csv)
+       ("ghc-html" ,ghc-html)))
+    (home-page "https://github.com/bgamari/tabular")
+    (synopsis "Two-dimensional data tables with rendering functions")
+    (description
+     "Tabular provides a Haskell representation of two-dimensional data
+tables, the kind that you might find in a spreadsheet or or a research report.
+It also comes with some default rendering functions for turning those tables
+into ASCII art, simple text with an arbitrary delimiter, CSV, HTML or LaTeX.
+
+Below is an example of the kind of output this library produces.  The tabular
+package can group rows and columns, each group having one of three
+separators (no line, single line, double line) between its members.
+
+@example
+
+    || memtest 1 | memtest 2 ||  time test  | time test 2
+====++===========+===========++=============+============
+A 1 ||       hog |  terrible ||        slow |      slower
+A 2 ||       pig |   not bad ||        fast |     slowest
+----++-----------+-----------++-------------+------------
+B 1 ||      good |     awful || intolerable |    bearable
+B 2 ||    better | no chance ||    crawling |     amazing
+B 3 ||       meh |   well... ||  worst ever |          ok
+
+@end example")
+    (license license:bsd-3)))
 
 (define-public ghc-tagged
   (package
@@ -12577,7 +13378,7 @@ string metrics efficiently.")
   (package
     (name "ghc-tf-random")
     (version "0.5")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -13016,6 +13817,28 @@ from a shell.  The @code{tldr} pages are a community effort to simplify the
 man pages with practical examples.")
     (license license:bsd-3)))
 
+(define-public ghc-torrent
+  (package
+    (name "ghc-torrent")
+    (version "10000.1.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/torrent/torrent-"
+             version ".tar.gz"))
+       (sha256
+        (base32 "0m7s0q7f8c7glxzqhf2j86ch5xhk6jnzwwsa4mkywag22119c290"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-bencode" ,ghc-bencode)
+       ("ghc-syb" ,ghc-syb)))
+    (home-page "https://hackage.haskell.org/package/torrent")
+    (synopsis "BitTorrent file parser and generator")
+    (description "This library provides support for parsing and generating
+BitTorrent files.")
+    (license license:bsd-3)))
+
 (define-public ghc-transformers
   (package
     (name "ghc-transformers")
@@ -13309,6 +14132,28 @@ processes.  It wraps around the @code{process} library, and intends to improve
 upon it.")
     (license license:expat)))
 
+(define-public ghc-uglymemo
+  (package
+    (name "ghc-uglymemo")
+    (version "0.1.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/uglymemo/uglymemo-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "0ixqg5d0ly1r18jbgaa89i6kjzgi6c5hanw1b1y8c5fbq14yz2gy"))))
+    (build-system haskell-build-system)
+    (home-page "https://hackage.haskell.org/package/uglymemo")
+    (synopsis "Simple memoization function for Haskell")
+    (description
+     "This package provides a simple (but internally ugly) memoization
+function.")
+    (license license:public-domain)))
+
 (define-public ghc-unagi-chan
   (package
     (name "ghc-unagi-chan")
@@ -13525,6 +14370,7 @@ for Unix time in Haskell.")
          "02gy1zrxgzg4xmzm8lafsf1nyr3as1q20r8ld73xg3q7rkag9acg"))))
     (build-system haskell-build-system)
     (arguments `(#:tests? #f)) ; FIXME: hspec-discover not in PATH
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-async" ,ghc-async)
        ("ghc-unliftio-core" ,ghc-unliftio-core)))
@@ -13566,7 +14412,7 @@ functions.")
   (package
     (name "ghc-unordered-containers")
     (version "0.2.10.0")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -13921,7 +14767,7 @@ representing a store for a single element.")
   (package
     (name "ghc-vector")
     (version "0.12.0.3")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -14184,6 +15030,48 @@ widths to the Char type.")
 Haskell value or function.")
     (license license:bsd-3)))
 
+(define-public ghc-wizards
+  (package
+    (name "ghc-wizards")
+    (version "1.0.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://hackage.haskell.org/package/wizards/wizards-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "1clvbd1ckhvy29qrbmpkn7bya7300fq6znnps23nn3nxyrxhsr85"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-control-monad-free" ,ghc-control-monad-free)))
+    (arguments
+     `(#:cabal-revision
+       ("1"
+        "095qd17zrdhqmcvmslbyzfa5sh9glvvsnsvnlz31gzsmi8nnsgim")))
+    (home-page "http://hackage.haskell.org/package/wizards")
+    (synopsis "High level, generic library for interrogative user interfaces")
+    (description
+     "@code{wizards} is a package designed for the quick and painless
+development of @emph{interrogative} programs, which revolve around a dialogue
+with the user, who is asked a series of questions in a sequence much like an
+installation wizard.
+
+Everything from interactive system scripts, to installation wizards, to
+full-blown shells can be implemented with the support of @code{wizards}.
+
+It is developed transparently on top of a free monad, which separates out the
+semantics of the program from any particular interface.  A variety of backends
+exist, including console-based @code{System.Console.Wizard.Haskeline} and
+@code{System.Console.Wizard.BasicIO}, and the pure
+@code{System.Console.Wizard.Pure}.  It is also possible to write your own
+backends, or extend existing back-ends with new features.  While both built-in
+IO backends operate on a console, there is no reason why @code{wizards} cannot
+also be used for making GUI wizard interfaces.")
+    (license license:bsd-3)))
+
 (define-public ghc-wl-pprint
   (package
     (name "ghc-wl-pprint")
@@ -14292,6 +15180,9 @@ modernized interface.")
        (sha256
         (base32 "0gg6852mrlgl8zng1j84fismz7k81jr5fk92glgkscf8q6ryg0bm"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories
+       ("libx11" "libxrandr" "libxinerama" "libxscrnsaver")))
     (inputs
      `(("libx11" ,libx11)
        ("libxrandr" ,libxrandr)
@@ -14316,6 +15207,8 @@ bindings are a direct translation of the C bindings.")
                            "X11-xft-" version ".tar.gz"))
        (sha256
         (base32 "1lgqb0s2qfwwgbvwxhjbi23rbwamzdi0l0slfr20c3jpcbp3zfjf"))))
+    (arguments
+     `(#:extra-directories ("libx11" "libxft" "xorgproto")))
     (inputs
      `(("ghc-x11" ,ghc-x11)
        ("ghc-utf8-string" ,ghc-utf8-string)
@@ -14423,6 +15316,30 @@ the @code{conduit} package.")
 documents.")
     (license license:expat)))
 
+(define-public ghc-xml-hamlet
+  (package
+    (name "ghc-xml-hamlet")
+    (version "0.5.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://hackage.haskell.org/package/xml-hamlet/"
+                           "xml-hamlet-" version ".tar.gz"))
+       (sha256
+        (base32 "0jrhcjy7ww59dafg857f2g2df1fw2jmbwcs1q379ph0pc5rxj3lj"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-shakespeare" ,ghc-shakespeare)
+       ("ghc-xml-conduit" ,ghc-xml-conduit)))
+    (native-inputs
+     `(("ghc-hspec" ,ghc-hspec)
+       ("ghc-hunit" ,ghc-hunit)))
+    (home-page "https://www.yesodweb.com/")
+    (synopsis "Hamlet-style quasiquoter for XML content")
+    (description "This package provides a type-safe tool for generating XML
+code via quasi-quoting built on top of @code{ghc-shakespeare}.")
+    (license license:bsd-3)))
+
 (define-public ghc-yaml
   (package
     (name "ghc-yaml")
@@ -14503,7 +15420,7 @@ modifying, and extracting files from zip archives in Haskell.")
   (package
     (name "ghc-zlib")
     (version "0.6.2.1")
-    (outputs '("out" "doc"))
+    (outputs '("out" "static" "doc"))
     (source
      (origin
        (method url-fetch)
@@ -14516,7 +15433,8 @@ modifying, and extracting files from zip archives in Haskell.")
          "1l11jraslcrp9d4wnhwfyhwk4fsiq1aq8i6vj81vcq1m2zzi1y7h"))))
     (build-system haskell-build-system)
     (arguments
-     `(#:phases
+     `(#:extra-directories ("zlib")
+       #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'strip-test-framework-constraints
            (lambda _

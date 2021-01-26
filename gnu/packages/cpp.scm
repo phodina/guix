@@ -13,6 +13,9 @@
 ;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
+;;; Copyright © 2020 Alexandros Theodotou <alex@zrythm.org>
+;;; Copyright © 2020 Greg Hogan <code@greghogan.com>
+;;; Copyright © 2020 Brett Gilio <brettg@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -39,12 +42,24 @@
   #:use-module (guix build-system python)
   #:use-module (gnu packages)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages boost)
+  #:use-module (gnu packages c)
   #:use-module (gnu packages check)
   #:use-module (gnu packages code)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages crypto)
+  #:use-module (gnu packages curl)
+  #:use-module (gnu packages gcc)
+  #:use-module (gnu packages libevent)
+  #:use-module (gnu packages libunwind)
+  #:use-module (gnu packages linux)
   #:use-module (gnu packages llvm)
+  #:use-module (gnu packages logging)
+  #:use-module (gnu packages maths)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages popt)
+  #:use-module (gnu packages pretty-print)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages web))
 
@@ -181,7 +196,7 @@ combination of these streams.")
 (define-public xsimd
   (package
     (name "xsimd")
-    (version "7.2.3")
+    (version "7.4.9")
     (source
      (origin
        (method git-fetch)
@@ -189,7 +204,7 @@ combination of these streams.")
              (url "https://github.com/QuantStack/xsimd")
              (commit version)))
        (sha256
-        (base32 "1ny2qin1j4h35mljivh8z52kwdyjxf4yxlzb8j52ji91v2ccc88j"))
+        (base32 "11by8gbshm4vv6flqp0ihff8c6nmbaqq7ms93b38rrq68bigcply"))
        (file-name (git-file-name name version))))
     (build-system cmake-build-system)
     (arguments
@@ -199,11 +214,12 @@ combination of these streams.")
      `(("googletest" ,googletest)))
     (home-page "https://github.com/QuantStack/xsimd")
     (synopsis "C++ wrappers for SIMD intrinsics and math implementations")
-    (description "xsimd provides a unified means for using SIMD features for
-library authors.  Namely, it enables manipulation of batches of numbers with
-the same arithmetic operators as for single values.  It also provides
-accelerated implementation of common mathematical functions operating on
-batches.")
+    (description
+     "xsimd provides a unified means for using @acronym{SIMD, single instruction
+multiple data} features for library authors.  Namely, it enables manipulation of
+batches of numbers with the same arithmetic operators as for single values.
+It also provides accelerated implementation of common mathematical functions
+operating on batches.")
     (license license:bsd-3)))
 
 (define-public chaiscript
@@ -318,7 +334,8 @@ as ordering relation.")
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags
-       (list (string-append "-DJSON_TestDataDirectory="
+       (list "-DJSON_MultipleHeaders=ON" ; For json_fwd.hpp.
+             (string-append "-DJSON_TestDataDirectory="
                             (assoc-ref %build-inputs "json_test_data")))
        #:phases (modify-phases %standard-phases
                   ;; XXX: When tests are enabled, the install phase will cause
@@ -360,7 +377,7 @@ intuitive syntax and trivial integration.")
 (define-public xtl
   (package
     (name "xtl")
-    (version "0.6.15")
+    (version "0.6.23")
     (source (origin
               (method git-fetch)
               (uri
@@ -369,7 +386,7 @@ intuitive syntax and trivial integration.")
                 (commit version)))
               (sha256
                (base32
-                "0kq88cbcsvgq4hinrzxirqfpfnm3c5a0x0n2309l9zawh8vm33j4"))
+                "1kd9zl4h6nrsg29hq13vwp4zhfj8sa90vj40726lpw6vxz48k4di"))
               (file-name (git-file-name name version))))
     (native-inputs
      `(("googletest" ,googletest)
@@ -394,7 +411,7 @@ tools (containers, algorithms) used by other QuantStack packages.")
 (define-public ccls
   (package
     (name "ccls")
-    (version "0.20190823.6")
+    (version "0.20201025")
     (source
      (origin
        (method git-fetch)
@@ -402,7 +419,8 @@ tools (containers, algorithms) used by other QuantStack packages.")
              (url "https://github.com/MaskRay/ccls")
              (commit version)))
        (sha256
-        (base32 "11h5nwk4qqshf3i8yr4bxpnvmidrhkzd0zxhf1xqv8cv6r08k47f"))
+        (base32
+         "13v00q1bz8g0ckw1sv0zyicbc44irc00vhwxdv3vvwlvylm7s21p"))
        (file-name (git-file-name name version))))
     (build-system cmake-build-system)
     (arguments
@@ -492,6 +510,36 @@ for style issues following Google’s C++ style guide.  While Google maintains
 it's own version of the tool, this is a fork that aims to be more responsive
 and make @code{cpplint} usable in wider contexts.")
     (license license:bsd-3)))
+
+(define-public reproc
+  (package
+    (name "reproc")
+    (version "14.1.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/DaanDeMeyer/reproc")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32
+            "1n71wb50qv2dmhjgw7azx5gigbrp19l2n3d41g9p05l5l0y1qg0q"))))
+   (build-system cmake-build-system)
+   (arguments
+      ;; No tests.
+    `(#:tests? #f
+      ;; Enable building of shared library.
+      #:configure-flags `("-DBUILD_SHARED_LIBS=1")))
+   (native-inputs
+    `(("pkg-config" ,pkg-config)))
+   (synopsis "Process IO library")
+   (description "reproc (Redirected Process) is a C/C++ library that
+simplifies starting, stopping and communicating with external programs.  The
+main use case is executing command line applications directly from C or C++
+code and retrieving their output.")
+   (home-page "https://github.com/DaanDeMeyer/reproc")
+   (license license:expat)))
 
 (define-public sobjectizer
   (package
@@ -615,4 +663,170 @@ Google's C++ code base.")
     (description "The Parsing Expression Grammar Template Library (PEGTL) is
 a zero-dependency C++ header-only parser combinator library for creating
 parsers according to a Parsing Expression Grammar (PEG).")
+    (license license:expat)))
+
+(define-public cxxopts
+  (package
+    (name "cxxopts")
+    (version "2.2.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/jarro2783/cxxopts")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0d3y747lsh1wkalc39nxd088rbypxigm991lk3j91zpn56whrpha"))))
+    (build-system cmake-build-system)
+    (synopsis "Lightweight C++ command line option parser")
+    (description
+     "A lightweight header-only C++ option parser library, supporting the
+standard GNU style syntax for options.")
+    (home-page "https://github.com/jarro2783/cxxopts/wiki")
+    (license license:expat)))
+
+(define-public folly
+  (package
+    (name "folly")
+    (version "2020.10.05.00")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/facebook/folly")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0q4w4cvjxffc462hvs8h4zryq4965j7015zvkwagcm6cj6wmz3cn"))))
+    (build-system cmake-build-system)
+    (arguments
+     '(;; Tests must be explicitly enabled
+       ;;#:configure-flags '("-DBUILD_TESTS=ON")))
+       ;; Leave tests disabled; see https://github.com/facebook/folly/issues/1456
+       #:tests? #f))
+    (propagated-inputs
+     `(("boost" ,boost)
+       ("gflags" ,gflags)
+       ("glog" ,glog)
+       ("liburing" ,liburing)))
+    (inputs
+     `(("bzip2" ,bzip2)
+       ("double-conversion" ,double-conversion)
+       ("fmt" ,fmt)
+       ("libaio" ,libaio)
+       ("libevent" ,libevent)
+       ("libiberty" ,libiberty)
+       ("libsodium" ,libsodium)
+       ("libunwind" ,libunwind)
+       ("lz4" ,lz4)
+       ("openssl" ,openssl)
+       ("snappy" ,snappy)
+       ("zlib" ,zlib)
+       ("zstd" ,zstd "lib")))
+    (native-inputs
+     `(("googletest" ,googletest)))
+    (synopsis "Collection of C++ components complementing the standard library")
+    (description
+     "Folly (acronymed loosely after Facebook Open Source Library) is a library
+of C++14 components that complements @code{std} and Boost.")
+    (home-page "https://github.com/facebook/folly/wiki")
+    ;; 32-bit is not supported: https://github.com/facebook/folly/issues/103
+    (supported-systems '("aarch64-linux" "x86_64-linux"))
+    (license license:asl2.0)))
+
+(define-public aws-sdk-cpp
+  (package
+    (name "aws-sdk-cpp")
+    (version "1.8.102")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/aws/aws-sdk-cpp")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1w8x2vakg5ngjyyg08n4g3dqy8wqnz0k3gkrlqrh460s2pvdivba"))))
+    (build-system cmake-build-system)
+    (arguments
+     '(;; Tests are run during the build phase.
+       #:tests? #f
+       #:configure-flags
+       '("-DBUILD_SHARED_LIBS=OFF"
+         "-DBUILD_DEPS=OFF")))
+    (propagated-inputs
+     `(("aws-c-common" ,aws-c-common)
+       ("aws-c-event-stream" ,aws-c-event-stream)))
+    (inputs
+     `(("aws-checksums" ,aws-checksums)
+       ("curl" ,curl)
+       ("openssl" ,openssl)
+       ("zlib" ,zlib)))
+    (synopsis "Amazon Web Services SDK for C++")
+    (description
+     "The AWS SDK for C++ provides a C++11 interface to the @acronym{AWS,Amazon
+Web Services} API.  AWS provides on-demand computing infrastructure and software
+services including database, analytic, and machine learning technologies.")
+    (home-page "https://github.com/aws/aws-sdk-cpp")
+    (license license:asl2.0)))
+
+(define-public libexpected
+  (package
+    (name "libexpected")
+    (version "1.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/TartanLlama/expected")
+             (commit (string-append "v" version))
+             ;; NOTE: Requires TL_CMAKE from custom
+             ;; repository. Should not affect reproducibility.
+             (recursive? #t)))
+       (file-name (git-file-name name version))
+       ;; NOTE: This patch will be unnecessary on subsequent tags.
+       (patches (search-patches "libexpected-nofetch.patch"))
+       (sha256
+        (base32 "1ckzfrljzzdw9wf8hvdfjz4wjx5na57iwxc48mbv9rf5067m21a5"))))
+    (build-system cmake-build-system)
+    ;; TODO: Clean up install phase.
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             (invoke "./tests"))))))
+    (native-inputs
+     `(("catch2" ,catch-framework2)))
+    (synopsis "C++11/14/17 std::expected with functional-style extensions")
+    (description "@code{std::expected} is proposed as the preferred way to
+represent objects which will either have an expected value, or an unexpected
+value giving information about why something failed.  Unfortunately, chaining
+together many computations which may fail can be verbose, as error-checking
+code will be mixed in with the actual programming logic.  This implementation
+provides a number of utilities to make coding with expected cleaner.")
+    (home-page "https://tl.tartanllama.xyz/")
+    (license license:cc0)))
+
+(define-public magic-enum
+  (package
+    (name "magic-enum")
+    (version "0.7.2")
+    (home-page "https://github.com/Neargye/magic_enum")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url home-page)
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "07j5zdf3vkliwrcv6k663k35akn7qp23794sz2mnvkj9hbv9s8cx"))))
+    (build-system cmake-build-system)
+    (native-inputs
+     `(("gcc" ,gcc-9)))
+    (synopsis "C++17 header only library for compile time reflection of enums")
+    (description "Magic Enum offers static reflection of enums, with
+conversions to and from strings, iteration and related functionality.")
     (license license:expat)))

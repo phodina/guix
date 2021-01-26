@@ -2,7 +2,7 @@
 ;;; Copyright © 2014, 2015, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016, 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -46,7 +46,7 @@
 (define-public lftp
   (package
     (name "lftp")
-    (version "4.9.1")
+    (version "4.9.2")
     (source (origin
               (method url-fetch)
               ;; See https://lftp.tech/get.html for mirrors.
@@ -58,7 +58,7 @@
                                         "ftp/lftp/lftp-" version ".tar.xz")))
               (sha256
                (base32
-                "0jq2g8h1bx06ya9fsja748vwb2qrca4wsfrgi3fmaa8hznpgqsar"))))
+                "03b7y0h3mf4jfq5y8zw6hv9v44z3n6i8hc1iswax96y3z7sc85y5"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -170,20 +170,25 @@ as required.")
 (define-public libfilezilla
   (package
     (name "libfilezilla")
-    (version "0.16.0")
+    (version "0.24.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://download.filezilla-project.org/"
                            "libfilezilla/libfilezilla-" version ".tar.bz2"))
        (sha256
-        (base32 "1fd71vmllzvljff5l5ka5wnzbdsxx4i54dpxpklydmbsqpilnv1v"))))
+        (base32 "1zfnqbn14dx0fl45mfaznr5n5xsxy1kx8z9f80fppbqn37pb9mgx"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "--disable-static")))
     (native-inputs
      `(("cppunit" ,cppunit)
+       ("gettext" ,gettext-minimal)
        ("pkg-config" ,pkg-config)))
     (inputs
-     `(("nettle" ,nettle)))
+     `(("gnutls" ,gnutls)
+       ("nettle" ,nettle)))
     (home-page "https://lib.filezilla-project.org")
     (synopsis "Cross-platform C++ library used by Filezilla client")
     (description
@@ -208,20 +213,21 @@ output.
 (define-public filezilla
   (package
     (name "filezilla")
-    (version "3.42.1")
+    (version "3.50.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://download.filezilla-project.org/client/"
                            "FileZilla_" version "_src.tar.bz2"))
        (sha256
-        (base32 "083ycsycwy1szhp3mzf998wsqa74hmdxdsy07x6k81vp2cxjxijg"))))
+        (base32 "042w2f5cf8g9cr7d3m6294ygx7jggcria9502jnql855khk8gnz0"))))
     (build-system gnu-build-system)
     (arguments
       ;; Don't let filezilla phone home to check for updates.
      '(#:configure-flags '("--disable-autoupdatecheck")))
     (native-inputs
-     `(("gettext" ,gettext-minimal)
+     `(("cppunit" ,cppunit)
+       ("gettext" ,gettext-minimal)
        ("pkg-config" ,pkg-config)
        ("xdg-utils" ,xdg-utils)))
     (inputs

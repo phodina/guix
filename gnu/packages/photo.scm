@@ -4,7 +4,7 @@
 ;;; Copyright © 2015, 2017 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Roel Janssen <roel@gnu.org>
-;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2020 Sebastian Schott <sschott@mailbox.org>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
@@ -28,6 +28,7 @@
 (define-module (gnu packages photo)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system meson)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix download)
@@ -40,6 +41,8 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages boost)
+  #:use-module (gnu packages check)
+  #:use-module (gnu packages cmake)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cups)
   #:use-module (gnu packages curl)
@@ -73,6 +76,7 @@
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages readline)
+  #:use-module (gnu packages ruby)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages tex)
   #:use-module (gnu packages time)
@@ -236,14 +240,14 @@ data as produced by digital cameras.")
 (define-public libgphoto2
   (package
     (name "libgphoto2")
-    (version "2.5.25")
+    (version "2.5.26")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/gphoto/libgphoto/"
                                   version "/libgphoto2-" version ".tar.bz2"))
               (sha256
                (base32
-                "0fkz2rx7xlmr6zl6f56hhxps6bx16dwcw5pyd8c2icf273s9h3kw"))))
+                "1m5wxap3x9z6x8s2gj3sw9lqwlmbgz00dv6z3h3qk15prfizwh3p"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs
@@ -267,14 +271,14 @@ from digital cameras.")
 (define-public gphoto2
   (package
     (name "gphoto2")
-    (version "2.5.23")
+    (version "2.5.26")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/gphoto/gphoto/" version
                                   "/gphoto2-" version ".tar.bz2"))
               (sha256
                (base32
-                "1laqwhxr0xhbykmp0dhd3j4rr2lhj5y228s31afnqxp700hhk1yz"))))
+                "0bxbcn31xalsvjp8fra324hf2105y3ps7zlyfz11v71j0lxj2lvn"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -314,7 +318,7 @@ MTP, and much more.")
 (define-public perl-image-exiftool
   (package
     (name "perl-image-exiftool")
-    (version "11.85")
+    (version "12.00")
     (source
      (origin
        (method url-fetch)
@@ -326,7 +330,7 @@ MTP, and much more.")
                             "Image-ExifTool-" version ".tar.gz")))
        (sha256
         (base32
-         "15zqm0ly2b3paqg0ym44ib2mvh6k18a9q5rvdirwipqa127al2lb"))))
+         "0nl5djf6hs6brnp7qnqvj3xwhj1qnjwcv35ih4yqp2mm9b4jqyfh"))))
     (build-system perl-build-system)
     (arguments
      '(#:phases
@@ -465,7 +469,7 @@ photographic equipment.")
 (define-public darktable
   (package
     (name "darktable")
-    (version "3.0.2")
+    (version "3.4.0")
     (source
      (origin
        (method url-fetch)
@@ -473,15 +477,17 @@ photographic equipment.")
              "https://github.com/darktable-org/darktable/releases/"
              "download/release-" version "/darktable-" version ".tar.xz"))
        (sha256
-        (base32 "1yrnkw8c47kmy2x6m1xp69hwyk02xyc8pd9kvcmyj54lzrhzdfka"))))
+        (base32 "1nmx5lmhp7igav5pswqxmacsbnhgydgvxh1q53wlmyd9bqgxxlvd"))))
     (build-system cmake-build-system)
     (arguments
-     `(#:tests? #f                      ; there are no tests
-       #:configure-flags '("-DBINARY_PACKAGE_BUILD=On")
+     `(#:configure-flags '("-DBINARY_PACKAGE_BUILD=On"
+                           "-DBUILD_TESTING=On")
        #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'prepare-build-environment
            (lambda* (#:key inputs #:allow-other-keys)
+             ;; Rawspeed fails to build with GCC due to OpenMP error:
+             ;; "undefined reference to `GOMP_loop_nonmonotonic_dynamic_next'"
              (setenv "CC" "clang") (setenv "CXX" "clang++")
              ;; Darktable looks for opencl-c.h in the LLVM dir. Guix installs
              ;; it to the Clang dir. We fix this by patching CMakeLists.txt.
@@ -501,58 +507,67 @@ photographic equipment.")
                      (string-append (assoc-ref inputs "ilmbase")
                                     "/include/OpenEXR:" (or (getenv "CPATH") "")))
              #t))
-          (add-after 'install 'wrap-program
-            (lambda* (#:key inputs outputs #:allow-other-keys)
-              (wrap-program (string-append (assoc-ref outputs "out")
-                                           "/bin/darktable")
-                ;; For GtkFileChooserDialog.
-                `("GSETTINGS_SCHEMA_DIR" =
-                  (,(string-append (assoc-ref inputs "gtk+")
-                                   "/share/glib-2.0/schemas"))))
-              #t)))))
+         (add-after 'install 'wrap-program
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (wrap-program (string-append (assoc-ref outputs "out")
+                                          "/bin/darktable")
+               ;; For GtkFileChooserDialog.
+               `("GSETTINGS_SCHEMA_DIR" =
+                 (,(string-append (assoc-ref inputs "gtk+")
+                                  "/share/glib-2.0/schemas")))
+               ;; For libOpenCL.so.
+               `("LD_LIBRARY_PATH" =
+                 (,(string-append (assoc-ref inputs "ocl-icd")
+                                  "/lib"))))
+             #t)))))
     (native-inputs
-     `(("clang" ,clang-9)
+     `(("clang" ,clang-11)
+       ("cmocka" ,cmocka)
        ("desktop-file-utils" ,desktop-file-utils)
        ("glib:bin" ,glib "bin")
        ("gobject-introspection" ,gobject-introspection)
        ("intltool" ,intltool)
-       ("llvm" ,llvm-9) ;should match the Clang version
+       ("llvm" ,llvm-11) ;should match the Clang version
        ("opencl-headers" ,opencl-headers)
        ("perl" ,perl)
        ("pkg-config" ,pkg-config)
-       ("po4a" ,po4a)))
+       ("po4a" ,po4a)
+       ("python" ,python-wrapper)
+       ("ruby" ,ruby)))
     (inputs
      `(("cairo" ,cairo)
-       ("colord-gtk" ,colord-gtk)
-       ("cups" ,cups)
+       ("colord-gtk" ,colord-gtk) ;optional, for color profile support
+       ("cups" ,cups) ;optional, for printing support
        ("curl" ,curl)
        ("dbus-glib" ,dbus-glib)
        ("exiv2" ,exiv2)
        ("freeimage" ,freeimage)
-       ("gmic" ,gmic)
+       ("gmic" ,gmic) ;optional, for HaldcLUT support
        ("graphicsmagick" ,graphicsmagick)
        ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
        ("gtk+" ,gtk+)
        ("ilmbase" ,ilmbase)
-       ("iso-codes" ,iso-codes)
+       ("iso-codes" ,iso-codes) ;optional, for language names in the preferences
        ("json-glib" ,json-glib)
        ("lcms" ,lcms)
-       ("lensfun" ,lensfun)
-       ("libgphoto2" ,libgphoto2)
+       ("lensfun" ,lensfun) ;optional, for the lens distortion plugin
+       ("libgphoto2" ,libgphoto2) ;optional, for camera tethering
+       ("libavif" ,libavif) ;optional, for AVIF support
        ("libjpeg" ,libjpeg-turbo)
        ("libomp" ,libomp)
        ("libpng" ,libpng)
        ("librsvg" ,librsvg)
-       ("libsecret" ,libsecret)
+       ("libsecret" ,libsecret) ;optional, for storing passwords
        ("libsoup" ,libsoup)
        ("libtiff" ,libtiff)
-       ("libwebp" ,libwebp)
+       ("libwebp" ,libwebp) ;optional, for WebP support
        ("libxml2" ,libxml2)
        ("libxslt" ,libxslt)
-       ("lua" ,lua) ;for plugins
-       ("openexr" ,openexr)
-       ("openjpeg" ,openjpeg)
-       ("osm-gps-map" ,osm-gps-map)
+       ("lua" ,lua) ;optional, for plugins
+       ("ocl-icd" ,ocl-icd) ;optional, for OpenCL support
+       ("openexr" ,openexr) ;optional, for EXR import/export
+       ("openjpeg" ,openjpeg) ;optional, for JPEG2000 export
+       ("osm-gps-map" ,osm-gps-map) ;optional, for geotagging view
        ("pugixml" ,pugixml)
        ("python-jsonschema" ,python-jsonschema)
        ("sqlite" ,sqlite)))
@@ -563,14 +578,14 @@ developer.  It manages your digital negatives in a database, lets you view
 them through a zoomable lighttable and enables you to develop raw images
 and enhance them.")
     ;; See src/is_supported_platform.h for supported platforms.
-    (supported-systems '("i686-linux" "x86_64-linux" "aarch64-linux"))
+    (supported-systems '("x86_64-linux" "aarch64-linux"))
     (license (list license:gpl3+ ;; Darktable itself.
                    license:lgpl2.1+)))) ;; Rawspeed library.
 
 (define-public photoflare
   (package
     (name "photoflare")
-    (version "1.6.5")
+    (version "1.6.6")
     (source
      (origin
        (method git-fetch)
@@ -579,7 +594,7 @@ and enhance them.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0a394324h7ds567z3i3pw6kkii78n4qwdn129kgkkm996yh03q89"))))
+        (base32 "07lrlxagv1bljj607s8m0zsbzx9jrvi18bnxahnm7r4i5car5x2d"))))
     (build-system gnu-build-system)
     (arguments
      '(#:tests? #f                      ;no tests
@@ -609,6 +624,71 @@ interface.  It suits a wide variety of different tasks and users who value a
 more nimble workflow.  Features include basic image editing capabilities,
 paint brushes, image filters, colour adjustments and more advanced features
 such as Batch image processing.")
+    (license license:gpl3+)))
+
+(define-public entangle
+  (package
+    (name "entangle")
+    (version "3.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://gitlab.com/entangle/entangle")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1pdmgxjdb3xlcqsaz7l8qzj5f7g7nwzhsrgid8929bm36d49cgc7"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:glib-or-gtk? #t
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'skip-gtk-update-icon-cache
+           ;; Don't create 'icon-theme.cache'.
+           (lambda _
+             (substitute* "meson_post_install.py"
+               (("gtk-update-icon-cache") "true"))
+             #t))
+         (add-after 'install 'wrap-gi-python
+           ;; Make GTK find files needed by plugins.
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out               (assoc-ref outputs "out"))
+                   (gi-typelib-path   (getenv "GI_TYPELIB_PATH"))
+                   (python-path       (getenv "PYTHONPATH")))
+               (wrap-program (string-append out "/bin/entangle")
+                 `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))
+                 `("PYTHONPATH" ":" prefix (,python-path))))
+             #t)))))
+    (native-inputs
+     `(("cmake" ,cmake)
+       ("gettext" ,gettext-minimal)
+       ("glib:bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("gtk-doc" ,gtk-doc)
+       ("perl" ,perl)
+       ("pkg-config" ,pkg-config)
+       ("xmllint" ,libxml2)))
+    (inputs
+     `(("gdk-pixbuf" ,gdk-pixbuf)
+       ("gexiv2" ,gexiv2)
+       ("gst-plugins-base" ,gst-plugins-base)
+       ("gstreamer" ,gstreamer)
+       ("gtk+" ,gtk+)
+       ("lcms" ,lcms)
+       ("libgphoto2" ,libgphoto2)
+       ("libgudev" ,libgudev)
+       ("libpeas" ,libpeas)
+       ("libraw" ,libraw)
+       ("python" ,python)
+       ("python-pygobject" ,python-pygobject)))
+    (home-page "https://entangle-photo.org/")
+    (synopsis "Camera control and capture")
+    (description
+     "Entangle is an application which uses GTK and libgphoto2 to provide a
+graphical interface for tethered photography with digital cameras.  It
+includes control over camera shooting and configuration settings and 'hands
+off' shooting directly from the controlling computer.")
     (license license:gpl3+)))
 
 (define-public hugin

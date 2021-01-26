@@ -1,10 +1,10 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2013, 2015, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2016, 2017, 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2013, 2015, 2017, 2018, 2021 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020, 2021 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2014, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2017, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2019 Eric Bavier <bavier@member.fsf.org>
@@ -48,6 +48,7 @@
   #:use-module (gnu packages maths)
   #:use-module (gnu packages mpi)
   #:use-module (gnu packages multiprecision)
+  #:use-module (gnu packages ocaml)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pulseaudio)
@@ -74,7 +75,7 @@
 (define-public mpfrcx
   (package
    (name "mpfrcx")
-   (version "0.5")
+   (version "0.6")
    (source (origin
             (method url-fetch)
             (uri (string-append
@@ -82,7 +83,7 @@
                   version ".tar.gz"))
             (sha256
              (base32
-              "1s968480ymv6w0rnvfp9mxvx98hvi29fkvw8nk4ggzc6azxgwybs"))))
+              "0gz5rma9al2jrifpknqkcnd9dkf8l05jcxy3s4ghwhd4y3h5dwia"))))
    (build-system gnu-build-system)
    (propagated-inputs
      `(("gmp" ,gmp)
@@ -123,15 +124,15 @@ greatest common divisor operations.")
 (define-public cm
   (package
    (name "cm")
-   (version "0.3")
+   (version "0.3.1")
    (source (origin
             (method url-fetch)
             (uri (string-append
-                  "http://www.multiprecision.org/cm/download/cm-"
+                  "http://www.multiprecision.org/downloads/cm-"
                   version ".tar.gz"))
             (sha256
              (base32
-              "1nf5kr0nqmhbzrsrinky18z0ighjpsmb5cr8zyg8jf04bfbyrfmc"))))
+              "0qq6b1kwb1byj8ws33ya5awq0ilkpm32037pi1l4cf2737fg9m42"))))
    (build-system gnu-build-system)
    (propagated-inputs
      `(("mpfrcx" ,mpfrcx)
@@ -151,7 +152,7 @@ line applications.")
 (define-public fplll
   (package
     (name "fplll")
-    (version "5.2.1")
+    (version "5.3.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -160,13 +161,15 @@ line applications.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "015qmrd7nfaysbv1hbwiprz9g6hnww1y1z1xw8f43ysb7k1b5nbg"))))
+                "06nyfidagp8pc2kfcw88ldgb2b1xm0a8z31n0sln7j72ihlmd8zj"))
+              (patches (search-patches "fplll-std-fenv.patch"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
-       ("libtool" ,libtool)))
-    (inputs
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)))
+    (propagated-inputs ; header files pulled in by fplll/defs.h
      `(("gmp" ,gmp)
        ("mpfr" ,mpfr)))
     (home-page "https://github.com/fplll/fplll")
@@ -198,7 +201,7 @@ the real span of the lattice.")
 (define-public python-fpylll
   (package
     (name "python-fpylll")
-    (version "0.4.1")
+    (version "0.5.2")
     (source
      (origin
        ;; Pypi contains and older release, so we use a tagged release from
@@ -210,7 +213,7 @@ the real span of the lattice.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "01x2sqdv0sbjj4g4waj0hj4rcn4bq7h17442xaqwbznym9azmn9w"))))
+         "1a25iibihph626jl4wbs4b77xc4a2c4nfc2ypscf9wpani3dnhjf"))))
     (build-system python-build-system)
     (inputs
      `(("fplll" ,fplll)
@@ -231,7 +234,7 @@ the real span of the lattice.")
 (define-public pari-gp
   (package
     (name "pari-gp")
-    (version "2.11.4")
+    (version "2.13.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -239,7 +242,7 @@ the real span of the lattice.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "070bjw4kg7r6lqs1hfs08n5fmjv90cpwflp3wr04hbrmyz28zj5z"))))
+                "14xs90wrw8mbdx08hxlbhiahp6kgjq6yh27zjw7fvhfjx5nr84f8"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("texlive" ,(texlive-union
@@ -273,7 +276,7 @@ PARI is also available as a C library to allow for faster computations.")
 (define-public gp2c
   (package
    (name "gp2c")
-   (version "0.0.11pl4")
+   (version "0.0.12")
    (source (origin
             (method url-fetch)
             (uri (string-append
@@ -281,7 +284,7 @@ PARI is also available as a C library to allow for faster computations.")
                   version ".tar.gz"))
             (sha256
               (base32
-                "1cnnh7diqc97q76q5pyhpbljbhc0sz8mlrbqgiwi0sjkgh8iqsj0"))))
+                "039ip7qkwwv46wrcdrz7y12m30kazzkjr44kqbc0h137g4wzd7zf"))))
    (build-system gnu-build-system)
    (native-inputs `(("perl" ,perl)))
    (inputs `(("pari-gp" ,pari-gp)))
@@ -324,9 +327,9 @@ GP2C, the GP to C compiler, translates GP scripts to PARI programs.")
    (version "1.0")
    (source (origin
             (method url-fetch)
-            (uri (string-append
-                  "https://gforge.inria.fr/frs/download.php/33497/cmh-"
-                  version ".tar.gz"))
+            ;; Git repo at <https://gitlab.inria.fr/cmh/cmh>.
+            (uri (string-append "http://www.multiprecision.org/downloads/cmh-"
+                                version ".tar.gz"))
             (sha256
              (base32
               "1a28xr9bs0igms0ik99x0w8lnb0jyfcmvyi26pbyh9ggcdivd33p"))))
@@ -346,12 +349,12 @@ varieties, i.e. Jacobians of hyperelliptic curves.
 It can also be used to compute theta constants at arbitrary
 precision.")
    (license license:gpl3+)
-   (home-page "http://cmh.gforge.inria.fr/")))
+   (home-page "http://www.multiprecision.org/cmh/home.html")))
 
 (define-public giac
   (package
     (name "giac")
-    (version "1.6.0-7")
+    (version "1.6.0-47")
     (source
      (origin
        (method url-fetch)
@@ -363,7 +366,7 @@ precision.")
                            "~parisse/debian/dists/stable/main/source/"
                            "giac_" version ".tar.gz"))
        (sha256
-        (base32 "1pvgp137zcl0rbhdn1j41xxfml7fp771a7x4ph8qrhhlx0hxzn3p"))))
+        (base32 "15sgsr8l6njp5spagbqclqkdy3x7ra23wi6wvpc8vzlbivy3v43k"))))
     (build-system gnu-build-system)
     (arguments
      `(#:modules ((ice-9 ftw)
@@ -374,7 +377,8 @@ precision.")
          (add-after 'unpack 'patch-bin-cp
            ;; Some Makefiles contain hard-coded "/bin/cp".
            (lambda _
-             (substitute* (find-files "doc" "^Makefile")
+             (substitute* (cons "micropython-1.12/xcas/Makefile"
+                                (find-files "doc" "^Makefile"))
                (("/bin/cp") (which "cp")))
              #t))
          (add-after 'unpack 'disable-failing-test
@@ -403,9 +407,9 @@ precision.")
                (delete-file (string-append out "/bin/xcasnew"))
                #t))))))
     (inputs
-;;; TODO: Add libnauty.
+     ;; TODO: Add libnauty, unbundle "libmicropython.a".
      `(("fltk" ,fltk)
-       ("glpk" ,glpk)
+       ("glpk" ,glpk-4)
        ("gmp" ,gmp)
        ("gsl" ,gsl)
        ("lapack" ,lapack)
@@ -427,6 +431,8 @@ precision.")
     (native-inputs
      `(("bison" ,bison)
        ("flex" ,flex)
+       ("hevea" ,hevea)
+       ("python" ,python-wrapper)
        ("readline" ,readline)
        ("texlive" ,texlive-tiny)))
     (home-page "https://www-fourier.ujf-grenoble.fr/~parisse/giac.html")
@@ -440,15 +446,13 @@ or text interfaces) or as a C++ library.")
 (define-public flint
   (package
    (name "flint")
-   ;; When updating this package, change its licence to lgpl2.1+.
-   ;; https://github.com/wbhart/flint2/issues/812
-   (version "2.6.2")
+   (version "2.6.3")
    (source
     (origin
       (method url-fetch)
       (uri (string-append "http://flintlib.org/flint-" version ".tar.gz"))
       (sha256
-       (base32 "1np1p8dx4g3jnlfr1sxmi1jdk2pb57crskm0ch2w2l1v7h8lb6sz"))))
+       (base32 "1qrf6hzbbmg7mhkhbb0bab8z2xpdnba5cj4kmmf72lzs0457a6nf"))))
    (build-system gnu-build-system)
    (inputs
     `(("ntl" ,ntl)))
@@ -490,7 +494,7 @@ Operations that can be performed include conversions, arithmetic,
 GCDs, factoring, solving linear systems, and evaluating special
 functions.  In addition, FLINT provides various low-level routines for
 fast arithmetic.")
-   (license license:gpl2+)
+   (license license:lgpl2.1+)
    (home-page "http://flintlib.org/")))
 
 (define-public arb
@@ -528,14 +532,14 @@ fast arithmetic.")
                        (string-append "--with-flint=" flint)
                        (string-append "--with-gmp=" gmp)
                        (string-append "--with-mpfr=" mpfr))))))))
+    (home-page "https://arblib.org")
     (synopsis "Arbitrary precision floating-point ball arithmetic")
     (description
      "Arb is a C library for arbitrary-precision floating-point ball
 arithmetic.  It supports efficient high-precision computation with
 polynomials, power series, matrices and special functions over the
 real and complex numbers, with automatic, rigorous error control.")
-    (license license:lgpl2.1+)
-    (home-page "http://arblib.org")))
+    (license license:lgpl2.1+)))
 
 (define-public python-flint
   (package
@@ -669,9 +673,11 @@ geometry and singularity theory.")
    (version "7.0.4")
    (source (origin
              (method url-fetch)
-             ;; Use the ‘Latest version’ link for a stable URI across releases.
-             (uri (string-append "https://gforge.inria.fr/frs/download.php/"
-                                 "latestfile/160/ecm-" version ".tar.gz"))
+             (uri
+               (let ((hash "00c4c691a1ef8605b65bdf794a71539d"))
+                    (string-append "https://gitlab.inria.fr/zimmerma/ecm/"
+                                   "uploads/" hash "/ecm-" version
+                                   ".tar.gz")))
              (sha256 (base32
                       "0hxs24c2m3mh0nq1zz63z3sb7dhy1rilg2s1igwwcb26x3pb7xqc"))))
    (build-system gnu-build-system)
@@ -1000,16 +1006,20 @@ Optional thin wrappers allow usage of the library from other languages.")
 (define-public eigen
   (package
     (name "eigen")
-    (version "3.3.7")
+    (version "3.3.8")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://bitbucket.org/eigen/eigen/get/"
-                                  version ".tar.bz2"))
+              (uri (list
+                     (string-append "https://bitbucket.org/eigen/eigen/get/"
+                                    version ".tar.bz2")
+                     (string-append "mirror://debian/pool/main/e/eigen3/eigen3_"
+                                    version ".orig.tar.bz2")))
               (sha256
                (base32
-                "1km3fyfzyqfdvmnl79drps3fjwnz3zbh0c7l34mfbqyvvs8cy4wz"))
+                "1vxrsncfnkyq6gwxpsannpryp12mk7lc8f42ybvz3saf7icwc582"))
               (file-name (string-append name "-" version ".tar.bz2"))
-              (patches (search-patches "eigen-stabilise-sparseqr-test.patch"))
+              (patches (search-patches "eigen-remove-openmp-error-counting.patch"
+                                       "eigen-stabilise-sparseqr-test.patch"))
               (modules '((guix build utils)))
               (snippet
                ;; There are 3 test failures in the "unsupported" directory,
@@ -1084,7 +1094,7 @@ features, and more.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/QuantStack/xtensor")
+                    (url "https://github.com/xtensor-stack/xtensor")
                     (commit version)))
               (sha256
                (base32
@@ -1098,7 +1108,7 @@ features, and more.")
      `(#:configure-flags
        '("-DBUILD_TESTS=ON")
        #:test-target "xtest"))
-    (home-page "https://quantstack.net/xtensor")
+    (home-page "https://xtensor.readthedocs.io/en/latest/")
     (synopsis "C++ tensors with broadcasting and lazy computing")
     (description "xtensor is a C++ library meant for numerical analysis with
 multi-dimensional array expressions.
@@ -1114,17 +1124,17 @@ xtensor provides:
 (define-public gap
   (package
     (name "gap")
-    (version "4.10.2")
+    (version "4.11.0")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://www.gap-system.org/pub/gap/gap-"
+       (uri (string-append "https://files.gap-system.org/gap-"
                            (version-major+minor version)
                            "/tar.bz2/gap-"
                            version
                            ".tar.bz2"))
        (sha256
-        (base32 "0cp6ddk0469zzv1m1vair6gm27ic6c5m77ri8rn0znq3gaps6x94"))
+        (base32 "00l6hvy4iggnlrib4vp805sxdm3j7n3hzpv5zs9hbiiavh80l1xz"))
        (modules '((guix build utils) (ice-9 ftw) (srfi srfi-1)))
        (snippet
         '(begin
@@ -1136,41 +1146,46 @@ xtensor provides:
            ;; FIXME: This might be fixed in the next release, see
            ;; https://github.com/gap-system/gap/issues/3292
            (delete-file "tst/testinstall/dir.tst")
-           ;; Delete all packages except for a fixed list.
+           ;; Delete all packages except for a fixed list,
+           ;; given by their names up to version numbers.
            (with-directory-excursion "pkg"
              (for-each delete-file-recursively
-               (lset-difference string=? (scandir ".")
+               (lset-difference
+                 (lambda (all keep) (string-prefix? keep all))
+                 (scandir ".")
                  '("." ".."
                    ;; Necessary packages.
-                   "GAPDoc-1.6.2"
-                   "primgrp-3.3.2"
-                   "SmallGrp-1.3"    ; artistic2.0
-                   "transgrp"        ; artistic2.0 for data,
-                                     ; gpl2 or gpl3 for code
-                   ;; Recommanded package.
-                   "io-4.5.4"        ; gpl3+
+                   "GAPDoc-"
+                   "primgrp-"
+                   "SmallGrp-"   ; artistic2.0
+                   "transgrp"    ; artistic2.0 for data,
+                                 ; gpl2 or gpl3 for code
+                   ;; Recommended package.
+                   "io-"         ; gpl3+
                    ;; Optional packages, searched for at start,
                    ;; and their depedencies.
-                   "alnuth-3.1.0"
-                   "autpgrp-1.10"
-                   "crisp-1.4.4"     ; bsd-2
-                   "ctbllib"       ; gpl3+ according to doc/chap0.txt
-                   "FactInt-1.6.2"
+                   "alnuth-"
+                   "autpgrp-"
+                   "crisp-"      ; bsd-2
+                   "ctbllib"     ; gpl3+, clarified in the next release;
+                                 ; see
+                                 ; http://www.math.rwth-aachen.de/~Thomas.Breuer/ctbllib/README.md
+                   "FactInt-"
                    "fga"
-                   "irredsol-1.4"    ; bsd-2
-                   "laguna-3.9.2"
-                   "polenta-1.3.8"
-                   "polycyclic-2.14"
-                   "radiroot-2.8"
-                   "resclasses-4.7.1"
-                   "sophus-1.24"
-                   "tomlib-1.2.7"  ; gpl2+, clarified in the git repository
-                                   ; and the next release
-                   "utils-0.59"))))
+                   "irredsol-"   ; bsd-2
+                   "laguna-"
+                   "polenta-"
+                   "polycyclic-"
+                   "radiroot-"
+                   "resclasses-"
+                   "sophus-"
+                   "tomlib-"
+                   "utils-"))))
            #t))))
     (build-system gnu-build-system)
     (inputs
      `(("gmp" ,gmp)
+       ("readline" ,readline)
        ("zlib" ,zlib)))
     (arguments
      `(#:modules ((ice-9 ftw)
@@ -1197,15 +1212,14 @@ xtensor provides:
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
                     (bin (string-append out "/bin"))
-                    (lib (string-append out "/lib"))
                     (prog (string-append bin "/gap"))
                     (prog-real (string-append bin "/.gap-real"))
-                    (share (string-append out "/share/gap"))
-                    (include (string-append out "/include/gap"))
-                    (include-hpc (string-append include "/hpc")))
+                    (share (string-append out "/share/gap")))
                ;; Install only the gap binary; the gac compiler is left
                ;; for maybe later. "Wrap" it in a shell script that calls
                ;; the binary with the correct parameter.
+               ;; The make target install-bin is supposed to do that, but
+               ;; is not currently working.
                (mkdir-p bin)
                (copy-file "gap" prog-real)
                (call-with-output-file prog
@@ -1216,52 +1230,18 @@ xtensor provides:
                            prog-real
                            share)))
                (chmod prog #o755)
-               ;; Install the headers, which are needed by Sage. The
-               ;; Makefile target "install-headers" was available in
-               ;; gap-4.10.0, but has been commented out in gap-4.10.1.
-               (mkdir-p include-hpc)
-               (install-file "gen/config.h" include)
-               (let ((file-name-predicate-without-stat
-                       (lambda (regex)
-                         (cut (file-name-predicate regex) <> #f))))
-                 (with-directory-excursion "src"
-                   (for-each
-                     (cut install-file <> include)
-                     (scandir "."
-                              (file-name-predicate-without-stat ".*\\.h$"))))
-                 (with-directory-excursion "src/hpc"
-                   (for-each
-                     (cut install-file <> include-hpc)
-                     (scandir "."
-                              (file-name-predicate-without-stat ".*\\.h$")))))
-               ;; Install the library, which is needed by Sage. The
-               ;; Makefile target "install-libgap" was available in
-               ;; gap-4.10.0, but has been commented out in gap-4.10.1.
-               ;; Compared to the Makefile, which used libtool, the
-               ;; following approach of copying files and making symlinks
-               ;; is rather pedestrian. There is hope that some later
-               ;; version of gap reinstates and completes the install
-               ;; targets.
-               (invoke "make" "libgap.la")
-               (install-file "libgap.la" lib)
-               (install-file ".libs/libgap.so.0.0.0" lib)
-               (symlink "libgap.so.0.0.0" (string-append lib "/libgap.so")) 
-               (symlink "libgap.so.0.0.0" (string-append lib "/libgap.so.0"))
-               ;; Install a certain number of files and directories to
-               ;; SHARE, where the wrapped shell script expects them.
+               ;; Install the headers and library, which are needed by Sage.
+               (invoke "make" "install-headers")
+               (invoke "make" "install-libgap")
                ;; Remove information on the build directory from sysinfo.gap.
                (substitute* "sysinfo.gap"
                  (("GAP_BIN_DIR=\".*\"") "GAP_BIN_DIR=\"\"")
                  (("GAP_LIB_DIR=\".*\"") "GAP_LIB_DIR=\"\"")
                  (("GAP_CPPFLAGS=\".*\"") "GAP_CPPFLAGS=\"\""))
-               (install-file "sysinfo.gap" share)
-               (copy-recursively "grp" (string-append share "/grp"))
-               (copy-recursively "pkg" (string-append share "/pkg"))
-               ;; The following is not the C library libgap.so, but a
-               ;; library of GAP code.
-               (copy-recursively "lib" (string-append share "/lib"))
-               ;; The gap binary looks for documentation inside SHARE.
-               (copy-recursively "doc" (string-append share "/doc")))
+               (invoke "make" "install-gaproot")
+               ;; Copy the directory of compiled packages; the make target
+               ;; install-pkg is currently empty.
+               (copy-recursively "pkg" (string-append share "/pkg")))
              #t)))))
     (home-page "https://www.gap-system.org/")
     (synopsis
@@ -1580,7 +1560,7 @@ structure constants of Schubert polynomials.")
          "0akwhhz9b40bz6lrfxpamp7r7wkk48p455qbn04mfnl9a1l6db8x"))))
     (build-system gnu-build-system)
     (inputs
-     `(("gmp", gmp)
+     `(("gmp" ,gmp)
        ("cblas" ,openblas))) ; or any other BLAS library; the documentation
                              ; mentions ATLAS in particular
     (arguments

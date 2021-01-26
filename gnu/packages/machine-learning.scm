@@ -16,6 +16,7 @@
 ;;; Copyright © 2020 Konrad Hinsen <konrad.hinsen@fastmail.net>
 ;;; Copyright © 2020 Edouard Klein <edk@beaver-labs.com>
 ;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -64,6 +65,7 @@
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages image)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages llvm)
   #:use-module (gnu packages maths)
   #:use-module (gnu packages mpi)
   #:use-module (gnu packages ocaml)
@@ -330,8 +332,6 @@ networks) based on simulation of (stochastic) flow in graphs.")
        (modify-phases %standard-phases
          (add-before 'configure 'patch-paths
            (lambda _
-             (substitute* "configure"
-               (("/bin/sh") (which "sh")))
              (substitute* "setup.ml"
                (("LDFLAGS=-fPIC")
                 (string-append "LDFLAGS=-fPIC\"; \"SHELL=" (which "sh")))
@@ -582,7 +582,7 @@ in terms of new algorithms.")
 (define-public python-onnx
   (package
     (name "python-onnx")
-    (version "1.7.0")
+    (version "1.8.0")
     (source
      (origin
        (method url-fetch)
@@ -591,7 +591,7 @@ in terms of new algorithms.")
        ;; to use googletest from Guix and enable tests by default.
        (patches (search-patches "python-onnx-use-system-googletest.patch"))
        (sha256
-        (base32 "0j6rgfbhsw3a8id8pyg18y93k68lbjbj1kq6qia36h69f6pvlyjy"))))
+        (base32 "0365zkikq6v3cl5hh2daa5z1alhij8xpn8rmlcny340jrv9pyy2z"))))
     (build-system python-build-system)
     (native-inputs
      `(("cmake" ,cmake)
@@ -659,42 +659,6 @@ abstracting away concerns about things like low-level threading,
 synchronization, thread-safety, concurrent data structures, and non-blocking
 I/O.")
     (license license:asl2.0)))
-
-(define-public r-adaptivesparsity
-  (package
-    (name "r-adaptivesparsity")
-    (version "1.6")
-    (source (origin
-              (method url-fetch)
-              (uri (cran-uri "AdaptiveSparsity" version))
-              (sha256
-               (base32
-                "0imr5m8mll9j6n4icsv6z9rl5kbnwsp9wvzrg7n90nnmcxq2cz91"))))
-    (properties
-     `((upstream-name . "AdaptiveSparsity")))
-    (build-system r-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'link-against-armadillo
-           (lambda _
-             (substitute* "src/Makevars"
-               (("PKG_LIBS=" prefix)
-                (string-append prefix "-larmadillo"))))))))
-    (propagated-inputs
-     `(("r-mass" ,r-mass)
-       ("r-matrix" ,r-matrix)
-       ("r-rcpp" ,r-rcpp)
-       ("r-rcpparmadillo" ,r-rcpparmadillo)))
-    (inputs
-     `(("armadillo" ,armadillo)))
-    (home-page "https://cran.r-project.org/web/packages/AdaptiveSparsity")
-    (synopsis "Adaptive sparsity models")
-    (description
-     "This package implements the Figueiredo machine learning algorithm for
-adaptive sparsity and the Wong algorithm for adaptively sparse gaussian
-geometric models.")
-    (license license:lgpl3+)))
 
 (define-public gemmlowp-for-tensorflow
   ;; The commit hash is taken from "tensorflow/workspace.bzl".
@@ -773,7 +737,8 @@ than 8 bits, and at the end only some significant 8 bits are kept.")
                   #t))))
     (build-system cmake-build-system)
     (arguments
-     `(#:phases
+     `(#:configure-flags '("-DBUILD_SHARED_LIBS=ON")
+       #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'disable-asserts
            (lambda _
@@ -810,12 +775,7 @@ than 8 bits, and at the end only some significant 8 bits are kept.")
                (with-directory-excursion test-dir
                  (invoke "make" "-j" (number->string (parallel-job-count)))
                  (invoke "./dtest" "--runall"))
-               #t)))
-         (add-after 'install 'delete-static-library
-           (lambda* (#:key outputs #:allow-other-keys)
-             (delete-file (string-append (assoc-ref outputs "out")
-                                         "/lib/libdlib.a"))
-             #t)))))
+               #t))))))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ;; For tests.
@@ -909,6 +869,77 @@ data analysis.")
                 (sha256
                  (base32
                   "08zbzi8yx5wdlxfx9jap61vg1malc9ajf576w7a0liv6jvvrxlpj")))))))
+
+(define-public python-pynndescent
+  (package
+    (name "python-pynndescent")
+    (version "0.4.8")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pynndescent" version))
+       (sha256
+        (base32 "0li1fclif50v6xrq7wh3lif9vv5jpj7xhrb0z6g89wwjnp9b9833"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-nose" ,python-nose)))
+    (propagated-inputs
+     `(("python-joblib" ,python-joblib)
+       ("python-llvmlite" ,python-llvmlite)
+       ("python-numba" ,python-numba)
+       ("python-scikit-learn" ,python-scikit-learn)
+       ("python-scipy" ,python-scipy)))
+    (home-page "https://github.com/lmcinnes/pynndescent")
+    (synopsis "Nearest neighbor descent for approximate nearest neighbors")
+    (description
+     "PyNNDescent provides a Python implementation of Nearest Neighbor Descent
+for k-neighbor-graph construction and approximate nearest neighbor search.")
+    (license license:bsd-2)))
+
+(define-public python-opentsne
+  (package
+    (name "python-opentsne")
+    (version "0.4.4")
+    (source
+     (origin
+       ;; No tests in the PyPI tarball.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/pavlin-policar/openTSNE")
+             (commit (string-append "v" version))))
+       (file-name (string-append name "-" version "-checkout"))
+       (sha256
+        (base32 "08wamsssmyf6511cbmglm67dp48i6xazs89m1cskdk219v90bc76"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         ;; Benchmarks require the 'macosko2015' data files.
+         (add-after 'unpack 'delete-benchmark
+           (lambda _
+             (delete-file-recursively "benchmarks")
+             #t))
+         ;; Numba needs a writable dir to cache functions.
+         (add-before 'check 'set-numba-cache-dir
+           (lambda _
+             (setenv "NUMBA_CACHE_DIR" "/tmp")
+             #t)))))
+    (native-inputs
+     `(("python-cython" ,python-cython)))
+    (inputs
+     `(("fftw" ,fftw)))
+    (propagated-inputs
+     `(("python-numpy" ,python-numpy)
+       ("python-pynndescent" ,python-pynndescent)
+       ("python-scikit-learn" ,python-scikit-learn)
+       ("python-scipy" ,python-scipy)))
+    (home-page "https://github.com/pavlin-policar/openTSNE")
+    (synopsis "Extensible, parallel implementations of t-SNE")
+    (description
+     "This is a modular Python implementation of t-Distributed Stochastic
+Neighbor Embedding (t-SNE), a popular dimensionality-reduction algorithm for
+visualizing high-dimensional data sets.")
+    (license license:bsd-3)))
 
 (define-public python-scikit-rebate
   (package
@@ -1053,7 +1084,16 @@ the following advantages:
        (modify-phases %standard-phases
          (add-after 'unpack 'make-files-writable
            (lambda _
-             (for-each make-file-writable (find-files "." ".*")) #t)))))
+             (for-each make-file-writable (find-files "." ".*")) #t))
+         (add-after 'install 'install-more-headers
+           (lambda* (#:key outputs #:allow-other-keys)
+             (for-each
+               (lambda (file)
+                 (install-file file (string-append
+                                      (assoc-ref outputs "out")
+                                      "/include/vowpalwabbit")))
+               (find-files "vowpalwabbit" "\\.h$"))
+             #t)))))
     (build-system gnu-build-system)
     (home-page "https://github.com/JohnLangford/vowpal_wabbit")
     (synopsis "Fast machine learning library for online learning")
@@ -1963,13 +2003,14 @@ with image data, text data, and sequence data.")
              ;; These tests attempt to download data files from the internet.
              (delete-file "tests/integration_tests/test_datasets.py")
              (delete-file "tests/integration_tests/imagenet_utils_test.py")
-
-             (setenv "PYTHONPATH"
-                     (string-append (getcwd) "/build/lib:"
-                                    (getenv "PYTHONPATH")))
-             (invoke "py.test" "-v"
-                     "-p" "no:cacheprovider"
-                     "--ignore" "keras/utils"))))))
+             ;; Backport https://github.com/keras-team/keras/pull/12479.
+             (substitute* "tests/keras/engine/test_topology.py"
+               (("np.ones\\(\\(3, 2\\)\\)")
+                "1."))
+             (invoke "python" "-m" "pytest"
+                     ;; The following test fail only in the build container;
+                     ;; skip it.
+                     "-k" "not test_selu"))))))
     (propagated-inputs
      `(("python-h5py" ,python-h5py)
        ("python-keras-applications" ,python-keras-applications)

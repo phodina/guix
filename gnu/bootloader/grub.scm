@@ -4,6 +4,7 @@
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2019, 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2019, 2020 Miguel Ángel Arruga Vivas <rosen644835@gmail.com>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2020 Stefan <stefan-guix@vodafonemail.de>
 ;;;
@@ -23,14 +24,17 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu bootloader grub)
+  #:use-module (guix build union)
   #:use-module (guix records)
-  #:use-module ((guix utils) #:select (%current-system))
+  #:use-module (guix store)
+  #:use-module (guix utils)
   #:use-module (guix gexp)
   #:use-module (gnu artwork)
   #:use-module (gnu bootloader)
   #:use-module (gnu system uuid)
   #:use-module (gnu system file-systems)
   #:use-module (gnu system keyboard)
+  #:use-module (gnu system locale)
   #:use-module (gnu packages bootloaders)
   #:autoload   (gnu packages gtk) (guile-cairo guile-rsvg)
   #:autoload   (gnu packages xorg) (xkeyboard-config)
@@ -46,8 +50,11 @@
             grub-theme-color-highlight
             grub-theme-gfxmode
 
+            install-grub-efi-netboot
+
             grub-bootloader
             grub-efi-bootloader
+            grub-efi-netboot-bootloader
             grub-mkrescue-bootloader
             grub-minimal-bootloader
 
@@ -135,6 +142,24 @@ file with the resolution provided in CONFIG."
             (image->png image #:width width #:height height))
            (_ #f)))))
 
+(define (grub-locale-directory grub)
+  "Generate a directory with the locales from GRUB."
+  (define builder
+    #~(begin
+        (use-modules (ice-9 ftw))
+        (let ((locale (string-append #$grub "/share/locale"))
+              (out    #$output))
+          (mkdir out)
+          (chdir out)
+          (for-each (lambda (lang)
+                      (let ((file (string-append locale "/" lang
+                                                 "/LC_MESSAGES/grub.mo"))
+                            (dest (string-append lang ".mo")))
+                        (when (file-exists? file)
+                          (copy-file file dest))))
+                    (scandir locale)))))
+  (computed-file "grub-locales" builder))
+
 (define* (eye-candy config store-device store-mount-point
                     #:key store-directory-prefix port)
   "Return a gexp that writes to PORT (a port-valued gexp) the 'grub.cfg' part
@@ -143,15 +168,14 @@ STORE-DEVICE designates the device holding the store, and STORE-MOUNT-POINT is
 its mount point; these are used to determine where the background image and
 fonts must be searched for.  STORE-DIRECTORY-PREFIX is a directory prefix to
 prepend to any store file name."
-  (define (setup-gfxterm config font-file)
+  (define (setup-gfxterm config)
     (if (memq 'gfxterm (bootloader-configuration-terminal-outputs config))
         #~(format #f "
-if loadfont ~a; then
+if loadfont unicode; then
   set gfxmode=~a
   insmod all_video
   insmod gfxterm
 fi~%"
-                  #+font-file
                   #$(string-join
                      (grub-theme-gfxmode (bootloader-theme config))
                      ";"))
@@ -162,11 +186,6 @@ fi~%"
            (colors (type theme)))
       (string-append (symbol->string (assoc-ref colors 'fg)) "/"
                      (symbol->string (assoc-ref colors 'bg)))))
-
-  (define font-file
-    (normalize-file (file-append grub "/share/grub/unicode.pf2")
-                    store-mount-point
-                    store-directory-prefix))
 
   (define image
     (normalize-file (grub-background-image config)
@@ -189,8 +208,8 @@ else
   set menu_color_normal=cyan/blue
   set menu_color_highlight=white/blue
 fi~%"
-                 #$(grub-root-search store-device font-file)
-                 #$(setup-gfxterm config font-file)
+                 #$(grub-root-search store-device image)
+                 #$(setup-gfxterm config)
                  #$(grub-setup-io config)
 
                  #$image
@@ -295,18 +314,51 @@ code."
         ((? file-system-label? label)
          (format #f "search --label --set ~a"
                  (file-system-label->string label)))
+        ((? (lambda (device)
+              (and (string? device) (string-contains device ":/"))) nfs-uri)
+         ;; If the device is an NFS share, then we assume that the expected
+         ;; file on that device (e.g. the GRUB background image or the kernel)
+         ;; has to be loaded over the network.  Otherwise we would need an
+         ;; additional device information for some local disk to look for that
+         ;; file, which we do not have.
+         ;;
+         ;; We explicitly set "root=(tftp)" here even though if grub.cfg
+         ;; had been loaded via TFTP, Grub would have set "root=(tftp)"
+         ;; automatically anyway.  The reason is if you have a system that
+         ;; used to be on NFS but now is local, root would be set to local
+         ;; disk.  If you then selected an older system generation that is
+         ;; supposed to boot from network in the Grub boot menu, Grub still
+         ;; wouldn't load those files from network otherwise.
+         ;;
+         ;; TFTP is preferred to HTTP because it is used more widely and
+         ;; specified in standards more widely--especially BOOTP/DHCPv4
+         ;; defines a TFTP server for DHCP option 66, but not HTTP.
+         ;;
+         ;; Note: DHCPv6 specifies option 59 to contain a boot-file-url,
+         ;; which can contain a HTTP or TFTP URL.
+         ;;
+         ;; Note: It is assumed that the file paths are of a similar
+         ;; setup on both the TFTP server and the NFS server (it is
+         ;; not possible to search for files on TFTP).
+         ;;
+         ;; TODO: Allow HTTP.
+         "set root=(tftp)")
         ((or #f (? string?))
          #~(format #f "search --file --set ~a" #$file)))))
 
 (define* (grub-configuration-file config entries
                                   #:key
+                                  (locale #f)
                                   (system (%current-system))
                                   (old-entries '())
+                                  (store-crypto-devices '())
                                   store-directory-prefix)
   "Return the GRUB configuration file corresponding to CONFIG, a
 <bootloader-configuration> object, and where the store is available at
 STORE-FS, a <file-system> object.  OLD-ENTRIES is taken to be a list of menu
 entries corresponding to old generations of the system.
+STORE-CRYPTO-DEVICES contain the UUIDs of the encrypted units that must
+be unlocked to access the store contents.
 STORE-DIRECTORY-PREFIX may be used to specify a store prefix, as is required
 when booting a root file system on a Btrfs subvolume."
   (define all-entries
@@ -354,6 +406,21 @@ menuentry ~s {
                   (string-join (map string-join '#$modules)
                                "\n  module " 'prefix))))))
 
+  (define (crypto-devices)
+    (define (crypto-device->cryptomount dev)
+      (if (uuid? dev)
+          #~(format port "cryptomount -u ~a~%"
+                    ;; cryptomount only accepts UUID without the hypen.
+                    #$(string-delete #\- (uuid->string dev)))
+          ;; Other type of devices aren't implemented.
+          #~()))
+    (let ((devices (map crypto-device->cryptomount store-crypto-devices))
+          ;; XXX: Add luks2 when grub 2.06 is packaged.
+          (modules #~(format port "insmod luks~%")))
+      (if (null? devices)
+          devices
+          (cons modules devices))))
+
   (define (sugar)
     (let* ((entry (first all-entries))
            (device (menu-entry-device entry))
@@ -364,17 +431,47 @@ menuentry ~s {
                  #:store-directory-prefix store-directory-prefix
                  #:port #~port)))
 
+  (define locale-config
+    (let* ((entry (first all-entries))
+           (device (menu-entry-device entry))
+           (mount-point (menu-entry-device-mount-point entry))
+           (bootloader (bootloader-configuration-bootloader config))
+           (grub (bootloader-package bootloader)))
+      #~(let ((locale #$(and locale
+                             (locale-definition-source
+                              (locale-name->definition locale))))
+              (locales #$(and locale
+                              (normalize-file (grub-locale-directory grub)
+                                              mount-point
+                                              store-directory-prefix))))
+          (when locale
+            (format port "\
+# Localization configuration.
+~asearch --file --set ~a/en@quot.mo
+set locale_dir=~a
+set lang=~a~%"
+                    ;; Skip the search if there is an image, as it has already
+                    ;; been performed by eye-candy and traversing the store is
+                    ;; an expensive operation.
+                    #$(if (grub-theme-image (bootloader-theme config))
+                          "# "
+                          "")
+                    locales
+                    locales
+                    locale)))))
+
   (define keyboard-layout-config
     (let* ((layout (bootloader-configuration-keyboard-layout config))
            (grub   (bootloader-package
                     (bootloader-configuration-bootloader config)))
            (keymap* (and layout
                          (keyboard-layout-file layout #:grub grub)))
+           (entry (first all-entries))
+           (device (menu-entry-device entry))
+           (mount-point (menu-entry-device-mount-point entry))
            (keymap (and keymap*
-                        (if store-directory-prefix
-                            #~(string-append #$store-directory-prefix
-                                             #$keymap*)
-                            keymap*))))
+                        (normalize-file keymap* mount-point
+                                        store-directory-prefix))))
       #~(when #$keymap
           (format port "\
 insmod keylayouts
@@ -387,7 +484,9 @@ keymap ~a~%" #$keymap))))
                   "# This file was generated from your Guix configuration.  Any changes
 # will be lost upon reconfiguration.
 ")
+          #$@(crypto-devices)
           #$(sugar)
+          #$locale-config
           #$keyboard-layout-config
           (format port "
 set default=~a
@@ -438,9 +537,13 @@ fi~%"))))
               (invoke/quiet grub "--no-floppy" "--target=i386-pc"
                             "--boot-directory" install-dir
                             device))
-            ;; When creating a disk-image, only install GRUB modules.
-            (copy-recursively (string-append bootloader "/lib/")
-                              install-dir)))))
+            ;; When creating a disk-image, only install a font and GRUB modules.
+            (let* ((fonts (string-append install-dir "/grub/fonts")))
+              (mkdir-p fonts)
+              (copy-file (string-append bootloader "/share/grub/unicode.pf2")
+                         (string-append fonts "/unicode.pf2"))
+              (copy-recursively (string-append bootloader "/lib/")
+                                install-dir))))))
 
 (define install-grub-disk-image
   #~(lambda (bootloader root-index image)
@@ -485,27 +588,127 @@ fi~%"))))
 
 (define install-grub-efi
   #~(lambda (bootloader efi-dir mount-point)
-      ;; Install GRUB onto the EFI partition mounted at EFI-DIR, for the
-      ;; system whose root is mounted at MOUNT-POINT.
-      (let ((grub-install (string-append bootloader "/sbin/grub-install"))
-            (install-dir (string-append mount-point "/boot"))
-            ;; When installing Guix, it's common to mount EFI-DIR below
-            ;; MOUNT-POINT rather than /boot/efi on the live image.
-            (target-esp (if (file-exists? (string-append mount-point efi-dir))
-                            (string-append mount-point efi-dir)
-                            efi-dir)))
-        ;; Tell 'grub-install' that there might be a LUKS-encrypted /boot or
-        ;; root partition.
-        (setenv "GRUB_ENABLE_CRYPTODISK" "y")
-        (invoke/quiet grub-install "--boot-directory" install-dir
-                      "--bootloader-id=Guix"
-                      "--efi-directory" target-esp))))
+      ;; There is nothing useful to do when called in the context of a disk
+      ;; image generation.
+      (when efi-dir
+        ;; Install GRUB onto the EFI partition mounted at EFI-DIR, for the
+        ;; system whose root is mounted at MOUNT-POINT.
+        (let ((grub-install (string-append bootloader "/sbin/grub-install"))
+              (install-dir (string-append mount-point "/boot"))
+              ;; When installing Guix, it's common to mount EFI-DIR below
+              ;; MOUNT-POINT rather than /boot/efi on the live image.
+              (target-esp (if (file-exists? (string-append mount-point efi-dir))
+                              (string-append mount-point efi-dir)
+                              efi-dir)))
+          ;; Tell 'grub-install' that there might be a LUKS-encrypted /boot or
+          ;; root partition.
+          (setenv "GRUB_ENABLE_CRYPTODISK" "y")
+          (invoke/quiet grub-install "--boot-directory" install-dir
+                        "--bootloader-id=Guix"
+                        "--efi-directory" target-esp)))))
+
+(define (install-grub-efi-netboot subdir)
+  "Define a grub-efi-netboot bootloader installer for installation in SUBDIR,
+which is usually efi/Guix or efi/boot."
+  (let* ((system (string-split (nix-system->gnu-triplet
+                                (or (%current-target-system)
+                                    (%current-system)))
+                               #\-))
+         (arch (first system))
+         (boot-efi-link (match system
+                          ;; These are the supportend systems and the names
+                          ;; defined by the UEFI standard for removable media.
+                          (("i686" _ ...)        "/bootia32.efi")
+                          (("x86_64" _ ...)      "/bootx64.efi")
+                          (("arm" _ ...)         "/bootarm.efi")
+                          (("aarch64" _ ...)     "/bootaa64.efi")
+                          (("riscv" _ ...)       "/bootriscv32.efi")
+                          (("riscv64" _ ...)     "/bootriscv64.efi")
+                          ;; Other systems are not supported, although defined.
+                          ;; (("riscv128" _ ...) "/bootriscv128.efi")
+                          ;; (("ia64" _ ...)     "/bootia64.efi")
+                          ((_ ...)               #f)))
+         (core-efi (string-append
+                    ;; This is the arch dependent file name of GRUB, e.g.
+                    ;; i368-efi/core.efi or arm64-efi/core.efi.
+                    (match arch
+                      ("i686"    "i386")
+                      ("aarch64" "arm64")
+                      ("riscv"   "riscv32")
+                      (_         arch))
+                    "-efi/core.efi")))
+    (with-imported-modules
+     '((guix build union))
+     #~(lambda (bootloader target mount-point)
+         "Install the BOOTLOADER, which must be the package grub, as e.g.
+bootx64.efi or bootaa64.efi into SUBDIR, which is usually efi/Guix or efi/boot,
+below the directory TARGET for the system whose root is mounted at MOUNT-POINT.
+
+MOUNT-POINT is the last argument in 'guix system init /etc/config.scm mnt/point'
+or '/' for other 'guix system' commands.
+
+TARGET is the target argument given to the bootloader-configuration in
+
+(operating-system
+ (bootloader (bootloader-configuration
+              (target \"/boot\")
+              …))
+ …)
+
+TARGET is required to be an absolute directory name, usually mounted via NFS,
+and finally needs to be provided by a TFTP server as the TFTP root directory.
+
+GRUB will load tftp://server/SUBDIR/grub.cfg and this file will instruct it to
+load more files from the store like tftp://server/gnu/store/…-linux…/Image.
+
+To make this possible two symlinks will be created. The first symlink points
+relatively form MOUNT-POINT/TARGET/SUBDIR/grub.cfg to
+MOUNT-POINT/boot/grub/grub.cfg, and the second symlink points relatively from
+MOUNT-POINT/TARGET/%store-prefix to MOUNT-POINT/%store-prefix.
+
+It is important to note that these symlinks need to be relativ, as the absolute
+paths on the TFTP server side are unknown.
+
+It is also important to note that both symlinks will point outside the TFTP root
+directory and that the TARGET/%store-prefix symlink makes the whole store
+accessible via TFTP. Possibly the TFTP server must be configured
+to allow accesses outside its TFTP root directory. This may need to be
+considered for security aspects."
+         (use-modules ((guix build union) #:select (symlink-relative)))
+         (let* ((net-dir (string-append mount-point target "/"))
+                (sub-dir (string-append net-dir #$subdir "/"))
+                (store (string-append mount-point (%store-prefix)))
+                (store-link (string-append net-dir (%store-prefix)))
+                (grub-cfg (string-append mount-point "/boot/grub/grub.cfg"))
+                (grub-cfg-link (string-append sub-dir (basename grub-cfg)))
+                (boot-efi-link (string-append sub-dir #$boot-efi-link)))
+           ;; Prepare the symlink to the store.
+           (mkdir-p (dirname store-link))
+           (false-if-exception (delete-file store-link))
+           (symlink-relative store store-link)
+           ;; Prepare the symlink to the grub.cfg, which points into the store.
+           (mkdir-p (dirname grub-cfg-link))
+           (false-if-exception (delete-file grub-cfg-link))
+           (symlink-relative grub-cfg grub-cfg-link)
+           ;; Install GRUB, which refers to the grub.cfg, with support for
+           ;; encrypted partitions,
+           (setenv "GRUB_ENABLE_CRYPTODISK" "y")
+           (invoke/quiet (string-append bootloader "/bin/grub-mknetdir")
+                         (string-append "--net-directory=" net-dir)
+                         (string-append "--subdir=" #$subdir))
+           ;; Prepare the bootloader symlink, which points to core.efi of GRUB.
+           (false-if-exception (delete-file boot-efi-link))
+           (symlink #$core-efi boot-efi-link))))))
 
 
 
 ;;;
 ;;; Bootloader definitions.
 ;;;
+;;; For all these grub-bootloader variables the path to /boot/grub/grub.cfg
+;;; is fixed.  Inheriting and overwriting the field 'configuration-file' will
+;;; break 'guix system delete-generations', 'guix system switch-generation',
+;;; and 'guix system roll-back'.
 
 (define grub-bootloader
   (bootloader
@@ -516,12 +719,12 @@ fi~%"))))
    (configuration-file "/boot/grub/grub.cfg")
    (configuration-file-generator grub-configuration-file)))
 
-(define* grub-minimal-bootloader
+(define grub-minimal-bootloader
   (bootloader
    (inherit grub-bootloader)
    (package grub-minimal)))
 
-(define* grub-efi-bootloader
+(define grub-efi-bootloader
   (bootloader
    (inherit grub-bootloader)
    (installer install-grub-efi)
@@ -529,7 +732,13 @@ fi~%"))))
    (name 'grub-efi)
    (package grub-efi)))
 
-(define* grub-mkrescue-bootloader
+(define grub-efi-netboot-bootloader
+  (bootloader
+   (inherit grub-efi-bootloader)
+   (name 'grub-efi-netboot-bootloader)
+   (installer (install-grub-efi-netboot "efi/Guix"))))
+
+(define grub-mkrescue-bootloader
   (bootloader
    (inherit grub-efi-bootloader)
    (package grub-hybrid)))

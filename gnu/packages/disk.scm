@@ -2,7 +2,7 @@
 ;;; Copyright © 2012, 2013 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2015 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2018–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
@@ -86,7 +86,75 @@
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
-  #:use-module (guix packages))
+  #:use-module (guix packages)
+  #:use-module (guix utils))
+
+(define-public bcache-tools
+  ;; The 1.1 release is a year old and missing new features & documentation.
+  (let ((commit "096d205a9f1be8540cbc5a468c0da8203023de70")
+        (revision "0"))
+    (package
+      (name "bcache-tools")
+      (version (git-version "1.1" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url (string-append "https://git.kernel.org/pub/scm/"
+                                   "linux/kernel/git/colyli/bcache-tools.git"))
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0r0vwg4vacz5zgsafk360xn7gi2scy01c79mkmjrdyxjfij5z3iy"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f                    ; no test suite
+         #:make-flags
+         (list (string-append "PREFIX=" (assoc-ref %outputs "out"))
+               (string-append "UDEVLIBDIR=" (assoc-ref %outputs "out")
+                              "/lib/udev")
+               (string-append "DRACUTLIBDIR=" (assoc-ref %outputs "out")
+                              "/lib/dracut")
+               (string-append "CC=" ,(cc-for-target)))
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'configure)          ; no configure script
+           (add-before 'install 'fix-hard-coded-file-names
+             (lambda _
+               ;; Some rules still hard-code /usr.
+               (substitute* "Makefile"
+                 (("/usr") "${PREFIX}"))
+               #t))
+           (add-before 'install 'create-target-directories
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((out (assoc-ref outputs "out")))
+                 (for-each (lambda (dir)
+                             (mkdir-p (string-append out dir)))
+                           (list "/lib/udev/rules.d"
+                                 "/sbin"
+                                 "/share/man/man8"))
+                 #t))))))
+      (native-inputs
+       `(("pkg-config" ,pkg-config)))
+      (inputs
+       `(("util-linux:lib" ,util-linux "lib"))) ; libblkid
+      (home-page "https://bcache.evilpiepirate.org")
+      (synopsis "Tools for the Linux kernel block layer cache")
+      (description
+       "This package contains user-space utilities to create and inspect bcache
+partitions.  It's rather minimal as bcache is designed to work well without
+configuration on any system.
+
+Linux's @acronym{bcache, block layer cache} lets one or more fast block devices,
+such as flash-based @acronym{SSDs, solid state drives}, to act as a cache for
+one or more slower (and inexpensive) devices, such as hard disk drives or
+redundant storage arrays.  In fact, bcache intends to be a superior alternative
+to battery-backed RAID controllers.
+
+Bcache is designed around the performance characteristics of SSDs and tries to
+minimize write inflation.  It's file-system agnostic and does both write-through
+and write-back caching.")
+      (license license:gpl2))))
 
 (define-public udevil
   (package
@@ -236,14 +304,14 @@ tables, and it understands a variety of different formats.")
 (define-public gptfdisk
   (package
     (name "gptfdisk")
-    (version "1.0.5")
+    (version "1.0.6")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://sourceforge/gptfdisk/gptfdisk/"
                           version "/gptfdisk-" version ".tar.gz"))
       (sha256
-       (base32 "0bybgp30pqxb6x5krxazkq4drca0gz4inxj89fpyr204rn3kjz8f"))))
+       (base32 "1a4c2ss6n2s6x8v11h79jykh96y46apd6i838ka0ngx58gb53ifx"))))
     (build-system gnu-build-system)
     (inputs
      `(("gettext" ,gettext-minimal)
@@ -482,7 +550,7 @@ systems.  Output format is completely customizable.")
 (define-public f3
   (package
     (name "f3")
-    (version "7.2")
+    (version "8.0")
     (source
      (origin
       (method git-fetch)
@@ -491,11 +559,11 @@ systems.  Output format is completely customizable.")
             (commit (string-append "v" version))))
       (file-name (git-file-name name version))
       (sha256
-       (base32 "1iwdg0r4wkgc8rynmw1qcqz62l0ldgc8lrazq33msxnk5a818jgy"))))
+       (base32 "17l5vspfcgfbkqg7bakp3gql29yb05gzawm8n3im30ilzdr53678"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:tests? #f                      ; no check target
-       #:make-flags (list "CC=gcc"
+     `(#:tests? #f                      ; no check target
+       #:make-flags (list (string-append "CC=" ,(cc-for-target))
                           (string-append "PREFIX=" %output))
        #:phases
        (modify-phases %standard-phases
@@ -520,7 +588,7 @@ a card with a smaller capacity than stated.")
 (define-public python-parted
   (package
     (name "python-parted")
-    (version "3.11.2")
+    (version "3.11.7")
     (source
      (origin
        (method git-fetch)
@@ -529,7 +597,7 @@ a card with a smaller capacity than stated.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0r6916n3w4vldxrq30a3z2iagvxgly4vfmlidjm65vwqnyv17bvn"))))
+        (base32 "01193fmkss9icjvqpw85szpk8ld1pnha7p9kqm7mpwk6rc6gi2m3"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -555,13 +623,10 @@ a card with a smaller capacity than stated.")
     (description "This package provides @code{parted} bindings for Python.")
     (license license:gpl2+)))
 
-(define-public python2-parted
-  (package-with-python2 python-parted))
-
 (define-public duperemove
   (package
     (name "duperemove")
-    (version "0.11.1")
+    (version "0.11.2")
     (source
      (origin
        (method git-fetch)
@@ -569,7 +634,7 @@ a card with a smaller capacity than stated.")
              (url "https://github.com/markfasheh/duperemove")
              (commit (string-append "v" version))))
        (sha256
-        (base32 "1scz76pvpljvrpfn176125xwaqwyy4pirlm11sc9spb2hyzknw2z"))
+        (base32 "1a87mka2sfzhbch2jip6wlvvs0glxq9lqwmyrp359d1rmwwmqiw9"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (native-inputs
@@ -583,7 +648,9 @@ a card with a smaller capacity than stated.")
        (modify-phases %standard-phases
          (delete 'configure))           ; no configure script
        #:make-flags (list (string-append "PREFIX=" %output)
-                          "CC=gcc")))
+                          (string-append "CC=" ,(cc-for-target))
+                          ;; Set to <next release>dev by default.
+                          (string-append "VER=" ,version))))
     (home-page "https://github.com/markfasheh/duperemove")
     (synopsis "Tools for de-duplicating file system data")
     (description "Duperemove is a simple tool for finding duplicated extents
@@ -692,7 +759,7 @@ passphrases.")
 (define-public ndctl
   (package
     (name "ndctl")
-    (version "68")
+    (version "71.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -701,7 +768,7 @@ passphrases.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0xmim7z4qp6x2ggndnbwd940c73pa1qlf3hxyn3qh5pyr69nh9y8"))))
+                "1vi61bm9wyawklswh9mj9zdp28ar7r97qckwnhgiyila73fb3jx2"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("asciidoc" ,asciidoc)
@@ -793,7 +860,7 @@ to create devices with respective mappings for the ATARAID sets discovered.")
 (define-public libblockdev
   (package
     (name "libblockdev")
-    (version "2.24")
+    (version "2.25")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/storaged-project/"
@@ -801,7 +868,7 @@ to create devices with respective mappings for the ATARAID sets discovered.")
                                   version "-1/libblockdev-" version ".tar.gz"))
               (sha256
                (base32
-                "0wq7624pnprvfzrf39bq1cybd9lqwawbdg5bm0cchlpgvdq7q86w"))))
+                "0s0nazkpzpn4an00qghjkk9n7gdm5a8dqfr5hfnlk5mk5lma8njm"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1041,6 +1108,50 @@ of choice for all light thinking Unix addicts!")
     (home-page "https://savannah.nongnu.org/projects/hddtemp/")
     (synopsis "Report the temperature of hard drives from S.M.A.R.T. information")
     (description "@command{hddtemp} is a small utility that gives you the
-temperature of your hard drive by reading S.M.A.R.T. informations (for drives
+temperature of your hard drive by reading S.M.A.R.T. information (for drives
 that support this feature).")
     (license license:gpl2+)))
+
+(define-public memkind
+  (package
+    (name "memkind")
+    (version "1.10.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/memkind/memkind")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "11iz887f3cp5pzf1bzm644wzab8gkbhz3b7x1w6pcps71yd94ylj"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(;; memkind patched jemalloc to add je_arenalookupx,
+       ;; je_check_reallocatex--i.e. they forked jemalloc.
+       ;("jemalloc" ,jemalloc)
+       ("ndctl" ,ndctl)
+       ("numactl" ,numactl)))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)))
+    (arguments
+     `(#:tests? #f ; Tests require a NUMA-enabled system.
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'autogen-jemalloc
+           (lambda _
+             (with-directory-excursion "jemalloc"
+               (substitute* "Makefile.in"
+                (("/bin/sh") (which "sh")))
+               (invoke "autoconf")
+               (substitute* "configure"
+                (("/bin/sh") (which "sh"))))
+             #t)))))
+    (home-page "https://github.com/memkind/memkind")
+    (synopsis "Heap manager with memory kinds (for NUMA)")
+    (description "This package provides a user-extensible heap manager
+built on top of jemalloc which enables control of memory characteristics
+and a partitioning of the heap between kinds of memory (for NUMA).")
+    (license license:bsd-3)))

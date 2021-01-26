@@ -9,17 +9,18 @@
 ;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2018, 2019 Jonathan Brielmaier <jonathan.brielmaier@web.de>
-;;; Copyright © 2018, 2019 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2018, 2019, 2020 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2019 Tim Stahel <swedneck@swedneck.xyz>
 ;;; Copyright © 2019 Jovany Leandro G.C <bit4bit@riseup.net>
 ;;; Copyright © 2019 Steve Sprang <scs@stevesprang.com>
 ;;; Copyright © 2019 John Soo <jsoo1@asu.edu>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
-;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
+;;; Copyright © 2020,2021 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 Ekaitz Zarraga <ekaitz@elenq.tech>
 ;;; Copyright © 2020 B. Wilson <elaexuotee@wilsonb.com>
-;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
+;;; Copyright © 2020, 2021 Vinicius Monego <monego@posteo.net>
+;;; Copyright © 2020 Morgan Smith <Morgan.J.Smith@outlook.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -66,6 +67,7 @@
   #:use-module (gnu packages curl)
   #:use-module (gnu packages dejagnu)
   #:use-module (gnu packages digest)
+  #:use-module (gnu packages docbook)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages fontutils)
@@ -73,6 +75,7 @@
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gd)
+  #:use-module (gnu packages geo)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages gl)
@@ -100,6 +103,7 @@
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages pretty-print)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
@@ -270,14 +274,14 @@ utilities.")
   (package
     (inherit geda-gaf)
     (name "lepton-eda")
-    (version "1.9.11-20200604")
+    (version "1.9.13-20201211")
     (home-page "https://github.com/lepton-eda/lepton-eda")
     (source (origin
               (method git-fetch)
               (uri (git-reference (url home-page) (commit version)))
               (sha256
                (base32
-                "091y8h7wcr9smwhb1wf12sj27n5jrannbj3y6qq3q2gwiifiz8sd"))
+                "0xfx6d0pyfrxr1c0nm4pbmb716hng78rgizaa6vsas9347n4kk1n"))
               (file-name (git-file-name name version))))
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -291,56 +295,93 @@ utilities.")
        ,@(package-native-inputs geda-gaf)))
     (inputs
      `(("glib" ,glib)
-       ("gtk" ,gtk+-2)
+       ("gtk" ,gtk+)
+       ("gtksheet" ,gtksheet)
        ("guile" ,guile-2.2)
        ("shared-mime-info" ,shared-mime-info)
        ("m4" ,m4)
        ("pcb" ,pcb)))
     (arguments
-     (substitute-keyword-arguments (package-arguments geda-gaf)
-       ((#:configure-flags flags ''())
-        ;; When running "make", the POT files are built with the build time as
-        ;; their "POT-Creation-Date".  Later on, "make" notices that .pot
-        ;; files were updated and goes on to run "msgmerge"; as a result, the
-        ;; non-deterministic POT-Creation-Date finds its way into .po files,
-        ;; and then in .gmo files.  To avoid that, simply make sure 'msgmerge'
-        ;; never runs.  See <https://bugs.debian.org/792687>.
-        `(cons "ac_cv_path_MSGMERGE=true" ,flags))
-       ((#:phases phases '%standard-phases)
-        `(modify-phases %standard-phases
-           (add-before 'bootstrap 'prepare
-             (lambda _
-               ;; Some of the scripts there are invoked by autogen.sh.
-               (for-each patch-shebang (find-files "build-tools"))
+     `(#:configure-flags
+       (let ((pcb (assoc-ref %build-inputs "pcb")))
+         ;; When running "make", the POT files are built with the build time as
+         ;; their "POT-Creation-Date".  Later on, "make" notices that .pot
+         ;; files were updated and goes on to run "msgmerge"; as a result, the
+         ;; non-deterministic POT-Creation-Date finds its way into .po files,
+         ;; and then in .gmo files.  To avoid that, simply make sure 'msgmerge'
+         ;; never runs.  See <https://bugs.debian.org/792687>.
+         (list "ac_cv_path_MSGMERGE=true"
+               "--with-gtk3"
+               (string-append "--with-pcb-datadir=" pcb "/share")
+               (string-append "--with-pcb-lib-path="
+                              pcb "/share/pcb/pcblib-newlib:"
+                              pcb "/share/pcb/newlib")))
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'fix-dynamic-link
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (substitute* "libleptongui/scheme/schematic/ffi.scm.in"
+               (("@LIBLEPTONGUI@")
+                (string-append (assoc-ref outputs "out")
+                               "/lib/libleptongui.so")))
+             (substitute* '("libleptongui/scheme/schematic/ffi/gtk.scm.in"
+                            "libleptonattrib/lepton-attrib.scm")
+               (("@LIBGTK@")
+                (string-append (assoc-ref inputs "gtk")
+                               "/lib/libgtk-3.so")))
+             (substitute* "liblepton/scheme/lepton/ffi.scm.in"
+               (("@LIBLEPTON@")
+                (string-append (assoc-ref outputs "out")
+                               "/lib/liblepton.so")))
+             (substitute* "libleptonattrib/lepton-attrib.scm"
+               (("@LIBLEPTONATTRIB@")
+                (string-append (assoc-ref outputs "out")
+                               "/lib/libleptonattrib.so")))
+             (substitute* "liblepton/scheme/lepton/log.scm.in"
+               (("@LIBGLIB@")
+                (string-append (assoc-ref inputs "glib")
+                               "/lib/libglib-2.0.so")))
 
-               ;; Make sure 'msgmerge' can modify the PO files.
-               (for-each (lambda (po)
-                           (chmod po #o666))
-                         (find-files "." "\\.po$"))
+             ;; For finding libraries when running tests before installation.
+             (setenv "LIBLEPTONGUI"
+                     (string-append (getcwd)
+                                    "/libleptongui/src/.libs/libleptongui.so"))
+             (setenv "LIBLEPTON"
+                     (string-append (getcwd)
+                                    "/libleptongui/src/.libs/liblepton.so"))
+             (setenv "LD_LIBRARY_PATH"
+                     (string-append (getcwd) "/libleptonattrib/src/.libs/:"
+                                    (getenv "LIBRARY_PATH")))
+             #t))
+         (add-before 'bootstrap 'prepare
+           (lambda _
+             ;; Some of the scripts there are invoked by autogen.sh.
+             (for-each patch-shebang (find-files "build-tools"))
 
-               ;; This would normally be created by invoking 'git', but it
-               ;; doesn't work here.
-               (call-with-output-file "version.h"
-                 (lambda (port)
-                   (format port "#define PACKAGE_DATE_VERSION \"~a\"~%"
-                           ,(string-drop version
-                                         (+ 1 (string-index version #\-))))
-                   (format port "#define PACKAGE_DOTTED_VERSION \"~a\"~%"
-                           ,(string-take version
-                                         (string-index version #\-)))
-                   (format port "#define PACKAGE_GIT_COMMIT \"cabbag3\"~%")))
-               #t))
-           (add-after 'install 'compile-scheme-files
-             (lambda* (#:key outputs #:allow-other-keys)
-               (invoke "make" "precompile")
-               (for-each (lambda (program)
-                           (wrap-program program
-                             `("GUILE_LOAD_COMPILED_PATH" ":" prefix
-                               (,(string-append (assoc-ref outputs "out")
-                                                "/share/lepton-eda/ccache/")))))
-                         (find-files (string-append (assoc-ref outputs "out") "/bin")
-                                     ".*"))
-               #t))))))
+             ;; Make sure 'msgmerge' can modify the PO files.
+             (for-each (lambda (po)
+                         (chmod po #o666))
+                       (find-files "." "\\.po$"))
+
+             ;; This would normally be created by invoking 'git', but it
+             ;; doesn't work here.
+             (call-with-output-file "version.h"
+               (lambda (port)
+                 (format port "#define PACKAGE_DATE_VERSION \"~a\"~%"
+                         ,(string-drop version
+                                       (+ 1 (string-index version #\-))))
+                 (format port "#define PACKAGE_DOTTED_VERSION \"~a\"~%"
+                         ,(string-take version
+                                       (string-index version #\-)))
+                 (format port "#define PACKAGE_GIT_COMMIT \"cabbag3\"~%")))
+             #t))
+         (add-after 'install 'compile-scheme-files
+           (lambda* (#:key outputs #:allow-other-keys)
+             (unsetenv "LIBLEPTONGUI")
+             (unsetenv "LIBLEPTON")
+             (unsetenv "LD_LIBRARY_PATH")
+             (invoke "make" "precompile")
+             #t)))))
     (description
      "Lepton EDA ia an @dfn{electronic design automation} (EDA) tool set
 forked from gEDA/gaf in late 2016.  EDA tools are used for electrical circuit
@@ -426,16 +467,16 @@ optimizer; and it can produce photorealistic and design review images.")
 (define-public pcb-rnd
   (package (inherit pcb)
     (name "pcb-rnd")
-    (version "2.2.3")
+    (version "2.2.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://repo.hu/projects/pcb-rnd/releases/"
                                   "pcb-rnd-" version ".tar.gz"))
               (sha256
                (base32
-                "0j650498d87b4xsggzc0xlk73k0hhj43wfy45qz2lcn0xc3bks1m"))))
+                "06ylc2rd4yvzp3krk62q9dbi13h0yq1x257fbjkh10vfjn0ga5c2"))))
     (arguments
-     `(#:tests? #f ; no check target
+     `(#:tests? #f                      ; no check target
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'cc-is-gcc
@@ -753,8 +794,8 @@ fonts to gEDA.")
       (license license:gpl2+))))
 
 (define-public libfive
-  (let ((commit "6e39254e57c179459bb929df49ae96a6017a0ed6")
-        (revision "3"))
+  (let ((commit "8ca1b8685ef3fac7b64e66b10459b8421a3020c6")
+        (revision "4"))
     (package
       (name "libfive")
       (version (git-version "0" revision commit))
@@ -765,13 +806,8 @@ fonts to gEDA.")
                       (commit commit)))
                 (sha256
                  (base32
-                  "0ryv2hcbrwqc087w7rrs4a2irkcpmqync00g4dh8n7jn10w2jkim"))
-                (file-name (git-file-name name version))
-                (snippet
-                 ;; Remove bundled catch since we provide our own.
-                 '(begin
-                    (delete-file "libfive/test/catch.hpp")
-                    #t))))
+                  "1c762cd70iv2b9av0l9lq0py9138y98wk3dirhdmil7jncdhvq98"))
+                (file-name (git-file-name name version))))
       (build-system cmake-build-system)
       (arguments
        `(#:test-target "libfive-test"
@@ -780,23 +816,15 @@ fonts to gEDA.")
            (add-after 'unpack 'remove-native-compilation
              (lambda _
                (substitute* "CMakeLists.txt" (("-march=native") ""))
-               #t))
-           (add-after 'unpack 'find-catch
-             (lambda* (#:key inputs #:allow-other-keys)
-               (setenv "CPLUS_INCLUDE_PATH"
-                       (string-append (assoc-ref inputs "catch")
-                                      "/include/catch2:"
-                                      (or (getenv "CPLUS_INCLUDE_PATH") "")))
                #t)))))
       (native-inputs
        `(("pkg-config" ,pkg-config)))
       (inputs
        `(("boost" ,boost)
-         ("catch" ,catch-framework2)
          ("libpng" ,libpng)
          ("qtbase" ,qtbase)
          ("eigen" ,eigen)
-         ("guile" ,guile-2.2)))
+         ("guile" ,guile-3.0)))
       (home-page "https://libfive.com")
       (synopsis "Tool for programmatic computer-aided design")
       (description
@@ -808,7 +836,58 @@ language.")
       (license (list license:mpl2.0               ;library
                      license:gpl2+)))))           ;Guile bindings and GUI
 
-;; TODO Add doc https://gitlab.com/kicad/services/kicad-doc/-/tree/master
+(define-public inspekt3d
+  (let ((commit "703f52ccbfedad2bf5240bf8183d1b573c9d54ef")
+        (revision "0"))
+    (package
+      (name "inspekt3d")
+      (version (git-version "0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://gitlab.com/kavalogic-inc/inspekt3d.git")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0lan6930g5a9z4ack9jj0zdd0mb2s6q2xzpiwcjdc3pvl9b1nbw4"))
+                (modules '((guix build utils)))
+                (snippet
+                 '(begin
+                    ;; Allow builds with Guile 3.0.
+                    (substitute* "configure.ac"
+                      (("2\\.2") "3.0 2.2"))
+                    #t))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'patch-libfive-guile-location
+             (lambda* (#:key inputs #:allow-other-keys)
+               (substitute* "inspekt3d/library.scm"
+                 (("\"libfive-guile")
+                  (string-append "\""
+                                 (assoc-ref inputs "libfive")
+                                 "/lib/libfive-guile")))
+               #t)))))
+      (native-inputs
+       `(("autoconf" ,autoconf)
+         ("automake" ,automake)
+         ("pkg-config" ,pkg-config)))
+      (inputs
+       `(("mesa" ,mesa)
+         ("guile" ,guile-3.0)))
+      (propagated-inputs
+       `(("libfive" ,libfive)
+         ("guile-opengl" ,guile3.0-opengl)))
+      (home-page "https://gitlab.com/kavalogic-inc/inspekt3d/")
+      (synopsis "Lightweight 3D viewer for Libfive written in Guile Scheme")
+      (description
+       "Inspekt3d is a lightweight 3D viewer for Libfive written in Guile Scheme.
+The viewer can be used interactively with a REPL (for example Geiser in
+Emacs).")
+      (license license:gpl3+))))
+
 (define-public kicad
   (package
     (name "kicad")
@@ -858,6 +937,9 @@ language.")
              #t)))))
     (native-search-paths
      (list (search-path-specification
+            (variable "KICAD")          ; to find kicad-doc
+            (files '("")))
+           (search-path-specification
             (variable "KICAD_TEMPLATE_DIR")
             (files '("share/kicad/template")))
            (search-path-specification
@@ -928,6 +1010,46 @@ translations for KiCad.")
 
 (define-public kicad-i18l
   (deprecated-package "kicad-i18l" kicad-i18n))
+
+(define-public kicad-doc
+  (package
+    (name "kicad-doc")
+    (version "5.1.6")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/kicad/services/kicad-doc.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "03kvss8a0xrjnfvkwymm0vfd7rn9ix7i926xdzz9jg9iycrjfj3g"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags (list "-DBUILD_FORMATS=html")
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'build)
+         (add-before 'install 'set-perl-env
+           (lambda* (#:key inputs #:allow-other-keys)
+             (setenv "PERL5LIB"
+                     (string-append (assoc-ref inputs "perl-unicode-linebreak")
+                                    "/lib/perl5/site_perl" ":"
+                                    (getenv "PERL5LIB")))
+             #t))
+         (delete 'check))))
+    (native-inputs
+     `(("asciidoc" ,asciidoc)
+       ("gettext" ,gettext-minimal)
+       ("git" ,git-minimal)
+       ("perl" ,perl)
+       ("perl-unicode-linebreak" ,perl-unicode-linebreak)
+       ("po4a" ,po4a)
+       ("source-highlight" ,source-highlight)))
+    (home-page "https://kicad.org")
+    (synopsis "KiCad official documentation")
+    (description "This repository contains the official KiCad documentation.")
+    (license license:gpl3+)))
 
 (define-public kicad-symbols
   (package
@@ -1036,18 +1158,29 @@ the 'showing the effect of'-style of operation.")
 (define-public volk
   (package
     (name "volk")
-    (version "2.3.0")
+    (version "2.4.1")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://www.libvolk.org/releases/volk-"
-                           version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/gnuradio/volk")
+             (commit (string-append "v" version))
+             (recursive? #t)))          ; for cpu_features git submodule
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "1pjxz3piwy49njj5y2zk437prwkv9lfs5g48577jj3kcsg766vi3"))))
+        (base32 "1mkqiw0i2fbbsk46zvk8yv5swl7ifhq6y1dlfphq8dsmkvxckqby"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
+         (add-after 'install 'remove-static-libraries
+           ;; Remove libcpu_features.a (and any others that might appear).
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (lib (string-append out "/lib")))
+               (for-each delete-file (find-files lib "\\.a$"
+                                                 #:fail-on-error? #t))
+               #t)))
          (add-after 'install 'wrap-pythonpath
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -1081,22 +1214,23 @@ use on a given system.")
 (define-public libredwg
   (package
     (name "libredwg")
-    (version "0.11")
+    (version "0.12")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://gnu/libredwg/libredwg-"
              version ".tar.xz"))
        (sha256
-        (base32 "1vd7ii32k5447z7k4w9s005hv1ffpj6dyf1w40x6c53qksrblny2"))))
+        (base32 "0z5algzi3alq166885y0qyj2gnc7gc6vhnz7nw0kwc0d236p6md8"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--disable-bindings")))
     (native-inputs
      `(("libxml2" ,libxml2)
        ("parallel" ,parallel)
+       ("perl" ,perl)
        ("pkg-config" ,pkg-config)
-       ("python" ,python)
+       ("python" ,python-wrapper)
        ("python-libxml2" ,python-libxml2)))
     (inputs
      `(("pcre2" ,pcre2)))
@@ -1296,21 +1430,26 @@ developed at MIT to model electromagnetic systems.")
 (define-public adms
   (package
     (name "adms")
-    (version "2.3.6")
+    (version "2.3.7")
     (source (origin
-              (method url-fetch)
-              (uri
-               (string-append
-                "mirror://sourceforge/mot-adms/adms-source/"
-                (version-major+minor version) "/adms-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/Qucs/ADMS")
+                    (commit (string-append "release-" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1rn98l6jxcjhi6ai5f7p588khra9z80m0m0lql4n4sb7773fh1vk"))))
+                "0i37c9k6q1iglmzp9736rrgsnx7sw8xn3djqbbjw29zsyl3pf62c"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("flex" ,flex)
-       ("bison" ,bison)))
-    (home-page "https://sourceforge.net/projects/mot-adms")
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("bison" ,bison)
+       ("flex" ,flex)
+       ("libtool" ,libtool)
+       ("perl" ,perl)
+       ("perl-xml-libxml" ,perl-xml-libxml)))
+    (home-page "https://github.com/Qucs/ADMS")
     (synopsis "Automatic device model synthesizer")
     (description
      "ADMS is a code generator that converts electrical compact device models
@@ -1385,7 +1524,7 @@ bindings for Python, Java, OCaml and more.")
 (define-public radare2
   (package
     (name "radare2")
-    (version "4.4.0")
+    (version "5.0.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1393,7 +1532,7 @@ bindings for Python, Java, OCaml and more.")
                     (commit version)))
               (sha256
                (base32
-                "0gwdnrnk7wdgkajp2qwg4fyplh7nsbmf01bzx07px6xmiscd9z2s"))
+                "0aa7c27kd0l55fy5qfvxqmakp4pz6240v3hn84095qmqkzcbs420"))
               (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
@@ -1499,8 +1638,12 @@ high-performance parallel differential evolution (DE) optimization algorithm.")
     (version "28")
     (source (origin
               (method url-fetch)
-              (uri (string-append "mirror://sourceforge/ngspice/ng-spice-rework/"
-                                  version "/ngspice-" version ".tar.gz"))
+              (uri (list
+                     (string-append "mirror://sourceforge/ngspice/ng-spice-rework/"
+                                    version "/ngspice-" version ".tar.gz")
+                     (string-append "mirror://sourceforge/ngspice/ng-spice-rework/"
+                                    "old-releases/" version
+                                    "/ngspice-" version ".tar.gz")))
               (sha256
                (base32
                 "0rnz2rdgyav16w7wfn3sfrk2lwvvgz1fh0l9107zkcldijklz04l"))
@@ -2224,7 +2367,7 @@ simulation.")
 (define-public cutter
   (package
     (name "cutter")
-    (version "1.10.3")
+    (version "1.12.0")
     (source
      (origin
        (method git-fetch)
@@ -2233,7 +2376,7 @@ simulation.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0qj8jyij02nif4jpirl09ygwnv8a9zi3vkb5sf5s8mg7qwlpnvyk"))))
+        (base32 "0ljj3j3apbbw628n2nyrxpbnclixx20bqjxm0xwggqzz9vywsar0"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -2371,101 +2514,110 @@ full programmatic control over your models.")
     (license license:gpl2+)))
 
 (define-public freecad
-  (package
-    (name "freecad")
-    (version "0.18.4")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/FreeCAD/FreeCAD")
-             (commit version)))
-       (modules '((guix build utils)))
-       (snippet
-        '(begin
-           ;; Fix build with Python 3.8, see
-           ;; <https://tracker.freecadweb.org/view.php?id=4143>.
-           (substitute* "src/Base/swigpyrun.inl"
-             (("PyObject \\*modules = interp->modules;")
-              "PyObject *modules = PyEval_GetBuiltins();"))
-           #t))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32
-         "170hk1kgrvsddrwykp24wyj0cha78zzmzbf50gn98x7ngqqs395s"))))
-    (build-system qt-build-system)
-    (native-inputs
-     `(("doxygen" ,doxygen)
-       ("graphviz" ,graphviz)
-       ("qttools" ,qttools)
-       ("pkg-config" ,pkg-config)
-       ("swig" ,swig)))
-    (inputs
-     `(("boost" ,boost)
-       ("coin3D" ,coin3D)
-       ("eigen" ,eigen)
-       ("freetype" ,freetype)
-       ("glew" ,glew)
-       ("hdf5" ,hdf5-1.10)
-       ("libarea" ,libarea)
-       ("libmedfile" ,libmedfile)
-       ("libspnav" ,libspnav)
-       ("libxi" ,libxi)
-       ("libxmu" ,libxmu)
-       ("openmpi" ,openmpi)
-       ("opencascade-occt" ,opencascade-occt)
-       ("python-matplotlib" ,python-matplotlib)
-       ("python-pyside-2" ,python-pyside-2)
-       ("python-pyside-2-tools" ,python-pyside-2-tools)
-       ("python-shiboken-2" ,python-shiboken-2)
-       ("python-wrapper" ,python-wrapper)
-       ("qtbase" ,qtbase)
-       ("qtsvg" ,qtsvg)
-       ("qtx11extras" ,qtx11extras)
-       ("qtxmlpatterns" ,qtxmlpatterns)
-       ;; qtwebkit is optional. We remove it currently, because it takes
-       ;; much time to compile and substitutes are often unavailable
-       ;;("qtwebkit" ,qtwebkit)
-       ("tbb" ,tbb)
-       ("vtk" ,vtk)
-       ("xerces-c" ,xerces-c)
-       ("zlib" ,zlib)))
-    (arguments
-     `(#:tests? #f
-       #:configure-flags
-       (list
-        "-DBUILD_QT5=ON"
-        (string-append "-DCMAKE_INSTALL_LIBDIR="
-                       (assoc-ref %outputs "out") "/lib"))
-       #:phases
-       (modify-phases %standard-phases
-         (add-before 'configure 'restore-pythonpath
-           (lambda _
-             (substitute* "src/Main/MainGui.cpp"
-               (("_?putenv\\(\"PYTHONPATH=\"\\);") ""))
-             #t))
-         (add-after 'install 'wrap-pythonpath
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
-               (wrap-program (string-append out "/bin/FreeCAD")
-                 (list "PYTHONPATH"
-                       'prefix (list (getenv "PYTHONPATH")))))
-             #t)))))
-    (home-page "https://www.freecadweb.org/")
-    (synopsis "Your Own 3D Parametric Modeler")
-    (description
-     "FreeCAD is a general purpose feature-based, parametric 3D modeler for
+  (let ((commit-ref "7616153b3c31ace006169cdc2fdafab484498858")
+        (revision "1"))
+    (package
+      (name "freecad")
+      (version (git-version "0.18.5" revision commit-ref))
+      (source
+        (origin
+          (method git-fetch)
+          (uri (git-reference
+                 (url "https://github.com/FreeCAD/FreeCAD")
+                 (commit commit-ref)))
+          (file-name (git-file-name name version))
+          (sha256
+            (base32
+              "16965yxnp2pq7nm8z3p0pjkzjdyq62vfrj8j3nk26bwc898czyn2"))))
+      (build-system qt-build-system)
+      (native-inputs
+       `(("doxygen" ,doxygen)
+         ("graphviz" ,graphviz)
+         ("qttools" ,qttools)
+         ("pkg-config" ,pkg-config)
+         ("python-pyside-2-tools" ,python-pyside-2-tools)
+         ("swig" ,swig)))
+      (inputs
+       `(("boost" ,boost)
+         ("coin3D" ,coin3D)
+         ("eigen" ,eigen)
+         ("freetype" ,freetype)
+         ("glew" ,glew)
+         ("hdf5" ,hdf5-1.10)
+         ("libarea" ,libarea)
+         ("libmedfile" ,libmedfile)
+         ("libspnav" ,libspnav)
+         ("libxi" ,libxi)
+         ("libxmu" ,libxmu)
+         ("openmpi" ,openmpi)
+         ("opencascade-occt" ,opencascade-occt)
+         ("python-matplotlib" ,python-matplotlib)
+         ("python-pyside-2" ,python-pyside-2)
+         ("python-shiboken-2" ,python-shiboken-2)
+         ("python-pivy" ,python-pivy)
+         ("python-wrapper" ,python-wrapper)
+         ("qtbase" ,qtbase)
+         ("qtsvg" ,qtsvg)
+         ("qtx11extras" ,qtx11extras)
+         ("qtxmlpatterns" ,qtxmlpatterns)
+         ("qtwebkit" ,qtwebkit)
+         ("tbb" ,tbb)
+         ("vtk" ,vtk)
+         ("xerces-c" ,xerces-c)
+         ("zlib" ,zlib)))
+      (arguments
+       `(#:tests? #f
+         #:configure-flags
+         (list
+          "-DBUILD_QT5=ON"
+          (string-append "-DCMAKE_INSTALL_LIBDIR=" (assoc-ref %outputs "out") "/lib")
+          (string-append "-DPYSIDE2UICBINARY="
+                         (assoc-ref %build-inputs "python-pyside-2-tools")
+                         "/bin/uic")
+          (string-append "-DPYSIDE2RCCBINARY="
+                         (assoc-ref %build-inputs "python-pyside-2-tools")
+                         "/bin/rcc")
+          "-DPYSIDE_LIBRARY=PySide2::pyside2"
+          (string-append
+           "-DPYSIDE_INCLUDE_DIR="
+           (assoc-ref %build-inputs "python-pyside-2") "/include;"
+           (assoc-ref %build-inputs "python-pyside-2") "/include/PySide2;"
+           (assoc-ref %build-inputs "python-pyside-2") "/include/PySide2/QtCore;"
+           (assoc-ref %build-inputs "python-pyside-2") "/include/PySide2/QtWidgets;"
+           (assoc-ref %build-inputs "python-pyside-2") "/include/PySide2/QtGui;")
+          "-DSHIBOKEN_LIBRARY=Shiboken2::libshiboken"
+          (string-append "-DSHIBOKEN_INCLUDE_DIR="
+                         (assoc-ref %build-inputs "python-shiboken-2")
+                         "/include/shiboken2"))
+         #:phases
+         (modify-phases %standard-phases
+           (add-before 'configure 'restore-pythonpath
+             (lambda _
+               (substitute* "src/Main/MainGui.cpp"
+                 (("_?putenv\\(\"PYTHONPATH=\"\\);") ""))
+               #t))
+           (add-after 'install 'wrap-pythonpath
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let ((out (assoc-ref outputs "out")))
+                 (wrap-program (string-append out "/bin/FreeCAD")
+                   (list "PYTHONPATH"
+                         'prefix (list (getenv "PYTHONPATH")))))
+               #t)))))
+      (home-page "https://www.freecadweb.org/")
+      (synopsis "Your Own 3D Parametric Modeler")
+      (description
+       "FreeCAD is a general purpose feature-based, parametric 3D modeler for
 CAD, MCAD, CAx, CAE and PLM, aimed directly at mechanical engineering and
 product design but also fits a wider range of uses in engineering, such as
 architecture or other engineering specialties.  It is 100% Open Source (LGPL2+
 license) and extremely modular, allowing for very advanced extension and
 customization.")
-    (license
-     (list
-      license:lgpl2.1+
-      license:lgpl2.0+
-      license:gpl3+
-      license:bsd-3))))
+      (license
+       (list
+        license:lgpl2.1+
+        license:lgpl2.0+
+        license:gpl3+
+        license:bsd-3)))))
 
 (define-public libmedfile
   (package
@@ -2787,3 +2939,39 @@ GUI.")
   provides a full-fledged procedural, interactive programming language designed
   to describe data structures and to operate on them.")
       (license license:gpl3+))))
+
+(define-public pcb2gcode
+    (package
+     (name "pcb2gcode")
+     (version "2.1.0")
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/pcb2gcode/pcb2gcode")
+             (commit (string-append "v" version))
+             (recursive? #t)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0nzglcyh6ban27cc73j4l7w7r9k38qivq0jz8iwnci02pfalw4ry"))))
+     (build-system gnu-build-system)
+     (inputs
+      `(("boost" ,boost)
+        ("geos" ,geos)
+        ("gerbv" ,gerbv)
+        ("glibmm" ,glibmm)
+        ("gtkmm" ,gtkmm-2)
+        ("librsvg" ,librsvg)))
+     (native-inputs
+      `(("autoconf" ,autoconf)
+        ("automake" ,automake)
+        ("libtool" ,libtool)
+        ("pkg-config" ,pkg-config)))
+     (home-page "https://github.com/pcb2gcode/pcb2gcode")
+     (synopsis "Generate G-code for milling PCBs")
+     (description "pcb2gcode is a command-line program for isolation routing
+and drilling of PCBs.  It takes Gerber files as input and outputs G-code files
+for the milling of PCBs.  It also includes an autoleveller for the automatic
+dynamic calibration of the milling depth.")
+     (license license:gpl3+)))

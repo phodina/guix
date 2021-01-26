@@ -6,6 +6,7 @@
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
+;;; Copyright © 2020 Brett Gilio <brettg@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,11 +33,14 @@
   #:use-module (guix build-system emacs)
   #:use-module (guix build-system ruby)
   #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (guix utils)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages check)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages libevent)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-check)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages ruby))
 
@@ -79,7 +83,7 @@ data in motion, or as a file format for data at rest.")
 (define-public protobuf
   (package
     (name "protobuf")
-    (version "3.12.3")
+    (version "3.14.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/google/protobuf/releases/"
@@ -87,7 +91,7 @@ data in motion, or as a file format for data at rest.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0s29dj8l9j6jk04im3ivcji1x9jm42fwjmwcmli0smz0m337xyaf"))))
+                "0nan2wkkwkcx3qyx0cf5vfzjcjhr5qgh4jfx6v2lwpf5q03mmv2h"))))
     (build-system gnu-build-system)
     (inputs `(("zlib" ,zlib)))
     (outputs (list "out"
@@ -159,7 +163,7 @@ internal RPC protocols and file formats.")
 (define-public protobuf-c
   (package
     (name "protobuf-c")
-    (version "1.3.2")
+    (version "1.3.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/protobuf-c/protobuf-c/"
@@ -167,7 +171,7 @@ internal RPC protocols and file formats.")
                                   "/protobuf-c-" version ".tar.gz"))
               (sha256
                (base32
-                "0x4ybd9rfd878p2imz0hb8zxfd7l60vbdw7cg84dnysr9kqm3wjk"))))
+                "0y3yaanq97si7iyld06p8w20m0shpj7sf4xwzbhhvijhxw36d592"))))
     (build-system gnu-build-system)
     (inputs `(("protobuf" ,protobuf)))
     (native-inputs `(("pkg-config" ,pkg-config)))
@@ -226,6 +230,58 @@ encoder in C++.  The developer using protozero has to manually translate the
      "Protocol buffers are a language-neutral, platform-neutral extensible
 mechanism for serializing structured data.")
     (license license:bsd-3)))
+
+(define-public python-pure-protobuf
+  (package
+    (name "python-pure-protobuf")
+    (version "2.0.1")
+    (source
+     (origin
+       ;; The PyPI tarball is broken: it has no tests.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/eigenein/protobuf")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "15dp5pvazd0jx4wzzh79080ah7hkpd3axh40al9vhzs2hf3v90hx"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-flake8" ,python-flake8)
+       ("python-pytest" ,python-pytest)
+       ("python-pytest-cov" ,python-pytest-cov)
+       ("python-isort" ,python-isort)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'check 'setup-test-env
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (py3sitedir
+                     (string-append out "/lib/python"
+                                    ,(version-major+minor
+                                      (package-version python))
+                                    "/site-packages")))
+               (setenv "PYTHONPATH"
+                       (string-append py3sitedir ":"
+                                      (getenv "PYTHONPATH"))))
+             #t))
+         (replace 'check
+           (lambda _
+             (invoke "pytest" "--cov-report" "term-missing" "--cov"
+                     "pure_protobuf")
+             (invoke "flake8" "pure_protobuf" "tests"
+                     "--ignore=F541")
+             (invoke "isort" "-rc" "-c" "pure_protobuf" "tests")
+             #t)))))
+    (home-page "https://pypi.org/project/pure-protobuf/")
+    (synopsis "Protobuf implementation using dataclasses")
+    (description
+     "@code{python-pure-protobuf} takes advantage of the standard
+dataclasses module to define message types.  Protocol buffers are a
+language-neutral, platform-neutral extensible mechanism for serializing
+structured data.")
+    (license license:expat)))
 
 (define-public python2-protobuf
   (package-with-python2 python-protobuf))

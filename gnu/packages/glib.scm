@@ -13,6 +13,7 @@
 ;;; Copyright © 2019 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;; Copyright © 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 Nicolò Balzarotti <nicolo@nixo.xyz>
+;;; Copyright © 2020 Arthur Margerit <ruhtra.mar@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -53,6 +54,7 @@
   #:use-module (gnu packages package-management)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages perl-check)
+  #:use-module (gnu packages popt)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
@@ -61,6 +63,7 @@
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
@@ -178,6 +181,7 @@ shared NFS home directories.")
   (package
    (name "glib")
    (version "2.62.6")
+   (replacement glib-with-gio-patch)
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnome/sources/"
@@ -384,11 +388,20 @@ dynamic loading, and an object system.")
    (home-page "https://developer.gnome.org/glib/")
    (license license:lgpl2.1+)))
 
+(define glib-with-gio-patch
+  ;; GLib with a fix for <https://bugs.gnu.org/35594>.
+  ;; TODO: Fold into 'glib' above in the next rebuild cycle.
+  (package
+    (inherit glib)
+    (source (origin
+              (inherit (package-source glib))
+              (patches (cons (search-patch "glib-appinfo-watch.patch")
+                             (origin-patches (package-source glib))))))))
+
 (define-public glib-with-documentation
   ;; glib's doc must be built in a separate package since it requires gtk-doc,
   ;; which in turn depends on glib.
-  (package
-    (inherit glib)
+  (package/inherit glib
     (properties (alist-delete 'hidden? (package-properties glib)))
     (outputs (cons "doc" (package-outputs glib))) ; 20 MiB of GTK-Doc reference
     (native-inputs
@@ -416,17 +429,20 @@ dynamic loading, and an object system.")
   (package
     (name "gobject-introspection")
     (version "1.62.0")
-    (source (origin
-             (method url-fetch)
-             (uri (string-append "mirror://gnome/sources/"
-                   "gobject-introspection/" (version-major+minor version)
-                   "/gobject-introspection-" version ".tar.xz"))
-             (sha256
-              (base32 "18lhglg9v6y83lhqzyifc1z0wrlawzrhzzxx0a3h1g7xaz97xvmi"))
-             (patches (search-patches
-                       "gobject-introspection-cc.patch"
-                       "gobject-introspection-girepository.patch"
-                       "gobject-introspection-absolute-shlib-path.patch"))))
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "mirror://gnome/sources/"
+                       "gobject-introspection/" (version-major+minor version)
+                       "/gobject-introspection-" version ".tar.xz"))
+       (sha256
+        (base32 "18lhglg9v6y83lhqzyifc1z0wrlawzrhzzxx0a3h1g7xaz97xvmi"))
+       (patches
+        (search-patches
+         "gobject-introspection-cc.patch"
+         "gobject-introspection-girepository.patch"
+         "gobject-introspection-absolute-shlib-path.patch"))))
     (build-system meson-build-system)
     (arguments
      `(#:phases
@@ -437,34 +453,38 @@ dynamic loading, and an object system.")
                (("#!@PYTHON_CMD@")
                 (string-append "#!" (which "python3"))))
              #t)))))
+    (native-inputs
+     `(("glib" ,glib "bin")
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("bison" ,bison)
        ("flex" ,flex)
        ("glib" ,glib)
        ("python" ,python-wrapper)
        ("zlib" ,zlib)))
-    (native-inputs
-     `(("glib" ,glib "bin")
-       ("pkg-config" ,pkg-config)))
     (propagated-inputs
      `(;; In practice, GIR users will need libffi when using
        ;; gobject-introspection.
        ("libffi" ,libffi)))
     (native-search-paths
-     (list (search-path-specification
-            (variable "GI_TYPELIB_PATH")
-            (files '("lib/girepository-1.0")))))
+     (list
+      (search-path-specification
+       (variable "GI_TYPELIB_PATH")
+       (files '("lib/girepository-1.0")))))
     (search-paths native-search-paths)
-    (home-page "https://wiki.gnome.org/GObjectIntrospection")
-    (synopsis "Generate interface introspection data for GObject libraries")
-    (description
-     "GObject introspection is a middleware layer between C libraries (using
-GObject) and language bindings.  The C library can be scanned at compile time
-and generate a metadata file, in addition to the actual native C library.  Then
-at runtime, language bindings can read this metadata and automatically provide
-bindings to call into the C library.")
-    ; Some bits are distributed under the LGPL2+, others under the GPL2+
-    (license license:gpl2+)))
+    (synopsis "GObject introspection tools and libraries")
+    (description "GObject introspection is a middleware layer between
+C libraries (using GObject) and language bindings.  The C library can be scanned
+at compile time and generate metadata files, in addition to the actual native
+C library.  Then language bindings can read this metadata and automatically
+provide bindings to call into the C library.")
+    (home-page "https://wiki.gnome.org/Projects/GObjectIntrospection")
+    (license
+     (list
+      ;; For library.
+      license:lgpl2.0+
+      ;; For tools.
+      license:gpl2+))))
 
 (define intltool
   (package
@@ -662,6 +682,24 @@ has an ease of use unmatched by other C++ callback libraries.")
 useful for C++.")
     (license license:lgpl2.1+)))
 
+ (define-public glibmm-2.64
+   (package
+    (inherit glibmm)
+    (name "glibmm")
+    (version "2.64.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "mirror://gnome/sources/glibmm/"
+                       (version-major+minor version)
+                       "/glibmm-" version ".tar.xz"))
+       (sha256
+        (base32 "1v6lp23fr2qh4zshcnm28sn29j3nzgsvcqj2nhmrnvamipjq4lm7"))))
+     (propagated-inputs
+      `(("libsigc++" ,libsigc++)
+        ("glib" ,glib)))))
+
 (define-public python2-pygobject-2
   (package
     (name "python2-pygobject")
@@ -677,8 +715,7 @@ useful for C++.")
        (sha256
         (base32
          "0nkam61rsn7y3wik3vw46wk5q2cjfh2iph57hl9m39rc8jijb7dv"))
-       (patches (search-patches
-                 "python2-pygobject-2-gi-info-type-error-domain.patch"))))
+       (patches (search-patches "python2-pygobject-2-deprecation.patch"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("which" ,which)
@@ -914,10 +951,49 @@ programming language.  It also contains the utility
     (home-page "https://sourceforge.net/projects/dbus-cplusplus/")
     (license license:lgpl2.1+)))
 
+(define-public dbus-cxx
+  (package
+    (name "dbus-cxx")
+    (version "0.12.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/dbus-cxx/dbus-cxx/"
+                                  version "/dbus-cxx-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1acsgpkd9v7b9jdc79ijmh9dbdfrzgkwkaff518i3zpk7y6g5mzw"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags '("-DENABLE_TESTS=ON"
+                           "-DENABLE_TOOLS=ON"
+                           "-DENABLE_GLIBMM=ON")))
+    (inputs `(("dbus" ,dbus)
+              ("libsigc++" ,libsigc++)
+              ("glibmm" ,glibmm)
+              ("python" ,python)
+              ("popt" ,popt)
+              ("expat" ,expat)))
+    (native-inputs `(("pkg-config" ,pkg-config)
+                     ("m4" ,m4)))
+    (synopsis "C++ wrapper for dbus")
+    (description "Dbus-cxx is a C++ wrapper for dbus.\n
+It exposes the C API to allow direct manipulation and
+relies on sigc++ to provide an Oriented Object interface.\n
+This package provide 2 utils:
+@enumerate
+@item @command{dbus-cxx-xml2cpp} to generate proxy and adapter
+@item @command{dbus-cxx-introspect} to introspect a dbus interface
+@end enumerate
+
+Some codes examples can be find at:
+@url{https://dbus-cxx.github.io/examples.html}")
+    (home-page "https://dbus-cxx.github.io/")
+    (license license:gpl3)))
+
 (define-public appstream-glib
   (package
     (name "appstream-glib")
-    (version "0.7.17")
+    (version "0.7.18")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://people.freedesktop.org/~hughsient/"
@@ -925,7 +1001,7 @@ programming language.  It also contains the utility
                                   "appstream-glib-" version ".tar.xz"))
               (sha256
                (base32
-                "0jg58m1p5xfrh8zkpqhhg00nqs727z5i1qy6sb0a3vyc98fyk9vw"))))
+                "00j0kkgf224nzmrha72g8pd72mymhph7vaisj35i4ffy7cpd47na"))))
     (build-system meson-build-system)
     (native-inputs
      `(("gettext" ,gettext-minimal)

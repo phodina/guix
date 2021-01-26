@@ -26,12 +26,14 @@
   #:use-module (guix packages)
   #:autoload   (guix build-system gnu) (standard-packages)
   #:use-module (ice-9 match)
+  #:use-module (ice-9 popen)
+  #:use-module (ice-9 rdelim)
   #:export (hg-reference
             hg-reference?
             hg-reference-url
             hg-reference-changeset
             hg-reference-recursive?
-
+            hg-predicate
             hg-fetch))
 
 ;;; Commentary:
@@ -60,35 +62,26 @@
   "Return a fixed-output derivation that fetches REF, a <hg-reference>
 object.  The output is expected to have recursive hash HASH of type
 HASH-ALGO (a symbol).  Use NAME as the file name, or a generic name if #f."
-  (define zlib
-    (module-ref (resolve-interface '(gnu packages compression)) 'zlib))
-
-  (define config.scm
-    (scheme-file "config.scm"
-                 #~(begin
-                     (define-module (guix config)
-                       #:export (%libz))
-
-                     (define %libz
-                       #+(file-append zlib "/lib/libz")))))
+  (define guile-zlib
+    (module-ref (resolve-interface '(gnu packages guile)) 'guile-zlib))
 
   (define modules
-    (cons `((guix config) => ,config.scm)
-          (delete '(guix config)
-                  (source-module-closure '((guix build hg)
-                                           (guix build download-nar))))))
+    (delete '(guix config)
+            (source-module-closure '((guix build hg)
+                                     (guix build download-nar)))))
 
   (define build
     (with-imported-modules modules
-      #~(begin
-          (use-modules (guix build hg)
-                       (guix build download-nar))
+      (with-extensions (list guile-zlib)
+        #~(begin
+            (use-modules (guix build hg)
+                         (guix build download-nar))
 
-          (or (hg-fetch '#$(hg-reference-url ref)
-                        '#$(hg-reference-changeset ref)
-                        #$output
-                        #:hg-command (string-append #+hg "/bin/hg"))
-              (download-nar #$output)))))
+            (or (hg-fetch '#$(hg-reference-url ref)
+                          '#$(hg-reference-changeset ref)
+                          #$output
+                          #:hg-command (string-append #+hg "/bin/hg"))
+                (download-nar #$output))))))
 
   (mlet %store-monad ((guile (package->derivation guile system)))
     (gexp->derivation (or name "hg-checkout") build
@@ -101,5 +94,39 @@ HASH-ALGO (a symbol).  Use NAME as the file name, or a generic name if #f."
                       #:hash hash
                       #:recursive? #t
                       #:guile-for-build guile)))
+
+(define (hg-file-list directory)
+  "Evaluates to a list of files contained in the repository at path
+  @var{directory}"
+  (let* ((port (open-input-pipe (format #f "hg files --repository ~s" directory)))
+         (files (let loop ((files '()))
+                  (let ((line (read-line port)))
+                    (cond
+                     ((eof-object? line) files)
+                     (else
+                      (loop (cons line files))))))))
+    (close-pipe port)
+    (map canonicalize-path files)))
+
+(define (should-select? path-list candidate)
+  "Returns #t in case that @var{candidate} is a file that is part of the given
+@var{path-list}."
+  (let ((canon-candidate (canonicalize-path candidate)))
+    (let loop ((xs path-list))
+      (cond
+       ((null? xs)
+        ;; Directories are not part of `hg files', but `local-file' will not
+        ;; recurse if we don't return #t for directories.
+        (equal? (array-ref (lstat candidate) 13) 'directory))
+       ((string-contains candidate (car xs)) #t)
+       (else (loop (cdr xs)))))))
+
+(define (hg-predicate directory)
+  "This procedure evaluates to a predicate that reports back whether a given
+@var{file} - @var{stat} combination is part of the files tracked by
+Mercurial."
+  (let ((files (hg-file-list directory)))
+    (lambda (file stat)
+      (should-select? files file))))
 
 ;;; hg-download.scm ends here

@@ -5,12 +5,14 @@
 ;;; Copyright © 2017 Feng Shu <tumashu@163.com>
 ;;; Copyright © 2017 Nikita <nikita@n0.is>
 ;;; Copyright © 2014 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.org>
-;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 Tom Zander <tomz@freedommail.ch>
+;;; Copyright © 2020 Mark Meyer <mark@ofosos.org>
+;;; Copyright © 2020 Maxime Devos <maximedevos@telenet.be>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -62,6 +64,7 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages regex)
@@ -75,21 +78,27 @@
 (define-public vis
   (package
     (name "vis")
-    (version "0.5")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/martanne/vis/releases"
-                                  "/download/v" version
-                                  "/vis-v" version ".tar.gz"))
-              (sha256
-               (base32
-                "0aw35n8xk7ir84ckvczc6yshj9ynishrlz0qlv4yc1afbra1gxmn"))))
+    (version "0.6")                     ; also update the vis-test input
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/martanne/vis")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "1zjm89cn3rfq8fxpwp66khy53s6vqlmw6q103qyyvix8ydzxdmsh"))
+       (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
-       #:tests? #f                  ; no releases; snapshots are missing tests
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'unpack-test-suite
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((vis-test (assoc-ref inputs "vis-test")))
+               (copy-recursively vis-test "test")
+               #t)))
+         (delete 'check)                ; the tests need a wrapped vis
          (add-after 'install 'wrap-binary
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -102,7 +111,34 @@
                (wrap-program (string-append out "/bin/vis")
                  `("LUA_PATH" ":" prefix (,LUA_PATH))
                  `("LUA_CPATH" ":" prefix (,LUA_CPATH)))
+               #t)))
+         (add-after 'wrap-binary 'check
+           (assoc-ref %standard-phases 'check))
+         (add-before 'check 'set-up-tests
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               ;; DEFAULT_COMPILER is hard-coded here.
+               (substitute* "test/core/ccan-config.c"
+                 (("\"cc\"")
+                  (format #f "\"~a\"" ,(cc-for-target))))
+
+               ;; Use the ‘vis’ executable that we wrapped above.
+               (install-file (string-append out "/bin/vis") ".")
+
+               ;; XXX Delete 2 failing tests.  TODO: make them not fail. :-)
+               (for-each delete-file
+                         (find-files "test/vis/selections" "^complement"))
                #t))))))
+    (native-inputs
+     `(("vis-test"
+        ,(origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://github.com/martanne/vis-test")
+                 (commit "4c4f6645de77f697a45899e8645e0c2bbdc7208a")))
+           (sha256
+            (base32 "10vh1pxsqw88a5xwh5irkm85xr66dbycmgpmabyw9h0vm14cvcz2"))
+           (file-name (git-file-name "vis-test" version))))))
     (inputs `(("lua" ,lua)
               ("ncurses" ,ncurses)
               ("libtermkey" ,libtermkey)
@@ -122,7 +158,7 @@ based command language.")
 (define-public kakoune
   (package
     (name "kakoune")
-    (version "2020.01.16")
+    (version "2020.09.01")
     (source
      (origin
        (method url-fetch)
@@ -130,7 +166,7 @@ based command language.")
                            "releases/download/v" version "/"
                            "kakoune-" version ".tar.bz2"))
        (sha256
-        (base32 "1bhd990gywdwdhxc5dn83wwj418c5cw1ndqycf7k0a02kxlg3550"))))
+        (base32 "0x81rxy7bqnhd9374g5ypy4w4nxmm0vnqw6b52bf62jxdg2qj6l6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
@@ -149,7 +185,7 @@ based command language.")
                                "\";\n        " line)))
              #t))
          (delete 'configure)            ; no configure script
-         ;; kakoune requires us to be in the src/ directory to build
+         ;; kakoune requires us to be in the src/ directory to build.
          (add-before 'build 'chdir
            (lambda _ (chdir "src") #t)))))
     (native-inputs
@@ -194,7 +230,7 @@ bindings and many of the powerful features of GNU Emacs.")
 (define-public jucipp
   (package
     (name "jucipp")
-    (version "1.6.0")
+    (version "1.6.2")
     (home-page "https://gitlab.com/cppit/jucipp")
     (source (origin
               (method git-fetch)
@@ -206,7 +242,7 @@ bindings and many of the powerful features of GNU Emacs.")
                                   (recursive? #t)))
               (file-name (git-file-name name version))
               (sha256
-               (base32 "177myy6qvjlb6j3f3i3xmfml5r3p9in8xzpvm0n59dn56s81gpnr"))))
+               (base32 "10idv2kyw2dg45wfcnh7nybs8qys7kfvif90sjrff3541k97pm5y"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags '("-DBUILD_TESTING=ON"
@@ -247,7 +283,26 @@ bindings and many of the powerful features of GNU Emacs.")
                         (setenv "DISPLAY" display)
                         (system (string-append xorg-server "/bin/Xvfb "
                                                display " &")))
-                      #t)))))
+                      #t))
+                  (add-after 'install 'wrap
+                    (lambda* (#:key inputs outputs #:allow-other-keys)
+                      ;; The package needs GTK+ and GtkSourceView on XDG_DATA_DIRS
+                      ;; for syntax highlighting to work.  shared-mime-info is
+                      ;; necessary for MIME handling.
+                      ;; XXX: Ideally we'd reuse glib-or-gtk-wrap here, but it
+                      ;; does not pick up $gtksourceview/share/gtksourceview-3.0.
+                      (let ((out (assoc-ref outputs "out"))
+                            (gtk+ (assoc-ref inputs "gtk+"))
+                            (gtksourceview (assoc-ref inputs "gtksourceview"))
+                            (shared-mime-info (assoc-ref inputs "shared-mime-info")))
+                        (wrap-program (string-append out "/bin/juci")
+                          `("XDG_DATA_DIRS" ":" prefix
+                            (,(string-join
+                               (map (lambda (pkg)
+                                      (string-append pkg "/share"))
+                                    (list out gtk+ gtksourceview shared-mime-info))
+                               ":"))))
+                        #t))))))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("xorg-server" ,xorg-server-for-tests)))
@@ -605,24 +660,20 @@ environment with Markdown markup.")
                      (icons-dir (string-append out "/share/pixmaps")))
                  (install-file "icons/Manuskript/manuskript.svg" icons-dir)
                  (mkdir-p apps)
-                 (with-output-to-file (string-append apps "/manuskript.desktop")
-                   (lambda _
-                     (format #t
-                             "[Desktop Entry]~@
-                         Name=Manuskript~@
-                         MimeType=application/x-manuskript-book;~@
-                         Exec=~a/bin/manuskript %f~@
-                         Comment=Tool for writers~@
-                         Comment[es]=Herramienta para escritores/as~@
-                         Keywords=manuskript;office;write;edit;novel;text;msk~@
-                         Terminal=false~@
-                         Type=Application~@
-                         Icon=manuskript~@
-                         Categories=Office;WordProcessor;~%"
-                             out))))
+                 (make-desktop-entry-file (string-append apps "/manuskript.desktop")
+                   #:name "Manuskript"
+                   #:mime-type "application/x-manuskript-book;"
+                   #:exec (string-append out "/bin/manuskript %f")
+                   #:comment '((#f "Tool for writers")
+                               ("es" "Herramienta para escritores/as"))
+                   #:keywords "manuskript;office;write;edit;novel;text;msk"
+                   #:terminal #f
+                   #:type "Application"
+                   #:icon "manuskript"
+                   #:categories "Office;WordProcessor;"))
                #t))))))
     (inputs
-     `(("ghc-pandoc" ,ghc-pandoc)
+     `(("pandoc" ,pandoc)
        ("python-lxml" ,python-lxml)
        ("python-markdown" ,python-markdown)
        ("python-pyqt" ,python-pyqt)
@@ -657,7 +708,7 @@ in plain text file format.")
 (define-public editorconfig-core-c
   (package
     (name "editorconfig-core-c")
-    (version "0.12.3")
+    (version "0.12.4")
     (source
       (origin
         (method git-fetch)
@@ -666,8 +717,7 @@ in plain text file format.")
                (commit (string-append "v" version))))
         (file-name (git-file-name name version))
         (sha256
-         (base32
-          "0jkc69r4jwn4rih6h6cqvgljjc3ff49cxj8286mi515aczr48cm1"))))
+         (base32 "1311fhh2jfsja2hhk3nwb6nijlq03jw8dk35cwbrac0p9jvy03jx"))))
     (build-system cmake-build-system)
     (arguments
      '(#:phases
@@ -676,17 +726,25 @@ in plain text file format.")
            (lambda* (#:key inputs #:allow-other-keys)
              (let ((tests (assoc-ref inputs "tests")))
                (copy-recursively tests "tests"))
-             #t)))))
+             #t))
+         (add-after 'install 'delete-static-library
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (lib (string-append out "/lib")))
+               (with-directory-excursion lib
+                 (delete-file "libeditorconfig_static.a"))
+               #t))))))
     (native-inputs
-     `(("tests" ,(origin
-                   (method git-fetch)
-                   (uri (git-reference
-                          (url "https://github.com/editorconfig/editorconfig-core-test")
-                          (commit "6ea1d8ece62cac9cf72c79dce4879b046abe1fe7"))) ; matches version
-                   (file-name (git-file-name "editorconfig-core-test" version))
-                   (sha256
-                    (base32
-                     "1sf6910idnd4bgzbj8w8f9ldsbkaqa0lh6syymwy3hfqda63acj7"))))))
+     `(("tests"
+        ,(origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://github.com/editorconfig/editorconfig-core-test")
+                 ;; The tests submodule commit matching this package's version.
+                 (commit "48610d43b7455af12195473377f93c4ceea654f5")))
+           (file-name (git-file-name "editorconfig-core-test" version))
+           (sha256
+            (base32 "1s29p4brmcsc3xsww3gk85dg45f1kk3iykh1air3ij0hymf5dyqy"))))))
     (inputs
      `(("pcre2" ,pcre2)))
     (home-page "https://editorconfig.org/")
@@ -701,14 +759,14 @@ editors.")
 (define-public texmacs
   (package
     (name "texmacs")
-    (version "1.99.13")
+    (version "1.99.16")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.texmacs.org/Download/ftp/tmftp/"
                            "source/TeXmacs-" version "-src.tar.gz"))
        (sha256
-        (base32 "1d590yyanh2ar88pd0ns4mf616bq1lq4cwg93m863anhir5irb82"))))
+        (base32 "118sk75k0k9pkyfyx000n2ypab8vm1lz5zxkkdmsi5nwyr3rp56s"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
@@ -718,7 +776,8 @@ editors.")
        ("guile" ,guile-1.8)
        ("perl" ,perl)
        ("python" ,python-wrapper)
-       ("qt" ,qtbase)))
+       ("qt" ,qtbase)
+       ("qtsvg" ,qtsvg)))
     (arguments
      `(#:tests? #f                      ; no check target
        #:phases
@@ -729,6 +788,14 @@ editors.")
                (substitute* "packages/linux/icons.sh"
                  (("/usr/share")
                   (string-append out "/share")))
+               #t)))
+         (add-after 'install 'install-desktop-file
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; Install desktop file.
+             (let* ((out (assoc-ref outputs "out"))
+                    (apps (string-append out "/share/applications"))
+                    (source "TeXmacs/misc/mime/texmacs.desktop"))
+               (install-file source apps)
                #t)))
          (add-before 'configure 'gzip-flags
            (lambda _
@@ -747,14 +814,14 @@ Octave.  TeXmacs is completely extensible via Guile.")
 (define-public scintilla
   (package
     (name "scintilla")
-    (version "4.4.4")
+    (version "4.4.6")
     (source
      (origin
        (method url-fetch)
        (uri (let ((v (apply string-append (string-split version #\.))))
               (string-append "https://www.scintilla.org/scintilla" v ".tgz")))
        (sha256
-        (base32 "1zjsb6iiqi4cw9r9md3xv8qyy86ssz11p680xn7vmllrxshxvs8y"))))
+        (base32 "1p62dq2fgdkvdn2clz1xjdj09acv87rbifl67zhlz7skqip31y9d"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags (list "GTK3=1" "CC=gcc" "-Cgtk")
@@ -793,14 +860,14 @@ and multiple fonts.")
 (define-public geany
   (package
     (name "geany")
-    (version "1.36")
+    (version "1.37.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://download.geany.org/"
                            "geany-" version ".tar.bz2"))
        (sha256
-        (base32 "0gnm17cr4rf3pmkf0axz4a0fxwnvp55ji0q0lzy88yqbshyxv14i"))))
+        (base32 "060sachn33xpx3a609f09y97qq5ky17gvv686zbvrn618ij7bi8q"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -903,7 +970,7 @@ card.  It offers:
 (define-public ne
   (package
     (name "ne")
-    (version "3.2.1")
+    (version "3.3.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -912,7 +979,7 @@ card.  It offers:
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0h6d08cnwrk96ss83i9bragwwanph6x54sm3ak1z81146dsqsiif"))))
+                "01aglnsfljlvx0wvyvpjfn4y88jf450a06qnj9a8lgdqv1hdkq1a"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("perl" ,perl)
@@ -973,3 +1040,42 @@ files.  It was originally developed on the Amiga 3000T.")
 systems that displays its buffer(s) as a hex dump.  The user interface is kept
 similar to vi/ex.")
     (license license:bsd-3)))
+
+(define-public virtaal
+  (package
+    (name "virtaal")
+    (version "0.7.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/translate/Virtaal/"
+                                  version "/virtaal-" version ".tar.bz2"))
+              (sha256
+               (base32
+                "0cyimjp3191qlmw6n0ipqdr9xr0cq4f6dqvz4rl9q31h6l3kywf9"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:python ,python-2
+       #:use-setuptools? #f
+       #:tests? #f ;; Failing tests
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; Set data file path to absolute store path.
+             (substitute* "virtaal/common/pan_app.py"
+               (("file_discovery\\.get_abs_data_filename.*")
+                (string-append "os.path.join('"
+                               (assoc-ref outputs "out")
+                               "/share', *path_parts)"))))))))
+    (inputs
+     `(("python2-lxml" ,python2-lxml)
+       ("python2-pygtk" ,python2-pygtk)
+       ("python2-simplejson" ,python2-simplejson)
+       ("python2-translate-toolkit" ,python2-translate-toolkit)
+       ("python2-pycurl" ,python2-pycurl)))
+    (synopsis "Graphical translation tool")
+    (description "Virtaal is a powerful yet simple translation tool with an
+uncluttered user interface.  It supports a multitude of translation formats
+provided by the Translate Toolkit, including XLIFF and PO.")
+    (home-page "https://virtaal.translatehouse.org/")
+    (license license:gpl2+)))

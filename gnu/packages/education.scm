@@ -2,12 +2,13 @@
 ;;; Copyright © 2016 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
-;;; Copyright © 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2018–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Robert Smith <robertsmith@posteo.net>
 ;;; Copyright © 2020 Guy Fleury Iteriteka <gfleury@disroot.org>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
+;;; Copyright © 2020 Prafulla Giri <pratheblackdiamond@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -139,7 +140,7 @@ of categories with some of the activities available in that category.
 (define-public gcompris-qt
   (package
     (name "gcompris-qt")
-    (version "0.98")
+    (version "1.0")
     (source
      (origin
        (method url-fetch)
@@ -147,22 +148,19 @@ of categories with some of the activities available in that category.
              "https://gcompris.net/download/qt/src/gcompris-qt-"
              version ".tar.xz"))
        (sha256
-        (base32 "1jmjykn0lpk0v6hs2flmch8v4da5bgxl891nav7szxw9l7aqnf4y"))))
+        (base32 "08dw1q0h4qz2q0ksa5pbmb9v60hr1zv9skx6z8dlq9b1i7harnds"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'disable-failing-test
-           (lambda _
-             (substitute* "tests/core/CMakeLists.txt"
-               (("DownloadManagerTest\\.cpp") "#"))
-             #t))
          (add-before 'check 'start-xorg-server
            (lambda* (#:key inputs #:allow-other-keys)
              ;; The test suite requires a running X server.
              (system (string-append (assoc-ref inputs "xorg-server")
                                     "/bin/Xvfb :1 &"))
              (setenv "DISPLAY" ":1")
+             ;; The test suite wants to write to /homeless-shelter
+             (setenv "HOME" (getcwd))
              #t))
          (add-after 'install 'wrap-executable
            (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -191,7 +189,7 @@ of categories with some of the activities available in that category.
        ("xorg-server" ,xorg-server-for-tests)))
     (inputs
      `(("openssl" ,openssl)
-       ("python-2" ,python-2)
+       ("python" ,python-wrapper)
        ("qtbase" ,qtbase)
        ("qtdeclarative" ,qtdeclarative)
        ("qtgraphicaleffects" ,qtgraphicaleffects)
@@ -216,7 +214,8 @@ Currently available boards include:
 @item reading practice
 @item small games (memory games, jigsaw puzzles, ...)
 @end enumerate\n")
-    (license license:gpl3+)))
+    (license (list license:silofl1.1    ; bundled fonts
+                   license:gpl3+))))
 
 (define-public tipp10
   (package
@@ -231,8 +230,11 @@ Currently available boards include:
               (sha256
                (base32
                 "0d387b404j88gsv6kv0rb7wxr23v5g5vl6s5l7602x8pxf7slbbx"))
+              ;; Apply patches in the order determined by Debian
               (patches (search-patches "tipp10-fix-compiling.patch"
-                                       "tipp10-remove-license-code.patch"))))
+                                       "tipp10-remove-license-code.patch"
+                                       "tipp10-disable-downloader.patch"
+                                       "tipp10-qt5.patch"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f ; packages has no tests
@@ -257,8 +259,8 @@ Currently available boards include:
                ;; Recreate Makefile
                (invoke "qmake")))))))
     (inputs
-     `(("qt4" ,qt-4)
-       ("sqlite" ,sqlite)))
+     `(("qtbase" ,qtbase)
+       ("qtmultimedia" ,qtmultimedia)))
     (home-page "https://www.tipp10.com/")
     (synopsis "Touch typing tutor")
     (description "Tipp10 is a touch typing tutor.  The ingenious thing about
@@ -274,7 +276,7 @@ easy.")
 (define-public snap
   (package
     (name "snap")
-    (version "6.1.4")
+    (version "6.5.0")
     (source
      (origin
        (method git-fetch)
@@ -283,7 +285,7 @@ easy.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0qvnm5jg2hlf32say531m8nmp3aib93mqnllw1g289s58fzk5li6"))))
+        (base32 "0sqd4ddkfc7f7gx02wffvwbqgfbhpkcgyv7v5rh3gx60jca02p4w"))))
     (build-system trivial-build-system)
     (arguments
      `(#:modules ((guix build utils))
@@ -486,7 +488,7 @@ specialized device.")
                             Comment[ca]=Conjunt de jocs educatius per a xiquets~@
                             Comment[es]=Conjunto de juegos educativos para niños~@
                             Comment[de]=Sammlung mit lehrreichen Spielen für kleine Kinder~@
-                            Exec=~a/bin/childsplay.py~@
+                            Exec=~a/bin/childsplay~@
                             Terminal=false~@
                             Icon=logo_cp.svg~@
                             Type=Application~@
@@ -612,14 +614,14 @@ Portuguese, Spanish and Italian.")
 (define-public fet
   (package
     (name "fet")
-    (version "5.45.1")
+    (version "5.48.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.lalescu.ro/liviu/fet/download/"
                            "fet-" version ".tar.bz2"))
        (sha256
-        (base32 "1pg47jk6fw46fr7m32l1ypm1zyjfz1ik5f333ynqqr705f1c0ij5"))))
+        (base32 "0k728l6zi0lkhzyipsb0f2jw53s4xicm7arp33ikhrvc4jlwcp4v"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -651,14 +653,14 @@ hours.")
 (define-public klavaro
   (package
     (name "klavaro")
-    (version "3.10")
+    (version "3.11")
     (source
       (origin
         (method url-fetch)
         (uri (string-append "mirror://sourceforge/klavaro/klavaro-"
                             version ".tar.bz2"))
         (sha256
-         (base32 "0jnzdrndiq6m0bwgid977z5ghp4q61clwdlzfpx4fd2ml5x3iq95"))))
+         (base32 "1rkxaqb62w4mv86fcnmr32lq6y0h4hh92wmsy5ddb9a8jnzx6r7w"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -678,15 +680,14 @@ language and very flexible regarding to new or unknown keyboard layouts.")
 (define-public ktouch
   (package
     (name "ktouch")
-    (version "19.08.3")
+    (version "20.12.1")
     (source
       (origin
         (method url-fetch)
-        (uri (string-append "mirror://kde/stable/applications/"
+        (uri (string-append "mirror://kde/stable/release-service/"
                             version "/src/ktouch-" version ".tar.xz"))
         (sha256
-         (base32
-          "0dqxb3xsjc2rwc9779l5fnr4crhq51bc8ln4azbgnnkzldvq6a4a"))))
+         (base32 "10lm2p8w26c9n6lhvw3301myfss0dq7hl7rawzb3hsy1lqvmvdib"))))
     (build-system qt-build-system)
     (arguments
      `(#:phases
@@ -955,30 +956,30 @@ floating through space.")
 (define-public mdk
   (package
     (name "mdk")
-    (version "1.2.10")
+    (version "1.3.0")
     (source
-    (origin
-      (method url-fetch)
-      (uri (string-append "mirror://gnu/mdk/v1.2.10/mdk-"
-                          version ".tar.gz"))
-      (sha256
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://gnu/mdk/v" version "/mdk-"
+                           version ".tar.gz"))
+       (sha256
         (base32
-          "1rwcq2b5vvv7318j92nxc5dayj27dpfhzc4rjiv4ccvsc0x35x5h"))))
-   (build-system gnu-build-system)
+         "0bhk3c82kyp8167h71vdpbcr852h5blpnwggcswqqwvvykbms7lb"))))
+    (build-system gnu-build-system)
     (arguments
      `(#:configure-flags (list "--enable-gui=yes" "-with-readline=yes")))
     (native-inputs
      `(("flex" ,flex)
-       ("pkg-config" ,pkg-config)
        ("intltool" ,intltool)
-       ("ncurses" ,ncurses)))
-   (inputs
-    `(("readline" ,readline)
-      ("glib" ,glib)
-      ("gtk+" ,gtk+)
-      ("pango" ,pango)
-      ("libglade" ,libglade)))
-   (home-page "https://www.gnu.org/software/mdk/")
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("glib" ,glib)
+       ("gtk+" ,gtk+)
+       ("libglade" ,libglade)
+       ("ncurses" ,ncurses)
+       ("pango" ,pango)
+       ("readline" ,readline)))
+    (home-page "https://www.gnu.org/software/mdk/manual/")
     (synopsis "Virtual development environment for Knuth's MIX")
     (description
      "GNU MDK is the Mix Development Kit, an emulation of the pedagogical

@@ -1,10 +1,10 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2014, 2015, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2017, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
-;;; Copyright © 2017, 2019 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2017, 2019, 2020 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
@@ -50,6 +50,7 @@
   #:use-module (gnu packages video)               ;ffmpeg
   #:use-module (guix packages)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module (guix utils)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
@@ -80,7 +81,29 @@
           (lambda _
             ;; remove option that is not supported by gcc any more
             (substitute* "configure" ((" -fforce-mem") ""))
-            #t)))))
+            #t))
+        ;; Normally one should not add a pkg-config file if one is not provided
+        ;; by upstream developers, but Audacity expects a pkg-config file for
+        ;; this package, and other major GNU/Linux distributions already provide
+        ;; such a file.
+        (add-after 'install 'install-pkg-config
+          (lambda* (#:key outputs #:allow-other-keys)
+            (let* ((out (assoc-ref outputs "out"))
+                   (pkg-config-dir (string-append out "/lib/pkgconfig")))
+              (mkdir-p pkg-config-dir)
+              (with-output-to-file (string-append pkg-config-dir "/mad.pc")
+                (lambda _
+                  (format #t
+                          "prefix=~@*~a~@
+                           libdir=${prefix}/lib~@
+                           includedir=${prefix}/include~@
+
+                           Name: libmad~@
+                           Description:~@
+                           Version: ~a~@
+                           Libs: -L${libdir} -lmad~@
+                           Cflags: -I${includedir}~%"
+                          out ,version)))))))))
    (synopsis "MPEG audio decoder")
    (description
     "MAD (MPEG Audio Decoder) supports MPEG-1 and the MPEG-2 extension to
@@ -105,6 +128,31 @@ This package contains the library.")
              (base32
               "0lb1w883dc46dajbdvnia5870brl5lvnlk7g7y58y9wpg5p4znk3"))))
    (build-system gnu-build-system)
+   (arguments
+    `(#:phases
+      (modify-phases %standard-phases
+        ;; Normally one should not add a pkg-config file if one is not provided
+        ;; by upstream developers, but Audacity expects a pkg-config file for
+        ;; this package, and other major GNU/Linux distributions already provide
+        ;; such a file.
+        (add-after 'install 'install-pkg-config
+          (lambda* (#:key outputs #:allow-other-keys)
+            (let* ((out (assoc-ref outputs "out"))
+                   (pkg-config-dir (string-append out "/lib/pkgconfig")))
+              (mkdir-p pkg-config-dir)
+              (with-output-to-file (string-append pkg-config-dir "/id3tag.pc")
+                (lambda _
+                  (format #t
+                          "prefix=~@*~a~@
+                           libdir=${prefix}/lib~@
+                           includedir=${prefix}/include~@
+
+                           Name: libid3tag~@
+                           Description:~@
+                           Version: ~a~@
+                           Libs: -L${libdir} -lid3tag -lz~@
+                           Cflags: -I${includedir}~%"
+                          out ,version)))))))))
    (inputs `(("zlib" ,zlib)))
    (synopsis "Library for reading ID3 tags")
    (description
@@ -160,18 +208,31 @@ a highly stable and efficient implementation.")
 (define-public taglib
   (package
     (name "taglib")
-    (version "1.11.1")
+    (version "1.12-beta-1")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "http://taglib.github.io/releases/taglib-"
-                                  version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/taglib/taglib")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "0ssjcdjv4qf9liph5ry1kngam1y7zp8fzr9xv4wzzrma22kabldn"))))
+                "1mp6w2ikniw8w6d5wr0h20j0ijg8jw7s9dli5a8k9znpznvxpym4"))))
     (build-system cmake-build-system)
     (arguments
       '(#:tests? #f ; Tests are not ran with BUILD_SHARED_LIBS on.
-        #:configure-flags (list "-DBUILD_SHARED_LIBS=ON")))
+        #:configure-flags (list "-DBUILD_SHARED_LIBS=ON")
+        #:phases (modify-phases %standard-phases
+                   (add-before 'configure 'adjust-zlib-ldflags
+                     (lambda* (#:key inputs #:allow-other-keys)
+                       ;; Make sure users of 'taglib-config --libs' get the -L
+                       ;; flag for zlib.
+                       (substitute* "CMakeLists.txt"
+                         (("set\\(ZLIB_LIBRARIES_FLAGS -lz\\)")
+                          (string-append "set(ZLIB_LIBRARIES_FLAGS \"-L"
+                                         (assoc-ref inputs "zlib")
+                                         "/lib -lz\")")))
+                       #t)))))
     (inputs `(("zlib" ,zlib)))
     (home-page "https://taglib.org")
     (synopsis "Library to access audio file meta-data")
@@ -260,7 +321,8 @@ pre-defined or user-specifiable output format.")
              (base32
               "1p1mn2hsmj5cp40fnc8g1yfvk72p8pjxi866gjdkgjsqrr7xdvih"))))
    (build-system gnu-build-system)
-   (inputs `(("libid3tag" ,libid3tag)
+   (inputs `(("flac" ,flac)
+             ("libid3tag" ,libid3tag)
              ("libmad" ,libmad)
              ("libogg" ,libogg)
              ("libltdl" ,libltdl)
@@ -310,7 +372,7 @@ This package contains the binary.")
 (define-public mpg123
   (package
     (name "mpg123")
-    (version "1.26.3")
+    (version "1.26.4")
     (source
      (origin
        (method url-fetch)
@@ -320,7 +382,7 @@ This package contains the binary.")
                    "https://www.mpg123.org/download/mpg123-"
                    version ".tar.bz2")))
        (sha256
-        (base32 "0vkcfdx0mqq6lmpczsmpa2jsb0s6dryx3i7gvr32i3w9b9w9ij9h"))))
+        (base32 "0m34hjssgslcsns8lj1n7f32iyiw547qgba9j2r6d9pp1ma92688"))))
     (build-system gnu-build-system)
     (arguments '(#:configure-flags '("--with-default-audio=pulse")))
     (native-inputs
@@ -374,6 +436,27 @@ use with CD-recording software).")
               (base32
                "07nsn5sy3a8xbmw1bidxnsj5fj6kg9ai04icmqw40ybkp353dznx"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-pkg-config
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (pkg-config-dir (string-append out "/lib/pkgconfig")))
+               (mkdir-p pkg-config-dir)
+               (with-output-to-file (string-append pkg-config-dir "/lame.pc")
+                 (lambda _
+                   (format #t
+                           "prefix=~@*~a~@
+                           libdir=${prefix}/lib~@
+                           includedir=${prefix}/include~@
+
+                           Name: lame~@
+                           Description:~@
+                           Version: ~a~@
+                           Libs: -L${libdir} -lmp3lame~@
+                           Cflags: -I${includedir}~%"
+                           out ,version)))))))))
     (home-page "http://lame.sourceforge.net/")
     (synopsis "MPEG Audio Layer III (MP3) encoder")
     (description "LAME is a high quality MPEG Audio Layer III (MP3) encoder.")
@@ -536,14 +619,13 @@ is to provide an accurate identifier for record tracks.")
 (define-public python-audioread
   (package
     (name "python-audioread")
-    (version "2.1.8")
+    (version "2.1.9")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "audioread" version))
        (sha256
-        (base32
-         "0s6iilb8ca6j6nv5a5hbyxi5alr3crvsbr6kggh82a44pkx08f87"))))
+        (base32 "129hab8x9sb3plff2bkq4xnzc3i8k9rgcm1a36l813kc0m10wj53"))))
     (build-system python-build-system)
     (arguments `(#:tests? #f)) ; there is no "audiofile" fixture
     (native-inputs
@@ -578,3 +660,42 @@ FFmpeg, etc.")
      "This package provides bindings for the Chromaprint acoustic
 fingerprinting library and the Acoustid API.")
     (license license:expat)))
+
+(define-public python-pytaglib
+  (package
+    (name "python-pytaglib")
+    (version "1.4.6")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pytaglib" version))
+       (sha256
+        (base32
+         "0li970qslfymz4vk1wrij2nfqw3l15cpc3fjjci48mpvg17gbnhn"))
+       ;; Delete file generated by Cython.
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           (delete-file "src/taglib.cpp")))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         ;; Ensure that the Cython file is regenerated.
+         (add-after 'unpack 'setup-environment
+           (lambda _
+             (setenv "PYTAGLIB_CYTHONIZE" "1"))))))
+    (native-inputs
+     `(("python-cython" ,python-cython)
+       ("python-pytest" ,python-pytest)))
+    (inputs
+     `(("taglib" ,taglib)))
+    (home-page
+     "https://github.com/supermihi/pytaglib")
+    (synopsis
+     "Python bindings for taglib")
+    (description
+     "This package is a Python audio tagging library.  It is
+cross-platform, works with all Python versions, and is very
+simple to use yet fully featured.")
+    (license license:gpl3)))

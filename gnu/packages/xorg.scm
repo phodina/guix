@@ -6,15 +6,15 @@
 ;;; Copyright © 2015 Eric Dvorsak <eric@dvorsak.fr>
 ;;; Copyright © 2016 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2015 Cyrill Schenkel <cyrill.schenkel@gmail.com>
-;;; Copyright © 2016, 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Nikita <nikita@n0.is>
 ;;; Copyright © 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016, 2017 John Darrington <jmd@gnu.org>
-;;; Copyright © 2017, 2018, 2019 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017, 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017, 2018, 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2017, 2020 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2018, 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018 Benjamin Slade <slade@jnanam.net>
@@ -23,7 +23,7 @@
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Leo Prikler <leo.prikler@student.tugraz.at>
 ;;; Copyright © 2020 Florian Pelz <pelzflorian@pelzflorian.de>
-;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
+;;; Copyright © 2020, 2021 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2020 Jean-Baptiste Note <jean-baptiste.note@m4x.org>
 ;;;
@@ -2466,7 +2466,7 @@ XC-APPGROUP, XTEST.")
 (define-public libevdev
   (package
     (name "libevdev")
-    (version "1.8.0")
+    (version "1.9.1")
     (source
      (origin
        (method url-fetch)
@@ -2474,21 +2474,10 @@ XC-APPGROUP, XTEST.")
                            name "-" version ".tar.xz"))
        (sha256
         (base32
-         "04a2klvii0in9ln8r85mk2cm73jq8ry2m3yzmf2z8xyjxzjcmlr0"))))
+         "1jvsphdrs1i54ccjcn6ll26jy42am7h28lbsvwa6pmxgqm43qq7m"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:configure-flags '("--disable-static")
-       #:phases (modify-phases %standard-phases
-                  (add-before 'configure 'pedantry
-                    (lambda _
-                      ;; XXX: libevdev includes kernel headers, which causes this
-                      ;; compile test to fail with:
-                      ;; ...-headers-4.14.67/include/asm-generic/posix_types.h:88:14:
-                      ;;error: ISO C90 does not support ‘long long’ [-Werror=long-long]
-                      (substitute* "test/Makefile.in"
-                        (("-pedantic -Werror -std=c89")
-                         "-pedantic -Werror -std=c99"))
-                      #t)))))
+     `(#:configure-flags '("--disable-static")))
     (native-inputs `(("python" ,python)))
     (home-page "https://www.freedesktop.org/wiki/Software/libevdev/")
     (synopsis "Wrapper library for evdev devices")
@@ -2539,7 +2528,7 @@ including most mice, keyboards, tablets and touchscreens.")
 (define-public xf86-input-libinput
   (package
     (name "xf86-input-libinput")
-    (version "0.28.2")
+    (version "0.30.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2547,7 +2536,7 @@ including most mice, keyboards, tablets and touchscreens.")
                     name "-" version ".tar.bz2"))
               (sha256
                (base32
-                "0818vr0yhk9j1y1wcbxzcd458vrvp06rrhi8k43bhqkb5jb4dcxq"))))
+                "1h4np66p87jf0c85ig524w8f5rbhl5gx8fww1qg0c55f87yzkizr"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags
@@ -2714,14 +2703,14 @@ as USB mice.")
 (define-public xf86-video-amdgpu
   (package
     (name "xf86-video-amdgpu")
-    (version "19.0.1")
+    (version "19.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://xorg/individual/driver/"
                            "xf86-video-amdgpu-" version ".tar.bz2"))
        (sha256
-        (base32 "1mf6s7i423b2xyl469kwnakrpp5fr41sm8hh7vli5jxdd8crg8da"))))
+        (base32 "0pgy4ihnja0vm8504qw7qxh3pdpa3p9k6967nz15m6b1mvha83jg"))))
     (build-system gnu-build-system)
     (inputs `(("xorg-server" ,xorg-server)))
     (native-inputs `(("pkg-config" ,pkg-config)))
@@ -2781,20 +2770,19 @@ X server.")
 (define-public xf86-video-ati
   (package
     (name "xf86-video-ati")
-    (version "19.0.1")
+    (version "19.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://xorg/individual/driver/"
                            "xf86-video-ati-" version ".tar.bz2"))
        (sha256
-        (base32 "1c31g5q5p3nk9nscwikh1vvfnhdwsxiw7j8v678nlm34hrfh3djw"))))
+        (base32 "0j9w4axsqlycv4v14g53xyhkm9h7d27b2fcv9lrzb9gf54b5m7v5"))))
     (build-system gnu-build-system)
     (inputs `(("mesa" ,mesa)
               ("xorgproto" ,xorgproto)
               ("xorg-server" ,xorg-server)))
     (native-inputs `(("pkg-config" ,pkg-config)))
-    (arguments `(#:configure-flags `("--disable-glamor"))) ; TODO: Enable glamor
     (home-page "https://www.x.org/wiki/")
     (synopsis "ATI Radeon video driver for X server")
     (description
@@ -2920,18 +2908,14 @@ It supports a variety of Adreno graphics chipsets.")
 (define-public xf86-video-geode
   (package
     (name "xf86-video-geode")
-    (version "2.11.19")
+    (version "2.11.20")
     (source
-      (origin
-        (method url-fetch)
-        (uri (string-append
-               "mirror://xorg/individual/driver/xf86-video-geode-"
-               version
-               ".tar.bz2"))
-        (sha256
-          (base32
-           "0zn9gb49grds5mcs1dlrx241k2w1sgqmx4i5x7v6159xxqhlqsf6"))
-        (patches (search-patches "xf86-video-geode-glibc-2.20.patch"))))
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://xorg/individual/driver/xf86-video-geode-"
+                           version ".tar.bz2"))
+       (sha256
+        (base32 "0r2dz0agg0k5wrqdbicji6mh6svzyl0xgqk76hpcfdlzn2zx15zl"))))
     (build-system gnu-build-system)
     (inputs `(("xorg-server" ,xorg-server)))
     (native-inputs `(("pkg-config" ,pkg-config)))
@@ -3028,8 +3012,8 @@ X server.")
 
 
 (define-public xf86-video-intel
-  (let ((commit "5ca3ac1a90af177eb111a965e9b4dd8a27cc58fc")
-        (revision "16"))
+  (let ((commit "ad5540f6ecaec287c70259f0181e613561b716f6")
+        (revision "17"))
     (package
       (name "xf86-video-intel")
       (version (git-version "2.99.917" revision commit))
@@ -3042,7 +3026,7 @@ X server.")
                (commit commit)))
          (sha256
           (base32
-           "1y1v6cp3r3isq3bc7mypkvypwjygi205k06slmidx2q3sz4h4mjc"))
+           "09jdg5wrq708wc83027337qvdjb96827h7sjwjfl5ffiynfpwl95"))
          (file-name (git-file-name name version))))
       (build-system gnu-build-system)
       (inputs `(("mesa" ,mesa)
@@ -3368,7 +3352,7 @@ Xorg X server.")
 (define-public xf86-video-sis
   (package
     (name "xf86-video-sis")
-    (version "0.10.9")
+    (version "0.12.0")
     (source
       (origin
         (method url-fetch)
@@ -3376,16 +3360,15 @@ Xorg X server.")
                "mirror://xorg/individual/driver/xf86-video-sis-"
                version
                ".tar.bz2"))
-        (patches (search-patches "xf86-video-sis-xorg-compat.patch"))
         (sha256
-          (base32
-           "03f1abjjf68y8y1iz768rn95va9d33wmbwfbsqrgl6k0gi0bf9jj"))))
+         (base32
+          "0nrs6cjldlhakx5987fiiggjrlzilsbdc7l9pz22x1iwslbkz78i"))))
     (build-system gnu-build-system)
     (inputs `(("mesa" ,mesa)
               ("xorgproto" ,xorgproto)
               ("xorg-server" ,xorg-server)))
     (native-inputs
-      `(("pkg-config" ,pkg-config)))
+     `(("pkg-config" ,pkg-config)))
     (home-page "https://www.x.org/wiki/")
     (synopsis "Sis video driver for X server")
     (description
@@ -4038,7 +4021,7 @@ extension to the X11 protocol.  It includes:
 (define-public xkeyboard-config
   (package
     (name "xkeyboard-config")
-    (version "2.29")
+    (version "2.31")
     (source
       (origin
         (method url-fetch)
@@ -4048,7 +4031,7 @@ extension to the X11 protocol.  It includes:
               ".tar.bz2"))
         (sha256
           (base32
-            "00hqc8nykvy8c09b8vab64dcd0ij3n5klxjn6rl00q7hickpah8x"))))
+            "18xddaxh83zm698syh50w983jg6b7b8zgv0dfaf7ha485hgihi6s"))))
     (build-system gnu-build-system)
     (inputs
       `(("libx11" ,libx11)
@@ -5326,8 +5309,7 @@ over Xlib, including:
 (define-public xorg-server
   (package
     (name "xorg-server")
-    (version "1.20.8")
-    (replacement xorg-server/fixed)
+    (version "1.20.10")
     (source
       (origin
         (method url-fetch)
@@ -5335,7 +5317,7 @@ over Xlib, including:
                             "xorg-server-" version ".tar.bz2"))
         (sha256
          (base32
-          "0ih15m7gh1z1ly6z7g82bkni719yisqmbk61a1wgp82bxrmn8yyi"))
+          "16bwrf0ag41l7jbrllbix8z6avc5yimga7ihvq4ch3a5hb020x4p"))
         (patches
          (list
           ;; See:
@@ -5451,32 +5433,22 @@ communicates with the user via graphical controls such as buttons and
 draggable titlebars and borders.")
     (license license:x11)))
 
-(define xorg-server/fixed  ; Fixes CVE-2020-14347
-  (package
-    (inherit xorg-server)
-    (source
-     (origin
-       (inherit (package-source xorg-server))
-       (patches
-        (append (origin-patches (package-source xorg-server))
-                (search-patches "xorg-server-CVE-2020-14347.patch")))))))
-
 ;; This package is intended to be used when building GTK+.
 ;; Note: It's currently marked as "hidden" to avoid having two non-eq?
 ;; packages with the same name and version.
-;; TODO: Update this in the next rebuild cycle.
+;; TODO: Inherit source from xorg-server in a future rebuild cycle.
 (define-public xorg-server-for-tests
   (hidden-package
    (package
      (inherit xorg-server)
-     (version "1.20.7")
+     (version "1.20.9")
      (source (origin
                (inherit (package-source xorg-server))
                (uri (string-append "mirror://xorg/individual/xserver/"
                                    "xorg-server-" version ".tar.bz2"))
                (sha256
                 (base32
-                 "18bfl04ihw1jr3h0fs522nnxxq5ixjay77y9dcymnkzk23q8cndx")))))))
+                 "0w9mrnffvjgmwi50kln15i8rpdskxv97r78l75wlcmg4vzhg46g2")))))))
 
 (define-public xorg-server-xwayland
   (package/inherit xorg-server
@@ -5793,7 +5765,7 @@ The XCB util module provides the following libraries:
       `(("autoconf" ,autoconf)
         ("automake" ,automake)
         ("libtool" ,libtool)
-        ("python-2" ,python-2)
+        ("python" ,python-wrapper)
         ("pkg-config" ,pkg-config)))
      (arguments
       `(#:phases
@@ -6113,17 +6085,17 @@ to answer a question.  Xmessage can also exit after a specified time.")
 (define-public xterm
   (package
     (name "xterm")
-    (version "358")
-    (source (origin
-              (method url-fetch)
-              (uri (list
-                    (string-append "http://invisible-mirror.net/archives/xterm/"
-                                   "xterm-" version ".tgz")
-                    (string-append "ftp://ftp.invisible-island.net/xterm/"
-                                   "xterm-" version ".tgz")))
-              (sha256
-               (base32
-                "0yxzdwchfvkq784qadxalnbnxr4k2hdgli9w1dq9j2lic9li1nvw"))))
+    (version "363")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (list
+             (string-append "https://invisible-mirror.net/archives/xterm/"
+                            "xterm-" version ".tgz")
+             (string-append "ftp://ftp.invisible-island.net/xterm/"
+                            "xterm-" version ".tgz")))
+       (sha256
+        (base32 "0j0bl5z3kmhahf770mbrj2zwm2nvxkhqpwnwbdvbclk5w8wkc6nq"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--enable-wide-chars" "--enable-load-vt-fonts"
@@ -6307,14 +6279,14 @@ basic eye-candy effects.")
 (define-public xpra
   (package
     (name "xpra")
-    (version "4.0.3")
+    (version "4.0.6")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.xpra.org/src/xpra-"
                            version ".tar.xz"))
        (sha256
-        (base32 "05afdspf51fbya6jg6971i3ddqn8p4mg3v3aaqyi3chx4q1807rp"))
+        (base32 "1s49y2s75a8a70vj0micnmpic5zv1n32yjxy8fkxsqa6j5njyrww"))
        (patches (search-patches "xpra-4.0.1-systemd-run.patch"))))
     (build-system python-build-system)
     ;; see also http://xpra.org/trac/wiki/Dependencies
@@ -6341,8 +6313,11 @@ basic eye-candy effects.")
               ("xf86-input-keyboard" ,xf86-input-keyboard)
               ("python-pillow" ,python-pillow)
               ;; Optional dependencies.
+              ("libx264" ,libx264)
+              ("x265" ,x265)
+              ("libvpx" ,libvpx)
               ("python-rencode" ,python-rencode) ; For speed.
-              ("python-numpy", python-numpy)
+              ("python-numpy" ,python-numpy)
               ("python-pyopengl" ,python-pyopengl) ; Drawing acceleration.
               ("python-pyopengl-accelerate" ,python-pyopengl-accelerate) ; Same.
               ("python-paramiko" ,python-paramiko) ; Tunneling over SSH.
@@ -6670,7 +6645,7 @@ output.")
 (define-public console-setup
   (package
     (name "console-setup")
-    (version "1.196")
+    (version "1.197")
     (source
      (origin
        (method git-fetch)
@@ -6678,7 +6653,7 @@ output.")
              (url "https://salsa.debian.org/installer-team/console-setup.git")
              (commit version)))
        (sha256
-        (base32 "0c79rycgpna8910as6blw3z3sajzzakz4qlvr6js2yr8zq2d0ylg"))
+        (base32 "0m2q30f94vd1wb2zqpiyplpgfchjlm8j41xiyxcqdjzdgqbs7l27"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
@@ -6727,7 +6702,7 @@ output.")
     (synopsis "Set up the Linux console font and keyboard")
     (description
      "console-setup provides the console with the same keyboard
-configuration scheme that X Window System has.  In particular, the
+configuration scheme that the X Window System has.  In particular, the
 @command{ckbcomp} program compiles an XKB keyboard description to a keymap
 suitable for @command{loadkeys} or @command{kbdcontrol}.  As a result, there
 is no need to duplicate or change the console keyboard files just to make

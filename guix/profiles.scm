@@ -399,22 +399,24 @@ denoting a specific output of a package."
                 'inferior-package->manifest-entry))
 
   (manifest
-   (map (match-lambda
-          (((? package? package) output)
-           (package->manifest-entry package output))
-          ((? package? package)
-           (package->manifest-entry package))
-          ((thing output)
-           (if inferiors-loaded?
-               ((inferior->entry) thing output)
-               (throw 'wrong-type-arg 'packages->manifest
-                      "Wrong package object: ~S" (list thing) (list thing))))
-          (thing
-           (if inferiors-loaded?
-               ((inferior->entry) thing)
-               (throw 'wrong-type-arg 'packages->manifest
-                      "Wrong package object: ~S" (list thing) (list thing)))))
-        packages)))
+   (delete-duplicates
+    (map (match-lambda
+           (((? package? package) output)
+            (package->manifest-entry package output))
+           ((? package? package)
+            (package->manifest-entry package))
+           ((thing output)
+            (if inferiors-loaded?
+                ((inferior->entry) thing output)
+                (throw 'wrong-type-arg 'packages->manifest
+                       "Wrong package object: ~S" (list thing) (list thing))))
+           (thing
+            (if inferiors-loaded?
+                ((inferior->entry) thing)
+                (throw 'wrong-type-arg 'packages->manifest
+                       "Wrong package object: ~S" (list thing) (list thing)))))
+         packages)
+    manifest-entry=?)))
 
 (define (manifest->gexp manifest)
   "Return a representation of MANIFEST as a gexp."
@@ -716,6 +718,12 @@ replace it."
     (manifest-pattern
       (name   (manifest-entry-name entry))
       (output (manifest-entry-output entry))))
+  (define manifest-entry-pair=?
+    (match-lambda*
+      (((m1a . m2a) (m1b . m2b))
+       (and (manifest-entry=? m1a m1b)
+            (manifest-entry=? m2a m2b)))
+      (_ #f)))
 
   (let loop ((input     (manifest-transaction-install transaction))
              (install   '())
@@ -724,8 +732,16 @@ replace it."
     (match input
       (()
        (let ((remove (manifest-transaction-remove transaction)))
-         (values (manifest-matching-entries manifest remove)
-                 (reverse install) (reverse upgrade) (reverse downgrade))))
+         (values (delete-duplicates
+                  (manifest-matching-entries manifest remove)
+                  manifest-entry=?)
+                 (delete-duplicates (reverse install) manifest-entry=?)
+                 (delete-duplicates
+                  (reverse upgrade)
+                  manifest-entry-pair=?)
+                 (delete-duplicates
+                  (reverse downgrade)
+                  manifest-entry-pair=?))))
       ((entry rest ...)
        ;; Check whether installing ENTRY corresponds to the installation of a
        ;; new package or to an upgrade.
@@ -1205,43 +1221,48 @@ and creates the dependency graph of all these kernel modules.
 This is meant to be used as a profile hook."
   (define kmod                                    ; lazy reference
     (module-ref (resolve-interface '(gnu packages linux)) 'kmod))
+
+  (define guile-zlib
+    (module-ref (resolve-interface '(gnu packages guile)) 'guile-zlib))
+
   (define build
     (with-imported-modules (source-module-closure
                             '((guix build utils)
                               (gnu build linux-modules)))
-      #~(begin
-          (use-modules (ice-9 ftw)
-                       (ice-9 match)
-                       (srfi srfi-1)              ; append-map
-                       (gnu build linux-modules))
+      (with-extensions (list guile-zlib)
+        #~(begin
+            (use-modules (ice-9 ftw)
+                         (ice-9 match)
+                         (srfi srfi-1)              ; append-map
+                         (gnu build linux-modules))
 
-          (let* ((inputs '#$(manifest-inputs manifest))
-                 (module-directories
-                  (map (lambda (directory)
-                         (string-append directory "/lib/modules"))
-                       inputs))
-                 (directory-entries
-                  (lambda (directory)
-                    (or (scandir directory
-                                 (lambda (basename)
-                                   (not (string-prefix? "." basename))))
-                        '())))
-                 ;; Note: Should usually result in one entry.
-                 (versions (delete-duplicates
-                            (append-map directory-entries
-                                        module-directories))))
-            (match versions
-              ((version)
-               (let ((old-path (getenv "PATH")))
-                 (setenv "PATH" #+(file-append kmod "/bin"))
-                 (make-linux-module-directory inputs version #$output)
-                 (setenv "PATH" old-path)))
-              (()
-               ;; Nothing here, maybe because this is a kernel with
-               ;; CONFIG_MODULES=n.
-               (mkdir #$output))
-              (_ (error "Specified Linux kernel and Linux kernel modules
-are not all of the same version")))))))
+            (let* ((inputs '#$(manifest-inputs manifest))
+                   (module-directories
+                    (map (lambda (directory)
+                           (string-append directory "/lib/modules"))
+                         inputs))
+                   (directory-entries
+                    (lambda (directory)
+                      (or (scandir directory
+                                   (lambda (basename)
+                                     (not (string-prefix? "." basename))))
+                          '())))
+                   ;; Note: Should usually result in one entry.
+                   (versions (delete-duplicates
+                              (append-map directory-entries
+                                          module-directories))))
+              (match versions
+                ((version)
+                 (let ((old-path (getenv "PATH")))
+                   (setenv "PATH" #+(file-append kmod "/bin"))
+                   (make-linux-module-directory inputs version #$output)
+                   (setenv "PATH" old-path)))
+                (()
+                 ;; Nothing here, maybe because this is a kernel with
+                 ;; CONFIG_MODULES=n.
+                 (mkdir #$output))
+                (_ (error "Specified Linux kernel and Linux kernel modules
+are not all of the same version"))))))))
   (gexp->derivation "linux-module-database" build
                     #:local-build? #t
                     #:substitutable? #f
@@ -1296,31 +1317,43 @@ entries.  It's used to query the MIME type of a given file."
   (define shared-mime-info  ; lazy reference
     (module-ref (resolve-interface '(gnu packages gnome)) 'shared-mime-info))
 
-  (mlet %store-monad ((glib
-                       (manifest-lookup-package
-                        manifest "glib")))
+  (mlet %store-monad ((glib (manifest-lookup-package manifest "glib")))
     (define build
       (with-imported-modules  '((guix build utils)
                                 (guix build union))
         #~(begin
-            (use-modules (srfi srfi-26)
-                         (guix build utils)
-                         (guix build union))
+            (use-modules (guix build utils)
+                         (guix build union)
+                         (srfi srfi-26)
+                         (ice-9 match))
+
             (let* ((datadir (string-append #$output "/share"))
                    (destdir (string-append datadir "/mime"))
                    (pkgdirs (filter file-exists?
                                     (map (cut string-append <>
                                               "/share/mime/packages")
                                          (cons #+shared-mime-info
-                                               '#$(manifest-inputs manifest)))))
-                   (update-mime-database (string-append
-                                          #+shared-mime-info
-                                          "/bin/update-mime-database")))
-              (mkdir-p destdir)
-              (union-build (string-append destdir "/packages") pkgdirs
-                           #:log-port (%make-void-port "w"))
-              (setenv "XDG_DATA_HOME" datadir)
-              (exit (zero? (system* update-mime-database destdir)))))))
+                                               '#$(manifest-inputs manifest))))))
+
+              (match pkgdirs
+                ((shared-mime-info)
+                 ;; PKGDIRS contains nothing but 'shared-mime-info', which
+                 ;; already contains its database, so nothing to do.
+                 (mkdir-p datadir)
+                 (symlink #$(file-append shared-mime-info "/share/mime")
+                          destdir))
+                (_
+                 ;; PKGDIRS contains additional packages providing
+                 ;; 'share/mime/packages' (very few packages do so) so rebuild
+                 ;; the database.  TODO: Find a way to avoid reprocessing
+                 ;; 'shared-mime-info', which is the most expensive one.
+                 (mkdir-p destdir)
+                 (union-build (string-append destdir "/packages") pkgdirs
+                              #:log-port (%make-void-port "w"))
+                 (setenv "XDG_DATA_HOME" datadir)
+                 (invoke #+(file-append shared-mime-info
+                                        "/bin/update-mime-database")
+                         destdir)))))))
 
     ;; Don't run the hook when there are no GLib based applications.
     (if glib
@@ -1412,27 +1445,18 @@ the entries in MANIFEST."
     (module-ref (resolve-interface '(gnu packages guile))
                 'guile-gdbm-ffi))
 
-  (define zlib
-    (module-ref (resolve-interface '(gnu packages compression)) 'zlib))
-
-  (define config.scm
-    (scheme-file "config.scm"
-                 #~(begin
-                     (define-module #$'(guix config) ;placate Geiser
-                       #:export (%libz))
-
-                     (define %libz
-                       #+(file-append zlib "/lib/libz")))))
+  (define guile-zlib
+    (module-ref (resolve-interface '(gnu packages guile)) 'guile-zlib))
 
   (define modules
-    (cons `((guix config) => ,config.scm)
-          (delete '(guix config)
-                  (source-module-closure `((guix build utils)
-                                           (guix man-db))))))
+    (delete '(guix config)
+            (source-module-closure `((guix build utils)
+                                     (guix man-db)))))
 
   (define build
     (with-imported-modules modules
-      (with-extensions (list gdbm-ffi)            ;for (guix man-db)
+      (with-extensions (list gdbm-ffi           ;for (guix man-db)
+                             guile-zlib)
         #~(begin
             (use-modules (guix man-db)
                          (guix build utils)

@@ -2,8 +2,9 @@
 ;;; Copyright © 2015, 2016, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Meiyo Peng <meiyo.peng@gmail.com>
-;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2020 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -24,27 +25,31 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages boost)
+  #:use-module (gnu packages build-tools)   ;for meson-0.55
   #:use-module (gnu packages perl)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix build-system cmake)
-  #:use-module (guix build-system gnu))
+  #:use-module (guix build-system gnu)
+  #:use-module (guix build-system meson))
 
 (define-public gdsl
   (package
     (name "gdsl")
     (version "1.8")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "http://download.gna.org/gdsl/"
-                                  "gdsl-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://example.org") ;only hosted on Software Heritage
+                    (commit "6adb53be8b8f9f2e4bbfc92d357eedeefb4c7430")))
+              (file-name (git-file-name name version))
               (sha256
                (base32
-                "1v64jvlnj8jfpphphgjgb36p0kv50kwfyqncf0y12f16v8ydyiaw"))))
+                "0a52g12d9sf9hhcyvwfd7xdazj2a9i9jh97cnlqf2ymvwnvjk1g0"))))
     (build-system gnu-build-system)
-    (home-page "http://home.gna.org/gdsl/")
+    (home-page "https://web.archive.org/web/20170502005430/http://home.gna.org/gdsl/")
     (synopsis "Generic data structures library")
     (description "The Generic Data Structures Library (GDSL) is a collection
 of routines for generic data structures manipulation.  It is a re-entrant
@@ -84,7 +89,7 @@ library.")
 (define-public sparsehash
   (package
     (name "sparsehash")
-    (version "2.0.3")
+    (version "2.0.4")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -93,7 +98,7 @@ library.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0m3f0cnpnpf6aak52wn8xbrrdw8p0yhq8csgc8nlvf9zp8c402na"))))
+                "1pf1cjvcjdmb9cd6gcazz64x0cd2ndpwh6ql2hqpypjv725xwxy7"))))
     (build-system gnu-build-system)
     (synopsis "Memory-efficient hashtable implementations")
     (description
@@ -236,14 +241,34 @@ to the structure and choosing one or more fields to act as the key.")
                           "0m542xpys54bni29zibgrfpgpd0zgyny4h131virxsanixsbz52z")))))))
     (build-system cmake-build-system)
     (arguments
-     '(#:phases
+     `(#:phases
        (modify-phases %standard-phases
          (add-after 'install 'install-static-library
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (copy-file "lib/libsdsl_static.a"
                           (string-append out "/lib/libsdsl.a")))
-             #t)))))
+             #t))
+        (add-after 'install 'install-pkgconfig-file
+          (lambda* (#:key outputs #:allow-other-keys)
+            (let* ((out (assoc-ref outputs "out"))
+                   (lib (string-append out "/lib")))
+              (mkdir-p (string-append lib "/pkgconfig"))
+              (with-output-to-file (string-append lib "/pkgconfig/sdsl-lite.pc")
+                (lambda _
+                  (format #t "prefix=~a~@
+                          exec_prefix=${prefix}~@
+                          libdir=${exec_prefix}/lib~@
+                          includedir=${prefix}/include~@
+                          ~@
+                          ~@
+                          Name: sdsl~@
+                          Version: ~a~@
+                          Description: SDSL: Succinct Data Structure Library~@
+                          Libs: -L${libdir} -lsdsl -ldivsufsort -ldivsufsort64~@
+                          Cflags: -I${includedir}~%"
+                          out ,version)))
+              #t))))))
     (native-inputs
      `(("libdivsufsort" ,libdivsufsort)))
     (home-page "https://github.com/simongog/sdsl-lite")
@@ -257,6 +282,28 @@ operations of the original object efficiently.  The theoretical time
 complexity of an operation performed on the classical data structure and the
 equivalent succinct data structure are (most of the time) identical.")
     (license license:gpl3+)))
+
+(define-public tllist
+  (package
+    (name "tllist")
+    (version "1.0.4")
+    (home-page "https://codeberg.org/dnkl/tllist")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference (url home-page) (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1a26vwb7ll6mv3h8rbafsdx4vic1f286hiqn8s359sw8b7yjkvzs"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:meson ,meson-0.55))
+    (synopsis "Typed link list for C")
+    (description
+     "@code{tllist} is a @dfn{typed linked list} C header file only library
+implemented using pre-processor macros.  It supports primitive data types as
+well as aggregated ones such as structs, enums and unions.")
+    (license license:expat)))
 
 (define-public libdivsufsort
   (package

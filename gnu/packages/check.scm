@@ -7,7 +7,7 @@
 ;;; Copyright © 2015, 2017 Cyril Roelandt <tipecaml@gmail.com>
 ;;; Copyright © 2015 Federico Beffa <beffa@fbengineering.ch>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2015, 2016, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2016, 2017 Danny Milosavljevic <dannym+a@scratchpost.org>
@@ -35,6 +35,7 @@
 ;;; Copyright © 2020 Josh Marshall <joshua.r.marshall.1991@gmail.com>
 ;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -76,15 +77,67 @@
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system go)
+  #:use-module (guix build-system meson)
   #:use-module (guix build-system python)
-  #:use-module (guix build-system trivial))
+  #:use-module (guix build-system trivial)
+  #:use-module (srfi srfi-1))
+
+(define-public pedansee
+  (package
+    (name "pedansee")
+    (version "0.0.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "https://www.flyn.org/projects/"
+                       name "/" name "-" version ".tar.gz"))
+       (sha256
+        (base32 "0lsg791x6n95pxg6vif8qfc46nqcamhjq3g0dl5xqf6imy7n3acd"))))
+    (build-system glib-or-gtk-build-system)
+    (native-inputs
+     `(("clang" ,clang)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)))
+    (inputs
+     `(("glib" ,glib)))
+    (synopsis "Code checker for C")
+    (description "Pedansee checks C source files for compliance with a particular
+programming style.  The style is currently defined by the pedansee source code
+in the form of functions which walk each source file’s syntax tree.  You can
+modify some aspects of this style through the use of regular expressions.")
+    (home-page "https://www.flyn.org/projects/pedansee/")
+    (license license:gpl3+)))
+
+(define-public mutest
+  (package
+    (name "mutest")
+    (version "0.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/ebassi/mutest")
+         (commit "e6246c9")))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0gdqwq6fvk06wld4rhnw5752hahrvhd69zrci045x25rwx90x26q"))))
+    (build-system meson-build-system)
+    (synopsis "Small C testing library")
+    (description "Mutest aims to be a small unit testing library for C projects,
+with an API heavily modelled on high level Behavior-Driver Development frameworks
+like Jasmine or Mocha.")
+    (home-page "https://ebassi.github.io/mutest/mutest.md.html")
+    (license license:expat)))
 
 (define-public check
   (package
     (name "check")
-    (version "0.14.0")
+    (version "0.15.2")
     (source
      (origin
       (method url-fetch)
@@ -92,7 +145,7 @@
                           version "/check-" version ".tar.gz"))
       (sha256
        (base32
-        "02zkfiyklckmivrfvdsrlzvzphkdsgjrz3igncw05dv5pshhq3xx"))))
+        "02m25y9m46pb6n46s51av62kpd936lkfv3b13kfpckgvmh5lxpm8"))))
     (build-system gnu-build-system)
     (home-page "https://libcheck.github.io/check/")
     (synopsis "Unit test framework for C")
@@ -105,7 +158,19 @@ faults or other signals.  The output from unit tests can be used within
 source code editors and IDEs.")
     (license license:lgpl2.1+)))
 
-;; Some packages require this older version.  Removed once no longer needed.
+;; Some packages require older versions.  Removed once no longer needed.
+(define-public check-0.14
+  (package
+    (inherit check)
+    (version "0.14.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/libcheck/check/releases"
+                                  "/download/" version "/check-" version ".tar.gz"))
+              (sha256
+               (base32
+                "02zkfiyklckmivrfvdsrlzvzphkdsgjrz3igncw05dv5pshhq3xx"))))))
+
 (define-public check-0.12
   (package
    (inherit check)
@@ -201,14 +266,14 @@ with a flexible variety of user interfaces.")
 (define-public cppunit
   (package
     (name "cppunit")
-    (version "1.14.0")
+    (version "1.15.1")
     (source (origin
              (method url-fetch)
               (uri (string-append "http://dev-www.libreoffice.org/src/"
                                   name "-" version ".tar.gz"))
              (sha256
               (base32
-               "1027cyfx5gsjkdkaf6c2wnjh68882grw8n672018cj3vs9lrhmix"))))
+               "19qpqzy66bq76wcyadmi3zahk5v1ll2kig1nvg96zx9padkcdic9"))))
     ;; Explicitly link with libdl. This is expected to be done by packages
     ;; relying on cppunit for their tests. However, not all of them do.
     ;; If we added the linker flag to such packages, we would pollute all
@@ -222,6 +287,55 @@ with a flexible variety of user interfaces.")
 unit testing.  Test output is in XML for automatic testing and GUI based for
 supervised tests.")
     (license license:lgpl2.1))) ; no copyright notices. LGPL2.1 is in the tarball
+
+(define-public shunit2
+  (package
+    (name "shunit2")
+    (version "2.1.8")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/kward/shunit2")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "08vs0jjl3pfh100sjlw31x4638xj7fghr0j2g1zfikba8n1f9491"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (delete 'configure)    ; no configure script
+         (delete 'build)
+         (add-after 'patch-source-shebangs 'patch-more-shebangs
+           (lambda _
+             (substitute* "shunit2"
+               (("#! /bin/sh") (string-append "#! " (which "sh")))
+               (("/usr/bin/od") (which "od")))
+             (substitute* "test_runner"
+               (("/bin/sh") (which "sh"))
+               (("/bin/bash") (which "bash")))
+             #t))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               ;; This test is buggy in the build container.
+               (delete-file "shunit2_misc_test.sh")
+               (invoke "sh" "test_runner"))
+             #t))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (install-file "shunit2"
+                           (string-append (assoc-ref outputs "out")
+                                          "/bin"))
+             #t)))))
+    (home-page "https://github.com/kward/shunit2")
+    (synopsis "@code{xUnit} based unit testing for Unix shell scripts")
+    (description "@code{shUnit2} was originally developed to provide a
+consistent testing solution for @code{log4sh}, a shell based logging framework
+similar to @code{log4j}.  It is designed to work in a similar manner to JUnit,
+PyUnit and others.")
+    (license license:asl2.0)))
 
 ;; When dependent packages upgraded to use newer version of catch, this one should
 ;; be removed.
@@ -286,7 +400,7 @@ a multi-paradigm automated test framework for C++ and Objective-C.")
 (define-public catch-framework2
   (package
     (name "catch2")
-    (version "2.13.0")
+    (version "2.13.2")
     (home-page "https://github.com/catchorg/Catch2")
     (source (origin
               (method git-fetch)
@@ -296,7 +410,7 @@ a multi-paradigm automated test framework for C++ and Objective-C.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0i4w0c9280a5fyi00mvvf13wlnfzyifr487n1iyr30zvvj5s5f1h"))))
+                "100r0kmra8jmra2hv92lzvwcmphpaiccwvq3lpdsa5b7hailhach"))))
     (build-system cmake-build-system)
     (inputs
      `(("python" ,python-wrapper)))
@@ -377,7 +491,7 @@ format.")
 (define-public cppcheck
   (package
     (name "cppcheck")
-    (version "1.90")
+    (version "2.3")
     (source (origin
       (method git-fetch)
       (uri (git-reference
@@ -385,7 +499,7 @@ format.")
              (commit version)))
       (file-name (git-file-name name version))
       (sha256
-       (base32 "0h7ir2x0k005fm586dxmaphgv5cyz25k3k4sh02p7zb78gzx398h"))))
+       (base32 "03ic5mig3ryzkf85r95ryagf84s7y5nd6sqr915l3zj30apnifvz"))))
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags '("-DBUILD_TESTS=ON")))
@@ -446,7 +560,7 @@ and it supports a very flexible form of test discovery.")
 (define-public doctest
   (package
     (name "doctest")
-    (version "2.4.0")
+    (version "2.4.4")
     (home-page "https://github.com/onqtam/doctest")
     (source (origin
               (method git-fetch)
@@ -454,7 +568,7 @@ and it supports a very flexible form of test discovery.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1yi95saqv8qb3ix6w8d7ffvs7qbwvqmq6wblckhxhicxxdxk85cd"))))
+                "0xldd6cr1w3bn33rdb7yc6p57w143cgnjb48ig1b99iwvvkw599n"))))
     (build-system cmake-build-system)
     (synopsis "C++ test framework")
     (description
@@ -868,18 +982,57 @@ and many external plugins.")
     (license license:expat)
     (properties `((python2-variant . ,(delay python2-pytest))))))
 
+(define-public python-pytest-6
+  (package
+    (inherit (strip-python2-variant python-pytest))
+    (version "6.1.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pytest" version))
+       (sha256
+        (base32
+         "0gl2sdm322vzmsh5k4f8kj9raiq2y7kdinnca4m45ifvii5fk9y0"))))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key (tests? #t) #:allow-other-keys)
+             (setenv "TERM" "dumb")     ;attempt disabling markup tests
+             (if tests?
+                 (invoke "pytest" "-vv" "-k"
+                         (string-append
+                          ;; This test involve the /usr directory, and fails.
+                          " not test_argcomplete"
+                          ;; These test do not honor the isatty detection and
+                          ;; fail.
+                          " and not test_code_highlight"
+                          " and not test_color_yes"))
+                 (format #t "test suite not run~%"))
+             #t)))))
+    (propagated-inputs
+     (append (alist-delete "python-py"
+                           (package-propagated-inputs python-pytest))
+             `(("python-py" ,python-py-next))))
+    (native-inputs
+     (append (alist-delete "python-pytest"
+                           (package-native-inputs python-pytest))
+             `(("python-pytest" ,python-pytest-6-bootstrap)
+               ("python-toml" ,python-toml)
+               ("python-iniconfig" ,python-iniconfig))))))
+
 ;; Pytest 4.x are the last versions that support Python 2.
 (define-public python2-pytest
   (package
     (inherit (strip-python2-variant python-pytest))
     (name "python2-pytest")
-    (version "4.6.9")
+    (version "4.6.11")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "pytest" version))
               (sha256
                (base32
-                "0fgkmpc31nzy97fxfrkqbzycigdwxwwmninx3qhkzp81migggs0r"))))
+                "0ls3pqr86xgif6bphsb6wrww9r2vc7p7a2naq8zcq8115wwq5yjh"))))
     (build-system python-build-system)
     (arguments
      `(#:python ,python-2
@@ -911,6 +1064,15 @@ and many external plugins.")
     (native-inputs `(("python-setuptools-scm" ,python-setuptools-scm)))
     (arguments `(#:tests? #f))
     (properties `((python2-variant . ,(delay python2-pytest-bootstrap))))))
+
+(define-public python-pytest-6-bootstrap
+  (package
+    (inherit (strip-python2-variant python-pytest-6))
+    (name "python-pytest-bootstrap")
+    (arguments `(#:tests? #f))
+    (native-inputs
+     `(("python-setuptools-scm" ,python-setuptools-scm)
+       ("python-toml" ,python-toml)))))
 
 (define-public python2-pytest-bootstrap
   (hidden-package
@@ -1085,14 +1247,14 @@ same arguments.")
 (define-public python-pytest-xdist
   (package
     (name "python-pytest-xdist")
-    (version "1.25.0")
+    (version "2.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pytest-xdist" version))
        (sha256
         (base32
-         "1d812apvcmshh2l8f38spqwb3bpp0x43yy7lyfpxxzc99h4r7y4n"))
+         "0wh6pn66nncfs6ay0n863bgyriwsgppn8flx5l7551j1lbqkinc2"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -1364,14 +1526,14 @@ use of resources by test cases.")))
 (define-public python-subunit-bootstrap
   (package
     (name "python-subunit-bootstrap")
-    (version "1.3.0")
+    (version "1.4.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "python-subunit" version))
        (sha256
         (base32
-         "1fsw8rsn1s3nklx06mayrg5rn2zbky6wwjc5z07s7rf1wjzfs1wn"))))
+         "0j0ymmnc5nfxi1qzvy59j27viqca7l7xd0y9x29g7yr0h693j804"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-extras" ,python-extras)
@@ -1511,14 +1673,14 @@ have failed since the last commit or what tests are currently failing.")))
 (define-public python-coverage
   (package
     (name "python-coverage")
-    (version "5.0.3")
+    (version "5.2.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "coverage" version))
        (sha256
         (base32
-         "1vrg8panqw79pswg52ygbrff3wdnxarrd9qz6c64ah0c4h2cmbvp"))))
+         "16z8i18msgs8k74n73dj9x49wzkl0vk4vq8k5pl1bsj70y7b4k53"))))
     (build-system python-build-system)
     (arguments
      ;; FIXME: 95 tests failed, 539 passed, 6 skipped, 2 errors.
@@ -2630,7 +2792,7 @@ provides a simple way to achieve this.")
 (define-public umockdev
   (package
     (name "umockdev")
-    (version "0.14.2")
+    (version "0.14.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/martinpitt/umockdev/"
@@ -2638,7 +2800,7 @@ provides a simple way to achieve this.")
                                   "umockdev-" version ".tar.xz"))
               (sha256
                (base32
-                "1nh6xsssmssmk0lxp9c9dmq3wzlpbpkg77nmmd09csbpybibgxfp"))))
+                "0xmi24ckpps32k7hc139psgbsnsf4g106sv4l9m445m46amkxggd"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases

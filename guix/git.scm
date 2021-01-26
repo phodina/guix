@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
-;;; Copyright © 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -20,18 +20,24 @@
 (define-module (guix git)
   #:use-module (git)
   #:use-module (git object)
+  #:use-module (git submodule)
   #:use-module (guix i18n)
   #:use-module (guix base32)
+  #:use-module (guix cache)
   #:use-module (gcrypt hash)
-  #:use-module ((guix build utils) #:select (mkdir-p))
+  #:use-module ((guix build utils)
+                #:select (mkdir-p delete-file-recursively))
   #:use-module (guix store)
   #:use-module (guix utils)
   #:use-module (guix records)
   #:use-module (guix gexp)
   #:use-module (guix sets)
   #:use-module ((guix diagnostics) #:select (leave))
+  #:use-module (guix progress)
   #:use-module (rnrs bytevectors)
+  #:use-module (ice-9 format)
   #:use-module (ice-9 match)
+  #:use-module (ice-9 ftw)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-11)
   #:use-module (srfi srfi-34)
@@ -39,6 +45,7 @@
   #:export (%repository-cache-directory
             honor-system-x509-certificates!
 
+            url-cache-directory
             with-repository
             with-git-error-handling
             false-if-git-not-found
@@ -115,9 +122,61 @@ the 'SSL_CERT_FILE' and 'SSL_CERT_DIR' environment variables."
                               (string-append "R:" url)
                               url))))))
 
-;; Authentication appeared in Guile-Git 0.3.0, check if it is available.
-(define auth-supported?
-  (false-if-exception (resolve-interface '(git auth))))
+(define (show-progress progress)
+  "Display a progress bar as we fetch Git code.  PROGRESS is an
+<indexer-progress> record from (git)."
+  (define total
+    (indexer-progress-total-objects progress))
+
+  (define hundredth
+    (match (quotient (indexer-progress-total-objects progress) 100)
+      (0 1)
+      (x x)))
+
+  (define-values (done label)
+    (if (< (indexer-progress-received-objects progress) total)
+        (values (indexer-progress-received-objects progress)
+                (G_ "receiving objects"))
+        (values (indexer-progress-indexed-objects progress)
+                (G_ "indexing objects"))))
+
+  (define %
+    (* 100. (/ done total)))
+
+  (when (and (< % 100) (zero? (modulo done hundredth)))
+    (erase-current-line (current-error-port))
+    (let ((width (max (- (current-terminal-columns)
+                         (string-length label) 7)
+                      3)))
+      (format (current-error-port) "~a ~3,d% ~a"
+              label (inexact->exact (round %))
+              (progress-bar % width)))
+    (force-output (current-error-port)))
+
+  (when (= % 100.)
+    ;; We're done, erase the line.
+    (erase-current-line (current-error-port))
+    (force-output (current-error-port)))
+
+  ;; Return true to indicate that we should go on.
+  #t)
+
+(define (make-default-fetch-options)
+  "Return the default fetch options."
+  (let ((auth-method (%make-auth-ssh-agent)))
+    ;; The #:transfer-progress and #:proxy-url options appeared in Guile-Git
+    ;; 0.4.0.  Omit them when using an older version.
+    (catch 'wrong-number-of-args
+      (lambda ()
+        (make-fetch-options auth-method
+                            ;; Guile-Git doesn't distinguish between these.
+                            #:proxy-url (or (getenv "http_proxy")
+                                            (getenv "https_proxy"))
+                            #:transfer-progress
+                            (and (isatty? (current-error-port))
+                                 show-progress)))
+      (lambda args
+        (make-fetch-options auth-method)))))
 
 (define (clone* url directory)
   "Clone git repository at URL into DIRECTORY.  Upon failure,
@@ -126,18 +185,10 @@ make sure no empty directory is left behind."
     (lambda ()
       (mkdir-p directory)
 
-      ;; Note: Explicitly pass options to work around the invalid default
-      ;; value in Guile-Git: <https://bugs.gnu.org/29238>.
-      (if (module-defined? (resolve-interface '(git))
-                           'clone-init-options)
-          (let ((auth-method (and auth-supported?
-                                  (%make-auth-ssh-agent))))
-            (clone url directory
-                   (if auth-supported?
-                       (make-clone-options
-                        #:fetch-options (make-fetch-options auth-method))
-                       (clone-init-options))))
-          (clone url directory)))
+      (let ((auth-method (%make-auth-ssh-agent)))
+        (clone url directory
+               (make-clone-options
+                #:fetch-options (make-default-fetch-options)))))
     (lambda _
       (false-if-exception (rmdir directory)))))
 
@@ -166,12 +217,7 @@ corresponding Git object."
          ;; read out-of-bounds when passed a string shorter than 40 chars,
          ;; which is why we delay calls to it below.
          (if (< len 40)
-             (if (module-defined? (resolve-interface '(git object))
-                                  'object-lookup-prefix)
-                 (object-lookup-prefix repository (string->oid commit) len)
-                 (raise (condition
-                         (&message
-                          (message "long Git object ID is required")))))
+             (object-lookup-prefix repository (string->oid commit) len)
              (object-lookup repository (string->oid commit)))))
       (('tag-or-commit . str)
        (if (or (> (string-length str) 40)
@@ -233,40 +279,23 @@ dynamic extent of EXP."
     (lambda (key err)
       (report-git-error err))))
 
-(define (load-git-submodules)
-  "Attempt to load (git submodules), which was missing until Guile-Git 0.2.0.
-Return true on success, false on failure."
-  (match (false-if-exception (resolve-interface '(git submodule)))
-    (#f
-     (set! load-git-submodules (const #f))
-     #f)
-    (iface
-     (module-use! (resolve-module '(guix git)) iface)
-     (set! load-git-submodules (const #t))
-     #t)))
-
 (define* (update-submodules repository
                             #:key (log-port (current-error-port)))
   "Update the submodules of REPOSITORY, a Git repository object."
-  ;; Guile-Git < 0.2.0 did not have (git submodule).
-  (if (load-git-submodules)
-      (for-each (lambda (name)
-                  (let ((submodule (submodule-lookup repository name)))
-                    (format log-port (G_ "updating submodule '~a'...~%")
-                            name)
-                    (submodule-update submodule)
+  (for-each (lambda (name)
+              (let ((submodule (submodule-lookup repository name)))
+                (format log-port (G_ "updating submodule '~a'...~%")
+                        name)
+                (submodule-update submodule)
 
-                    ;; Recurse in SUBMODULE.
-                    (let ((directory (string-append
-                                      (repository-working-directory repository)
-                                      "/" (submodule-path submodule))))
-                      (with-repository directory repository
-                        (update-submodules repository
-                                           #:log-port log-port)))))
-                (repository-submodules repository))
-      (format (current-error-port)
-              (G_ "Support for submodules is missing; \
-please upgrade Guile-Git.~%"))))
+                ;; Recurse in SUBMODULE.
+                (let ((directory (string-append
+                                  (repository-working-directory repository)
+                                  "/" (submodule-path submodule))))
+                  (with-repository directory repository
+                    (update-submodules repository
+                                       #:log-port log-port)))))
+            (repository-submodules repository)))
 
 (define-syntax-rule (false-if-git-not-found exp)
   "Evaluate EXP, returning #false if a GIT_ENOTFOUND error is raised."
@@ -283,10 +312,32 @@ please upgrade Guile-Git.~%"))))
 definitely available in REPOSITORY, false otherwise."
   (match ref
     (('commit . commit)
-     (false-if-git-not-found
-      (->bool (commit-lookup repository (string->oid commit)))))
+     (let ((len (string-length commit))
+           (oid (string->oid commit)))
+       (false-if-git-not-found
+        (->bool (if (< len 40)
+                    (object-lookup-prefix repository oid len OBJ-COMMIT)
+                    (commit-lookup repository oid))))))
     (_
      #f)))
+
+(define cached-checkout-expiration
+  ;; Return the expiration time procedure for a cached checkout.
+  ;; TODO: Honor $GUIX_GIT_CACHE_EXPIRATION.
+
+  ;; Use the mtime rather than the atime to cope with file systems mounted
+  ;; with 'noatime'.
+  (file-expiration-time (* 90 24 3600) stat:mtime))
+
+(define %checkout-cache-cleanup-period
+  ;; Period for the removal of expired cached checkouts.
+  (* 5 24 3600))
+
+(define (delete-checkout directory)
+  "Delete DIRECTORY recursively, in an atomic fashion."
+  (let ((trashed (string-append directory ".trashed")))
+    (rename-file directory trashed)
+    (delete-file-recursively trashed)))
 
 (define* (update-cached-checkout url
                                  #:key
@@ -311,6 +362,14 @@ When RECURSIVE? is true, check out submodules as well, if any.
 
 When CHECK-OUT? is true, reset the cached working tree to REF; otherwise leave
 it unchanged."
+  (define (cache-entries directory)
+    (filter-map (match-lambda
+                  ((or "." "..")
+                   #f)
+                  (file
+                   (string-append directory "/" file)))
+                (or (scandir directory) '())))
+
   (define canonical-ref
     ;; We used to require callers to specify "origin/" for each branch, which
     ;; made little sense since the cache should be transparent to them.  So
@@ -330,12 +389,9 @@ it unchanged."
      ;; Only fetch remote if it has not been cloned just before.
      (when (and cache-exists?
                 (not (reference-available? repository ref)))
-       (if auth-supported?
-           (let ((auth-method (and auth-supported?
-                                   (%make-auth-ssh-agent))))
-             (remote-fetch (remote-lookup repository "origin")
-                           #:fetch-options (make-fetch-options auth-method)))
-           (remote-fetch (remote-lookup repository "origin"))))
+       (let ((auth-method (%make-auth-ssh-agent)))
+         (remote-fetch (remote-lookup repository "origin")
+                       #:fetch-options (make-default-fetch-options))))
      (when recursive?
        (update-submodules repository #:log-port log-port))
 
@@ -358,9 +414,18 @@ it unchanged."
 
        ;; Reclaim file descriptors and memory mappings associated with
        ;; REPOSITORY as soon as possible.
-       (when (module-defined? (resolve-interface '(git repository))
-                              'repository-close!)
-         (repository-close! repository))
+       (repository-close! repository)
+
+       ;; When CACHE-DIRECTORY is a sub-directory of the default cache
+       ;; directory, remove expired checkouts that are next to it.
+       (let ((parent (dirname cache-directory)))
+         (when (string=? parent (%repository-cache-directory))
+           (maybe-remove-expired-cache-entries parent cache-entries
+                                               #:entry-expiration
+                                               cached-checkout-expiration
+                                               #:delete-entry delete-checkout
+                                               #:cleanup-period
+                                               %checkout-cache-cleanup-period)))
 
        (values cache-directory (oid->string oid) relation)))))
 

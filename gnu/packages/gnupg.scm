@@ -2,7 +2,7 @@
 ;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2015, 2018 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2014, 2018 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2014, 2015, 2016 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2014, 2015, 2016, 2020 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015 Paul van der Walt <paul@denknerd.org>
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2015, 2016, 2017, 2019 Ricardo Wurmus <rekado@elephly.net>
@@ -13,10 +13,11 @@
 ;;; Copyright © 2016 Troy Sankey <sankeytms@gmail.com>
 ;;; Copyright © 2017, 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Petter <petter@mykolab.ch>
-;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2020 Fredrik Salomonsson <plattfot@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -67,6 +68,7 @@
   #:use-module (gnu packages tor)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xorg)
+  #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml)
   #:use-module (guix packages)
   #:use-module (guix download)
@@ -106,6 +108,7 @@
                         (match (string-take target
                                             (string-index target #\-))
                           ("armhf" "arm-unknown-linux-gnueabi")
+                          ("mips64el" "mips-unknown-linux-gnu")
                           (x
                            (string-append x "-unknown-linux-gnu")))))
                    (symlink
@@ -167,7 +170,7 @@ generation.")
 (define-public libassuan
   (package
     (name "libassuan")
-    (version "2.5.3")
+    (version "2.5.4")
     (source
      (origin
       (method url-fetch)
@@ -175,7 +178,7 @@ generation.")
                           version ".tar.bz2"))
       (sha256
        (base32
-        "00p7cpvzf0q3qwcgg51r9d0vbab4qga2xi8wpk2fgd36710b1g4i"))))
+        "1w7vnnycq4z7gf4bk38pi4hrb8qrrzgfpz3cd7frwldxnfbfx060"))))
     (build-system gnu-build-system)
     (propagated-inputs
      `(("libgpg-error" ,libgpg-error)
@@ -195,7 +198,7 @@ provided.")
 (define-public libksba
   (package
     (name "libksba")
-    (version "1.3.5")
+    (version "1.5.0")
     (source
      (origin
       (method url-fetch)
@@ -204,7 +207,7 @@ provided.")
             version ".tar.bz2"))
       (sha256
        (base32
-        "0h53q4sns1jz1pkmhcz5wp9qrfn9f5g9i3vjv6dafwzzlvblyi21"))))
+        "1fm0mf3wq9fmyi1rmc1vk2fafn6liiw2mgxml3g7ybbb44lz2jmf"))))
     (build-system gnu-build-system)
     (propagated-inputs
      `(("libgpg-error" ,libgpg-error)))
@@ -254,7 +257,7 @@ compatible to GNU Pth.")
 (define-public gnupg
   (package
     (name "gnupg")
-    (version "2.2.20")
+    (version "2.2.25")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnupg/gnupg/gnupg-" version
@@ -262,7 +265,7 @@ compatible to GNU Pth.")
               (patches (search-patches "gnupg-default-pinentry.patch"))
               (sha256
                (base32
-                "0c6a4v9p6qzhsw1pfcwc459bxpc8hma0w9z8iqb9khvligack9q4"))))
+                "02n3klqbyzxyil13sg4wa0pcwr7vs7zjaslis926yjxg8yr0fly5"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -325,52 +328,6 @@ libskba (working with X.509 certificates and CMS data).")
     (properties '((ftp-server . "ftp.gnupg.org")
                   (ftp-directory . "/gcrypt/gnupg")))))
 
-(define-public gnupg-2.0
-  (package (inherit gnupg)
-    (version "2.0.30")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "mirror://gnupg/gnupg/gnupg-" version
-                                  ".tar.bz2"))
-              (sha256
-               (base32
-                "0wax4cy14hh0h7kg9hj0hjn9424b71z8lrrc5kbsasrn9xd7hag3"))))
-    (native-inputs '())
-    (inputs
-     `(("adns" ,adns)
-       ("bzip2" ,bzip2)
-       ("curl" ,curl)
-       ("libassuan" ,libassuan)
-       ("libgcrypt" ,libgcrypt)
-       ("libgpg-error" ,libgpg-error)
-       ("libksba" ,libksba)
-       ("pth" ,pth)
-       ("openldap" ,openldap)
-       ("zlib" ,zlib)
-       ("readline" ,readline)))
-   (arguments
-    `(#:phases
-      (modify-phases %standard-phases
-        (add-before 'configure 'patch-config-files
-          (lambda _
-            (substitute* "tests/openpgp/Makefile.in"
-              (("/bin/sh") (which "sh")))
-            #t))
-        (add-after 'install 'rename-v2-commands
-          (lambda* (#:key outputs #:allow-other-keys)
-            ;; Upstream suggests removing the trailing '2' from command names:
-            ;; <http://debbugs.gnu.org/cgi/bugreport.cgi?bug=22883#58>.
-            (let ((out (assoc-ref outputs "out")))
-              (with-directory-excursion (string-append out "/bin")
-                (rename-file "gpgv2" "gpgv")
-                (rename-file "gpg2" "gpg")
-
-                ;; Keep the old name around to ease transition.
-                (symlink "gpgv" "gpgv2")
-                (symlink "gpg" "gpg2")
-                #t)))))))
-   (properties `((superseded . ,gnupg)))))
-
 (define-public gnupg-1
   (package (inherit gnupg)
     (version "1.4.23")
@@ -400,23 +357,14 @@ libskba (working with X.509 certificates and CMS data).")
 (define-public gpgme
   (package
     (name "gpgme")
-    (version "1.13.1")
+    (version "1.15.1")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://gnupg/gpgme/gpgme-" version ".tar.bz2"))
       (sha256
-       (base32 "0imyjfryvvjdbai454p70zcr95m94j9xnzywrlilqdw2fqi0pqy4"))))
+       (base32 "1bg13l5s8x9p1v0jyv29n84bay27pflindpzjsc9gj7i4wdkrg7f"))))
     (build-system gnu-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'disable-failing-test
-           ;; XXX gnupg@2.2.20 breaks the expected JSON response for this test.
-           (lambda _
-             (substitute* "tests/json/t-json.c"
-               (("\"t-keylist-secret\", ") ""))
-             #t)))))
     (native-inputs
      `(("gnupg" ,gnupg)))
     (propagated-inputs
@@ -733,7 +681,7 @@ PGP keysigning parties.")
 (define-public signing-party
   (package
     (name "signing-party")
-    (version "2.10")
+    (version "2.11")
     (home-page "https://salsa.debian.org/signing-party-team/signing-party")
     (source (origin
               (method git-fetch)
@@ -743,7 +691,7 @@ PGP keysigning parties.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0lq8nmwjmysry0n4jg6vb7bh0lagbyb9pa11ii3s41p1mhzchf2r"))))
+                "1aig5ssabzbk4mih7xd04vgr931bw0flbi8dz902wlr610gyv5s5"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf-wrapper)
@@ -877,6 +825,8 @@ enter a passphrase when required by @code{gpg} or other software.")))
   (package
     (inherit pinentry-tty)
     (name "pinentry-gtk2")
+    (arguments
+     `(#:configure-flags '("--enable-fallback-curses")))
     (inputs
      `(("gtk+" ,gtk+-2)
        ("glib" ,glib)
@@ -895,7 +845,8 @@ passphrase when @code{gpg} is run and needs it.")))
        ("glib" ,glib)
        ,@(package-inputs pinentry-tty)))
     (arguments
-     `(#:configure-flags '("--enable-pinentry-gnome3")))
+     `(#:configure-flags '("--enable-pinentry-gnome3"
+                           "--enable-fallback-curses")))
     (description
      "Pinentry provides a console and a GUI designed for use with GNOME@tie{}3
 that allows users to enter a passphrase when required by @code{gpg} or other
@@ -905,6 +856,8 @@ software.")))
   (package
     (inherit pinentry-tty)
     (name "pinentry-qt")
+    (arguments
+     `(#:configure-flags '("--enable-fallback-curses")))
     (inputs
      `(("qtbase" ,qtbase)
        ,@(package-inputs pinentry-tty)))
@@ -921,7 +874,8 @@ passphrase when @code{gpg} is run and needs it.")))
         (inherit (package-source pinentry-tty))
         (patches (search-patches "pinentry-efl.patch"))))
     (arguments
-     '(#:configure-flags '("--enable-pinentry-efl")
+     '(#:configure-flags '("--enable-pinentry-efl"
+                           "--enable-fallback-curses")
        #:phases
        (modify-phases %standard-phases
          (replace 'bootstrap
@@ -939,6 +893,77 @@ passphrase when @code{gpg} is run and needs it.")))
    "Pinentry provides a console and a graphical interface for the
 @dfn{Enlightenment Foundation Libraries} (EFL) that allows users to enter a
 passphrase when @code{gpg} is run and needs it.")))
+
+(define-public pinentry-rofi
+  (package
+    (name "pinentry-rofi")
+    (version "2.0.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/plattfot/pinentry-rofi/")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32 "044bnldz7k74s873jwsjgff176l1jsvpbaka7d1wcj8b5pwqv2av"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:modules
+       ((ice-9 match)
+        (ice-9 ftw)
+        ,@%gnu-build-system-modules)
+       #:phases
+       (modify-phases
+           %standard-phases
+         (add-after 'install 'hall-wrap-binaries
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((compiled-dir
+                     (lambda (out version)
+                       (string-append out "/lib/guile/" version "/site-ccache")))
+                    (uncompiled-dir
+                     (lambda (out version)
+                       (string-append
+                        out
+                        "/share/guile/site"
+                        (if (string-null? version) "" "/")
+                        version)))
+                    (dep-path
+                     (lambda (env path)
+                       (list env ":" 'prefix (list path))))
+                    (out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin/"))
+                    (site (uncompiled-dir out "")))
+               (match (scandir site)
+                 (("." ".." version)
+                  (for-each
+                   (lambda (file)
+                     (wrap-program
+                         (string-append bin file)
+                       (dep-path
+                        "PATH"
+                        (string-append (assoc-ref inputs "rofi") "/bin"))
+                       (dep-path
+                        "GUILE_LOAD_PATH"
+                        (uncompiled-dir out version))
+                       (dep-path
+                        "GUILE_LOAD_COMPILED_PATH"
+                        (compiled-dir out version))))
+                   ,''("pinentry-rofi"))
+                  #t))))))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)
+       ("texinfo" ,texinfo)))
+    (inputs `(("guile" ,guile-3.0)
+              ("rofi" ,rofi)))
+    (synopsis "Rofi GUI for GnuPG's passphrase input")
+    (description "Pinentry-rofi is a simple graphical user interface for
+passphrase or PIN when required by @code{gpg} or other software.  It is using
+the Rofi application launcher as the user interface.  Which makes it combined
+with @code{rofi-pass} a good front end for @code{password-store}.")
+    (home-page "https://github.com/plattfot/pinentry-rofi/")
+    (license license:gpl3+)))
 
 (define-public pinentry
   (package (inherit pinentry-gtk2)

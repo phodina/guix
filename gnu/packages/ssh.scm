@@ -15,6 +15,7 @@
 ;;; Copyright © 2019, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -56,6 +57,8 @@
   #:use-module (gnu packages popt)
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-crypto)
+  #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages readline)
   #:use-module (gnu packages texinfo)
@@ -122,7 +125,7 @@ file names.
 (define-public libssh
   (package
     (name "libssh")
-    (version "0.9.4")
+    (version "0.9.5")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -130,7 +133,7 @@ file names.
                      (commit (string-append "libssh-" version))))
               (sha256
                (base32
-                "0qr4vi3k1wv69c95d9j26fiv78pzyksaq8ccd76b8nxar5z1fbj6"))
+                "1b2klflmn0mdkcyjl4dqfg116bf9nhmqm4qla5cqa9xis89a5bn6"))
               (file-name (git-file-name name version))))
     (build-system cmake-build-system)
     (outputs '("out" "debug"))
@@ -181,15 +184,16 @@ a server that supports the SSH-2 protocol.")
 (define-public openssh
   (package
    (name "openssh")
-   (version "8.3p1")
+   (version "8.4p1")
    (source (origin
              (method url-fetch)
              (uri (string-append "mirror://openbsd/OpenSSH/portable/"
                                  "openssh-" version ".tar.gz"))
-             (patches (search-patches "openssh-hurd.patch"))
+             (patches (search-patches "openssh-hurd.patch"
+                                      "openssh-fix-ssh-copy-id.patch"))
              (sha256
               (base32
-               "1cl74ghi9y21dc3f4xa0qamb7dhwacbynh1ks9syprrg8zhgpgpj"))))
+               "091b3pxdlj47scxx6kkf4agkx8c8sdacdxx8m1dw1cby80pd40as"))))
    (build-system gnu-build-system)
    (native-inputs `(("groff" ,groff)
                     ("pkg-config" ,pkg-config)))
@@ -297,7 +301,7 @@ Additionally, various channel-specific options can be negotiated.")
 (define-public guile-ssh
   (package
     (name "guile-ssh")
-    (version "0.13.0")
+    (version "0.13.1")
     (home-page "https://github.com/artyom-poptsov/guile-ssh")
     (source (origin
               (method git-fetch)
@@ -307,7 +311,7 @@ Additionally, various channel-specific options can be negotiated.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1q96h98p6x7ah6nc0d2wfx503fmsj36riv9ka9s79z3lzwaf0k26"))
+                "1xpxkvgj7wgcl450djkcrmrf957mcy2f36hfs5g6kpla1gax2d1g"))
               (modules '((guix build utils)))))
     (build-system gnu-build-system)
     (outputs '("out" "debug"))
@@ -352,9 +356,7 @@ Additionally, various channel-specific options can be negotiated.")
                         (rename-file (string-append bin "/sssh.scm")
                                      (string-append examples "/sssh.scm"))
                         (delete-file-recursively bin)
-                        #t))))
-       ;; Tests are not parallel-safe.
-       #:parallel-tests? #f))
+                        #t))))))
     (native-inputs `(("autoconf" ,autoconf)
                      ("automake" ,automake)
                      ("libtool" ,libtool)
@@ -486,40 +488,10 @@ of user keystrokes.  It's a replacement for SSH that's more robust and
 responsive, especially over Wi-Fi, cellular, and long-distance links.")
     (license license:gpl3+)))
 
-(define-public et
-  (package
-    (name "et")
-    (version "3.1.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/MisterTea/EternalTCP")
-             (commit (string-append "et-v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1m5caxckn2ihwp9s2pbyh5amxlpwr7yc54q8s0kb10fr52w2vfnm"))))
-    (build-system cmake-build-system)
-    (arguments `(#:tests? #f))
-    (native-inputs
-     `(("pkg-config" ,pkg-config)))
-    (inputs `(("glog" ,glog)
-              ("gflags" ,gflags)
-              ("libsodium" ,libsodium)
-              ("protobuf" ,protobuf)))
-    (synopsis "Remote shell that automatically reconnects")
-    (description
-     "Eternal Terminal (ET) is a remote shell that automatically reconnects
-without interrupting the session.  Unlike SSH sessions, ET sessions will
-survive even network outages and IP changes.  ET uses a custom protocol over
-TCP, not the SSH protocol.")
-    (home-page "https://eternalterminal.dev/")
-    (license license:asl2.0)))
-
 (define-public dropbear
   (package
     (name "dropbear")
-    (version "2020.80")
+    (version "2020.81")
     (source
      (origin
        (method url-fetch)
@@ -527,7 +499,7 @@ TCP, not the SSH protocol.")
              "https://matt.ucc.asn.au/dropbear/releases/"
              "dropbear-" version ".tar.bz2"))
        (sha256
-        (base32 "0jbrbpdzyv11x5rkljdimzq9p6a7da5siw9k405ibnpjj4dr89yr"))))
+        (base32 "0fy5ma4cfc2pk25mcccc67b2mf1rnb2c06ilb7ddnxbpnc85s8s8"))))
     (build-system gnu-build-system)
     (arguments `(#:tests? #f))  ; there is no "make check" or anything similar
     ;; TODO: Investigate unbundling libtommath and libtomcrypt or at least
@@ -593,10 +565,13 @@ basis for almost any application.")
 
                   (substitute* "src/testsuite/login-auth-test"
                     (("/bin/cat") "cat"))
-                  #t))))
+                  #t))
+              (patches (search-patches "lsh-fix-x11-forwarding.patch"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("m4" ,m4)
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("m4" ,m4)
        ("guile" ,guile-2.0)
        ("gperf" ,gperf)
        ("psmisc" ,psmisc)))                       ; for `killall'
@@ -614,7 +589,8 @@ basis for almost any application.")
 
        ;; The server (lshd) invokes xauth when X11 forwarding is requested.
        ;; This adds 24 MiB (or 27%) to the closure of lsh.
-       ("xauth" ,xauth)))
+       ("xauth" ,xauth)
+       ("libxau" ,libxau)))             ;also required for x11-forwarding
     (arguments
      '(;; Skip the `configure' test that checks whether /dev/ptmx &
        ;; co. work as expected, because it relies on impurities (for
@@ -627,14 +603,20 @@ basis for almost any application.")
                            ;; 'lsh_argp.h' checks HAVE_ARGP_PARSE but nothing
                            ;; defines it.
                            "CPPFLAGS=-DHAVE_ARGP_PARSE")
-
-       ;; FIXME: Tests won't run in a chroot, presumably because
-       ;; /etc/profile is missing, and thus clients get an empty $PATH
-       ;; and nothing works.
-       #:tests? #f
-
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'disable-failing-tests
+           (lambda _
+             ;; FIXME: Most tests won't run in a chroot, presumably because
+             ;; /etc/profile is missing, and thus clients get an empty $PATH
+             ;; and nothing works.  Run only the subset that passes.
+             (delete-file "configure")  ;force rebootstrap
+             (substitute* "src/testsuite/Makefile.am"
+               (("seed-test \\\\")        ;prevent trailing slash
+                "seed-test")
+               (("^\t(lsh|daemon|tcpip|socks|lshg|lcp|rapid7|lshd).*test.*")
+                ""))
+             #t))
          (add-before 'configure 'pre-configure
            (lambda* (#:key inputs #:allow-other-keys)
              (let* ((nettle    (assoc-ref inputs "nettle"))
@@ -695,7 +677,7 @@ manipulating key files.")
         (base32
          "0q7fblaczb7kwbsz0gdy9267z0sllzgmf0c7z5c9mf88wv74ycn6"))))
     (build-system gnu-build-system)
-    (description "sshpass is a tool for non-interactivly performing password
+    (description "sshpass is a tool for non-interactively performing password
 authentication with SSH's so-called @dfn{interactive keyboard password
 authentication}.")
     (license license:gpl2+)))
@@ -782,6 +764,45 @@ dynamically loadable modules for extended functionality such as new remote
 shell services and remote host selection.")
     (license license:gpl2+)))
 
+(define-public python-asyncssh
+  (package
+    (name "python-asyncssh")
+    (version "2.3.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "asyncssh" version))
+       (sha256
+        (base32
+         "0pi6npmsgx7l9r1qrfvg8mxx3i23ipff492xz4yhrw13f56a7ga4"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-cryptography" ,python-cryptography)
+       ("python-pyopenssl" ,python-pyopenssl)
+       ("python-gssapi" ,python-gssapi)
+       ("python-bcrypt" ,python-bcrypt)))
+    (native-inputs
+     `(("openssh" ,openssh)
+       ("openssl" ,openssl)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'disable-tests
+           (lambda* _
+             (substitute* "tests/test_agent.py"
+               ;; TODO Test fails for unknown reason
+               (("(.+)async def test_confirm" all indent)
+                (string-append indent "@unittest.skip('disabled by guix')\n"
+                               indent "async def test_confirm")))
+             #t)))))
+    (home-page "https://asyncssh.readthedocs.io/")
+    (synopsis "Asynchronous SSHv2 client and server library for Python")
+    (description
+     "AsyncSSH is a Python package which provides an asynchronous client and
+server implementation of the SSHv2 protocol on top of the Python 3.6+ asyncio
+framework.")
+    (license license:epl2.0)))
+
 (define-public clustershell
   (package
     (name "clustershell")
@@ -853,3 +874,39 @@ program doesn't depend on any cryptographic libraries.  It's a simple,
 single-threaded, standalone C program.  It uses @code{poll()} to trap multiple
 clients at a time.")
     (license license:unlicense)))
+
+(define-public webssh
+  (package
+    (name "webssh")
+    (version "1.5.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/huashengdun/webssh")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1bcy9flrzbvams5p77swwiygv54ac58ia7hpic1bvg30b3wpvv7b"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-paramiko" ,python-paramiko)
+       ("python-tornado" ,python-tornado)))
+    (home-page "https://webssh.huashengdun.org/")
+    (synopsis "Web application to be used as an SSH client")
+    (description "This package provides a web application to be used as an SSH
+client.
+
+Features:
+@itemize @bullet
+@item SSH password authentication supported, including empty password.
+@item SSH public-key authentication supported, including DSA RSA ECDSA
+Ed25519 keys.
+@item Encrypted keys supported.
+@item Two-Factor Authentication (time-based one-time password) supported.
+@item Fullscreen terminal supported.
+@item Terminal window resizable.
+@item Auto detect the ssh server's default encoding.
+@item Modern browsers are supported.
+@end itemize")
+    (license license:expat)))

@@ -1,6 +1,8 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Julien Lepiller <julien@lepiller.eu>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -38,6 +40,7 @@
                 #:select (fcntl-flock set-thread-name))
   #:use-module ((guix build utils) #:select (which mkdir-p))
   #:use-module (guix ui)
+  #:use-module (guix scripts)
   #:use-module (guix diagnostics)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-11)
@@ -51,7 +54,23 @@
   #:use-module (ice-9 format)
   #:use-module (ice-9 binary-ports)
   #:export (build-machine
+            build-machine?
+            build-machine-name
+            build-machine-port
+            build-machine-systems
+            build-machine-user
+            build-machine-private-key
+            build-machine-host-key
+            build-machine-compression
+            build-machine-daemon-socket
+            build-machine-overload-threshold
+            build-machine-systems
+            build-machine-features
+            build-machine-location
+
             build-requirements
+            build-requirements?
+
             guix-offload))
 
 ;;; Commentary:
@@ -66,14 +85,16 @@
 ;;;
 ;;; Code:
 
-
 (define-record-type* <build-machine>
   build-machine make-build-machine
   build-machine?
   (name            build-machine-name)            ; string
   (port            build-machine-port             ; number
                    (default 22))
-  (system          build-machine-system)          ; string
+  (systems         %build-machine-systems         ; list of strings
+                   (default #f))                  ; drop default after system is removed
+  (system          %build-machine-system          ; deprecated
+                   (default #f))
   (user            build-machine-user)            ; string
   (private-key     build-machine-private-key      ; file name
                    (default (user-openssh-private-key)))
@@ -84,12 +105,35 @@
                      (default 3))
   (daemon-socket   build-machine-daemon-socket    ; string
                    (default "/var/guix/daemon-socket/socket"))
+  ;; A #f value tells the offload scheduler to disregard the load of the build
+  ;; machine when selecting the best offload machine.
+  (overload-threshold build-machine-overload-threshold ; inexact real between
+                      (default 0.6))                   ; 0.0 and 1.0 | #f
   (parallel-builds build-machine-parallel-builds  ; number
                    (default 1))
   (speed           build-machine-speed            ; inexact real
                    (default 1.0))
   (features        build-machine-features         ; list of strings
-                   (default '())))
+                   (default '()))
+  (location        build-machine-location
+                   (default (and=> (current-source-location)
+                                   source-properties->location))
+                   (innate)))
+
+;;; Deprecated.
+(define (build-machine-system machine)
+  (warning
+    (build-machine-location machine)
+    (G_ "The 'system' field is deprecated, \
+please use 'systems' instead.~%"))
+  (%build-machine-system machine))
+
+;;; TODO: Remove after the deprecated 'system' field is removed.
+(define (build-machine-systems machine)
+  (or (%build-machine-systems machine)
+      (list (build-machine-system machine))
+      (leave (G_ "The build-machine object lacks a value for its 'systems'
+field."))))
 
 (define-record-type* <build-requirements>
   build-requirements make-build-requirements
@@ -161,8 +205,10 @@ can interpret meaningfully."
 private key from '~a': ~a")
                                 file str)))))
 
-(define* (open-ssh-session machine #:optional (max-silent-time -1))
-  "Open an SSH session for MACHINE and return it.  Throw an error on failure."
+(define* (open-ssh-session machine #:optional max-silent-time)
+  "Open an SSH session for MACHINE and return it.  Throw an error on failure.
+When MAX-SILENT-TIME is true, it must be a positive integer denoting the
+number of seconds after which the connection times out."
   (let ((private (private-key-from-file* (build-machine-private-key machine)))
         (public  (public-key-from-file
                   (string-append (build-machine-private-key machine)
@@ -199,9 +245,10 @@ private key from '~a': ~a")
            (leave (G_ "SSH public key authentication failed for '~a': ~a~%")
                   (build-machine-name machine) (get-error session))))
 
-       ;; From then on use MAX-SILENT-TIME as the absolute timeout when
-       ;; reading from or write to a channel for this session.
-       (session-set! session 'timeout max-silent-time)
+       (when max-silent-time
+         ;; From then on use MAX-SILENT-TIME as the absolute timeout when
+         ;; reading from or write to a channel for this session.
+         (session-set! session 'timeout max-silent-time))
 
        session)
       (x
@@ -349,6 +396,8 @@ of free disk space on '~a'~%")
                                        #:log-port (current-error-port)
                                        #:lock? #f)))
 
+  (close-connection store)
+  (disconnect! session)
   (format (current-error-port) "done with offloaded '~a'~%"
           (derivation-file-name drv)))
 
@@ -359,8 +408,8 @@ of free disk space on '~a'~%")
 
 (define (machine-matches? machine requirements)
   "Return #t if MACHINE matches REQUIREMENTS."
-  (and (string=? (build-requirements-system requirements)
-                 (build-machine-system machine))
+  (and (member (build-requirements-system requirements)
+               (build-machine-systems machine))
        (lset<= string=?
                (build-requirements-features requirements)
                (build-machine-features machine))))
@@ -372,30 +421,34 @@ of free disk space on '~a'~%")
   (* 100 (expt 2 20)))                            ;100 MiB
 
 (define (node-load node)
-  "Return the load on NODE.  Return +∞ if NODE is misbehaving."
+  "Return the load on NODE, a normalized value between 0.0 and 1.0.  The value
+is derived from /proc/loadavg and normalized according to the number of
+logical cores available, to give a rough estimation of CPU usage.  Return
+1.0 (fully loaded) if NODE is misbehaving."
   (let ((line (inferior-eval '(begin
                                 (use-modules (ice-9 rdelim))
                                 (call-with-input-file "/proc/loadavg"
                                   read-string))
-                             node)))
-    (if (eof-object? line)
-        +inf.0 ;MACHINE does not respond, so assume it is infinitely loaded
+                             node))
+        (ncores (inferior-eval '(begin
+                                  (use-modules (ice-9 threads))
+                                  (current-processor-count))
+                               node)))
+    (if (or (eof-object? line) (eof-object? ncores))
+        1.0    ;MACHINE does not respond, so assume it is fully loaded
         (match (string-tokenize line)
           ((one five fifteen . x)
-           (string->number one))
+           (let ((load (/ (string->number one) ncores)))
+             (if (> load 1.0)
+                 1.0
+                 load)))
           (x
-           +inf.0)))))
+           1.0)))))
 
-(define (normalized-load machine load)
-  "Divide LOAD by the number of parallel builds of MACHINE."
-  (if (rational? load)
-      (let* ((jobs       (build-machine-parallel-builds machine))
-             (normalized (/ load jobs)))
-        (format (current-error-port) "load on machine '~a' is ~s\
- (normalized: ~s)~%"
-                (build-machine-name machine) load normalized)
-        normalized)
-      load))
+(define (report-load machine load)
+  (format (current-error-port)
+          "normalized load on machine '~a' is ~,2f~%"
+          (build-machine-name machine) load))
 
 (define (random-seed)
   (logxor (getpid) (car (gettimeofday))))
@@ -453,11 +506,15 @@ slot (which must later be released with 'release-build-slot'), or #f and #f."
        (let* ((session (false-if-exception (open-ssh-session best
                                                              %short-timeout)))
               (node    (and session (remote-inferior session)))
-              (load    (and node (normalized-load best (node-load node))))
+              (load    (and node (node-load node)))
+              (threshold (build-machine-overload-threshold best))
               (space   (and node (node-free-disk-space node))))
+         (when load (report-load best load))
          (when node (close-inferior node))
          (when session (disconnect! session))
-         (if (and node (< load 2.) (>= space %minimum-disk-space))
+         (if (and node
+                  (or (not threshold) (< load threshold))
+                  (>= space %minimum-disk-space))
              (match others
                (((machines slots) ...)
                 ;; Release slots from the uninteresting machines.
@@ -577,7 +634,8 @@ daemon is not running."
                            (and add-text-to-store 'alright))
                         node)
     ('alright #t)
-    (_ (report-module-error name)))
+    (_ (leave (G_ "(guix) module not usable on remote host '~a'")
+              name)))
 
   (match (inferior-eval '(begin
                            (use-modules (guix))
@@ -689,13 +747,13 @@ machine."
                               (free (node-free-disk-space inferior)))
                           (close-inferior inferior)
                           (format #t "~a~%  kernel: ~a ~a~%  architecture: ~a~%\
-  host name: ~a~%  normalized load: ~a~%  free disk space: ~,2f MiB~%\
+  host name: ~a~%  normalized load: ~,2f~%  free disk space: ~,2f MiB~%\
   time difference: ~a s~%"
                                   (build-machine-name machine)
                                   (utsname:sysname uts) (utsname:release uts)
                                   (utsname:machine uts)
                                   (utsname:nodename uts)
-                                  (normalized-load machine load)
+                                  load
                                   (/ free (expt 2 20) 1.)
                                   (- time now))))))))
 
@@ -707,7 +765,10 @@ machine."
 ;;; Entry point.
 ;;;
 
-(define (guix-offload . args)
+(define-command (guix-offload . args)
+  (category plumbing)
+  (synopsis "set up and operate build offloading")
+
   (define request-line-rx
     ;; The request format.  See 'tryBuildHook' method in build.cc.
     (make-regexp "([01]) ([a-z0-9_-]+) (/[[:graph:]]+.drv) ([[:graph:]]*)"))
@@ -779,7 +840,8 @@ machine."
     (("--version")
      (show-version-and-exit "guix offload"))
     (("--help")
-     (format #t (G_ "Usage: guix offload SYSTEM PRINT-BUILD-TRACE
+     (format #t (G_ "Usage: guix offload SYSTEM MAX-SILENT-TIME \
+PRINT-BUILD-TRACE? BUILD-TIMEOUT
 Process build offload requests written on the standard input, possibly
 offloading builds to the machines listed in '~a'.~%")
              %machine-file)

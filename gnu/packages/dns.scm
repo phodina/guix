@@ -5,7 +5,7 @@
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2016 Nikita <nikita@n0.is>
-;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Vasile Dumitrascu <va511e@yahoo.com>
 ;;; Copyright © 2017 Gregor Giesen <giesen@zaehlwerk.net>
@@ -13,10 +13,11 @@
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2019 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2019 Rutger Helling <rhelling@mykolab.com>
-;;; Copyright © 2020 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2020, 2021 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2020 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 Simon South <simon@simonsouth.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -38,17 +39,21 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
+  #:use-module (gnu packages certs)
   #:use-module (gnu packages check)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages datastructures)
+  #:use-module (gnu packages elf)
   #:use-module (gnu packages flex)
+  #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages groff)
   #:use-module (gnu packages groff)
+  #:use-module (gnu packages gtk)
   #:use-module (gnu packages libedit)
   #:use-module (gnu packages libevent)
   #:use-module (gnu packages libidn)
@@ -62,8 +67,11 @@
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages ragel)
+  #:use-module (gnu packages shells)
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages swig)
+  #:use-module (gnu packages texinfo)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
@@ -73,14 +81,203 @@
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix utils)
+  #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system trivial))
 
+(define-public ldns
+  (package
+    (name "ldns")
+    (version "1.7.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "https://www.nlnetlabs.nl/downloads/"
+                       name "/" name "-" version ".tar.gz"))
+       (sha256
+        (base32 "0ac242n7996fswq1a3nlh1bbbhrsdwsq4mx7xq8ffq6aplb4rj4a"))
+       (patches
+        (search-patches
+         ;; To create make-flag vairables,
+         ;; for splitting installation of drill and examples.
+         "ldns-drill-examples.patch"))))
+    (build-system gnu-build-system)
+    (outputs '("out" "drill" "examples" "pyldns"))
+    (arguments
+     `( ;; Tests require Tpkg.
+       ;; https://tpkg.github.io/
+       #:tests? #f
+       #:configure-flags
+       (list
+        "--disable-static"
+        "--enable-gost-anyway"
+        "--enable-rrtype-ninfo"
+        "--enable-rrtype-rkey"
+        "--enable-rrtype-ta"
+        "--enable-rrtype-avc"
+        "--enable-rrtype-doa"
+        "--enable-rrtype-amtrelay"
+        "--with-drill"
+        "--with-examples"
+        "--with-pyldns"
+        ;; Perl module DNS::LDNS not available.
+        ;; https://github.com/erikoest/DNS-LDNS.git
+        ;; "--with-p5-dns-ldns"
+        (string-append "--with-ssl="
+                       (assoc-ref %build-inputs "openssl"))
+        (string-append "--with-ca-path="
+                       (assoc-ref %build-inputs "nss-certs")
+                       "/etc/ssl/certs"))
+       #:make-flags
+       (list
+        (string-append "drillbindir="
+                       (assoc-ref %outputs "drill")
+                       "/bin")
+        (string-append "drillmandir="
+                       (assoc-ref %outputs "drill")
+                       "/share/man")
+        (string-append "examplesbindir="
+                       (assoc-ref %outputs "examples")
+                       "/bin")
+        (string-append "examplesmandir="
+                       (assoc-ref %outputs "examples")
+                       "/share/man")
+        (string-append "python_site="
+                       (assoc-ref %outputs "pyldns")
+                       "/lib/python"
+                       ,(version-major+minor
+                         (package-version python))
+                       "/site-packages"))))
+    (native-inputs
+     `(("doxygen" ,doxygen)
+       ("ksh" ,oksh)
+       ("perl" ,perl)
+       ("perl-devel-checklib" ,perl-devel-checklib)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)
+       ("swig" ,swig)))
+    (inputs
+     `(("libpcap" ,libpcap)
+       ("nss-certs" ,nss-certs)
+       ("openssl" ,openssl)))
+    (synopsis "DNS library that facilitates DNS tool programming")
+    (description "LDNS aims to simplify DNS programming, it supports recent
+RFCs like the DNSSEC documents, and allows developers to easily create
+software conforming to current RFCs, and experimental software for current
+Internet Drafts.  A secondary benefit of using ldns is speed; ldns is written in
+C it should be a lot faster than Perl.")
+    (home-page "https://nlnetlabs.nl/projects/ldns/about/")
+    (license license:bsd-3)))
+
+(define-public dnssec-trigger
+  (package
+    (name "dnssec-trigger")
+    (version "0.17")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "https://www.nlnetlabs.nl/downloads/"
+                       name "/" name "-" version ".tar.gz"))
+       (sha256
+        (base32 "10928q406x9r66a090xl5kznzgyxpja88w4srwcv454hd351j9f0"))))
+    (build-system glib-or-gtk-build-system)
+    (outputs '("out" "gui" "nm"))
+    (arguments
+     `(#:test-target "test"
+       #:configure-flags
+       (list
+        (string-append "--with-ssl="
+                       (assoc-ref %build-inputs "openssl"))
+        "--with-hooks=networkmanager"
+        (string-append "--with-networkmanager-dispatch="
+                       (assoc-ref %outputs "nm")
+                       "/etc/NetworkManager/dispatcher.d")
+        (string-append "--with-xdg-autostart="
+                       (assoc-ref %outputs "gui")
+                       "/etc/xdg/autostart")
+        (string-append "--with-uidir="
+                       (assoc-ref %outputs "gui")
+                       "/share/dnssec-trigger")
+        (string-append "--with-python="
+                       (assoc-ref %build-inputs "python")
+                       "/bin/python")
+        (string-append "--with-unbound-control="
+                       (assoc-ref %build-inputs "unbound")
+                       "/sbin/unbound-control")
+        "--with-forward-zones-support")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-configure
+           (lambda _
+             (substitute* "configure"
+               (("appindicator-0.1")
+                "appindicator3-0.1"))
+             #t))
+         (add-before 'configure 'patch-makefile
+           (lambda _
+             (substitute* "Makefile.in"
+               (("/usr")
+                "$(prefix)")
+               (("/etc")
+                "$(prefix)/etc")
+               ((".*gtk-update-icon-cache.*")
+                ""))
+             #t))
+         (add-after 'install 'remove-systemd
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out")))
+               (delete-file-recursively
+                (string-append out "/lib/systemd"))
+               #t)))
+         (add-after 'remove-systemd 'move-gui
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (gui (assoc-ref outputs "gui")))
+               (mkdir-p (string-append gui "/bin"))
+               (mkdir-p (string-append gui "/share"))
+               (rename-file
+                (string-append out "/bin")
+                (string-append gui "/bin"))
+               (rename-file
+                (string-append out "/share/icons")
+                (string-append gui "/share/icons"))
+               #t)))
+         (add-after 'move-gui 'move-nm
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (nm (assoc-ref outputs "nm")))
+               (mkdir-p (string-append nm "/libexec"))
+               (rename-file
+                (string-append out "/libexec")
+                (string-append nm "/libexec"))
+               #t))))))
+    (native-inputs
+     `(("cmocka" ,cmocka)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)))
+    (inputs
+     `(("gtk+-2" ,gtk+-2)
+       ("ldns" ,ldns)
+       ("libappindicator" ,libappindicator)
+       ("openssl" ,openssl)
+       ("unbound" ,unbound)))
+    (synopsis "DNSSEC protection for the DNS traffic")
+    (description "DNSSEC-Trigger enables your computer to use DNSSEC protection
+for the DNS traffic.  It relies on the Unbound DNS resolver running locally on
+your system, which performs DNSSEC validation.  It reconfigures Unbound in such
+a way that it will signal it to to use the DHCP obtained forwarders if possible,
+fallback to doing its own AUTH queries if that fails, and if that fails it will
+prompt the user with the option to go with insecure DNS only.")
+    (home-page "https://www.nlnetlabs.nl/projects/dnssec-trigger/about/")
+    (license license:bsd-3)))
+
 (define-public dnsmasq
   (package
     (name "dnsmasq")
-    (version "2.82")
+    (version "2.83")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -88,7 +285,7 @@
                     version ".tar.xz"))
               (sha256
                (base32
-                "0cn1xd1s6xs78jmrmwjnh9m6w3q38pk6dyqy2phvasqiyd33cll4"))))
+                "1sjamz1v588qf35m8z6wcqkjk5w12bqhj7d7p48dj8jyn3lgghgz"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -119,7 +316,8 @@ and BOOTP/TFTP for network booting of diskless machines.")
 (define-public isc-bind
   (package
     (name "bind")
-    (version "9.16.5")
+    ;; When updating, check whether isc-dhcp's bundled copy should be as well.
+    (version "9.16.11")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -127,7 +325,7 @@ and BOOTP/TFTP for network booting of diskless machines.")
                     "/bind-" version ".tar.xz"))
               (sha256
                (base32
-                "0xf07mmd0vi91jd15z8d3hhjva8v27l4ip4l8yzah4gg3zjv6y33"))))
+                "1hcr0q6i2mk83yi12zxjs5q21y3gx7683q99l77ibxfqsx6zc481"))))
     (build-system gnu-build-system)
     (outputs `("out" "utils"))
     (inputs
@@ -335,14 +533,14 @@ asynchronous fashion.")
 (define-public nsd
   (package
     (name "nsd")
-    (version "4.3.2")
+    (version "4.3.4")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.nlnetlabs.nl/downloads/nsd/nsd-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0ac3mbn5z4nc18782m9aswdpi2m9f4665vidw0ciyigdh0pywp2v"))))
+        (base32 "0l4ba80ihwg3s2ifhnkmk7rjabrcy5zw6sz4hn0vm9sif6lk9s1v"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -405,14 +603,14 @@ to result in system-wide compromise.")
 (define-public unbound
   (package
     (name "unbound")
-    (version "1.10.1")
+    (version "1.13.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.unbound.net/downloads/unbound-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0dnmh9jjh2v274f0hl31bgv40pl77mmfgky8bkqr5kvi3b17fdmp"))))
+        (base32 "18dj7migq6379hps59793457l81s3z7dll3y0fj6qcmhjlx08m59"))))
     (build-system gnu-build-system)
     (outputs '("out" "python"))
     (native-inputs
@@ -562,16 +760,16 @@ served by AS112.  Stub and forward zones are supported.")
 (define-public yadifa
   (package
     (name "yadifa")
-    (version "2.3.9")
+    (version "2.4.1")
     (source
-     (let ((build "8497"))
+     (let ((build "9916"))
        (origin
          (method url-fetch)
          (uri
-          (string-append "http://cdn.yadifa.eu/sites/default/files/releases/"
+          (string-append "https://www.yadifa.eu/sites/default/files/releases/"
                          "yadifa-" version "-" build ".tar.gz"))
          (sha256
-          (base32 "0xvyr91sfgzkpw6g3h893ldbwnki3w2472n56rr18w67qghs1sa5")))))
+          (base32 "1m1j7q1f0682xig8qign5ms52igix8pd45fds7p5j285dvrfa4xd")))))
     (build-system gnu-build-system)
     (native-inputs
      `(("which" ,which)))
@@ -584,19 +782,19 @@ served by AS112.  Stub and forward zones are supported.")
            (lambda _
              (substitute* "Makefile.in"
                ((" (etc|var)") ""))
+             #t))
+         (add-after 'configure 'omit-spurious-references
+           (lambda _
+             ;; The many Makefile.in grep this(!) to #define BUILD_OPTIONS.
+             (substitute* "config.log"
+               (("(=/gnu/store/)[^-]*" _ match)
+                (string-append match "...")))
              #t)))
        #:configure-flags
        (list "--sysconfdir=/etc"
              "--localstatedir=/var"
-             "--disable-build-timestamp" ; build reproducibly
-             "--enable-shared"
-             "--disable-static"
-             "--enable-acl"
-             "--enable-caching"
-             "--enable-ctrl"            ; enable remote control
-             "--enable-nsec"
-             "--enable-nsec3"
-             "--enable-tsig")))
+             "--enable-shared" "--disable-static"
+             "--disable-build-timestamp"))) ; build reproducibly
     (home-page "https://www.yadifa.eu/")
     (synopsis "Authoritative DNS name server")
     (description "YADIFA is an authoritative name server for the @dfn{Domain
@@ -609,44 +807,63 @@ Extensions} (DNSSEC).")
 (define-public knot
   (package
     (name "knot")
-    (version "2.9.5")
+    (version "3.0.3")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://secure.nic.cz/files/knot-dns/"
-                           "knot-" version ".tar.xz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://gitlab.nic.cz/knot/knot-dns")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "0xmzmhd2m9rb24clrrd9k058harsq67nyjplpbyxvy1g46xah28i"))
+        (base32 "0xzig9l91wj6x23mh75vw2r51ihrgx916c7wxvpcfnwrqsv4f3hy"))
        (modules '((guix build utils)))
        (snippet
         '(begin
-           ;; Delete bundled libraries.
-           (with-directory-excursion "src/contrib"
-             (delete-file-recursively "lmdb"))
+           ;; Remove Ragel-generated C files.  We'll recreate them below.
+           (for-each delete-file (find-files "." "\\.c\\.[gt]."))
+           (delete-file "src/libknot/yparser/ypbody.c")
+           ;; Remove bundled library to ensure we always use the system's.
+           (delete-file-recursively "src/contrib/libbpf")
            #t))))
     (build-system gnu-build-system)
-    (native-inputs
-     `(("pkg-config" ,pkg-config)))
-    (inputs
-     `(("fstrm" ,fstrm)
-       ("gnutls" ,gnutls)
-       ("jansson" ,jansson)
-       ("libcap-ng" ,libcap-ng)
-       ("libedit" ,libedit)
-       ("libidn" ,libidn)
-       ("liburcu" ,liburcu)
-       ("lmdb" ,lmdb)
-       ("ncurses" ,ncurses)
-       ("protobuf-c" ,protobuf-c)))
+    (outputs (list "out" "doc" "lib" "tools"))
     (arguments
-     `(#:phases
+     `(#:configure-flags
+       (list (string-append "--docdir=" (assoc-ref %outputs "doc")
+                            "/share/" ,name "-" ,version)
+             (string-append "--infodir=" (assoc-ref %outputs "doc")
+                            "/share/info")
+             (string-append "--libdir=" (assoc-ref %outputs "lib") "/lib")
+             "--sysconfdir=/etc"
+             "--localstatedir=/var"
+             "--enable-dnstap"          ; let tools read/write capture files
+             "--enable-fastparser"      ; disabled by default when .git/ exists
+             "--enable-xdp=auto"        ; XXX [=yes] currently means =embedded
+             "--with-module-dnstap=yes") ; detailed query capturing & logging
+       #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'link-missing-libbpf-dependency
+           ;; Linking against -lbpf later would fail to find -lz: libbpf.pc has
+           ;; zlib in its Requires.private (not Requires) field.  Add it here.
+           (lambda _
+             (substitute* "configure.ac"
+               (("enable_xdp=yes" match)
+                (string-append match "\nlibbpf_LIBS=\"$libbpf_LIBS -lz\"")))
+             #true))
+         (add-before 'bootstrap 'update-parser
+           (lambda _
+             (with-directory-excursion "src"
+               (invoke "sh" "../scripts/update-parser.sh"))))
          (add-before 'configure 'disable-directory-pre-creation
            (lambda _
              ;; Don't install empty directories like ‘/etc’ outside the store.
              ;; This is needed even when using ‘make config_dir=... install’.
              (substitute* "src/Makefile.in" (("\\$\\(INSTALL\\) -d") "true"))
              #t))
+         (add-after 'build 'build-info
+           (lambda _
+             (invoke "make" "info")))
          (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -654,15 +871,51 @@ Extensions} (DNSSEC).")
                     (etc (string-append doc "/examples/etc")))
                (invoke "make"
                        (string-append "config_dir=" etc)
-                       "install")))))
-       #:configure-flags
-       (list "--sysconfdir=/etc"
-             "--localstatedir=/var"
-             "--enable-dnstap"          ; let tools read/write capture files
-             "--with-module-dnstap=yes" ; detailed query capturing & logging
-             (string-append "--with-bash-completions="
-                            (assoc-ref %outputs "out")
-                            "/etc/bash_completion.d"))))
+                       "install"))))
+         (add-after 'install 'install-info
+           (lambda _
+             (invoke "make" "install-info")))
+         (add-after 'install 'break-circular-:lib->:out-reference
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((lib (assoc-ref outputs "lib")))
+               (for-each (lambda (file)
+                           (substitute* file
+                             (("(prefix=).*" _ assign)
+                              (string-append assign lib "\n"))))
+                         (find-files lib "\\.pc$"))
+               #true)))
+         (add-after 'install 'split-:tools
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out   (assoc-ref outputs "out"))
+                    (tools (assoc-ref outputs "tools")))
+               (mkdir-p (string-append tools "/share/man"))
+               (rename-file (string-append out   "/bin")
+                            (string-append tools "/bin"))
+               (rename-file (string-append out   "/share/man/man1")
+                            (string-append tools "/share/man/man1"))
+               #true))))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)
+       ("python-sphinx" ,python-sphinx)
+       ("ragel" ,ragel)
+       ("texinfo" ,texinfo)))
+    (inputs
+     `(("fstrm" ,fstrm)
+       ("gnutls" ,gnutls)
+       ("jansson" ,jansson)
+       ("libbpf" ,libbpf)
+       ("libcap-ng" ,libcap-ng)
+       ("libedit" ,libedit)
+       ("libelf" ,libelf)
+       ("libidn" ,libidn)
+       ("libnghttp2" ,nghttp2 "lib")
+       ("liburcu" ,liburcu)
+       ("lmdb" ,lmdb)
+       ("ncurses" ,ncurses)
+       ("protobuf-c" ,protobuf-c)))
     (home-page "https://www.knot-dns.cz/")
     (synopsis "Authoritative DNS name server")
     (description "Knot DNS is an authoritative name server for the @dfn{Domain
@@ -684,15 +937,16 @@ synthesis, and on-the-fly re-configuration.")
 (define-public knot-resolver
   (package
     (name "knot-resolver")
-    (version "4.3.0")
+    (version "5.2.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://secure.nic.cz/files/knot-resolver/"
                                   "knot-resolver-" version ".tar.xz"))
               (sha256
                (base32
-                "09ffmqx79lv5psr433x4n946njgsn071b9b7161pcb9bmrqz380c"))))
+                "09jqy23q1pgj76y2qd1xfk72wwmypnyawm3span3gx00qi2bfdxa"))))
     (build-system meson-build-system)
+    (outputs '("out" "doc"))
     (arguments
      '(#:configure-flags '("-Ddoc=enabled")
        #:phases
@@ -707,6 +961,20 @@ synthesis, and on-the-fly re-configuration.")
          (add-after 'build 'build-doc
            (lambda _
              (invoke "ninja" "doc")))
+         (add-after 'install 'move-doc
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; Move the manual and the example configuration files to the
+             ;; "doc" output.
+             (let ((out (assoc-ref outputs "out"))
+                   (doc (assoc-ref outputs "doc")))
+               (mkdir-p (string-append doc "/share/doc/knot-resolver"))
+               (for-each
+                (lambda (dir)
+                  (rename-file (string-append out "/share/" dir)
+                               (string-append doc "/share/" dir)))
+                '("doc/knot-resolver/examples"
+                  "doc/knot-resolver/html"
+                  "info")))))
          (add-after 'install 'wrap-binary
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -729,20 +997,18 @@ synthesis, and on-the-fly re-configuration.")
        ("pkg-config" ,pkg-config)
        ("python-breathe" ,python-breathe)
        ("python-sphinx" ,python-sphinx)
-       ("python-sphinx-rtd-theme" ,python-sphinx-rtd-theme)))
+       ("python-sphinx-rtd-theme" ,python-sphinx-rtd-theme)
+       ("texinfo" ,texinfo)))
     (inputs
      `(("fstrm" ,fstrm)
        ("gnutls" ,gnutls)
-       ("knot" ,knot)
+       ("knot:lib" ,knot "lib")
        ("libuv" ,libuv)
        ("lmdb" ,lmdb)
        ("luajit" ,luajit)
        ;; TODO: Add optional lua modules: basexx and psl.
        ("lua-bitop" ,lua5.1-bitop)
-       ("lua-cqueues" ,lua5.1-cqueues)
-       ("lua-filesystem" ,lua5.1-filesystem)
-       ("lua-sec" ,lua5.1-sec)
-       ("lua-socket" ,lua5.1-socket)))
+       ("nghttp2" ,nghttp2 "lib")))
     (home-page "https://www.knot-resolver.cz/")
     (synopsis "Caching validating DNS resolver")
     (description

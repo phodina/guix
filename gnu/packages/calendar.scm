@@ -9,6 +9,7 @@
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com
 ;;; Copyright © 2020 Brendan Tildesley <mail@brendan.scot>
 ;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
+;;; Copyright © 2020 Peng Mei Yu <pengmeiyu@riseup.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37,6 +38,7 @@
   #:use-module (gnu packages base)
   #:use-module (gnu packages check)
   #:use-module (gnu packages dav)
+  #:use-module (gnu packages docbook)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
@@ -124,12 +126,20 @@ the <tz.h> library for handling time zones and leap seconds.")
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f ; test suite appears broken
+       #:parallel-build? #f             ;may cause GIR generation failure
        #:configure-flags '("-DSHARED_ONLY=true"
                            ;; required by evolution-data-server
                            "-DGOBJECT_INTROSPECTION=true"
                            "-DICAL_GLIB_VAPI=true")
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'patch-docbook-reference
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "doc/reference/libical-glib/libical-glib-docs.sgml.in"
+               (("http://www.oasis-open.org/docbook/xml/4.3/")
+                (string-append (assoc-ref inputs "docbook-xml")
+                               "/xml/dtd/docbook/")))
+             #t))
          (add-before 'configure 'patch-paths
            (lambda* (#:key inputs #:allow-other-keys)
              ;; TODO: libical 3.1.0 supports using TZDIR instead of a hard-coded
@@ -144,7 +154,8 @@ the <tz.h> library for handling time zones and leap seconds.")
                  (("\\\"/usr/share/lib/zoneinfo\\\"") "")))
              #t)))))
     (native-inputs
-     `(("gobject-introspection" ,gobject-introspection)
+     `(("docbook-xml" ,docbook-xml-4.3)
+       ("gobject-introspection" ,gobject-introspection)
        ("gtk-doc" ,gtk-doc)
        ("perl" ,perl)
        ("pkg-config" ,pkg-config)
@@ -167,26 +178,17 @@ data units.")
 (define-public khal
   (package
     (name "khal")
-    (version "0.10.1")
+    (version "0.10.2")
     (source (origin
-             (method url-fetch)
-             (uri (pypi-uri "khal" version))
-             (sha256
-              (base32
-               "1r8bkgjwkh7i8ygvsv51h1cnax50sb183vafg66x5snxf3dgjl6l"))
-             (patches
-               (list
-                 (origin
-                   (method url-fetch)
-                   ;; This patch fixes an issue with python-urwid-2.1.0
-                   (uri "https://github.com/pimutils/khal/commit/2c5990c2de2015b251ba23617faa40ee11b8c22a.patch")
-                   (file-name "khal-compat-urwid-2.1.0.patch")
-                   (sha256
-                    (base32
-                     "11nd8hkjz68imwqqn0p54zmb53z2pfxmzchaviy7jc1ky5s9l663")))))))
+              (method url-fetch)
+              (uri (pypi-uri "khal" version))
+              (sha256
+               (base32
+                "11qhrga44knlnp88py9p547d4nr5kn041d2nszwa3dqw7mf22ks9"))))
     (build-system python-build-system)
     (arguments
-     `(#:phases (modify-phases %standard-phases
+     `(#:tests? #f ; The test suite is unreliable. See <https://bugs.gnu.org/44197>
+       #:phases (modify-phases %standard-phases
         ;; Building the manpage requires khal to be installed.
         (add-after 'install 'manpage
           (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -196,28 +198,9 @@ data units.")
             (install-file
              "doc/build/man/khal.1"
              (string-append (assoc-ref outputs "out") "/share/man/man1"))
-            #t))
-        (add-before 'check 'fix-tests
-          (lambda _
-            ;; Reported upstream: <https://github.com/pimutils/khal/issues/947>.
-            (substitute* "tests/cli_test.py"
-             (("Invalid value for \"\\[ICS\\]\"") "Invalid value for \\'[ICS]\\'"))
-            #t))
-        (replace 'check
-          (lambda* (#:key inputs #:allow-other-keys)
-            ;; The tests require us to choose a timezone.
-            (setenv "TZ"
-                    (string-append (assoc-ref inputs "tzdata")
-                                   "/share/zoneinfo/Zulu"))
-            (invoke "py.test" "tests"))))))
+            #t)))))
     (native-inputs
-     `(("python-pytest" ,python-pytest)
-       ("python-pytest-cov" ,python-pytest-cov)
-       ("python-setuptools-scm" ,python-setuptools-scm)
-       ;; Required for tests
-       ("python-freezegun" ,python-freezegun)
-       ("tzdata" ,tzdata-for-tests)
-       ("vdirsyncer" ,vdirsyncer)
+     `(("python-setuptools-scm" ,python-setuptools-scm)
        ;; Required to build manpage
        ("python-sphinxcontrib-newsfeed" ,python-sphinxcontrib-newsfeed)
        ("python-sphinx" ,python-sphinx)))
@@ -228,6 +211,11 @@ data units.")
        ("python-icalendar" ,python-icalendar)
        ("python-tzlocal" ,python-tzlocal)
        ("python-urwid" ,python-urwid)
+       ("python-pytz" ,python-pytz)
+       ("python-setproctitle" ,python-setproctitle)
+       ("python-atomicwrites" ,python-atomicwrites)
+       ("python-click" ,python-click)
+       ("python-click-log" ,python-click-log)
        ("python-pyxdg" ,python-pyxdg)))
     (synopsis "Console calendar program")
     (description "Khal is a standards based console calendar program,
@@ -339,3 +327,45 @@ DebConf, FrOSCon, Grazer LinuxTage, and the CCC congresses.
 ConfClerk is targeted at mobile devices but works on any system running Qt.")
     (license (list license:gpl2+
                    license:lgpl3)))) ; or cc-by3.0 for src/icons/*
+
+(define-public ccal
+  (package
+    (name "ccal")
+    (version "2.5.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://ccal.chinesebay.com/ccal/ccal-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "15nza1d1lvk3dp0wcl53wsd32yhbgyzznha092mh5kh5z74vsk1x"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (substitute* "Makefile"
+                 (("/usr/local/bin")
+                  (string-append out "/bin"))
+                 (("/usr/local/man")
+                  (string-append out "/share/man"))))
+             #t))
+         (add-after 'install 'install-manuals
+           (lambda _
+             (invoke "make" "install-man"))))
+       ;; no tests
+       #:tests? #f))
+    (home-page "http://ccal.chinesebay.com/ccal/ccal.htm")
+    (synopsis "Command line program for Chinese calendar")
+    (description "@command{ccal} is a command line program which writes a
+Gregorian calendar together with Chinese calendar to standard output.  Its
+usage is similar to the @command{cal} program.  In addition to console output,
+it can also generate Encapsulated Postscript and HTML table outputs for use in
+do-it-yourself calendars and web pages.  It supports both simplified and
+traditional Chinese characters.")
+    ;; Both licenses are in use in various source files.  Note that
+    ;; COPYING.LESSER specifies LGPL 3.0, but all source files say
+    ;; 'Lesser GPL version 2 or later'.
+    (license (list license:gpl2+ license:lgpl2.1+))))

@@ -1,15 +1,16 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2016, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020, 2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019 Pierre Neidhardt <mail@ambrevar.xyz>
-;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2019 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
-;;; Copyright @ 2020 Katherine Cox-Buday <cox.katherine.e@gmail.com>
+;;; Copyright © 2020 Katherine Cox-Buday <cox.katherine.e@gmail.com>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Greg Hogan <code@greghogan.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -28,11 +29,14 @@
 
 (define-module (gnu packages c)
   #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (guix utils)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system trivial)
+  #:use-module (gnu packages)
   #:use-module (gnu packages bootstrap)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages check)
@@ -40,6 +44,7 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages guile)
+  #:use-module (gnu packages lua)
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages python)
@@ -182,15 +187,20 @@ language with thin bindings for other languages.")
 (define-public udunits
   (package
     (name "udunits")
-    (version "2.2.26")
+    ;; Four-part version numbers are development snapshots, not releases.  See
+    ;; <https://github.com/Unidata/UDUNITS-2/issues/99#issuecomment-732323472>.
+    (version "2.2.28")
     (source (origin
               (method url-fetch)
               (uri (string-append "ftp://ftp.unidata.ucar.edu/pub/udunits/"
                                   "udunits-" version ".tar.gz"))
               (sha256
                (base32
-                "0v9mqw4drnkzkm57331ail6yvs9485jmi37s40lhvmf7r5lli3rn"))))
+                "17jpbp6f0rr132jn2gqy8ry8mv1w27v6dyhfq1igv8v1674aw2sr"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "--disable-static")))
     (inputs
      `(("expat" ,expat)))
     (home-page "https://www.unidata.ucar.edu/software/udunits/")
@@ -257,6 +267,64 @@ string formatting and autoresizing, option and config file parsing, type
 checking casts and more.")
     (license license:lgpl2.1+)))
 
+(define-public libwuya
+  ;; This commit is the one before "wuy_pool.h" was removed from libwuya,
+  ;; which libleak currently requires.
+  (let ((revision "1")
+        (commit "883502041044f4616cfbf75c8f2bb60059f704a9"))
+    (package
+      (name "libwuya")
+      (version (git-version "0.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/WuBingzheng/libwuya")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "1xrsqbgr13g2v0ag165ryp7xrwzv41xfygzk2a3445ca98c1qpdc"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f                    ;no test suite
+         #:phases (modify-phases %standard-phases
+                    (add-after 'unpack 'patch-lua-includes
+                      (lambda _
+                        (substitute* '("wuy_cflua.h" "wuy_cflua.c")
+                          (("<lua5\\.1/") "<"))
+                        #t))
+                    (add-after 'unpack 'add--fPIC-to-CFLAGS
+                      (lambda _
+                        (substitute* "Makefile"
+                          (("CFLAGS[^\n]*" all)
+                           (string-append all " -fPIC")))
+                        #t))
+                    (add-before 'build 'set-CC
+                      (lambda _
+                        (setenv "CC" "gcc")
+                        #t))
+                    (delete 'configure) ;no configure script
+                    (replace 'install
+                      (lambda* (#:key outputs #:allow-other-keys)
+                        (let* ((out (assoc-ref outputs "out"))
+                               (include-dir (string-append out "/include"))
+                               (headers (find-files "." "\\.h$")))
+                          (for-each (lambda (h)
+                                      (install-file h include-dir))
+                                    headers)
+                          (install-file "libwuya.a" (string-append out "/lib"))
+                          #t))))))
+      (inputs `(("lua" ,lua)))
+      (home-page "https://github.com/WuBingzheng/libwuya/")
+      (synopsis "C library implementing various data structures")
+      (description "The @code{libwuya} library implements data structures such
+as dictionaries, skip lists, and memory pools.")
+      ;; There is no clear information as to what license this is distributed
+      ;; under, but it is included (bundled) with libleak from the same author
+      ;; under the GNU GPL v2 or later license, so use this here until it is
+      ;; clarified (see: https://github.com/WuBingzheng/libwuya/issues/2).
+      (license license:gpl2+))))
+
 (define-public packcc
   (package
     (name "packcc")
@@ -311,7 +379,7 @@ any other grammar rules.")
 (define-public sparse
   (package
     (name "sparse")
-    (version "0.6.2")
+    (version "0.6.3")
     (source (origin
               (method url-fetch)
               (uri
@@ -319,7 +387,7 @@ any other grammar rules.")
                               "sparse-"  version ".tar.xz"))
               (sha256
                (base32
-                "1z11chawwcmf5xxx5v52cj7wrr3warz6q5wlcjvxpif1jbga172i"))))
+                "16d8c4dhipjzjf8z4z7pix1pdpqydz0v4r7i345f5s09hjnxpxnl"))))
     (build-system gnu-build-system)
     (inputs `(("perl" ,perl)))
     (arguments
@@ -459,7 +527,8 @@ replacement for the syslog() call, but retains its ease of use.")
     (arguments
      `(#:phases (modify-phases %standard-phases
                   (delete 'configure))
-       #:make-flags (list "CC=gcc" (string-append "prefix=" %output))
+       #:make-flags (list (string-append "CC=" ,(cc-for-target))
+                          (string-append "prefix=" %output))
        #:tests? #f))                    ;no test suite
     (native-inputs
      `(("perl" ,perl)))
@@ -473,3 +542,75 @@ avoiding distractions when studying code that uses @code{#ifdef} heavily for
 portability.")
     (license (list license:bsd-2        ;all files except...
                    license:bsd-3))))    ;...the unidef.1 manual page
+
+(define-public aws-c-common
+  (package
+    (name "aws-c-common")
+    (version "0.4.63")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url (string-append "https://github.com/awslabs/" name))
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "16bc6fn1gq3nqcrzgpi2kjphq7xkkr73aljakrg89ysm6hyzyim9"))))
+    (build-system cmake-build-system)
+    (synopsis "Amazon Web Services core C library")
+    (description
+     "This library provides common C99 primitives, configuration, data
+ structures, and error handling for the @acronym{AWS,Amazon Web Services} SDK.")
+    (home-page "https://github.com/awslabs/aws-c-common")
+    (license license:asl2.0)))
+
+(define-public aws-checksums
+  (package
+    (name "aws-checksums")
+    (version "0.1.10")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url (string-append "https://github.com/awslabs/" name))
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1f9scl5734pgjlsixspwljrrlndzhllwlfygdcr1gx5p0za08zjb"))
+              (patches (search-patches "aws-checksums-cmake-prefix.patch"))))
+    (build-system cmake-build-system)
+    (inputs
+     `(("aws-c-common" ,aws-c-common)))
+    (synopsis "Amazon Web Services checksum library")
+    (description
+     "This library provides cross-Platform hardware accelerated CRC32c and CRC32
+with fallback to efficient C99 software implementations.")
+    (home-page "https://github.com/awslabs/aws-checksums")
+    (license license:asl2.0)))
+
+(define-public aws-c-event-stream
+  (package
+    (name "aws-c-event-stream")
+    (version "0.1.6")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url (string-append "https://github.com/awslabs/" name))
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1vl9ainc4klv0g9gk1iv4833bsllni6jxn6mwb0fnv2dnlz7zv9q"))
+              (patches (search-patches "aws-c-event-stream-cmake-prefix.patch"))))
+    (build-system cmake-build-system)
+    (propagated-inputs
+     `(("aws-c-common" ,aws-c-common)))
+    (inputs
+     `(("aws-checksums" ,aws-checksums)))
+    (synopsis "Amazon Web Services client-server message format library")
+    (description
+     "This library is a C99 implementation for @acronym{AWS,Amazon Web Services}
+event stream encoding, a binary format for bidirectional client-server
+communication.")
+    (home-page "https://github.com/awslabs/aws-c-event-stream")
+    (license license:asl2.0)))

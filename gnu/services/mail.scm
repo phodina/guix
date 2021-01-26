@@ -4,6 +4,7 @@
 ;;; Copyright © 2017 Carlo Zancanaro <carlo@zancanaro.id.au>
 ;;; Copyright © 2017, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Kristofer Buffington <kristoferbuffington@gmail.com>
+;;; Copyright © 2020 Jonathan Brielmaier <jonathan.brielmaier@web.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -31,6 +32,7 @@
   #:use-module (gnu system shadow)
   #:use-module (gnu packages mail)
   #:use-module (gnu packages admin)
+  #:use-module (gnu packages dav)
   #:use-module (gnu packages tls)
   #:use-module (guix records)
   #:use-module (guix packages)
@@ -70,7 +72,12 @@
             imap4d-configuration
             imap4d-configuration?
             imap4d-service-type
-            %default-imap4d-config-file))
+            %default-imap4d-config-file
+
+            radicale-configuration
+            radicale-configuration?
+            radicale-service-type
+            %default-radicale-config-file))
 
 ;;; Commentary:
 ;;;
@@ -99,7 +106,9 @@
                   (and (string? x) (not (string-index x #\space))))
                 val)))
 (define (serialize-space-separated-string-list field-name val)
-  (serialize-field field-name (string-join val " ")))
+  (match val
+    (() #f)
+    (_ (serialize-field field-name (string-join val " ")))))
 
 (define (comma-separated-string-list? val)
   (and (list? val)
@@ -478,64 +487,6 @@ listens in all IPv4 interfaces, @samp{::} listens in all IPv6
 interfaces.  If you want to specify non-default ports or anything more
 complex, customize the address and port fields of the
 @samp{inet-listener} of the specific services you are interested in.")
-
-  (protocols
-   (protocol-configuration-list
-    (list (protocol-configuration
-           (name "imap"))))
-   "List of protocols we want to serve.  Available protocols include
-@samp{imap}, @samp{pop3}, and @samp{lmtp}.")
-
-  (services
-   (service-configuration-list
-    (list
-     (service-configuration
-      (kind "imap-login")
-      (client-limit 0)
-      (process-limit 0)
-      (listeners
-       (list
-        (inet-listener-configuration (protocol "imap") (port 143) (ssl? #f))
-        (inet-listener-configuration (protocol "imaps") (port 993) (ssl? #t)))))
-     (service-configuration
-      (kind "pop3-login")
-      (listeners
-       (list
-        (inet-listener-configuration (protocol "pop3") (port 110) (ssl? #f))
-        (inet-listener-configuration (protocol "pop3s") (port 995) (ssl? #t)))))
-     (service-configuration
-      (kind "lmtp")
-      (client-limit 1)
-      (process-limit 0)
-      (listeners
-       (list (unix-listener-configuration (path "lmtp") (mode "0666")))))
-     (service-configuration
-      (kind "imap")
-      (client-limit 1)
-      (process-limit 1024))
-     (service-configuration
-      (kind "pop3")
-      (client-limit 1)
-      (process-limit 1024))
-     (service-configuration
-      (kind "auth")
-      (service-count 0)
-      (client-limit 0)
-      (process-limit 1)
-      (listeners
-       (list (unix-listener-configuration (path "auth-userdb")))))
-     (service-configuration
-      (kind "auth-worker")
-      (client-limit 1)
-      (process-limit 0))
-     (service-configuration
-      (kind "dict")
-      (client-limit 1)
-      (process-limit 0)
-      (listeners (list (unix-listener-configuration (path "dict")))))))
-   "List of services to enable.  Available services include @samp{imap},
-@samp{imap-login}, @samp{pop3}, @samp{pop3-login}, @samp{auth}, and
-@samp{lmtp}.")
 
   (dict
    (dict-configuration (dict-configuration))
@@ -1430,7 +1381,65 @@ greyed out, instead of only later giving \"not selectable\" popup error.
 
   (imap-urlauth-host
    (string "")
-   "Host allowed in URLAUTH URLs sent by client.  \"*\" allows all.")  )
+   "Host allowed in URLAUTH URLs sent by client.  \"*\" allows all.")
+
+  (protocols
+   (protocol-configuration-list
+    (list (protocol-configuration
+           (name "imap"))))
+   "List of protocols we want to serve.  Available protocols include
+@samp{imap}, @samp{pop3}, and @samp{lmtp}.")
+
+  (services
+   (service-configuration-list
+    (list
+     (service-configuration
+      (kind "imap-login")
+      (client-limit 0)
+      (process-limit 0)
+      (listeners
+       (list
+        (inet-listener-configuration (protocol "imap") (port 143) (ssl? #f))
+        (inet-listener-configuration (protocol "imaps") (port 993) (ssl? #t)))))
+     (service-configuration
+      (kind "pop3-login")
+      (listeners
+       (list
+        (inet-listener-configuration (protocol "pop3") (port 110) (ssl? #f))
+        (inet-listener-configuration (protocol "pop3s") (port 995) (ssl? #t)))))
+     (service-configuration
+      (kind "lmtp")
+      (client-limit 1)
+      (process-limit 0)
+      (listeners
+       (list (unix-listener-configuration (path "lmtp") (mode "0666")))))
+     (service-configuration
+      (kind "imap")
+      (client-limit 1)
+      (process-limit 1024))
+     (service-configuration
+      (kind "pop3")
+      (client-limit 1)
+      (process-limit 1024))
+     (service-configuration
+      (kind "auth")
+      (service-count 0)
+      (client-limit 0)
+      (process-limit 1)
+      (listeners
+       (list (unix-listener-configuration (path "auth-userdb")))))
+     (service-configuration
+      (kind "auth-worker")
+      (client-limit 1)
+      (process-limit 0))
+     (service-configuration
+      (kind "dict")
+      (client-limit 1)
+      (process-limit 0)
+      (listeners (list (unix-listener-configuration (path "dict")))))))
+   "List of services to enable.  Available services include @samp{imap},
+@samp{imap-login}, @samp{pop3}, @samp{pop3-login}, @samp{auth}, and
+@samp{lmtp}."))
 
 (define-configuration opaque-dovecot-configuration
   (dovecot
@@ -1832,3 +1841,75 @@ exim_group = exim
     (list (service-extension
            shepherd-root-service-type imap4d-shepherd-service)))
    (default-value (imap4d-configuration))))
+
+
+;;;
+;;; Radicale.
+;;;
+
+(define-record-type* <radicale-configuration>
+  radicale-configuration make-radicale-configuration
+  radicale-configuration?
+  (package     radicale-configuration-package
+               (default radicale))
+  (config-file radicale-configuration-config-file
+               (default %default-radicale-config-file)))
+
+(define %default-radicale-config-file
+  (plain-file "radicale.conf" "
+[auth]
+type = htpasswd
+htpasswd_filename = /var/lib/radicale/users
+htpasswd_encryption = plain
+
+[server]
+hosts = localhost:5232"))
+
+(define %radicale-accounts
+  (list (user-group
+         (name "radicale")
+         (system? #t))
+        (user-account
+         (name "radicale")
+         (group "radicale")
+         (system? #t)
+         (comment "Radicale Daemon")
+         (home-directory "/var/empty")
+         (shell (file-append shadow "/sbin/nologin")))))
+
+(define radicale-shepherd-service
+  (match-lambda
+    (($ <radicale-configuration> package config-file)
+     (list (shepherd-service
+            (provision '(radicale))
+            (documentation "Run the radicale daemon.")
+            (requirement '(networking))
+            (start #~(make-forkexec-constructor
+                      (list #$(file-append package "/bin/radicale")
+                        "-C" #$config-file)
+                      #:user "radicale"
+                      #:group "radicale"))
+            (stop #~(make-kill-destructor)))))))
+
+(define radicale-activation
+  (match-lambda
+    (($ <radicale-configuration> package config-file)
+     (with-imported-modules '((guix build utils))
+       #~(begin
+           (use-modules (guix build utils))
+           (let ((uid (passwd:uid (getpw "radicale")))
+                 (gid (group:gid (getgr "radicale"))))
+             (mkdir-p "/var/lib/radicale/collections")
+             (chown "/var/lib/radicale" uid gid)
+             (chown "/var/lib/radicale/collections" uid gid)
+             (chmod "/var/lib/radicale" #o700)))))))
+
+(define radicale-service-type
+  (service-type
+   (name 'radicale)
+   (description "Run radicale, a small CalDAV and CardDAV server.")
+   (extensions
+    (list (service-extension shepherd-root-service-type radicale-shepherd-service)
+          (service-extension account-service-type (const %radicale-accounts))
+          (service-extension activation-service-type radicale-activation)))
+   (default-value (radicale-configuration))))

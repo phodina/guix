@@ -1,5 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015 Federico Beffa <beffa@fbengineering.ch>
+;;; Copyright © 2020 Timothy Sample <samplet@ngyro.com>
+;;; Copyright © 2020 Simon Tournier <zimon.toutoune@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -26,6 +28,7 @@
   #:use-module (guix build-system)
   #:use-module (guix build-system gnu)
   #:use-module (ice-9 match)
+  #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:export (%haskell-build-system-modules
             haskell-build
@@ -67,7 +70,7 @@ version REVISION."
                 #:rest arguments)
   "Return a bag for NAME."
   (define private-keywords
-    '(#:target #:haskell #:cabal-revision #:inputs #:native-inputs))
+    '(#:target #:haskell #:cabal-revision #:inputs #:native-inputs #:outputs))
 
   (define (cabal-revision->origin cabal-revision)
     (match cabal-revision
@@ -95,9 +98,23 @@ version REVISION."
                         ,@(standard-packages)))
          (build-inputs `(("haskell" ,haskell)
                          ,@native-inputs))
-         (outputs outputs)
+         ;; XXX: this is a hack to get around issue #41569.
+         (outputs (match outputs
+                    (("out") (cons "static" outputs))
+                    (_ outputs)))
          (build haskell-build)
-         (arguments (strip-keyword-arguments private-keywords arguments)))))
+         (arguments
+          (substitute-keyword-arguments
+              (strip-keyword-arguments private-keywords arguments)
+            ((#:extra-directories extra-directories)
+             `(list ,@(append-map
+                       (lambda (name)
+                         (match (assoc name inputs)
+                           ((_ pkg)
+                            (match (package-transitive-propagated-inputs pkg)
+                              (((propagated-names . _) ...)
+                               (cons name propagated-names))))))
+                       extra-directories))))))))
 
 (define* (haskell-build store name inputs
                         #:key source
@@ -105,10 +122,14 @@ version REVISION."
                         (haddock-flags ''())
                         (tests? #t)
                         (test-target "test")
+                        ;; FIXME: Parallel builds lead to indeterministic
+                        ;; results, see <http://issues.guix.gnu.org/43843#3>.
+                        (parallel-build? #f)
                         (configure-flags ''())
+                        (extra-directories ''())
                         (phases '(@ (guix build haskell-build-system)
                                     %standard-phases))
-                        (outputs '("out"))
+                        (outputs '("out" "static"))
                         (search-paths '())
                         (system (%current-system))
                         (guile #f)
@@ -134,10 +155,12 @@ provides a 'Setup.hs' file as its build system."
                                            (derivation->output-path revision))
                                           (revision revision))
                       #:configure-flags ,configure-flags
+                      #:extra-directories ,extra-directories
                       #:haddock-flags ,haddock-flags
                       #:system ,system
                       #:test-target ,test-target
                       #:tests? ,tests?
+                      #:parallel-build? ,parallel-build?
                       #:haddock? ,haddock?
                       #:phases ,phases
                       #:outputs %outputs

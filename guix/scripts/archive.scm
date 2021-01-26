@@ -1,5 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -310,6 +311,16 @@ the input port."
         (leave (G_ "failed to read public key: ~a: ~a~%")
                (error-source err) (error-string err)))))
 
+  ;; Warn about potentially volatile ACLs, but continue: system reconfiguration
+  ;; might not be possible without (newly-authorized) substitutes.
+  (let ((stat (false-if-exception (lstat %acl-file))))
+    (when (and stat (eq? 'symlink (stat:type (lstat %acl-file))))
+      (warning (G_ "replacing symbolic link ~a with a regular file~%")
+               %acl-file)
+      (when (string-prefix? (%store-prefix) (readlink %acl-file))
+        (display-hint (G_ "On Guix System, add all @code{authorized-keys} to the
+@code{guix-service-type} service of your @code{operating-system} instead.")))))
+
   (let ((key (read-key))
         (acl (current-acl)))
     (unless (eq? 'public-key (canonical-sexp-nth-data key 0))
@@ -336,6 +347,8 @@ output port."
                   (match type
                     ('directory
                      (format #t "D ~a~%" file))
+                    ('directory-complete
+                     #t)
                     ('symlink
                      (format #t "S ~a -> ~a~%" file content))
                     ((or 'regular 'executable)
@@ -355,7 +368,10 @@ output port."
 ;;; Entry point.
 ;;;
 
-(define (guix-archive . args)
+(define-command (guix-archive . args)
+  (category plumbing)
+  (synopsis "manipulate, export, and import normalized archives (nars)")
+
   (define (lines port)
     ;; Return lines read from PORT.
     (let loop ((line   (read-line port))

@@ -6,7 +6,7 @@
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2017 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2017, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2018 Mark H Weaver <mhw@netris.org>
@@ -17,6 +17,7 @@
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Marcin Karpezo <sirmacik@wioo.waw.pl>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -82,7 +83,7 @@
 (define-public duplicity
   (package
     (name "duplicity")
-    (version "0.8.15")
+    (version "0.8.17")
     (source
      (origin
       (method url-fetch)
@@ -91,10 +92,10 @@
                           "-series/" version "/+download/duplicity-"
                           version ".tar.gz"))
       (sha256
-       (base32 "1kg467mxg5a97v1rlv4shk32krgv8ys4nczq4b11av4bp1lgysdc"))))
+       (base32 "114rwkf9b3h4fcagrx013sb7krc4hafbwl9gawjph2wd9pkv2wx2"))))
     (build-system python-build-system)
     (native-inputs
-     `(("gettext" ,gnu-gettext)         ; for msgfmt
+     `(("gettext" ,gettext-minimal)     ; for msgfmt
        ("util-linux" ,util-linux)       ; setsid command, for the tests
        ("par2cmdline" ,par2cmdline)
        ("python-fasteners" ,python-fasteners)
@@ -148,7 +149,7 @@ spying and/or modification by the server.")
 (define-public par2cmdline
   (package
     (name "par2cmdline")
-    (version "0.8.0")
+    (version "0.8.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -157,7 +158,7 @@ spying and/or modification by the server.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0f1jsd5sw2wynjzi7yjqjaf13yhyjfdid91p8yh0jn32y03kjyrz"))))
+                "11mx8q29cr0sryd11awab7y4mhqgbamb1ss77rffjj6in8pb4hdk"))))
     (native-inputs
      `(("automake" ,automake)
        ("autoconf" ,autoconf)))
@@ -392,7 +393,7 @@ list and implement the backup strategy.")
      `(("librsync" ,librsync-0.9)))
     (arguments
      `(#:make-flags `(,(string-append "PREFIX=" (assoc-ref %outputs "out"))
-                      "CC=gcc")
+                      ,(string-append "CC=" ,(cc-for-target)))
        #:tests? #f                      ;test input not distributed
        #:phases
        ;; no configure phase
@@ -569,13 +570,13 @@ detection, and lossless compression.")
 (define-public borg
   (package
     (name "borg")
-    (version "1.1.13")
+    (version "1.1.15")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "borgbackup" version))
        (sha256
-        (base32 "089q3flmwbz7dc28zlscwylf64kgck3jf1n6lqpwww8hlrk8cjhn"))
+        (base32 "1g62sdzcw3zx4ccky125ciwnzx6z9kwyvskvp7ijmqxqk3nrxjs9"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -593,7 +594,8 @@ detection, and lossless compression.")
                        "src/borg/platform/darwin.c"
                        "src/borg/platform/freebsd.c"
                        "src/borg/platform/linux.c"
-                       "src/borg/platform/posix.c"))
+                       "src/borg/platform/posix.c"
+                       "src/borg/platform/syncfilerange.c"))
            ;; Remove bundled shared libraries.
            (with-directory-excursion "src/borg/algorithms"
              (for-each delete-file-recursively
@@ -606,7 +608,7 @@ detection, and lossless compression.")
            #t))))
     (build-system python-build-system)
     (arguments
-     `(#:modules ((srfi srfi-26) ; for cut
+     `(#:modules ((srfi srfi-26)        ; for cut
                   (guix build utils)
                   (guix build python-build-system))
        #:phases
@@ -653,6 +655,7 @@ detection, and lossless compression.")
                         "and not test_access_acl "
                         "and not test_default_acl "
                         "and not test_non_ascii_acl "
+                        "and not test_create_stdin "
                         ;; This test needs the unpackaged pytest-benchmark.
                         "and not benchmark "
                         ;; These tests assume the kernel supports FUSE.
@@ -670,6 +673,19 @@ detection, and lossless compression.")
                            "docs/misc/internals-picture.txt"
                            "docs/misc/prune-example.txt"))
                (copy-recursively "docs/man" man)
+               #t)))
+         (add-after 'install-docs 'install-shell-completions
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (etc (string-append out "/etc"))
+                    (share (string-append out "/share")))
+               (with-directory-excursion "scripts/shell_completions"
+                 (install-file "bash/borg"
+                               (string-append etc "/bash_completion.d"))
+                 (install-file "zsh/_borg"
+                               (string-append share "/zsh/site-functions"))
+                 (install-file "fish/borg.fish"
+                               (string-append share "/fish/vendor_completions.d")))
                #t))))))
     (native-inputs
      `(("python-cython" ,python-cython)
@@ -696,61 +712,17 @@ to not fully trusted targets.  Borg is a fork of Attic.")
     (home-page "https://www.borgbackup.org/")
     (license license:bsd-3)))
 
-(define-public attic
-  (package
-    (name "attic")
-    (version "0.16")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "Attic" version))
-              (sha256
-               (base32
-                "0b5skd36r4c0915lwpkqg5hxm49gls9pprs1b7hc40910wlcsl36"))))
-    (build-system python-build-system)
-    (arguments
-     `(;; The tests assume they are run as root:
-       ;; https://github.com/jborg/attic/issues/7
-       #:tests? #f
-       #:phases
-       (modify-phases %standard-phases
-         (add-before
-          'build 'set-openssl-prefix
-          (lambda* (#:key inputs #:allow-other-keys)
-            (setenv "ATTIC_OPENSSL_PREFIX" (assoc-ref inputs "openssl"))
-            #t)))))
-    (inputs
-     `(("acl" ,acl)
-       ("openssl" ,openssl)
-       ("python-msgpack" ,python-msgpack)
-
-       ;; Attic is probably incompatible with llfuse > 0.41.
-       ;; These links are to discussions of llfuse compatibility from
-       ;; the borg project. Borg is a recent fork of attic, and attic
-       ;; has not been updated since the fork, so it's likely that
-       ;; llfuse compatibility requirements are still the same.
-       ;; https://github.com/borgbackup/borg/issues/642
-       ;; https://github.com/borgbackup/borg/issues/643
-       ("python-llfuse" ,python-llfuse-0.41)))
-    (synopsis "Deduplicating backup program")
-    (description "Attic is a deduplicating backup program.  The main goal of
-Attic is to provide an efficient and secure way to backup data.  The data
-deduplication technique used makes Attic suitable for daily backups since only
-changes are stored.")
-    (home-page "https://attic-backup.org/")
-    (license license:bsd-3)
-    (properties `((superseded . ,borg)))))
-
 (define-public wimlib
   (package
     (name "wimlib")
-    (version "1.13.2")
+    (version "1.13.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://wimlib.net/downloads/"
                                   "wimlib-" version ".tar.gz"))
               (sha256
                (base32
-                "0id9ym3hzij4kpdrk0sz3ijxp5r0z1md5jch83pml9hdy1zbx5bj"))))
+                "0zpsbl9iicc6y81xfl6kf8farwfsyrl63shc0idp654kgp8421wa"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1066,13 +1038,13 @@ other storage medium.  Subsequent incremental backups can then be layered on
 top of the full backup.  The restore command performs the inverse function of
 dump; it can restore a full backup of a file system.  Single files and
 directory subtrees may also be restored from full or partial backups in
-interractive mode.")
+interactive mode.")
     (license license:bsd-3)))
 
 (define-public burp
   (package
     (name "burp")
-    (version "2.3.32")
+    (version "2.3.38")
     (source
      (origin
        (method git-fetch)
@@ -1080,7 +1052,7 @@ interractive mode.")
              (url "https://github.com/grke/burp")
              (commit version)))
        (sha256
-        (base32 "0cxxf9ni34c9662ffmr2qc8xmh4g9pmg3swqvhn49mqgr5ra6k2g"))
+        (base32 "0m0s6rrgxn3l6bad45vyhks6iz6bwvd0f3rzdsc7l28gar79wsj6"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
@@ -1103,7 +1075,7 @@ interractive mode.")
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
-       ("check" ,check)
+       ("check" ,check-0.14)
        ("pkg-config" ,pkg-config)))
     (home-page "https://burp.grke.org")
     (synopsis "Differential backup and restore")

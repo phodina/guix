@@ -2,6 +2,8 @@
 ;;; Copyright © 2018 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2020 Jesse Dowell <jessedowell@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -44,6 +46,9 @@
   (docker
    (package docker)
    "Docker daemon package.")
+  (docker-cli
+   (package docker-cli)
+   "Docker client package.")
   (containerd
    (package containerd)
    "containerd package.")
@@ -56,7 +61,10 @@ loop-back communications.")
    "Enable or disable the user-land proxy (enabled by default).")
   (debug?
    (boolean #f)
-   "Enable or disable debug output."))
+   "Enable or disable debug output.")
+  (enable-iptables?
+   (boolean #t)
+   "Enable addition of iptables rules (enabled by default)."))
 
 (define %docker-accounts
   (list (user-group (name "docker") (system? #t))))
@@ -76,7 +84,8 @@ loop-back communications.")
 
 (define (containerd-shepherd-service config)
   (let* ((package (docker-configuration-containerd config))
-         (debug? (docker-configuration-debug? config)))
+         (debug? (docker-configuration-debug? config))
+         (containerd (docker-configuration-containerd config)))
     (shepherd-service
            (documentation "containerd daemon.")
            (provision '(containerd))
@@ -85,12 +94,16 @@ loop-back communications.")
                            #$@(if debug?
                                   '("--log-level=debug")
                                   '()))
+                     ;; For finding containerd-shim binary.
+                     #:environment-variables
+                     (list (string-append "PATH=" #$containerd "/bin"))
                      #:log-file "/var/log/containerd.log"))
            (stop #~(make-kill-destructor)))))
 
 (define (docker-shepherd-service config)
   (let* ((docker (docker-configuration-docker config))
          (enable-proxy? (docker-configuration-enable-proxy? config))
+         (enable-iptables? (docker-configuration-enable-iptables? config))
          (proxy (docker-configuration-proxy config))
          (debug? (docker-configuration-debug? config)))
     (shepherd-service
@@ -113,9 +126,14 @@ loop-back communications.")
                            #$@(if debug?
                                   '("--debug" "--log-level=debug")
                                   '())
-                           (if #$enable-proxy? "--userland-proxy" "")
-                           "--userland-proxy-path" (string-append #$proxy
-                                                                  "/bin/proxy"))
+                           #$@(if enable-proxy?
+                                  (list "--userland-proxy=true"
+                                        #~(string-append
+                                           "--userland-proxy-path=" #$proxy "/bin/proxy"))
+                                  '("--userland-proxy=false"))
+                           (if #$enable-iptables?
+                               "--iptables"
+                               "--iptables=false"))
                      #:pid-file "/var/run/docker.pid"
                      #:log-file "/var/log/docker.log"))
            (stop #~(make-kill-destructor)))))
@@ -126,6 +144,9 @@ loop-back communications.")
 bundles in Docker containers.")
                 (extensions
                  (list
+                  ;; Make sure the 'docker' command is available.
+                  (service-extension profile-service-type
+                                     (compose list docker-configuration-docker-cli))
                   (service-extension activation-service-type
                                      %docker-activation)
                   (service-extension shepherd-root-service-type

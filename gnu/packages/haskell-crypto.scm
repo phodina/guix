@@ -4,6 +4,7 @@
 ;;; Copyright © 2016 Nikita <nikita@n0.is>
 ;;; Copyright © 2017 rsiddharth <s@ricketyspace.net>
 ;;; Copyright © 2017, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -150,6 +151,7 @@ algorithm (ex: padding) is within scope of this package.")
         (base32
          "0w3j43jdrlj28jryp18hc6q84nkl2yf4vs1hhgrsk7gb9kfyqjpl"))))
     (build-system haskell-build-system)
+    (outputs '("out" "static" "doc"))
     (inputs `(("ghc-test-framework-quickcheck2" ,ghc-test-framework-quickcheck2)
               ("ghc-crypto-api" ,ghc-crypto-api)
               ("ghc-cereal" ,ghc-cereal)
@@ -310,6 +312,7 @@ the C implementation.")
     ;; FIXME: tests are broken.
     ;; See https://github.com/haskell-crypto/cryptonite/issues/260
     (arguments '(#:tests? #f))
+    (outputs '("out" "static" "doc"))
     (inputs
      `(("ghc-basement" ,ghc-basement)
        ("ghc-memory" ,ghc-memory)
@@ -343,6 +346,8 @@ generators, and more.")
         (base32
          "04gy2zp8yzvv7j9bdfvmfzcz3sqyqa6rwslqcn4vyair2vmif5v4"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories ("zlib")))
     (inputs
      `(("zlib" ,zlib)))
     (home-page
@@ -790,6 +795,8 @@ extensions.")
         (base32
          "0qivl9clmybfglwxqp2sq308rv4ia4rhwshcsc8b029bvpp0mpsi"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:extra-directories ("openssl")))
     (inputs
      `(("ghc-network" ,ghc-network)
        ("openssl" ,openssl)))
@@ -831,4 +838,39 @@ implementation of SSL.")
     (synopsis "OpenSSL network support for io-streams")
     (description "This library contains io-streams routines for secure
 networking using OpenSSL (by way of HsOpenSSL).")
+    (license license:bsd-3)))
+
+(define-public ghc-cryptonite-conduit
+  (package
+    (name "ghc-cryptonite-conduit")
+    (version "0.2.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://hackage.haskell.org/package/"
+                           "cryptonite-conduit/cryptonite-conduit-"
+                           version ".tar.gz"))
+       (sha256
+        (base32
+         "1bldcmda4xh52mw1wfrjljv8crhw3al7v7kv1j0vidvr7ymnjpbh"))))
+    (build-system haskell-build-system)
+    (inputs
+     `(("ghc-conduit" ,ghc-conduit)
+       ("ghc-conduit-extra" ,ghc-conduit-extra)
+       ("ghc-cryptonite" ,ghc-cryptonite)
+       ("ghc-exceptions" ,ghc-exceptions)
+       ("ghc-memory" ,ghc-memory)
+       ("ghc-resourcet" ,ghc-resourcet)))
+    (native-inputs
+     `(("ghc-conduit-combinators" ,ghc-conduit-combinators)
+       ("ghc-tasty" ,ghc-tasty)
+       ("ghc-tasty-hunit" ,ghc-tasty-hunit)
+       ("ghc-tasty-quickcheck" ,ghc-tasty-quickcheck)))
+    (arguments
+     `(#:cabal-revision
+       ("1" "1hh2nzfz4qpxgivfilgk4ll416lph8b2fdkzpzrmqfjglivydfmz")))
+    (home-page "https://github.com/haskell-crypto/cryptonite-conduit")
+    (synopsis "Cryptonite bridge for conduit")
+    (description "This package provides conduit interfaces for some of
+cryptonite's implementations of cryptographic primitives.")
     (license license:bsd-3)))

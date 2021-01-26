@@ -126,22 +126,25 @@ return the <live-service> objects that are currently running on MACHINE."
   (define exp
     (with-imported-modules '((gnu services herd))
       #~(begin
-          (use-modules (gnu services herd))
+          (use-modules (gnu services herd)
+                       (ice-9 match))
+
           (let ((services (current-services)))
             (and services
-                 ;; 'live-service-running' is ignored, as we can't necessarily
-                 ;; serialize arbitrary objects. This should be fine for now,
-                 ;; since 'machine-current-services' is not exposed publicly,
-                 ;; and the resultant <live-service> objects are only used for
-                 ;; resolving service dependencies.
                  (map (lambda (service)
                         (list (live-service-provision service)
-                              (live-service-requirement service)))
+                              (live-service-requirement service)
+                              (match (live-service-running service)
+                                (#f #f)
+                                (#t #t)
+                                ((? number? pid) pid)
+                                (_ #t))))         ;not serializable
                       services))))))
+
   (mlet %store-monad ((services (eval exp)))
     (return (map (match-lambda
-                   ((provision requirement)
-                    (live-service provision requirement #f)))
+                   ((provision requirement running)
+                    (live-service provision requirement running)))
                  services))))
 
 ;; XXX: Currently, this does NOT attempt to restart running services. See
@@ -181,13 +184,14 @@ services as defined by OS."
   (mlet* %store-monad ((live-services (running-services eval)))
     (let*-values (((to-unload to-restart)
                    (shepherd-service-upgrade live-services target-services)))
-      (let* ((to-unload (map live-service-canonical-name to-unload))
+      (let* ((to-unload  (map live-service-canonical-name to-unload))
              (to-restart (map shepherd-service-canonical-name to-restart))
-             (to-start (lset-difference eqv?
-                                        (map shepherd-service-canonical-name
-                                             target-services)
-                                        (map live-service-canonical-name
-                                             live-services)))
+             (running    (map live-service-canonical-name
+                              (filter live-service-running live-services)))
+             (to-start   (lset-difference eqv?
+                                          (map shepherd-service-canonical-name
+                                               target-services)
+                                          running))
              (service-files (map shepherd-service-file target-services)))
         (eval #~(parameterize ((current-warning-port (%make-void-port "w")))
                   (primitive-load #$(upgrade-services-program service-files
@@ -200,7 +204,8 @@ services as defined by OS."
 ;;; Bootloader configuration.
 ;;;
 
-(define (install-bootloader-program installer bootloader-package bootcfg
+(define (install-bootloader-program installer disk-installer
+                                    bootloader-package bootcfg
                                     bootcfg-file device target)
   "Return an executable store item that, upon being evaluated, will install
 BOOTCFG to BOOTCFG-FILE, a target file name, on DEVICE, a file system device,
@@ -242,10 +247,17 @@ BOOTLOADER-PACKAGE."
              ;; a broken installation.
              (switch-symlinks new-gc-root #$bootcfg)
              (install-boot-config #$bootcfg #$bootcfg-file #$target)
-             (when #$installer
+             (when (or #$installer #$disk-installer)
                (catch #t
                  (lambda ()
-                   (#$installer #$bootloader-package #$device #$target))
+                   ;; The bootloader might not support installation on a
+                   ;; mounted directory using the BOOTLOADER-INSTALLER
+                   ;; procedure. In that case, fallback to installing the
+                   ;; bootloader directly on DEVICE using the
+                   ;; BOOTLOADER-DISK-IMAGE-INSTALLER procedure.
+                   (if #$installer
+                       (#$installer #$bootloader-package #$device #$target)
+                       (#$disk-installer #$bootloader-package 0 #$device)))
                  (lambda args
                    (delete-file new-gc-root)
                    (match args
@@ -268,11 +280,14 @@ additional configurations specified by MENU-ENTRIES can be selected."
   (let* ((bootloader (bootloader-configuration-bootloader configuration))
          (installer (and run-installer?
                          (bootloader-installer bootloader)))
+         (disk-installer (and run-installer?
+                              (bootloader-disk-image-installer bootloader)))
          (package (bootloader-package bootloader))
          (device (bootloader-configuration-target configuration))
          (bootcfg-file (bootloader-configuration-file bootloader)))
     (eval #~(parameterize ((current-warning-port (%make-void-port "w")))
               (primitive-load #$(install-bootloader-program installer
+                                                            disk-installer
                                                             package
                                                             bootcfg
                                                             bootcfg-file

@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2018 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2019, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Florian Pelz <pelzflorian@pelzflorian.de>
@@ -113,6 +113,8 @@
             build
             query-failed-paths
             clear-failed-paths
+            ensure-path
+            find-roots
             add-temp-root
             add-indirect-root
             add-permanent-root
@@ -339,7 +341,8 @@
      (write-string (bytevector->base16-string arg) p))))
 
 (define-syntax read-arg
-  (syntax-rules (integer boolean string store-path store-path-list string-list
+  (syntax-rules (integer boolean string store-path
+                 store-path-list string-list string-pairs
                  substitutable-path-list path-info base16)
     ((_ integer p)
      (read-int p))
@@ -353,6 +356,8 @@
      (read-store-path-list p))
     ((_ string-list p)
      (read-string-list p))
+    ((_ string-pairs p)
+     (read-string-pairs p))
     ((_ substitutable-path-list p)
      (read-substitutable-path-list p))
     ((_ path-info p)
@@ -628,9 +633,10 @@ connection.  Use with care."
     (define (thunk)
       (parameterize ((current-store-protocol-version
                       (store-connection-version store)))
-        (let ((result (proc store)))
-          (close-connection store)
-          result)))
+        (call-with-values (lambda () (proc store))
+          (lambda results
+            (close-connection store)
+            (apply values results)))))
 
     (cond-expand
       (guile-3
@@ -819,7 +825,7 @@ encoding conversion errors."
                             (terminal-columns (terminal-columns))
 
                             ;; Locale of the client.
-                            (locale (false-if-exception (setlocale LC_ALL))))
+                            (locale (false-if-exception (setlocale LC_MESSAGES))))
   ;; Must be called after `open-connection'.
 
   (define buffered
@@ -1396,6 +1402,21 @@ When a handler is installed with 'with-build-handler', it is called any time
                                          (message "unsupported build mode")
                                          (status  1))))))))))))
 
+(define-operation (ensure-path (store-path path))
+  "Ensure that a path is valid.  If it is not valid, it may be made valid by
+running a substitute.  As a GC root is not created by the daemon, you may want
+to call ADD-TEMP-ROOT on that store path."
+  boolean)
+
+(define-operation (find-roots)
+  "Return a list of root/target pairs: for each pair, the first element is the
+GC root file name and the second element is its target in the store.
+
+When talking to a local daemon, this operation is equivalent to the 'gc-roots'
+procedure in (guix store roots), except that the 'find-roots' excludes
+potential roots that do not point to store items."
+  string-pairs)
+
 (define-operation (add-temp-root (store-path path))
   "Make PATH a temporary root for the duration of the current session.
 Return #t."
@@ -1727,10 +1748,20 @@ is raised if the set of paths read from PORT is not signed (as per
       (or done? (loop (process-stderr server port))))
     (= 1 (read-int s))))
 
-(define* (export-paths server paths port #:key (sign? #t) recursive?)
+(define* (export-paths server paths port #:key (sign? #t) recursive?
+                       (start (const #f))
+                       (progress (const #f))
+                       (finish (const #f)))
   "Export the store paths listed in PATHS to PORT, in topological order,
 signing them if SIGN? is true.  When RECURSIVE? is true, export the closure of
-PATHS---i.e., PATHS and all their dependencies."
+PATHS---i.e., PATHS and all their dependencies.
+
+START, PROGRESS, and FINISH are used to track progress of the data transfer.
+START is a one-argument that is passed the list of store items that will be
+transferred; it returns values that are then used as the initial state
+threaded through PROGRESS calls.  PROGRESS is passed the store item about to
+be sent, along with the values previously return by START or by PROGRESS
+itself.  FINISH is called when the last store item has been called."
   (define ordered
     (let ((sorted (topologically-sorted server paths)))
       ;; When RECURSIVE? is #f, filter out the references of PATHS.
@@ -1738,14 +1769,20 @@ PATHS---i.e., PATHS and all their dependencies."
           sorted
           (filter (cut member <> paths) sorted))))
 
-  (let loop ((paths ordered))
+  (let loop ((paths ordered)
+             (state (call-with-values (lambda () (start ordered))
+                      list)))
     (match paths
       (()
+       (apply finish state)
        (write-int 0 port))
       ((head tail ...)
        (write-int 1 port)
        (and (export-path server head port #:sign? sign?)
-            (loop tail))))))
+            (loop tail
+                  (call-with-values
+                      (lambda () (apply progress head state))
+                    list)))))))
 
 (define-operation (query-failed-paths)
   "Return the list of store items for which a build failure is cached.

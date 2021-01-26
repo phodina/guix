@@ -7,6 +7,7 @@
 ;;; Copyright © 2017 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018, 2019 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2020 Timothy Sample <samplet@ngyro.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -36,6 +37,10 @@
   #:use-module (guix lint)
   #:use-module (guix ui)
   #:use-module (guix swh)
+  #:use-module ((guix gexp) #:select (local-file))
+  #:use-module ((guix utils) #:select (call-with-temporary-directory))
+  #:use-module ((guix import hackage) #:select (%hackage-url))
+  #:use-module ((guix import stackage) #:select (%stackage-url))
   #:use-module (gnu packages)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages pkg-config)
@@ -310,7 +315,7 @@
                               `(("python-setuptools" ,python-setuptools))))))
      (check-inputs-should-not-be-an-input-at-all pkg))))
 
-(test-equal "patches: file names"
+(test-equal "file patches: different file name -> warning"
   "file names of patches should start with the package name"
   (single-lint-warning-message
    (let ((pkg (dummy-package "x"
@@ -318,6 +323,37 @@
                               (dummy-origin
                                (patches (list "/path/to/y.patch")))))))
      (check-patch-file-names pkg))))
+
+(test-equal "file patches: same file name -> no warnings"
+  '()
+  (let ((pkg (dummy-package "x"
+                            (source
+                             (dummy-origin
+                              (patches (list "/path/to/x.patch")))))))
+    (check-patch-file-names pkg)))
+
+(test-equal "<origin> patches: different file name -> warning"
+  "file names of patches should start with the package name"
+  (single-lint-warning-message
+   (let ((pkg (dummy-package "x"
+                             (source
+                              (dummy-origin
+                               (patches
+                                (list
+                                 (dummy-origin
+                                  (file-name "y.patch")))))))))
+     (check-patch-file-names pkg))))
+
+(test-equal "<origin> patches: same file name -> no warnings"
+  '()
+  (let ((pkg (dummy-package "x"
+                            (source
+                             (dummy-origin
+                              (patches
+                               (list
+                                (dummy-origin
+                                 (file-name "x.patch")))))))))
+    (check-patch-file-names pkg)))
 
 (test-equal "patches: file name too long"
   (string-append "x-"
@@ -343,6 +379,60 @@
                  (patches
                   (list (search-patch "this-patch-does-not-exist!"))))))))
      (check-patch-file-names pkg))))
+
+(test-assert "patch headers: no warnings"
+  (call-with-temporary-directory
+   (lambda (directory)
+     (call-with-output-file (string-append directory "/t.patch")
+       (lambda (port)
+         (display "This is a patch.\n\n--- a\n+++ b\n"
+                  port)))
+
+     (parameterize ((%patch-path (list directory)))
+       (let ((pkg (dummy-package "x"
+                    (source (dummy-origin
+                             (patches (search-patches "t.patch")))))))
+         (null? (check-patch-headers pkg)))))))
+
+(test-equal "patch headers: missing comment"
+  "t.patch: patch lacks comment and upstream status"
+  (call-with-temporary-directory
+   (lambda (directory)
+     (call-with-output-file (string-append directory "/t.patch")
+       (lambda (port)
+         (display "\n--- a\n+++ b\n"
+                  port)))
+
+     (parameterize ((%patch-path (list directory)))
+       (let ((pkg (dummy-package "x"
+                    (source (dummy-origin
+                             (patches (search-patches "t.patch")))))))
+         (single-lint-warning-message (check-patch-headers pkg)))))))
+
+(test-equal "patch headers: empty"
+  "t.patch: empty patch"
+  (call-with-temporary-directory
+   (lambda (directory)
+     (call-with-output-file (string-append directory "/t.patch")
+       (const #t))
+
+     (parameterize ((%patch-path '()))
+       (let ((pkg (dummy-package "x"
+                    (source (dummy-origin
+                             (patches
+                              (list (local-file
+                                     (string-append directory
+                                                    "/t.patch")))))))))
+         (single-lint-warning-message (check-patch-headers pkg)))))))
+
+(test-equal "patch headers: patch not found"
+  "does-not-exist.patch: patch not found\n"
+  (parameterize ((%patch-path '()))
+    (let ((pkg (dummy-package "x"
+                 (source (dummy-origin
+                          (patches
+                           (search-patches "does-not-exist.patch")))))))
+      (single-lint-warning-message (check-patch-headers pkg)))))
 
 (test-equal "derivation: invalid arguments"
   "failed to create x86_64-linux derivation: (wrong-type-arg \"map\" \"Wrong type argument: ~S\" (invalid-module) ())"
@@ -1000,6 +1090,35 @@
                                    '("x" "y" "z"))))))
     (string-contains (single-lint-warning-message warnings)
                      "rate limit reached")))
+
+(test-skip (if (http-server-can-listen?) 0 1))
+(test-assert "haskell-stackage"
+  (let* ((stackage (string-append "{ \"packages\": [{"
+                                  "    \"name\":\"x\","
+                                  "    \"version\":\"1.0\" }]}"))
+         (packages (map (lambda (version)
+                          (dummy-package
+                           (string-append "ghc-x")
+                           (version version)
+                           (source
+                            (dummy-origin
+                             (method url-fetch)
+                             (uri (string-append
+                                   "https://hackage.haskell.org/package/"
+                                   "x-" version "/x-" version ".tar.gz"))))))
+                        '("0.9" "1.0" "2.0")))
+         (warnings (pk (with-http-server `((200 ,stackage) ; memoized
+                                           (200 "name: x\nversion: 1.0\n")
+                                           (200 "name: x\nversion: 1.0\n")
+                                           (200 "name: x\nversion: 1.0\n"))
+                         (parameterize ((%hackage-url (%local-url))
+                                        (%stackage-url (%local-url)))
+                           (append-map check-haskell-stackage packages))))))
+    (match warnings
+      (((? lint-warning? warning))
+       (and (string=? (package-version (lint-warning-package warning)) "2.0")
+            (string-contains (lint-warning-message warning)
+                             "ahead of Stackage LTS version"))))))
 
 (test-end "lint")
 

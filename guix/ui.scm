@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2013 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2014 Cyril Roelandt <tipecaml@gmail.com>
@@ -12,9 +12,10 @@
 ;;; Copyright © 2018 Kyle Meyer <kyle@kyleam.com>
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Chris Marusich <cmmarusich@gmail.com>
-;;; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2019 Simon Tournier <zimon.toutoune@gmail.com>
+;;; Copyright © 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2019, 2021 Simon Tournier <zimon.toutoune@gmail.com>
 ;;; Copyright © 2020 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -60,6 +61,7 @@
                         ;; Avoid "overrides core binding" warning.
                         delete))
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-9 gnu)
   #:use-module (srfi srfi-11)
   #:use-module (srfi srfi-19)
   #:use-module (srfi srfi-26)
@@ -99,6 +101,7 @@
             show-what-to-build
             show-what-to-build*
             show-manifest-transaction
+            guard*
             call-with-error-handling
             with-error-handling
             with-unbound-variable-handling
@@ -295,7 +298,8 @@ VARIABLE and return it, or #f if none was found."
                                   (hash-map->list (lambda (name module)
                                                     module)
                                                   (module-submodules head)))))
-             (match (module-local-variable head variable)
+             (match (and=> (module-public-interface head)
+                           (cut module-local-variable <> variable))
                (#f (loop next suggestions visited))
                (_
                 (match (module-name head)
@@ -432,6 +436,7 @@ exiting.  ARGS is the list of arguments received by the 'throw' handler."
                      (gettext (condition-message obj) %gettext-domain)))
            ((formatted-message? obj)
             (warning (G_ "failed to load '~a': ~a~%")
+                     file
                      (apply format #f
                             (gettext (formatted-message-string obj)
                                      %gettext-domain)
@@ -490,11 +495,15 @@ part."
 lines:
 
 @example
-guix package -i glibc-utf8-locales
+guix install glibc-utf8-locales
 export GUIX_LOCPATH=\"$HOME/.guix-profile/lib/locale\"
 @end example
 
-See the \"Application Setup\" section in the manual, for more info.\n")))))
+See the \"Application Setup\" section in the manual, for more info.\n"))
+      ;; We're now running in the "C" locale.  Try to install a UTF-8 locale
+      ;; instead.  This one is guaranteed to be available in 'guix' from 'guix
+      ;; pull'.
+      (false-if-exception (setlocale LC_ALL "en_US.utf8")))))
 
 (define (initialize-guix)
   "Perform the usual initialization for stand-alone Guix commands."
@@ -519,7 +528,7 @@ See the \"Application Setup\" section in the manual, for more info.\n")))))
   "Display version information for COMMAND and `(exit 0)'."
   (simple-format #t "~a (~a) ~a~%"
                  command %guix-package-name %guix-version)
-  (format #t "Copyright ~a 2020 ~a"
+  (format #t "Copyright ~a 2021 ~a"
           ;; TRANSLATORS: Translate "(C)" to the copyright symbol
           ;; (C-in-a-circle), if this symbol is available in the user's
           ;; locale.  Otherwise, do not translate "(C)"; leave it as-is.  */
@@ -541,8 +550,9 @@ There is NO WARRANTY, to the extent permitted by law.
 Report bugs to: ~a.") %guix-bug-report-address)
   (format #t (G_ "
 ~a home page: <~a>") %guix-package-name %guix-home-page-url)
-  (display (G_ "
-General help using GNU software: <http://www.gnu.org/gethelp/>"))
+  (format #t (G_ "
+General help using Guix and GNU software: <~a>")
+           "https://guix.gnu.org/help/")
   (newline))
 
 (define (augmented-system-error-handler file)
@@ -709,7 +719,7 @@ evaluating the tests and bodies of CLAUSES."
                        (package-full-name package)
                        (build-system-name system))))
              ((gexp-input-error? c)
-              (let ((input (package-error-invalid-input c)))
+              (let ((input (gexp-error-invalid-input c)))
                 (leave (G_ "~s: invalid G-expression input~%")
                        (gexp-error-invalid-input c))))
              ((profile-not-found-error? c)
@@ -1068,16 +1078,19 @@ summary, and level 0 shows nothing."
                          (null? hook) (map colorized-store-item hook)))
                 ((= verbosity 1)
                  ;; Display the bare minimum; don't mention grafts and hooks.
+                 (unless (null? build)
+                   (newline (current-error-port)))
                  (if display-download-size?
                      (format (current-error-port)
                              ;; TRANSLATORS: "MB" is for "megabyte"; it should be
                              ;; translated to the corresponding abbreviation.
-                             (G_ "~:[~,1h MB would be downloaded~%~;~]")
+                             (highlight (G_ "~:[~,1h MB would be downloaded~%~;~]"))
                              (null? download) download-size)
                      (format (current-error-port)
-                             (N_ "~:[~h item would be downloaded~%~;~]"
-                                 "~:[~h items would be downloaded~%~;~]"
-                                 (length download))
+                             (highlight
+                              (N_ "~:[~h item would be downloaded~%~;~]"
+                                  "~:[~h items would be downloaded~%~;~]"
+                                  (length download)))
                              (null? download) (length download))))))
 
         (begin
@@ -1116,16 +1129,19 @@ summary, and level 0 shows nothing."
                          (null? hook) (map colorized-store-item hook)))
                 ((= verbosity 1)
                  ;; Display the bare minimum; don't mention grafts and hooks.
+                 (unless (null? build)
+                   (newline (current-error-port)))
                  (if display-download-size?
                      (format (current-error-port)
                              ;; TRANSLATORS: "MB" is for "megabyte"; it should be
                              ;; translated to the corresponding abbreviation.
-                             (G_ "~:[~,1h MB will be downloaded~%~;~]")
+                             (highlight (G_ "~:[~,1h MB will be downloaded~%~;~]"))
                              (null? download) download-size)
                      (format (current-error-port)
-                             (N_ "~:[~h item will be downloaded~%~;~]"
-                                 "~:[~h items will be downloaded~%~;~]"
-                                 (length download))
+                             (highlight
+                              (N_ "~:[~h item will be downloaded~%~;~]"
+                                  "~:[~h items will be downloaded~%~;~]"
+                                  (length download)))
                              (null? download) (length download)))))))
 
     (check-available-space installed-size)
@@ -1232,30 +1248,26 @@ separator between subsequent columns."
 (define* (show-manifest-transaction store manifest transaction
                                     #:key dry-run?)
   "Display what will/would be installed/removed from MANIFEST by TRANSACTION."
-  (define (package-strings names versions outputs)
-    (tabulate (zip (map (lambda (name output)
-                          (if (string=? output "out")
-                              name
-                              (string-append name ":" output)))
-                        names outputs)
-                   versions)
+  (define* (package-strings names versions outputs #:key old-versions)
+    (tabulate (stable-sort
+               (zip (map (lambda (name output)
+                           (if (string=? output "out")
+                               name
+                               (string-append name ":" output)))
+                         names outputs)
+                    (if old-versions
+                        (map (lambda (old new)
+                               (if (string=? old new)
+                                   (G_ "(dependencies or package changed)")
+                                   (string-append old " " → " " new)))
+                             old-versions versions)
+                        versions))
+               (lambda (x y)
+                 (string<? (first x) (first y))))
               #:initial-indent 3))
 
   (define →                        ;an arrow that can be represented on stderr
     (right-arrow (current-error-port)))
-
-  (define (upgrade-string names old-version new-version outputs)
-    (tabulate (zip (map (lambda (name output)
-                          (if (string=? output "out")
-                              name
-                              (string-append name ":" output)))
-                        names outputs)
-                   (map (lambda (old new)
-                          (if (string=? old new)
-                              (G_ "(dependencies or package changed)")
-                              (string-append old " " → " " new)))
-                        old-version new-version))
-              #:initial-indent 3))
 
   (let-values (((remove install upgrade downgrade)
                 (manifest-transaction-effects manifest transaction)))
@@ -1279,8 +1291,8 @@ separator between subsequent columns."
       (((($ <manifest-entry> name old-version)
          . ($ <manifest-entry> _ new-version output item)) ..1)
        (let ((len       (length name))
-             (downgrade (upgrade-string name old-version new-version
-                                        output)))
+             (downgrade (package-strings name new-version output
+                                         #:old-versions old-version)))
          (if dry-run?
              (format (current-error-port)
                      (N_ "The following package would be downgraded:~%~{~a~%~}~%"
@@ -1297,9 +1309,8 @@ separator between subsequent columns."
       (((($ <manifest-entry> name old-version)
          . ($ <manifest-entry> _ new-version output item)) ..1)
        (let ((len     (length name))
-             (upgrade (upgrade-string name
-                                      old-version new-version
-                                      output)))
+             (upgrade (package-strings name new-version output
+                                       #:old-versions old-version)))
          (if dry-run?
              (format (current-error-port)
                      (N_ "The following package would be upgraded:~%~{~a~%~}~%"
@@ -1653,24 +1664,33 @@ zero means that PACKAGE does not match any of REGEXPS."
 
 (define* (call-with-paginated-output-port proc
                                           #:key (less-options "FrX"))
-  (if (isatty?* (current-output-port))
-      ;; Set 'LESS' so that 'less' exits if everything fits on the screen (F),
-      ;; lets ANSI escapes through (r), does not send the termcap
-      ;; initialization string (X).  Set it unconditionally because some
-      ;; distros set it to something that doesn't work here.
-      ;;
-      ;; For things that produce long lines, such as 'guix processes', use 'R'
-      ;; instead of 'r': this strips hyperlinks but allows 'less' to make a
-      ;; good estimate of the line length.
-      (let ((pager (with-environment-variables `(("LESS" ,less-options))
-                     (open-pipe* OPEN_WRITE
-                                 (or (getenv "GUIX_PAGER") (getenv "PAGER")
-                                     "less")))))
-        (dynamic-wind
-          (const #t)
-          (lambda () (proc pager))
-          (lambda () (close-pipe pager))))
-      (proc (current-output-port))))
+  (let ((pager-command-line (or (getenv "GUIX_PAGER")
+                                (getenv "PAGER")
+                                "less")))
+    ;; Setting PAGER to the empty string conventionally disables paging.
+    (if (and (not (string-null? pager-command-line))
+             (isatty?* (current-output-port)))
+        ;; Set 'LESS' so that 'less' exits if everything fits on the screen
+        ;; (F), lets ANSI escapes through (r), does not send the termcap
+        ;; initialization string (X).  Set it unconditionally because some
+        ;; distros set it to something that doesn't work here.
+        ;;
+        ;; For things that produce long lines, such as 'guix processes', use
+        ;; 'R' instead of 'r': this strips hyperlinks but allows 'less' to
+        ;; make a good estimate of the line length.
+        (let* ((pager (with-environment-variables `(("LESS" ,less-options))
+                        (apply open-pipe* OPEN_WRITE
+                               ;; Split into arguments.  Treat runs of multiple
+                               ;; whitespace characters as one.  libpipeline-
+                               ;; style "cmd one\ arg" escaping is unsupported.
+                               (remove (lambda (s) (string-null? s))
+                                       (string-split pager-command-line
+                                                     char-set:whitespace))))))
+          (dynamic-wind
+            (const #t)
+            (lambda () (proc pager))
+            (lambda () (close-pipe pager))))
+        (proc (current-output-port)))))
 
 (define-syntax with-paginated-output-port
   (syntax-rules ()
@@ -1988,39 +2008,116 @@ optionally contain a version number and an output name, as in these examples:
           (G_ "Try `guix --help' for more information.~%"))
   (exit 1))
 
-(define (command-files)
+;; Representation of a 'guix' command.
+(define-immutable-record-type <command>
+  (command name synopsis category)
+  command?
+  (name     command-name)
+  (synopsis command-synopsis)
+  (category command-category))
+
+(define (source-file-command file)
+  "Read FILE, a Scheme source file, and return either a <command> object based
+on the 'define-command' top-level form found therein, or #f if FILE does not
+contain a 'define-command' form."
+  (define command-name
+    (match (filter (negate string-null?)
+                   (string-split file #\/))
+      ((_ ... "guix" (or "scripts" "extensions") name)
+       (list (file-sans-extension name)))
+      ((_ ... "guix" (or "scripts" "extensions") first second)
+       (list first (file-sans-extension second)))))
+
+  ;; The strategy here is to parse FILE.  This is much cheaper than a
+  ;; technique based on run-time introspection where we'd load FILE and all
+  ;; the modules it depends on.
+  (call-with-input-file file
+    (lambda (port)
+      (let loop ()
+        (match (read port)
+          (('define-command _ ('synopsis synopsis)
+             _ ...)
+           (command command-name synopsis 'main))
+          (('define-command _
+             ('category category) ('synopsis synopsis)
+             _ ...)
+           (command command-name synopsis category))
+          ((? eof-object?)
+           #f)
+          (_
+           (loop)))))))
+
+(define* (command-files #:optional directory)
   "Return the list of source files that define Guix sub-commands."
-  (define directory
-    (and=> (search-path %load-path "guix.scm")
-           (compose (cut string-append <> "/guix/scripts")
-                    dirname)))
+  (define directory*
+    (or directory
+        (and=> (search-path %load-path "guix.scm")
+               (compose (cut string-append <> "/guix/scripts")
+                        dirname))))
 
   (define dot-scm?
     (cut string-suffix? ".scm" <>))
 
-  (if directory
-      (scandir directory dot-scm?)
+  (if directory*
+      (map (cut string-append directory* "/" <>)
+           (scandir directory* dot-scm?))
       '()))
 
+(define (extension-directories)
+  "Return the list of directories containing Guix extensions."
+  (filter file-exists?
+          (parse-path
+           (getenv "GUIX_EXTENSIONS_PATH"))))
+
 (define (commands)
-  "Return the list of Guix command names."
-  (map (compose (cut string-drop-right <> 4)
-                basename)
-       (command-files)))
+  "Return the list of commands, alphabetically sorted."
+  (filter-map source-file-command
+              (append (command-files)
+                      (append-map command-files
+                                  (extension-directories)))))
 
 (define (show-guix-help)
   (define (internal? command)
     (member command '("substitute" "authenticate" "offload"
                       "perform-download")))
 
+  (define (display-commands commands)
+    (let* ((names     (map (lambda (command)
+                             (string-join (command-name command)))
+                           commands))
+           (max-width (reduce max 0 (map string-length names))))
+      (for-each (lambda (name command)
+                  (format #t "    ~a  ~a~%"
+                          (string-pad-right name max-width)
+                          (G_ (command-synopsis command))))
+                names
+                commands)))
+
+  (define (category-predicate category)
+    (lambda (command)
+      (eq? category (command-category command))))
+
   (format #t (G_ "Usage: guix COMMAND ARGS...
 Run COMMAND with ARGS.\n"))
   (newline)
   (format #t (G_ "COMMAND must be one of the sub-commands listed below:\n"))
-  (newline)
-  ;; TODO: Display a synopsis of each command.
-  (format #t "~{   ~a~%~}" (sort (remove internal? (commands))
-                                 string<?))
+
+  (let ((commands   (commands))
+        (categories (module-ref (resolve-interface '(guix scripts))
+                                '%command-categories)))
+    (for-each (match-lambda
+                (('internal . _)
+                 #t)                              ;hide internal commands
+                ((category . synopsis)
+                 (let ((relevant-commands (filter (category-predicate category)
+                                                  commands)))
+                   ;; Only print categories that contain commands.
+                   (match relevant-commands
+                     ((one . more)
+                      (format #t "~%  ~a~%" (G_ synopsis))
+                      (display-commands relevant-commands))
+                     (_ #f)))))
+              categories))
   (show-bug-report-information))
 
 (define (run-guix-command command . args)
@@ -2030,10 +2127,21 @@ found."
     (catch 'misc-error
       (lambda ()
         (resolve-interface `(guix scripts ,command)))
-      (lambda -
-        (format (current-error-port)
-                (G_ "guix: ~a: command not found~%") command)
-        (show-guix-usage))))
+      (lambda _
+        ;; Check if there is a matching extension.
+        (catch 'misc-error
+          (lambda ()
+            (match (search-path (extension-directories)
+                                (format #f "~a.scm" command))
+              (#f
+               (throw 'misc-error))
+              (file
+                (load file)
+                (resolve-interface `(guix extensions ,command)))))
+          (lambda _
+            (format (current-error-port)
+                    (G_ "guix: ~a: command not found~%") command)
+            (show-guix-usage))))))
 
   (let ((command-main (module-ref module
                                   (symbol-append 'guix- command))))
@@ -2065,7 +2173,7 @@ and signal handling have already been set up."
              (G_ "guix: missing command name~%"))
      (show-guix-usage))
     ((or ("-h") ("--help"))
-     (show-guix-help))
+     (leave-on-EPIPE (show-guix-help)))
     ((or ("-V") ("--version"))
      (show-version-and-exit "guix"))
     (((? option? o) args ...)
@@ -2076,7 +2184,7 @@ and signal handling have already been set up."
      (apply run-guix-command (string->symbol command)
             '("--help")))
     (("help" args ...)
-     (show-guix-help))
+     (leave-on-EPIPE (show-guix-help)))
     ((command args ...)
      (apply run-guix-command
             (string->symbol command)

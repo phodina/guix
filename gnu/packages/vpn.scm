@@ -4,9 +4,9 @@
 ;;; Copyright © 2014 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015 Jeff Mickey <j@codemac.net>
 ;;; Copyright © 2016, 2017, 2019 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Julien Lepiller <julien@lepiller.eu>
-;;; Copyright © 2018 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2018, 2020 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2018 Meiyo Peng <meiyo.peng@gmail.com>
 ;;; Copyright © 2019, 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2019 Rutger Helling <rhelling@mykolab.com>
@@ -14,6 +14,7 @@
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Ryan Prior <rprior@protonmail.com>
 ;;; Copyright © 2020 Ivan Kozlov <kanichos@yandex.ru>
+;;; Copyright © 2020 David Dashyan <mail@davie.li>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -39,6 +40,7 @@
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system linux-module)
   #:use-module (guix build-system python)
+  #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages base)
@@ -52,6 +54,7 @@
   #:use-module (gnu packages guile)
   #:use-module (gnu packages libevent)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages ncurses)
   #:use-module (gnu packages nss)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
@@ -129,10 +132,10 @@ Only \"Universal TUN/TAP device driver support\" is needed in the kernel.")
    (home-page "https://www.unix-ag.uni-kl.de/~massar/vpnc/")))
 
 (define-public vpnc-scripts
-  (let ((commit "1000e0f6dd7d6bff163169a46359211c1fc3a6d2"))
+  (let ((commit "3885f8bbc4ae03fd6da0ada6de12f7223a59595c"))
     (package
       (name "vpnc-scripts")
-      (version (string-append "20190116." (string-take commit 7)))
+      (version (string-append "20200925." (string-take commit 7)))
       (source (origin
                 (method git-fetch)
                 (uri
@@ -142,7 +145,7 @@ Only \"Universal TUN/TAP device driver support\" is needed in the kernel.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "1g41yarz2bl0f73kbjqnywr485ghanbp7nmspklfb0n07yp0z6ak"))))
+                  "1pmi4n58q81pmn9arvfixhvv6vkkf3rpwac3hwnwyl882q5q0ccx"))))
       (build-system gnu-build-system)
       (inputs `(("guile" ,guile-3.0) ; for the wrapper scripts
                 ("coreutils" ,coreutils)
@@ -263,7 +266,7 @@ the user specifically asks to proxy, so the @dfn{VPN} interface no longer
     `(("libxml2" ,libxml2)
       ;; XXX ‘DTLS is insecure in GnuTLS v3.6.3 through v3.6.12.’
       ;; See <https://gitlab.com/gnutls/gnutls/-/issues/960>.
-      ("gnutls" ,gnutls-3.6.14)
+      ("gnutls" ,gnutls/fixed)
       ("zlib" ,zlib)))
    (inputs
     `(("lz4" ,lz4)
@@ -285,10 +288,38 @@ and probably others.")
    (license license:lgpl2.1)
    (home-page "https://www.infradead.org/openconnect/")))
 
+(define-public openfortivpn
+  (package
+    (name "openfortivpn")
+    (version "1.15.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/adrienverge/openfortivpn")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1qsfgpxg553s8rc9cyrc4k96z0pislxsdxb9wyhp8fdprkak2mw2"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("autotools" ,automake)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("openssl" ,openssl)
+       ("ppp" ,ppp)))
+    (home-page "https://github.com/adrienverge/openfortivpn")
+    (synopsis "Client for PPP+SSL VPN tunnel services")
+    (description "Openfortivpn is a client for PPP+SSL VPN tunnel services.  It
+spawns a pppd process and operates the communication between the gateway and
+this process.  It is compatible with Fortinet VPNs.")
+    (license license:gpl3+)))
+
 (define-public openvpn
   (package
     (name "openvpn")
-    (version "2.4.9")
+    (version "2.4.10")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -296,7 +327,7 @@ and probably others.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "1qpbllwlha7cffsd5dlddb8rl22g9rar5zflkz1wrcllhvfkl7v4"))))
+                "0xx378ja2rdfaayc257z0z5ddsp8h0jcpqnd1a6bdw3rlsam6a6g"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--enable-iproute2=yes")))
@@ -320,7 +351,7 @@ traversing network address translators (@dfn{NAT}s) and firewalls.")
 (define-public protonvpn-cli
   (package
     (name "protonvpn-cli")
-    (version "2.2.2")
+    (version "2.2.6")
     (source
      (origin
        ;; PyPI has a ".whl" file but not a proper source release.
@@ -331,17 +362,44 @@ traversing network address translators (@dfn{NAT}s) and firewalls.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32
-         "0ixjb02kj4z79whm1izd8mrn2h0rp9cmw4im1qvp93rahqxdd4n8"))))
+        (base32 "0y7v9ikrmy5dbjlpbpacp08gy838i8z54m8m4ps7ldk1j6kyia3n"))))
     (build-system python-build-system)
-    (arguments '(#:tests? #f)) ; no tests in repo
+    (arguments
+     '(#:tests? #f ; no tests in repo
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'wrap 'wrap-wrapper
+           ;; Wrap entrypoint with paths to its hard dependencies.
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((entrypoint (string-append (assoc-ref outputs "out")
+                                              "/bin/.protonvpn-real")))
+               (wrap-program entrypoint
+                            `("PATH" ":" prefix
+                              ,(map (lambda (name)
+                                      (let ((input (assoc-ref inputs name)))
+                                        (string-append input "/bin:"
+                                                       input "/sbin")))
+                                    (list "dialog"
+                                          "iproute2"
+                                          "iptables"
+                                          "ncurses"
+                                          "openvpn"
+                                          "procps"
+                                          "which")))))
+             #t)))))
     (native-inputs
-     `(("docopt" ,python-docopt)))
+     `(("python-docopt" ,python-docopt)))
     (inputs
-     `(("pythondialog" ,python-pythondialog)
-       ("requests" ,python-requests)))
-    (propagated-inputs
-     `(("openvpn" ,openvpn)))
+     `(("dialog" ,dialog)
+       ("iproute2" ,iproute)
+       ("iptables" ,iptables)
+       ("ncurses" ,ncurses)
+       ("openvpn" ,openvpn)
+       ("procps" ,procps)
+       ("python-jinja2" ,python-jinja2)
+       ("python-pythondialog" ,python-pythondialog)
+       ("python-requests" ,python-requests)
+       ("which" ,which)))
     (synopsis "Command-line client for ProtonVPN")
     (description
      "This is the official command-line interface for ProtonVPN, a secure
@@ -402,7 +460,7 @@ private network between hosts on the internet.")
     (native-inputs
      `(("python-setuptools-scm" ,python-setuptools-scm)
        ;; For tests only.
-       ("python-flake8", python-flake8)
+       ("python-flake8" ,python-flake8)
        ("python-mock" ,python-mock)
        ("python-pytest-cov" ,python-pytest-cov)
        ("python-pytest-runner" ,python-pytest-runner)))
@@ -501,7 +559,7 @@ The peer-to-peer VPN implements a Layer 2 (Ethernet) network between the peers
 (define-public wireguard-linux-compat
   (package
     (name "wireguard-linux-compat")
-    (version "1.0.20200623")
+    (version "1.0.20201221")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://git.zx2c4.com/wireguard-linux-compat/"
@@ -509,12 +567,13 @@ The peer-to-peer VPN implements a Layer 2 (Ethernet) network between the peers
                                   ".tar.xz"))
               (sha256
                (base32
-                "0iclixsqfckaz6kz6a4lhzdary3xhfy1d0pz0pgrwy8m8mr3f28k"))))
+                "0ci13in0fqq32n5qamch4qhjgbdq86ygrgmfhc9szsh2nsl8jlkf"))))
     (build-system linux-module-build-system)
     (outputs '("out"
                "kernel-patch"))
     (arguments
-     `(#:tests? #f ; No test suite
+     `(#:linux ,linux-libre-5.4         ; mustn't have WG built-in
+       #:tests? #f                      ; no test suite
        #:modules ((guix build linux-module-build-system)
                   (guix build utils)
                   (ice-9 popen)
@@ -534,7 +593,7 @@ The peer-to-peer VPN implements a Layer 2 (Ethernet) network between the peers
                (call-with-output-file "wireguard.patch"
                  (lambda (port)
                    (format port "~a" str))))
-               #t))
+             #t))
          (add-after 'install 'install-patch
            (lambda* (#:key outputs #:allow-other-keys)
              (install-file "wireguard.patch"
@@ -555,7 +614,7 @@ WireGuard was added to Linux 5.6.")
 (define-public wireguard-tools
   (package
     (name "wireguard-tools")
-    (version "1.0.20200513")
+    (version "1.0.20200827")
     (source
      (origin
        (method git-fetch)
@@ -564,11 +623,11 @@ WireGuard was added to Linux 5.6.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1yk8hng0qw2rf76hnawjbdpjssmah88bd5fk20h1c0j1yazlx0a9"))))
+        (base32 "1h351hn531z6z85sx9ya27xjz1jszgn1pkwibacjj49mds15f7gn"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
-       (list "CC=gcc"
+       (list ,(string-append "CC=" (cc-for-target))
              "--directory=src"
              "WITH_BASHCOMPLETION=yes"
              ;; Install the ‘simple and dirty’ helper script wg-quick(8).
@@ -630,7 +689,7 @@ public keys and can roam across IP addresses.")
 (define-public xl2tpd
   (package
     (name "xl2tpd")
-    (version "1.3.15")
+    (version "1.3.16")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -639,7 +698,7 @@ public keys and can roam across IP addresses.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0ppwza8nwm1av1vldw40gin9wrjrs4l9si50jad414js3k8ycaag"))))
+                "0is5ccrvijz0pfm45pfrlbb9y8231yz3c4zqs8mkgakl9rxajy6l"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags (list (string-append "PREFIX=" %output)

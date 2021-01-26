@@ -6,6 +6,9 @@
 ;;; Copyright © 2017 Mike Gerwitz <mtg@gnu.org>
 ;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019, 2020 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2020 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2020 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2021 Simon Tournier <zimon.toutoune@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -24,6 +27,7 @@
 
 (define-module (gnu packages node)
   #:use-module ((guix licenses) #:select (expat))
+  #:use-module ((guix build utils) #:select (alist-replace))
   #:use-module (guix packages)
   #:use-module (guix derivations)
   #:use-module (guix download)
@@ -46,14 +50,14 @@
 (define-public node
   (package
     (name "node")
-    (version "10.19.0")
+    (version "10.20.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://nodejs.org/dist/v" version
                                   "/node-v" version ".tar.xz"))
               (sha256
                (base32
-                "0sginvcsf7lrlzsnpahj4bj1f673wfvby8kaxgvzlrbb7sy229v2"))
+                "0cvjwnl0wkcsyw3kannbdv01s235wrnp11n2s6swzjx95gpichfi"))
               (modules '((guix build utils)))
               (snippet
                `(begin
@@ -168,6 +172,14 @@
                     (target (readlink npm)))
                (with-directory-excursion bindir
                  (patch-shebang target (list bindir))
+                 #t))))
+         (add-after 'install 'patch-node-shebang
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((bindir (string-append (assoc-ref outputs "out")
+                                           "/bin"))
+                    (npx    (readlink (string-append bindir "/npx"))))
+               (with-directory-excursion bindir
+                 (patch-shebang npx (list bindir))
                  #t)))))))
     (native-inputs
      `(("python" ,python-2)
@@ -199,6 +211,24 @@ devices.")
     (properties '((max-silent-time . 7200)     ;2h, needed on ARM
                   (timeout . 21600)))))        ;6h
 
+;; TODO: Make this the default node on core-updates.  This cannot be done on
+;; master since this version of node requires a newer nghttp2 library at link
+;; time.
+(define-public node-10.22
+  (package
+    (inherit node)
+    (version "10.22.1")
+    (source (origin
+              (inherit (package-source node))
+              (uri (string-append "https://nodejs.org/dist/v" version
+                                  "/node-v" version ".tar.xz"))
+              (sha256
+               (base32
+                "0pr569qiabr4m7k38s7rwi3iyzrc5jmx19z2z0k7n4xfvhjlfzzl"))))
+    (inputs
+     (alist-replace "nghttp2" (list nghttp2-1.41 "lib")
+                    (package-inputs node)))))
+
 (define-public libnode
   (package
     (inherit node)
@@ -209,4 +239,5 @@ devices.")
         `(cons* "--shared" "--without-npm" ,flags))
        ((#:phases phases '%standard-phases)
         `(modify-phases ,phases
-           (delete 'patch-npm-shebang)))))))
+           (delete 'patch-npm-shebang)
+           (delete 'patch-node-shebang)))))))

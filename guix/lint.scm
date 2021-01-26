@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014 Cyril Roelandt <tipecaml@gmail.com>
 ;;; Copyright © 2014, 2015 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2016 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym+a@scratchpost.org>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
@@ -10,6 +10,7 @@
 ;;; Copyright © 2017, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018, 2019 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2020 Chris Marusich <cmmarusich@gmail.com>
+;;; Copyright © 2020 Timothy Sample <samplet@ngyro.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -35,6 +36,8 @@
   #:use-module (guix http-client)
   #:use-module (guix packages)
   #:use-module (guix i18n)
+  #:use-module ((guix gexp)
+                #:select (local-file? local-file-absolute-file-name))
   #:use-module (guix licenses)
   #:use-module (guix records)
   #:use-module (guix grafts)
@@ -50,6 +53,7 @@
   #:use-module ((guix swh) #:hide (origin?))
   #:autoload   (guix git-download) (git-reference?
                                     git-reference-url git-reference-commit)
+  #:use-module (guix import stackage)
   #:use-module (ice-9 match)
   #:use-module (ice-9 regex)
   #:use-module (ice-9 format)
@@ -73,6 +77,7 @@
             check-inputs-should-be-native
             check-inputs-should-not-be-an-input-at-all
             check-patch-file-names
+            check-patch-headers
             check-synopsis-style
             check-derivation
             check-home-page
@@ -87,6 +92,7 @@
             check-formatting
             check-archival
             check-profile-collisions
+            check-haskell-stackage
 
             lint-warning
             lint-warning?
@@ -139,7 +145,7 @@
    message-text
    message-data
    (or location
-       (package-field-location package field)
+       (and field (package-field-location package field))
        (package-location package))))
 
 (define-syntax make-warning
@@ -663,17 +669,11 @@ from ~a")
 (define (check-patch-file-names package)
   "Emit a warning if the patches requires by PACKAGE are badly named or if the
 patch could not be found."
-  (guard (c ((message-condition? c)     ;raised by 'search-patch'
-             (list
-              ;; Use %make-warning, as condition-mesasge is already
-              ;; translated.
-              (%make-warning package (condition-message c)
-                             #:field 'patch-file-names)))
-            ((formatted-message? c)
+  (guard (c ((formatted-message? c)               ;raised by 'search-patch'
              (list (%make-warning package
-                                  (apply format #f
-                                         (G_ (formatted-message-string c))
-                                         (formatted-message-arguments c))))))
+                                  (formatted-message-string c)
+                                  (formatted-message-arguments c)
+                                  #:field 'source))))
     (define patches
       (match (package-source package)
         ((? origin? origin) (origin-patches origin))
@@ -717,6 +717,54 @@ patch could not be found."
                           #f))
                      (_ #f))
                    patches)))))
+
+(define (check-patch-headers package)
+  "Check that PACKAGE's patches start with a comment.  Return a list of
+warnings."
+  (define (blank? str)
+    (string-every char-set:blank str))
+
+  (define (patch-header-warnings patch)
+    (call-with-input-file patch
+      (lambda (port)
+        ;; Read from PORT until a non-blank line is found or EOF is reached.
+        (let loop ()
+          (let ((line (read-line port)))
+            (cond ((eof-object? line)
+                   (list (make-warning package
+                                       (G_ "~a: empty patch")
+                                       (list (basename patch))
+                                       #:field 'source)))
+                  ((blank? line)
+                   (loop))
+                  ((or (string-prefix? "--- " line)
+                       (string-prefix? "+++ " line))
+                   (list (make-warning package
+                                       (G_ "~a: patch lacks comment and \
+upstream status")
+                                       (list (basename patch))
+                                       #:field 'source)))
+                  (else
+                   '())))))))
+
+  (guard (c ((formatted-message? c)               ;raised by 'search-patch'
+             (list (%make-warning package
+                                  (formatted-message-string c)
+                                  (formatted-message-arguments c)
+                                  #:field 'source))))
+   (let ((patches (if (origin? (package-source package))
+                      (origin-patches (package-source package))
+                      '())))
+     (append-map (lambda (patch)
+                   ;; Dismiss PATCH if it's an origin or similar.
+                   (cond ((string? patch)
+                          (patch-header-warnings patch))
+                         ((local-file? patch)
+                          (patch-header-warnings
+                           (local-file-absolute-file-name patch)))
+                         (else
+                          '())))
+                 patches))))
 
 (define (escape-quotes str)
   "Replace any quote character in STR by an escaped quote character."
@@ -1084,7 +1132,7 @@ or HTTP errors.  This allows network-less operation and makes problems with
 the NIST server non-fatal."
   (with-networking-fail-safe (G_ "while retrieving CVE vulnerabilities")
                              '()
-                             (current-vulnerabilities)))
+                             (current-vulnerabilities #:timeout 4)))
 
 (define package-vulnerabilities
   (let ((lookup (delay (vulnerabilities->lookup-proc
@@ -1135,7 +1183,7 @@ vulnerability records for PACKAGE by calling PACKAGE-VULNERABILITIES."
           (format #f (G_ "while retrieving upstream info for '~a'")
                   (package-name package))
           #f
-          (package-latest-release* package (force %updaters)))
+          (package-latest-release* package))
     ((? upstream-source? source)
      (if (version>? (upstream-source-version source)
                     (package-version package))
@@ -1239,6 +1287,25 @@ Heritage")
               (G_ "while connecting to Software Heritage")
               '()
               (apply throw key args))))))))
+
+(define (check-haskell-stackage package)
+  "Check whether PACKAGE is a Haskell package ahead of the current
+Stackage LTS version."
+  (match (with-networking-fail-safe
+          (format #f (G_ "while retrieving upstream info for '~a'")
+                  (package-name package))
+          #f
+          (package-latest-release package (list %stackage-updater)))
+    ((? upstream-source? source)
+     (if (version>? (package-version package)
+                    (upstream-source-version source))
+         (list
+          (make-warning package
+                        (G_ "ahead of Stackage LTS version ~a")
+                        (list (upstream-source-version source))
+                        #:field 'version))
+         '()))
+    (#f '())))
 
 
 ;;;
@@ -1355,12 +1422,20 @@ them for PACKAGE."
   "Check the formatting of the source code of PACKAGE."
   (let ((location (package-location package)))
     (if location
-        (and=> (search-path %load-path (location-file location))
-               (lambda (file)
-                 ;; Report issues starting from the line before the 'package'
-                 ;; form, which usually contains the 'define' form.
-                 (report-formatting-issues package file
-                                           (- (location-line location) 1))))
+        ;; Report issues starting from the line before the 'package'
+        ;; form, which usually contains the 'define' form.
+        (let ((line (- (location-line location) 1)))
+          (match (search-path %load-path (location-file location))
+            ((? string? file)
+             (report-formatting-issues package file line))
+            (#f
+             ;; It could be that LOCATION lists a "true" relative file
+             ;; name--i.e., not relative to an element of %LOAD-PATH.
+             (let ((file (location-file location)))
+               (if (file-exists? file)
+                   (report-formatting-issues package file line)
+                   (list (make-warning package
+                                       (G_ "source file not found"))))))))
         '())))
 
 
@@ -1416,6 +1491,10 @@ or a list thereof")
     (description "Validate file names and availability of patches")
     (check       check-patch-file-names))
    (lint-checker
+    (name        'patch-headers)
+    (description "Validate patch headers")
+    (check       check-patch-headers))
+   (lint-checker
      (name        'formatting)
      (description "Look for formatting issues in the source")
      (check       check-formatting))))
@@ -1454,7 +1533,11 @@ or a list thereof")
    (lint-checker
      (name        'archival)
      (description "Ensure source code archival on Software Heritage")
-     (check       check-archival))))
+     (check       check-archival))
+   (lint-checker
+     (name        'haskell-stackage)
+     (description "Ensure Haskell packages use Stackage LTS versions")
+     (check       check-haskell-stackage))))
 
 (define %all-checkers
   (append %local-checkers

@@ -265,6 +265,26 @@ logic, also known as grey logic.")
      "Scikit-image is a collection of algorithms for image processing.")
     (license license:bsd-3)))
 
+(define-public python-sgp4
+  (package
+    (name "python-sgp4")
+    (version "2.12")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "sgp4" version))
+       (sha256
+        (base32 "0dncp9i5b6afkg7f8mj9j0qzsp008b8v73yc0qkmizhpns7mvwvx"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-numpy" ,python-numpy)))
+    (home-page "https://github.com/brandon-rhodes/python-sgp4")
+    (synopsis "Track earth satellite TLE orbits using SGP4")
+    (description
+     "This package provides a Python implementation of the most recent version
+of the SGP4 satellite tracking algorithm.")
+    (license license:expat)))
+
 (define-public python-pandas
   (package
     (name "python-pandas")
@@ -418,6 +438,32 @@ doing practical, real world data analysis in Python.")
      "Bottleneck is a collection of fast, NaN-aware NumPy array functions
 written in C.")
     (license license:bsd-2)))
+
+(define-public python-baycomp
+  (package
+    (name "python-baycomp")
+    (version "1.0.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "baycomp" version))
+       (sha256
+        (base32 "1c1354a7b3g8slychjgyjxqdm8z40z9kviyl9n4g9kfpdg0p4d64"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-matplotlib" ,python-matplotlib)
+       ("python-numpy" ,python-numpy)
+       ("python-scipy" ,python-scipy)))
+    (home-page "https://github.com/janezd/baycomp")
+    (synopsis "Library for comparison of Bayesian classifiers")
+    (description
+     "Baycomp is a library for Bayesian comparison of classifiers.  Functions
+in the library compare two classifiers on one or on multiple data sets.  They
+compute three probabilities: the probability that the first classifier has
+higher scores than the second, the probability that differences are within the
+region of practical equivalence (rope), or that the second classifier has
+higher scores.")
+    (license license:expat)))
 
 (define-public python-xarray
   (package

@@ -5,6 +5,7 @@
 ;;; Copyright © 2017 nee <nee.git@cock.li>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Nikita <nikita@n0.is>
+;;; Copyright © 2021 Oskar Köök <oskar@maatriks.ee>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -27,12 +28,13 @@
   #:use-module (guix git-download)
   #:use-module (guix packages)
   #:use-module (gnu packages)
-  #:use-module (gnu packages erlang))
+  #:use-module (gnu packages erlang)
+  #:use-module (gnu packages version-control))
 
 (define-public elixir
   (package
     (name "elixir")
-    (version "1.10.4")
+    (version "1.11.3")
     (source
      (origin
        (method git-fetch)
@@ -41,7 +43,7 @@
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "16j4rmm3ix088fvxhvyjqf1hnfg7wiwa87gml3b2mrwirdycbinv"))
+        (base32 "0ivah4117z75pinvb3gr22d05ihfwcdgw5zvvpv7kbgiqaj8ma8f"))
        (patches (search-patches "elixir-path-length.patch"))))
     (build-system gnu-build-system)
     (arguments
@@ -99,7 +101,8 @@
              #t))
          (delete 'configure))))
     (inputs
-     `(("erlang" ,erlang)))
+     `(("erlang" ,erlang)
+       ("git" ,git)))
     (home-page "https://elixir-lang.org/")
     (synopsis "Elixir programming language")
     (description "Elixir is a dynamic, functional language used to build

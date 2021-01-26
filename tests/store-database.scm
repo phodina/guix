@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2017, 2018 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2017, 2018, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -20,7 +20,10 @@
   #:use-module (guix tests)
   #:use-module (guix store)
   #:use-module (guix store database)
+  #:use-module (guix build store-copy)
   #:use-module ((guix utils) #:select (call-with-temporary-output-file))
+  #:use-module ((guix build utils)
+                #:select (mkdir-p delete-file-recursively))
   #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-64))
 
@@ -32,8 +35,7 @@
 
 (test-begin "store-database")
 
-(test-equal "register-path"
-  '(1 1)
+(test-assert "register-items"
   (let ((file (string-append (%store-prefix) "/" (make-string 32 #\f)
                              "-fake")))
     (when (valid-path? %store file)
@@ -44,9 +46,9 @@
           (drv (string-append file ".drv")))
       (call-with-output-file file
         (cut display "This is a fake store item.\n" <>))
-      (register-path file
-                     #:references (list ref)
-                     #:deriver drv)
+      (reset-timestamps file)
+      (with-database (store-database-file) db
+        (register-items db (list (store-info file drv (list ref)))))
 
       (and (valid-path? %store file)
            (equal? (references %store file) (list ref))
@@ -54,6 +56,30 @@
            (null? (referrers %store file))
            (list (stat:mtime (lstat file))
                  (stat:mtime (lstat ref)))))))
+
+(test-equal "register-items, directory"
+  '(1 1 1)
+  (let ((file (string-append (%store-prefix) "/" (make-string 32 #\f)
+                             "-fake-directory")))
+    (when (valid-path? %store file)
+      (delete-paths %store (list file)))
+    (false-if-exception (delete-file-recursively file))
+
+    (let ((drv (string-append file ".drv")))
+      (mkdir-p (string-append file "/a"))
+      (call-with-output-file (string-append file "/a/b")
+        (const #t))
+      (reset-timestamps file)
+      (with-database (store-database-file) db
+        (register-items db (list (store-info file drv '()))))
+
+      (and (valid-path? %store file)
+           (null? (references %store file))
+           (null? (valid-derivers %store file))
+           (null? (referrers %store file))
+           (list (stat:mtime (lstat file))
+                 (stat:mtime (lstat (string-append file "/a")))
+                 (stat:mtime (lstat (string-append file "/a/b"))))))))
 
 (test-equal "new database"
   (list 1 2)
@@ -77,7 +103,7 @@
          (list (path-id db "/gnu/foo")
                (path-id db "/gnu/bar")))))))
 
-(test-assert "register-path with unregistered references"
+(test-assert "sqlite-register with unregistered references"
   ;; Make sure we get a "NOT NULL constraint failed: Refs.reference" error
   ;; when we try to add references that are not registered yet.  Better safe
   ;; than sorry.

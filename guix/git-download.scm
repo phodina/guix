@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2017 Christopher Baines <mail@cbaines.net>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
@@ -84,35 +84,26 @@ HASH-ALGO (a symbol).  Use NAME as the file name, or a generic name if #f."
           ("tar" ,(module-ref (resolve-interface '(gnu packages base))
                               'tar)))))
 
-  (define zlib
-    (module-ref (resolve-interface '(gnu packages compression)) 'zlib))
-
   (define guile-json
-    (module-ref (resolve-interface '(gnu packages guile)) 'guile-json-3))
+    (module-ref (resolve-interface '(gnu packages guile)) 'guile-json-4))
+
+  (define guile-zlib
+    (module-ref (resolve-interface '(gnu packages guile)) 'guile-zlib))
 
   (define gnutls
     (module-ref (resolve-interface '(gnu packages tls)) 'gnutls))
 
-  (define config.scm
-    (scheme-file "config.scm"
-                 #~(begin
-                     (define-module (guix config)
-                       #:export (%libz))
-
-                     (define %libz
-                       #+(file-append zlib "/lib/libz")))))
-
   (define modules
-    (cons `((guix config) => ,config.scm)
-          (delete '(guix config)
-                  (source-module-closure '((guix build git)
-                                           (guix build utils)
-                                           (guix build download-nar)
-                                           (guix swh))))))
+    (delete '(guix config)
+            (source-module-closure '((guix build git)
+                                     (guix build utils)
+                                     (guix build download-nar)
+                                     (guix swh)))))
 
   (define build
     (with-imported-modules modules
-      (with-extensions (list guile-json gnutls)   ;for (guix swh)
+      (with-extensions (list guile-json gnutls   ;for (guix swh)
+                             guile-zlib)
         #~(begin
             (use-modules (guix build git)
                          (guix build utils)

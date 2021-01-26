@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013, 2014, 2015, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -385,7 +386,7 @@ previous generation.  Return true if there are news to display."
     (and=> (relative-generation profile -1)
            (cut generation-file-name profile <>)))
 
-  (when previous
+  (and previous
     (let ((old-channels (profile-channels previous))
           (new-channels (profile-channels profile)))
       ;; Find the channels present in both PROFILE and PREVIOUS, and print
@@ -507,6 +508,7 @@ true, display what would be built without actually building it."
   ;; workaround, skip this code when $SUDO_USER is set.  See
   ;; <https://bugs.gnu.org/36785>.
   (unless (or (getenv "SUDO_USER")
+              (not (file-exists? %user-profile-directory))
               (string=? %profile-directory
                         (dirname
                          (canonicalize-profile %user-profile-directory))))
@@ -750,11 +752,17 @@ Use '~/.config/guix/channels.scm' instead."))
         channels)))
 
 
-(define (guix-pull . args)
+(define-command (guix-pull . args)
+  (synopsis "pull the latest revision of Guix")
+
+  (define (no-arguments arg _‌)
+    (leave (G_ "~A: extraneous argument~%") arg))
+
   (with-error-handling
     (with-git-error-handling
      (let* ((opts         (parse-command-line args %options
-                                              (list %default-options)))
+                                              (list %default-options)
+                                              #:argument-handler no-arguments))
             (substitutes? (assoc-ref opts 'substitutes?))
             (dry-run?     (assoc-ref opts 'dry-run?))
             (channels     (channel-list opts))

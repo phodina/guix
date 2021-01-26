@@ -24,6 +24,8 @@
   #:use-module (guix packages)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages gnome)
+  #:use-module (gnu packages imagemagick)
+  #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
   #:use-module (gnu packages kde-plasma)
@@ -147,7 +149,7 @@ artists to web-designers to people with low vision.")
     (inputs
      `(("kauth" ,kauth)
        ("kcoreaddons" ,kcoreaddons)
-       ("kconfigwidgets", kconfigwidgets)
+       ("kconfigwidgets" ,kconfigwidgets)
        ("kdbusaddons" ,kdbusaddons)
        ("ki18n" ,ki18n)
        ("kiconthemes" ,kiconthemes)
@@ -185,8 +187,8 @@ whom pressing buttons hurts.")
        ("kdoctools" ,kdoctools)))
     (inputs
      `(("kcompletion" ,kcompletion)
-       ("kconfig", kconfig)
-       ("kconfigwidgets", kconfigwidgets)
+       ("kconfig" ,kconfig)
+       ("kconfigwidgets" ,kconfigwidgets)
        ("kcoreaddons" ,kcoreaddons)
        ("kcrash" ,kcrash)
        ("ki18n" ,ki18n)
@@ -226,7 +228,7 @@ sentences to be re-spoken.")
     (inputs
      `(("kauth" ,kauth)
        ("kconfig" ,kconfig)
-       ("kconfigwidgets", kconfigwidgets)
+       ("kconfigwidgets" ,kconfigwidgets)
        ("kcoreaddons" ,kcoreaddons)
        ("kcrash" ,kcrash)
        ("ki18n" ,ki18n)
@@ -287,7 +289,7 @@ twin-panel (commander-style) file manager, similar to Midnight Commander or
 Total Commander
 
 It provides all the file management features you could possibly want.  Plus:
-extensive archive handling, mounted filesystem support, FTP, advanced search
+extensive archive handling, mounted file system support, FTP, advanced search
 module, an internal viewer/editor, directory synchronisation, file content
 comparisons, powerful batch renaming and much much more.  It supports a wide
 variety of archive formats and can handle other KIO slaves such as smb or
@@ -295,6 +297,34 @@ fish.
 
 Almost completely customizable, Krusader is very user friendly, fast and looks
 great on your desktop.")
+    (license license:gpl2+)))
+
+(define-public kxstitch
+  (package
+    (name "kxstitch")
+    (version "2.2.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://kde/stable/kxstitch/" version
+                           "/kxstitch-" version ".tar.xz"))
+       (sha256
+        (base32 "1q6blvcqz6hxdfrkdi0fplmz7rmk3im56kpp68r0yrivhx3hn8sc"))))
+    (build-system qt-build-system)
+    (native-inputs
+     `(("extra-cmake-modules" ,extra-cmake-modules)
+       ("kdoctools" ,kdoctools)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("ktexteditor" ,ktexteditor)
+       ("imagemagick" ,imagemagick)
+       ("qtbase" ,qtbase)
+       ("qtx11extras" ,qtx11extras)))
+    (home-page "https://kde.org/applications/en/graphics/org.kde.kxstitch")
+    (synopsis "Create and print cross stitch patterns")
+    (description
+     "KXStitch allows creating and printing cross stitch patterns, which can
+either be created or generated from a image.")
     (license license:gpl2+)))
 
 (define-public okteta
@@ -363,14 +393,14 @@ redone.")
 (define-public rsibreak
   (package
     (name "rsibreak")
-    (version "0.12.11")
+    (version "0.12.13")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://kde//stable/rsibreak/0.12/"
                            "rsibreak-" version ".tar.xz"))
        (sha256
-        (base32 "09axg6gbmpnxsk88mdjbxxvfaj5af7xaf1gmnr17b0506zcfgwhv"))))
+        (base32 "06kzyj5jzmzvhw6jy6p7ldrq719bys0yg0nll9rawziwpxzvwh1p"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)

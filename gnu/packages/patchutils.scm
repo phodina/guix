@@ -321,7 +321,7 @@ you to figure out what is going on in that merge you keep avoiding.")
 (define-public patchwork
   (package
     (name "patchwork")
-    (version "2.1.5")
+    (version "3.0.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -330,7 +330,7 @@ you to figure out what is going on in that merge you keep avoiding.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1n4hfwlgmw6mj5kp261zfx47mgb0l7g2yzl1rf0rnm8x69lr3as6"))))
+                "005irr5xsjpp3wrvvqs2xyr14ig9vp3h4v0qixhj1b8v69cfrgpi"))))
     (build-system python-build-system)
     (arguments
      `(;; TODO: Tests require a running database
@@ -396,22 +396,9 @@ application = get_wsgi_application()\n") port)))))
                            (install-file file (string-append out "/bin")))
                          (list
                           (string-append out-site-packages
-                                         "patchwork/bin/pwclient")
-                          (string-append out-site-packages
                                          "patchwork/bin/parsemail.sh")
                           (string-append out-site-packages
                                          "patchwork/bin/parsemail-batch.sh")))
-
-               ;; Delete the symlink to pwclient, and replace it with the
-               ;; actual file, as this can cause issues when serving the file
-               ;; from a webserver.
-               (let ((template-pwclient (string-append
-                                         out-site-packages
-                                         "patchwork/templates/patchwork/pwclient")))
-                 (delete-file template-pwclient)
-                 (copy-file (string-append out-site-packages
-                                           "patchwork/bin/pwclient")
-                            template-pwclient))
 
                ;; Collect the static assets, this includes JavaScript, CSS and
                ;; fonts. This is a standard Django process when running a
@@ -467,7 +454,7 @@ if __name__ == \"__main__\":
     (inputs
      `(("python-wrapper" ,python-wrapper)))
     (propagated-inputs
-     `(("python-django" ,python-django)
+     `(("python-django" ,python-django-2.2)
        ;; TODO: Make this configurable
        ("python-psycopg2" ,python-psycopg2)
        ("python-mysqlclient" ,python-mysqlclient)
@@ -480,4 +467,58 @@ if __name__ == \"__main__\":
 patches, and displays the patches along with comments and state information.
 Users can login allowing them to change the state of patches.")
     (home-page "http://jk.ozlabs.org/projects/patchwork/")
+    (license gpl2+)))
+
+(define-public pwclient
+  (package
+    (name "pwclient")
+    (version "1.3.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/getpatchwork/pwclient")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1xckwvcqklzpyh3xs4k2zm40ifp0q5fdkj2vmgb8vhfvl1ivs6jv"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-requirements
+           (lambda _
+             (substitute* "test-requirements.txt"
+               ;; The pytest requirement is unnecessarily strict
+               (("pytest>=3.0,<5.0;")
+                "pytest>=3.0,<6.0;"))
+             #t))
+         (add-before 'build 'set-PBR_VERSION
+           (lambda _
+             (setenv "PBR_VERSION"
+                     ,version)
+             #t))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (invoke "pytest"))
+             #t))
+         (add-after 'install 'install-man-page
+           (lambda* (#:key outputs #:allow-other-keys)
+             (install-file "man/pwclient.1"
+                           (string-append
+                            (assoc-ref outputs "out")
+                            "/share/man/man1"))
+             #t)))))
+    (native-inputs
+     `(("python-pbr" ,python-pbr)
+       ("python-pytest" ,python-pytest)
+       ("python-pytest-cov" ,python-pytest-cov)
+       ("python-mock" ,python-mock)))
+    (home-page
+     "https://github.com/getpatchwork/pwclient")
+    (synopsis "Command-line client for the Patchwork patch tracking tool")
+    (description
+     "pwclient is a VCS-agnostic tool for interacting with Patchwork, the
+web-based patch tracking system.")
     (license gpl2+)))

@@ -12,7 +12,7 @@
 ;;; Copyright © 2019, 2020 Kyle Meyer <kyle@kyleam.com>
 ;;; Copyright © 2015 John Soo <jsoo1@asu.edu>
 ;;; Copyright © 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
+;;; Copyright © 2019, 2020 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2020 Alexandru-Sergiu Marton <brown121407@member.fsf.org>
 ;;; Copyright © 2020 Brian Leung <bkleung89@gmail.com>
 ;;;
@@ -307,15 +307,14 @@ unique algebra of patches called @url{http://darcs.net/Theory,Patchtheory}.
 (define-public ghcid
   (package
     (name "ghcid")
-    (version "0.8.4")
+    (version "0.8.7")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://hackage.haskell.org/package/ghcid/"
                            "ghcid-" version ".tar.gz"))
        (sha256
-        (base32
-         "0wpm4ikrm1krz1ckzwk0srng091yh2skjal4fh95iz1hq3dw6qlw"))))
+        (base32 "0yqc1pkfajnr56gnh43sbj50r7c3r41b2jfz07ivgl6phi4frjbq"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-extra" ,ghc-extra)
@@ -326,8 +325,7 @@ unique algebra of patches called @url{http://darcs.net/Theory,Patchtheory}.
     (native-inputs
      `(("ghc-tasty" ,ghc-tasty)
        ("ghc-tasty-hunit" ,ghc-tasty-hunit)))
-    (home-page
-     "https://github.com/ndmitchell/ghcid#readme")
+    (home-page "https://github.com/ndmitchell/ghcid#readme")
     (synopsis "GHCi based bare bones IDE")
     (description
      "Either \"GHCi as a daemon\" or \"GHC + a bit of an IDE\".  A very simple Haskell
@@ -341,18 +339,18 @@ to @code{cabal repl}).")
 (define-public git-annex
   (package
     (name "git-annex")
-    (version "8.20200720.1")
+    (version "8.20201127")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://hackage.haskell.org/package/"
                            "git-annex/git-annex-" version ".tar.gz"))
        (sha256
-        (base32 "0g4wlfkwr9w21hvdywc7sk077rxlnigdr4m4yz41rc0s2nbjc9fn"))))
+        (base32 "0n9m5ffgbzms0nh9dskrc7vjgwwwi9f9gxyh498wnspf96729zz7"))))
     (build-system haskell-build-system)
     (arguments
      `(#:configure-flags
-       '("--flags=-Android -Assistant -Pairing -Webapp -WebDAV")
+       '("--flags=-Android -Webapp")
        #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'patch-shell-for-tests
@@ -427,7 +425,17 @@ to @code{cabal repl}).")
                         (string-append bin "/git-annex-shell"))
                (symlink (string-append bin "/git-annex")
                         (string-append bin "/git-remote-tor-annex"))
-               #t))))))
+               #t)))
+         (add-after 'install 'touch-static-output
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; The Haskell build system adds a "static" output by
+             ;; default, and there is no way to override this until
+             ;; <https://issues.guix.gnu.org/41569> is fixed.  Without
+             ;; this phase, the daemon complains because we do not
+             ;; create the "static" output.
+             (with-output-to-file (assoc-ref outputs "static")
+               (lambda ()
+                 (display "static output not used\n"))))))))
     (inputs
      `(("curl" ,curl)
        ("ghc-aeson" ,ghc-aeson)
@@ -440,6 +448,7 @@ to @code{cabal repl}).")
        ("ghc-crypto-api" ,ghc-crypto-api)
        ("ghc-cryptonite" ,ghc-cryptonite)
        ("ghc-data-default" ,ghc-data-default)
+       ("ghc-dav" ,ghc-dav)
        ("ghc-disk-free-space" ,ghc-disk-free-space)
        ("ghc-dlist" ,ghc-dlist)
        ("ghc-edit-distance" ,ghc-edit-distance)
@@ -448,6 +457,7 @@ to @code{cabal repl}).")
        ("ghc-feed" ,ghc-feed)
        ("ghc-filepath-bytestring" ,ghc-filepath-bytestring)
        ("ghc-free" ,ghc-free)
+       ("ghc-hinotify" ,ghc-hinotify)
        ("ghc-hslogger" ,ghc-hslogger)
        ("ghc-http-client" ,ghc-http-client)
        ("ghc-http-conduit" ,ghc-http-conduit)
@@ -457,7 +467,10 @@ to @code{cabal repl}).")
        ("ghc-memory" ,ghc-memory)
        ("ghc-monad-control" ,ghc-monad-control)
        ("ghc-monad-logger" ,ghc-monad-logger)
+       ("ghc-mountpoints" ,ghc-mountpoints)
        ("ghc-network" ,ghc-network)
+       ("ghc-network-info" ,ghc-network-info)
+       ("ghc-network-multicast" ,ghc-network-multicast)
        ("ghc-old-locale" ,ghc-old-locale)
        ("ghc-optparse-applicative" ,ghc-optparse-applicative)
        ("ghc-persistent" ,ghc-persistent)
@@ -474,6 +487,7 @@ to @code{cabal repl}).")
        ("ghc-split" ,ghc-split)
        ("ghc-stm-chans" ,ghc-stm-chans)
        ("ghc-tagsoup" ,ghc-tagsoup)
+       ("ghc-torrent" ,ghc-torrent)
        ("ghc-unix-compat" ,ghc-unix-compat)
        ("ghc-unordered-containers" ,ghc-unordered-containers)
        ("ghc-utf8-string" ,ghc-utf8-string)
@@ -619,7 +633,7 @@ and mIRC chat codes.")
 (define-public kmonad
   (package
     (name "kmonad")
-    (version "0.3.0")
+    (version "0.4.1")
     (source
      (origin
        (method git-fetch)
@@ -628,7 +642,7 @@ and mIRC chat codes.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1g40nkpldih6h1rlxjx5yf9iavr3qs1f2b6j0gd8135p5hkg8d8n"))))
+        (base32 "1rp880zxvrznx0y1k464wjrds441dpsz94syhrkaw5dnmxf74yjd"))))
     (build-system haskell-build-system)
     (arguments
      `(#:phases
@@ -653,7 +667,7 @@ and mIRC chat codes.")
                     (doc (string-append out "/share/doc/kmonad-" ,version)))
                (install-file "README.md" doc)
                (copy-recursively "doc" doc)
-               (copy-recursively "example" (string-append doc "/example"))
+               (copy-recursively "keymap" (string-append doc "/keymap"))
                #t))))))
     (inputs
      `(("ghc-cereal" ,ghc-cereal)
@@ -662,6 +676,8 @@ and mIRC chat codes.")
        ("ghc-lens" ,ghc-lens)
        ("ghc-megaparsec" ,ghc-megaparsec)
        ("ghc-optparse-applicative" ,ghc-optparse-applicative)
+       ("ghc-resourcet" ,ghc-resourcet)
+       ("ghc-rio" ,ghc-rio)
        ("ghc-unagi-chan" ,ghc-unagi-chan)
        ("ghc-unliftio" ,ghc-unliftio)
        ("ghc-unordered-containers" ,ghc-unordered-containers)))
@@ -730,6 +746,20 @@ is programmed in Haskell.")
          (base32
           "0apzrvf99rskj4dbmn57jjxrsf19j436s8a09m950df5aws3a0wj"))))
     (build-system haskell-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'touch-static-output
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; The Haskell build system adds a "static" output by
+             ;; default, and there is no way to override this until
+             ;; <https://issues.guix.gnu.org/41569> is fixed.  Without
+             ;; this phase, the daemon complains because we do not
+             ;; create the "static" output.
+             (with-output-to-file (assoc-ref outputs "static")
+               (lambda ()
+                 (display "static output not used\n")))
+             #t)))))
     (inputs
      `(("ghc-case-insensitive" ,ghc-case-insensitive)
        ("ghc-data-default" ,ghc-data-default)
@@ -750,7 +780,7 @@ too slow and you'll get wound up in the scroll and crushed.")
 (define-public shellcheck
   (package
     (name "shellcheck")
-    (version "0.7.0")
+    (version "0.7.1")
     (source
      (origin
        (method url-fetch)
@@ -758,7 +788,7 @@ too slow and you'll get wound up in the scroll and crushed.")
              "https://hackage.haskell.org/package/ShellCheck/ShellCheck-"
              version ".tar.gz"))
        (sha256
-        (base32 "1vx895cp5k5h0680xfwj74lk97m9y627n965x6srds0gfnbkzy9s"))
+        (base32 "06m4wh891nah3y0br4wh3adpsb16zawkb2ijgf1vcz61fznj6ps1"))
        (file-name (string-append name "-" version ".tar.gz"))))
     (build-system haskell-build-system)
     (inputs

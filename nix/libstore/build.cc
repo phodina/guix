@@ -80,12 +80,8 @@ namespace nix {
 using std::map;
 
 
-static string pathNullDevice = "/dev/null";
-
-
 /* Forward definition. */
 class Worker;
-struct HookInstance;
 
 
 /* A pointer to a goal. */
@@ -265,7 +261,8 @@ public:
 
     LocalStore & store;
 
-    std::shared_ptr<HookInstance> hook;
+    std::shared_ptr<Agent> hook;
+    std::shared_ptr<Agent> substituter;
 
     Worker(LocalStore & store);
     ~Worker();
@@ -396,33 +393,6 @@ void Goal::trace(const format & f)
 
 //////////////////////////////////////////////////////////////////////
 
-
-/* Common initialisation performed in child processes. */
-static void commonChildInit(Pipe & logPipe)
-{
-    /* Put the child in a separate session (and thus a separate
-       process group) so that it has no controlling terminal (meaning
-       that e.g. ssh cannot open /dev/tty) and it doesn't receive
-       terminal signals. */
-    if (setsid() == -1)
-        throw SysError(format("creating a new session"));
-
-    /* Dup the write side of the logger pipe into stderr. */
-    if (dup2(logPipe.writeSide, STDERR_FILENO) == -1)
-        throw SysError("cannot pipe standard error into log file");
-
-    /* Dup stderr to stdout. */
-    if (dup2(STDERR_FILENO, STDOUT_FILENO) == -1)
-        throw SysError("cannot dup stderr into stdout");
-
-    /* Reroute stdin to /dev/null. */
-    int fdDevNull = open(pathNullDevice.c_str(), O_RDWR);
-    if (fdDevNull == -1)
-        throw SysError(format("cannot open `%1%'") % pathNullDevice);
-    if (dup2(fdDevNull, STDIN_FILENO) == -1)
-        throw SysError("cannot dup null device into stdin");
-    close(fdDevNull);
-}
 
 /* Restore default handling of SIGPIPE, otherwise some programs will
    randomly say "Broken pipe". */
@@ -586,87 +556,6 @@ void UserLock::kill()
     killUser(uid);
 }
 
-
-//////////////////////////////////////////////////////////////////////
-
-
-struct HookInstance
-{
-    /* Pipes for talking to the build hook. */
-    Pipe toHook;
-
-    /* Pipe for the hook's standard output/error. */
-    Pipe fromHook;
-
-    /* Pipe for the builder's standard output/error. */
-    Pipe builderOut;
-
-    /* The process ID of the hook. */
-    Pid pid;
-
-    HookInstance();
-
-    ~HookInstance();
-};
-
-
-HookInstance::HookInstance()
-{
-    debug("starting build hook");
-
-    const Path &buildHook = settings.guixProgram;
-
-    /* Create a pipe to get the output of the child. */
-    fromHook.create();
-
-    /* Create the communication pipes. */
-    toHook.create();
-
-    /* Create a pipe to get the output of the builder. */
-    builderOut.create();
-
-    /* Fork the hook. */
-    pid = startProcess([&]() {
-
-        commonChildInit(fromHook);
-
-        if (chdir("/") == -1) throw SysError("changing into `/");
-
-        /* Dup the communication pipes. */
-        if (dup2(toHook.readSide, STDIN_FILENO) == -1)
-            throw SysError("dupping to-hook read side");
-
-        /* Use fd 4 for the builder's stdout/stderr. */
-        if (dup2(builderOut.writeSide, 4) == -1)
-            throw SysError("dupping builder's stdout/stderr");
-
-        execl(buildHook.c_str(), buildHook.c_str(), "offload",
-	    settings.thisSystem.c_str(),
-            (format("%1%") % settings.maxSilentTime).str().c_str(),
-            (format("%1%") % settings.printBuildTrace).str().c_str(),
-            (format("%1%") % settings.buildTimeout).str().c_str(),
-            NULL);
-
-        throw SysError(format("executing `%1% offload'") % buildHook);
-    });
-
-    pid.setSeparatePG(true);
-    fromHook.writeSide.close();
-    toHook.readSide.close();
-}
-
-
-HookInstance::~HookInstance()
-{
-    try {
-        toHook.writeSide.close();
-        pid.kill(true);
-    } catch (...) {
-        ignoreException();
-    }
-}
-
-
 //////////////////////////////////////////////////////////////////////
 
 
@@ -760,7 +649,7 @@ private:
     Pipe builderOut;
 
     /* The build hook. */
-    std::shared_ptr<HookInstance> hook;
+    std::shared_ptr<Agent> hook;
 
     /* Whether we're currently doing a chroot build. */
     bool useChroot;
@@ -1440,7 +1329,7 @@ void DerivationGoal::buildDone()
     /* Close the read side of the logger pipe. */
     if (hook) {
         hook->builderOut.readSide.close();
-        hook->fromHook.readSide.close();
+        hook->fromAgent.readSide.close();
     }
     else builderOut.readSide.close();
 
@@ -1496,11 +1385,6 @@ void DerivationGoal::buildDone()
         /* Compute the FS closure of the outputs and register them as
            being valid. */
         registerOutputs();
-
-        if (buildMode == bmCheck) {
-            done(BuildResult::Built);
-            return;
-        }
 
         /* Delete unused redirected outputs (when doing hash rewriting). */
         foreach (RedirectedOutputs::iterator, i, redirectedOutputs)
@@ -1587,8 +1471,17 @@ HookReply DerivationGoal::tryBuildHook()
 {
     if (!settings.useBuildHook) return rpDecline;
 
-    if (!worker.hook)
-        worker.hook = std::shared_ptr<HookInstance>(new HookInstance);
+    if (!worker.hook) {
+	Strings args = {
+	    "offload",
+	    settings.thisSystem.c_str(),
+            (format("%1%") % settings.maxSilentTime).str().c_str(),
+            (format("%1%") % settings.printBuildTrace).str().c_str(),
+            (format("%1%") % settings.buildTimeout).str().c_str()
+	};
+
+        worker.hook = std::make_shared<Agent>(settings.guixProgram, args);
+    }
 
     /* Tell the hook about system features (beyond the system type)
        required from the build machine.  (The hook could parse the
@@ -1597,7 +1490,7 @@ HookReply DerivationGoal::tryBuildHook()
     foreach (Strings::iterator, i, features) checkStoreName(*i); /* !!! abuse */
 
     /* Send the request to the hook. */
-    writeLine(worker.hook->toHook.writeSide, (format("%1% %2% %3% %4%")
+    writeLine(worker.hook->toAgent.writeSide, (format("%1% %2% %3% %4%")
         % (worker.getNrLocalBuilds() < settings.maxBuildJobs ? "1" : "0")
         % drv.platform % drvPath % concatStringsSep(",", features)).str());
 
@@ -1605,7 +1498,7 @@ HookReply DerivationGoal::tryBuildHook()
        whether the hook wishes to perform the build. */
     string reply;
     while (true) {
-        string s = readLine(worker.hook->fromHook.readSide);
+        string s = readLine(worker.hook->fromAgent.readSide);
         if (string(s, 0, 2) == "# ") {
             reply = string(s, 2);
             break;
@@ -1637,21 +1530,21 @@ HookReply DerivationGoal::tryBuildHook()
 
     string s;
     foreach (PathSet::iterator, i, allInputs) { s += *i; s += ' '; }
-    writeLine(hook->toHook.writeSide, s);
+    writeLine(hook->toAgent.writeSide, s);
 
     /* Tell the hooks the missing outputs that have to be copied back
        from the remote system. */
     s = "";
     foreach (PathSet::iterator, i, missingPaths) { s += *i; s += ' '; }
-    writeLine(hook->toHook.writeSide, s);
+    writeLine(hook->toAgent.writeSide, s);
 
-    hook->toHook.writeSide.close();
+    hook->toAgent.writeSide.close();
 
     /* Create the log file and pipe. */
     Path logFile = openLogFile();
 
     set<int> fds;
-    fds.insert(hook->fromHook.readSide);
+    fds.insert(hook->fromAgent.readSide);
     fds.insert(hook->builderOut.readSide);
     worker.childStarted(shared_from_this(), hook->pid, fds, false, true);
 
@@ -1744,12 +1637,6 @@ void DerivationGoal::startBuilder()
        inode of the current directory doesn't appear in .. (because
        getdents returns the inode of the mount point). */
     env["PWD"] = tmpDirInSandbox;
-
-    /* Compatibility hack with Nix <= 0.7: if this is a fixed-output
-       derivation, tell the builder, so that for instance `fetchurl'
-       can skip checking the output.  On older Nixes, this environment
-       variable won't be set, so `fetchurl' will do the check. */
-    if (fixedOutput) env["NIX_OUTPUT_CHECKED"] = "1";
 
     /* *Only* if this is a fixed-output derivation, propagate the
        values of the environment variables specified in the
@@ -2048,6 +1935,15 @@ void DerivationGoal::startBuilder()
 
 }
 
+/* Return true if the operating system kernel part of SYSTEM1 and SYSTEM2 (the
+   bit that comes after the hyphen in system types such as "i686-linux") is
+   the same.  */
+static bool sameOperatingSystemKernel(const std::string& system1, const std::string& system2)
+{
+    auto os1 = system1.substr(system1.find("-"));
+    auto os2 = system2.substr(system2.find("-"));
+    return os1 == os2;
+}
 
 void DerivationGoal::runChild()
 {
@@ -2310,9 +2206,20 @@ void DerivationGoal::runChild()
         foreach (Strings::iterator, i, drv.args)
             args.push_back(rewriteHashes(*i, rewritesToTmp));
 
-        execve(drv.builder.c_str(), stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
-
-	int error = errno;
+	/* If DRV targets the same operating system kernel, try to execute it:
+	   there might be binfmt_misc set up for user-land emulation of other
+	   architectures.  However, if it targets a different operating
+	   system--e.g., "i586-gnu" vs. "x86_64-linux"--do not try executing
+	   it: the ELF file for that OS is likely indistinguishable from a
+	   native ELF binary and it would just crash at run time.  */
+	int error;
+	if (sameOperatingSystemKernel(drv.platform, settings.thisSystem)) {
+	    execve(drv.builder.c_str(), stringsToCharPtrs(args).data(),
+		   stringsToCharPtrs(envStrs).data());
+	    error = errno;
+	} else {
+	    error = ENOEXEC;
+	}
 
 	/* Right platform?  Check this after we've tried 'execve' to allow for
 	   transparent emulation of different platforms with binfmt_misc
@@ -2567,8 +2474,6 @@ void DerivationGoal::registerOutputs()
         infos.push_back(info);
     }
 
-    if (buildMode == bmCheck) return;
-
     /* Compare the result with the previous round, and report which
        path is different, if any.*/
     if (curRound > 1 && prevInfos != infos) {
@@ -2785,7 +2690,7 @@ void DerivationGoal::handleChildOutput(int fd, const string & data)
             writeFull(fdLogFile, data);
     }
 
-    if (hook && fd == hook->fromHook.readSide)
+    if (hook && fd == hook->fromAgent.readSide)
         writeToStderr(prefix + data);
 }
 
@@ -2869,15 +2774,6 @@ private:
     /* Path info returned by the substituter's query info operation. */
     SubstitutablePathInfo info;
 
-    /* Pipe for the substituter's standard output. */
-    Pipe outPipe;
-
-    /* Pipe for the substituter's standard error. */
-    Pipe logPipe;
-
-    /* The process ID of the builder. */
-    Pid pid;
-
     /* Lock on the store path. */
     std::shared_ptr<PathLocks> outputLock;
 
@@ -2890,6 +2786,13 @@ private:
 
     typedef void (SubstitutionGoal::*GoalState)();
     GoalState state;
+
+    /* The substituter. */
+    std::shared_ptr<Agent> substituter;
+
+    /* Either the empty string, or the status phrase returned by the
+       substituter.  */
+    string status;
 
     void tryNext();
 
@@ -2936,7 +2839,7 @@ SubstitutionGoal::SubstitutionGoal(const Path & storePath, Worker & worker, bool
 
 SubstitutionGoal::~SubstitutionGoal()
 {
-    if (pid != -1) worker.childTerminated(pid);
+    if (substituter) worker.childTerminated(substituter->pid);
 }
 
 
@@ -2944,9 +2847,9 @@ void SubstitutionGoal::timedOut()
 {
     if (settings.printBuildTrace)
         printMsg(lvlError, format("@ substituter-failed %1% timeout") % storePath);
-    if (pid != -1) {
-        pid_t savedPid = pid;
-        pid.kill();
+    if (substituter) {
+        pid_t savedPid = substituter->pid;
+	substituter.reset();
         worker.childTerminated(savedPid);
     }
     amDone(ecFailed);
@@ -3073,44 +2976,34 @@ void SubstitutionGoal::tryToRun()
 
     printMsg(lvlInfo, format("fetching path `%1%'...") % storePath);
 
-    outPipe.create();
-    logPipe.create();
-
     destPath = repair ? storePath + ".tmp" : storePath;
 
     /* Remove the (stale) output path if it exists. */
     if (pathExists(destPath))
         deletePath(destPath);
 
-    worker.store.setSubstituterEnv();
+    if (!worker.substituter) {
+	const Strings args = { "substitute", "--substitute" };
+	const std::map<string, string> env = {
+	    { "_NIX_OPTIONS",
+	      settings.pack() + "deduplicate="
+	      + (settings.autoOptimiseStore ? "yes" : "no")
+	    }
+	};
+	worker.substituter = std::make_shared<Agent>(settings.guixProgram, args, env);
+    }
 
-    /* Fill in the arguments. */
-    Strings args;
-    args.push_back("guix");
-    args.push_back("substitute");
-    args.push_back("--substitute");
-    args.push_back(storePath);
-    args.push_back(destPath);
+    /* Borrow the worker's substituter.  */
+    if (!substituter) substituter.swap(worker.substituter);
 
-    /* Fork the substitute program. */
-    pid = startProcess([&]() {
+    /* Send the request to the substituter.  */
+    writeLine(substituter->toAgent.writeSide,
+	      (format("substitute %1% %2%") % storePath % destPath).str());
 
-        commonChildInit(logPipe);
-
-        if (dup2(outPipe.writeSide, STDOUT_FILENO) == -1)
-            throw SysError("cannot dup output pipe into stdout");
-
-        execv(settings.guixProgram.c_str(), stringsToCharPtrs(args).data());
-
-        throw SysError(format("executing `%1% substitute'") % settings.guixProgram);
-    });
-
-    pid.setSeparatePG(true);
-    pid.setKillSignal(SIGTERM);
-    outPipe.writeSide.close();
-    logPipe.writeSide.close();
-    worker.childStarted(shared_from_this(),
-        pid, singleton<set<int> >(logPipe.readSide), true, true);
+    set<int> fds;
+    fds.insert(substituter->fromAgent.readSide);
+    fds.insert(substituter->builderOut.readSide);
+    worker.childStarted(shared_from_this(), substituter->pid, fds, true, true);
 
     state = &SubstitutionGoal::finished;
 
@@ -3125,54 +3018,62 @@ void SubstitutionGoal::finished()
 {
     trace("substitute finished");
 
-    /* Since we got an EOF on the logger pipe, the substitute is
-       presumed to have terminated.  */
-    pid_t savedPid = pid;
-    int status = pid.wait(true);
+    /* Remove the 'guix substitute' process from the list of children.  */
+    worker.childTerminated(substituter->pid);
 
-    /* So the child is gone now. */
-    worker.childTerminated(savedPid);
-
-    /* Close the read side of the logger pipe. */
-    logPipe.readSide.close();
-
-    /* Get the hash info from stdout. */
-    string dummy = readLine(outPipe.readSide);
-    string expectedHashStr = statusOk(status) ? readLine(outPipe.readSide) : "";
-    outPipe.readSide.close();
+    /* If max-jobs > 1, the worker might have created a new 'substitute'
+       process in the meantime.  If that is the case, terminate ours;
+       otherwise, give it back to the worker.  */
+    if (worker.substituter) {
+	substituter.reset ();
+    } else {
+	worker.substituter.swap(substituter);
+    }
 
     /* Check the exit status and the build result. */
     HashResult hash;
     try {
+	auto statusList = tokenizeString<vector<string> >(status);
 
-        if (!statusOk(status))
-            throw SubstError(format("fetching path `%1%' %2%")
-                % storePath % statusToString(status));
-
-        if (!pathExists(destPath))
-            throw SubstError(format("substitute did not produce path `%1%'") % destPath);
-
-        hash = hashPath(htSHA256, destPath);
-
-        /* Verify the expected hash we got from the substituer. */
-        if (expectedHashStr != "") {
-            size_t n = expectedHashStr.find(':');
-            if (n == string::npos)
-                throw Error(format("bad hash from substituter: %1%") % expectedHashStr);
-            HashType hashType = parseHashType(string(expectedHashStr, 0, n));
-            if (hashType == htUnknown)
-                throw Error(format("unknown hash algorithm in `%1%'") % expectedHashStr);
-            Hash expectedHash = parseHash16or32(hashType, string(expectedHashStr, n + 1));
-            Hash actualHash = hashType == htSHA256 ? hash.first : hashPath(hashType, destPath).first;
-            if (expectedHash != actualHash) {
-		if (settings.printBuildTrace)
-		    printMsg(lvlError, format("@ hash-mismatch %1% %2% %3% %4%")
-			     % storePath % "sha256"
-			     % printHash16or32(expectedHash)
-			     % printHash16or32(actualHash));
-                throw SubstError(format("hash mismatch for substituted item `%1%'") % storePath);
+	if (statusList.empty()) {
+            throw SubstError(format("fetching path `%1%' (empty status: '%2%')")
+			     % storePath % status);
+	} else if (statusList[0] == "hash-mismatch") {
+	    if (settings.printBuildTrace) {
+		auto hashType = statusList[1];
+		auto expectedHash = statusList[2];
+		auto actualHash = statusList[3];
+		printMsg(lvlError, format("@ hash-mismatch %1% %2% %3% %4%")
+			 % storePath
+			 % hashType % expectedHash % actualHash);
 	    }
-        }
+	    throw SubstError(format("hash mismatch for substituted item `%1%'") % storePath);
+	} else if (statusList[0] == "success") {
+	    if (!pathExists(destPath))
+		throw SubstError(format("substitute did not produce path `%1%'") % destPath);
+
+	    std::string hashStr = statusList[1];
+	    size_t n = hashStr.find(':');
+	    if (n == string::npos)
+		throw Error(format("bad hash from substituter: %1%") % hashStr);
+
+	    HashType hashType = parseHashType(string(hashStr, 0, n));
+	    switch (hashType) {
+	    case htUnknown:
+		throw Error(format("unknown hash algorithm in `%1%'") % hashStr);
+	    case htSHA256:
+		hash.first = parseHash16or32(hashType, string(hashStr, n + 1));
+		hash.second = std::atoi(statusList[2].c_str());
+		break;
+	    default:
+		/* The database only stores SHA256 hashes, so compute it.  */
+		hash = hashPath(htSHA256, destPath);
+		break;
+	    }
+	}
+	else
+            throw SubstError(format("fetching path `%1%' (status: '%2%')")
+                % storePath % status);
 
     } catch (SubstError & e) {
 
@@ -3189,9 +3090,8 @@ void SubstitutionGoal::finished()
 
     if (repair) replaceValidPath(storePath, destPath);
 
-    canonicalisePathMetaData(storePath, -1);
-
-    worker.store.optimisePath(storePath); // FIXME: combine with hashPath()
+    /* Note: 'guix substitute' takes care of resetting timestamps and of
+       deduplicating 'destPath', so no need to do it here.  */
 
     ValidPathInfo info2;
     info2.path = storePath;
@@ -3218,16 +3118,38 @@ void SubstitutionGoal::finished()
 
 void SubstitutionGoal::handleChildOutput(int fd, const string & data)
 {
-    assert(fd == logPipe.readSide);
-    if (verbosity >= settings.buildVerbosity) writeToStderr(data);
-    /* Don't write substitution output to a log file for now.  We
-       probably should, though. */
+    if (verbosity >= settings.buildVerbosity
+	&& fd == substituter->builderOut.readSide) {
+	writeToStderr(data);
+	/* Don't write substitution output to a log file for now.  We
+	   probably should, though. */
+    }
+
+    if (fd == substituter->fromAgent.readSide) {
+	/* DATA may consist of several lines.  Process them one by one.  */
+	string input = data;
+	while (!input.empty()) {
+	    /* Process up to the first newline.  */
+	    size_t end = input.find_first_of("\n");
+	    string trimmed = (end != string::npos) ? input.substr(0, end) : input;
+
+	    /* Update the goal's state accordingly.  */
+	    if (status == "") {
+		status = trimmed;
+		worker.wakeUp(shared_from_this());
+	    } else {
+		printMsg(lvlError, format("unexpected substituter message '%1%'") % input);
+	    }
+
+	    input = (end != string::npos) ? input.substr(end + 1) : "";
+	}
+    }
 }
 
 
 void SubstitutionGoal::handleEOF(int fd)
 {
-    if (fd == logPipe.readSide) worker.wakeUp(shared_from_this());
+    worker.wakeUp(shared_from_this());
 }
 
 

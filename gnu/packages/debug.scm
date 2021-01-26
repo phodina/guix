@@ -1,11 +1,12 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014, 2015, 2016, 2017, 2019, 2020 Eric Bavier <bavier@posteo.net>
 ;;; Copyright © 2016, 2017, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2019 Pkill -9 <pkill9@runbox.com>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Morgan Smith <Morgan.J.Smith@outlook.com>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -36,6 +37,7 @@
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages c)
   #:use-module (gnu packages code)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages flex)
@@ -564,7 +566,7 @@ error reporting, better tracing, profiling, and a debugger.")
 (define-public rr
   (package
     (name "rr")
-    (version "5.3.0")
+    (version "5.4.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -572,18 +574,19 @@ error reporting, better tracing, profiling, and a debugger.")
                     (commit version)))
               (sha256
                (base32
-                "1x6l1xsdksnhz9v50p4r7hhmr077cq20kaywqy1jzdklvkjqzf64"))
+                "1sfldgkkmsdyaqa28i5agcykc63gwm3zjihd64g86i852w8al2w6"))
               (file-name (git-file-name name version))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags
        ;; The 'rr_exec_stub' is a static binary, which leads CMake to fail
-       ;; with:
-       ;;
-       ;;   file RPATH_CHANGE could not write new RPATH:
-       ;;
+       ;; with ‘file RPATH_CHANGE could not write new RPATH: ...’.
        ;; Clear CMAKE_INSTALL_RPATH to avoid that problem.
        (list "-DCMAKE_INSTALL_RPATH="
+             ;; Satisfy the ‘validate-runpath’ phase.  This isn't a direct
+             ;; consequence of clearing CMAKE_INSTALL_RPATH.
+             (string-append "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath="
+                            (assoc-ref %build-inputs "capnproto") "/lib")
              ,@(if (and (not (%current-target-system))
                         (member (%current-system)
                                 '("x86_64-linux" "aarch64-linux")))
@@ -611,7 +614,7 @@ error reporting, better tracing, profiling, and a debugger.")
        ("which" ,which)))
     (inputs
      `(("gdb" ,gdb)
-       ("cpanproto" ,capnproto)
+       ("capnproto" ,capnproto)
        ("python" ,python)
        ("python-pexpect" ,python-pexpect)))
     (home-page "https://rr-project.org/")
@@ -623,6 +626,78 @@ GDB with very efficient reverse-execution, which in combination with standard
 GDB/x86 features like hardware data watchpoints, makes debugging much more
 fun.")
     (license license:expat)))
+
+(define-public libbacktrace
+  ;; There are no releases nor tags.
+  (let ((revision "1")
+        (commit "5009c113981431ae1843ebd29d6ad24eb32fc1b2"))
+    (package
+      (name "libbacktrace")
+      (version (git-version "1.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/ianlancetaylor/libbacktrace")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0663zjpfpnsyv9h3pbp7cgmg9gz79n68bqpdl97y6i0jsx93v1zg"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:make-flags '("CFLAGS=-fPIC")))
+      (home-page "https://github.com/ianlancetaylor/libbacktrace")
+      (synopsis "C library for producing symbolic backtraces")
+      (description "The @code{libbacktrace} library can be linked into a C/C++
+program to produce symbolic backtraces.")
+      (license license:bsd-3))))
+
+(define-public libleak
+  (package
+    (name "libleak")
+    (version "0.3.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/WuBingzheng/libleak")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1p8mb0hcfp8hdv1klv6rrpkn2zlhjxgkxbbjsk8kszxv7ijln87d"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ;no test suite
+       #:parallel-build? #f             ;jobserver unavailable
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'unbundle-libwuya
+                    (lambda _
+                      (substitute* "Makefile"
+                        ((".*make -C libwuya.*") ""))
+                      #t))
+                  (add-before 'build 'set-CC
+                    (lambda _
+                      (setenv "CC" "gcc")
+                      #t))
+                  (delete 'configure)   ;no configure script
+                  (replace 'install
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out")))
+                        (install-file "libleak.so" (string-append out "/lib"))
+                        #t))))))
+    (inputs `(("libbacktrace" ,libbacktrace)
+              ("libwuya" ,libwuya)))
+    (home-page "https://github.com/WuBingzheng/libleak")
+    (synopsis "Memory leaks detection tool")
+    (description "The libleak tool detects memory leaks by hooking memory
+functions such as @code{malloc}.  It comes as a shared object to be pre-loaded
+via @code{LD_PRELOAD} when launching the application.  It prints the full call
+stack at suspicious memory leak points.  Modifying or recompiling the target
+program is not required, and the detection can be enabled or disabled while
+the target application is running.  The overhead incurred by libleak is
+smaller than that of other tools such as Valgrind, and it aims to be easier to
+use than similar tools like @command{mtrace}.")
+    (license license:gpl2+)))
 
 (define-public mspdebug
   (package

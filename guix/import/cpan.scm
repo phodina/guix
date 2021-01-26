@@ -3,7 +3,7 @@
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Alex Sassmannshausen <alex@pompo.co>
 ;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -28,7 +28,6 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (json)
-  #:use-module (guix json)
   #:use-module (gcrypt hash)
   #:use-module (guix store)
   #:use-module (guix utils)
@@ -50,7 +49,7 @@
             cpan-release-license
             cpan-release-author
             cpan-release-version
-            cpan-release-modle
+            cpan-release-module
             cpan-release-distribution
             cpan-release-download-url
             cpan-release-abstract
@@ -110,6 +109,7 @@
   (home-page    cpan-release-home-page "resources"
                 (match-lambda
                   (#f #f)
+                  ((? unspecified?) #f)
                   ((lst ...) (assoc-ref lst "homepage"))))
   (dependencies cpan-release-dependencies "dependency"
                 (lambda (vector)

@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014 Cyril Roelandt <tipecaml@gmail.com>
 ;;; Copyright © 2014, 2015 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2016 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym+a@scratchpost.org>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
@@ -9,7 +9,8 @@
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018, 2019 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2019 Simon Tournier <zimon.toutoune@gmail.com>
+;;; Copyright © 2019, 2020 Simon Tournier <zimon.toutoune@gmail.com>
+;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -47,11 +48,15 @@
   ;; provided MESSAGE.
   (for-each
    (lambda (lint-warning)
-     (let ((package (lint-warning-package lint-warning))
-           (loc     (lint-warning-location lint-warning)))
-       (info loc (G_ "~a@~a: ~a~%")
-             (package-name package) (package-version package)
-             (lint-warning-message lint-warning))))
+     (let* ((package (lint-warning-package lint-warning))
+            (name    (package-name package))
+            (version (package-version package))
+            (loc     (lint-warning-location lint-warning))
+            (message (lint-warning-message lint-warning)))
+       (parameterize
+           ((guix-warning-port (current-output-port)))
+         (info loc (G_ "~a@~a: ~a~%")
+               name version message))))
    warnings))
 
 (define* (run-checkers package checkers #:key store)
@@ -98,6 +103,12 @@ run the checkers on all packages.\n"))
   (display (G_ "
   -c, --checkers=CHECKER1,CHECKER2...
                          only run the specified checkers"))
+   (display (G_ "
+  -x, --exclude=CHECKER1,CHECKER2...
+                         exclude the specified checkers"))
+  (display (G_ "
+  -n, --no-network       only run checkers that do not access the network"))
+
   (display (G_ "
   -L, --load-path=DIR    prepend DIR to the package module search path"))
   (newline)
@@ -110,32 +121,37 @@ run the checkers on all packages.\n"))
   (newline)
   (show-bug-report-information))
 
+(define (option-checker short-long)
+  ;; Factorize the creation of the two options -c/--checkers and -x/--exclude,
+  ;; see %options.  The parameter SHORT-LONG is the list containing the short
+  ;; and long name.  The alist uses the long name as symbol.
+  (option short-long #t #f
+          (lambda (opt name arg result)
+            (let ((names (map string->symbol (string-split arg #\,)))
+                  (checker-names (map lint-checker-name %all-checkers))
+                  (option-name (string->symbol (match short-long
+                                                 ((short long) long)))))
+              (for-each (lambda (c)
+                          (unless (memq c checker-names)
+                            (leave (G_ "~a: invalid checker~%") c)))
+                        names)
+              (alist-cons option-name
+                          (filter (lambda (checker)
+                                    (member (lint-checker-name checker)
+                                            names))
+                                  %all-checkers)
+                          result)))))
 
 (define %options
   ;; Specification of the command-line options.
   ;; TODO: add some options:
   ;; * --certainty=[low,medium,high]: only run checkers that have at least this
   ;;                                  'certainty'.
-  (list (option '(#\c "checkers") #t #f
-                (lambda (opt name arg result)
-                  (let ((names (map string->symbol (string-split arg #\,)))
-                        (checker-names (map lint-checker-name %all-checkers)))
-                    (for-each (lambda (c)
-                                (unless (memq c checker-names)
-                                  (leave (G_ "~a: invalid checker~%") c)))
-                              names)
-                    (alist-cons 'checkers
-                                (filter (lambda (checker)
-                                          (member (lint-checker-name checker)
-                                                  names))
-                                        %all-checkers)
-                                result))))
+  (list (option-checker '(#\c "checkers"))
+        (option-checker '(#\x "exclude"))
         (option '(#\n "no-network") #f #f
                 (lambda (opt name arg result)
-                  (alist-cons 'checkers
-                              %local-checkers
-                              (alist-delete 'checkers
-                                            result))))
+                  (alist-cons 'no-network? #t result)))
         (find (lambda (option)
                 (member "load-path" (option-names option)))
               %standard-build-options)
@@ -157,7 +173,10 @@ run the checkers on all packages.\n"))
 ;;; Entry Point
 ;;;
 
-(define (guix-lint . args)
+(define-command (guix-lint . args)
+  (category packaging)
+  (synopsis "validate package definitions")
+
   (define (parse-options)
     ;; Return the alist of option values.
     (parse-command-line args %options (list %default-options)
@@ -169,28 +188,38 @@ run the checkers on all packages.\n"))
                               value)
                              (_ #f))
                            (reverse opts)))
-         (checkers (or (assoc-ref opts 'checkers) %all-checkers)))
+         (no-checkers (or (assoc-ref opts 'exclude) '()))
+         (the-checkers (filter (lambda (checker)
+                                 (not (member checker no-checkers)))
+                               (or (assoc-ref opts 'checkers) %all-checkers)))
+         (checkers
+          (if (assoc-ref opts 'no-network?)
+              (filter (lambda (checker)
+                        (member checker %local-checkers))
+                      the-checkers)
+              the-checkers)))
 
     (when (assoc-ref opts 'list?)
       (list-checkers-and-exit checkers))
 
-    (let ((any-lint-checker-requires-store?
-           (any lint-checker-requires-store? checkers)))
+    (with-error-handling
+      (let ((any-lint-checker-requires-store?
+             (any lint-checker-requires-store? checkers)))
 
-      (define (call-maybe-with-store proc)
-        (if any-lint-checker-requires-store?
-            (with-store store
-              (proc store))
-            (proc #f)))
+        (define (call-maybe-with-store proc)
+          (if any-lint-checker-requires-store?
+              (with-store store
+                (proc store))
+              (proc #f)))
 
-      (call-maybe-with-store
-       (lambda (store)
-         (cond
-          ((null? args)
-           (fold-packages (lambda (p r) (run-checkers p checkers
-                                                      #:store store)) '()))
-          (else
-           (for-each (lambda (spec)
-                       (run-checkers (specification->package spec) checkers
-                                     #:store store))
-                     args))))))))
+        (call-maybe-with-store
+         (lambda (store)
+           (cond
+            ((null? args)
+             (fold-packages (lambda (p r) (run-checkers p checkers
+                                                        #:store store)) '()))
+            (else
+             (for-each (lambda (spec)
+                         (run-checkers (specification->package spec) checkers
+                                       #:store store))
+                       args)))))))))

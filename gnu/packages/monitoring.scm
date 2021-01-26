@@ -2,7 +2,7 @@
 ;;; Copyright © 2016 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2018 Sou Bunnbu <iyzsong@member.fsf.org>
 ;;; Copyright © 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018, 2020, 2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Gábor Boskovits <boskovits@gmail.com>
 ;;; Copyright © 2018, 2019, 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2020 Alex ter Weele <alex.ter.weele@gmail.com>
@@ -158,7 +158,7 @@ etc. via a Web interface.  Features include:
 (define-public zabbix-agentd
   (package
     (name "zabbix-agentd")
-    (version "5.0.2")
+    (version "5.2.3")
     (source
      (origin
        (method url-fetch)
@@ -166,11 +166,12 @@ etc. via a Web interface.  Features include:
              "https://cdn.zabbix.com/zabbix/sources/stable/"
              (version-major+minor version) "/zabbix-" version ".tar.gz"))
        (sha256
-        (base32 "1cnns7ixqi7ank3cbvcs7d8rb5zh9qiqbmgivazr83jnz81qg46w"))))
+        (base32 "0wlv3jala7xinl03fr6n0y3hmq9yi0wwn27k6snqhz4yyfdwhdnf"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
        (list "--enable-agent"
+             "--enable-ipv6"
              (string-append "--with-iconv="
                             (assoc-ref %build-inputs "libiconv"))
              (string-append "--with-libpcre="
@@ -330,48 +331,51 @@ caching them in memory for \"hot queries\" from the Graphite-Web application,
 and persisting them to disk using the Whisper time-series library.")
     (license license:asl2.0)))
 
-(define-public python2-graphite-web
+(define-public graphite-web
   (package
-    (name "python2-graphite-web")
-    (version "1.0.2")
+    (name "graphite-web")
+    (version "1.1.7")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "graphite-web" version))
        (sha256
         (base32
-         "0q8bwlj75jqyzmazfsi5sa26xl58ssa8wdxm2l4j0jqyn8xpfnmc"))))
+         "1l5a5rry9cakqxamvlx4xq63jifmncb6815bg9vy7fg1zyd3pjxk"))))
     (build-system python-build-system)
     (arguments
-     `(#:python ,python-2               ; only supports Python 2
+     `(#:tests? #f               ;XXX: not in PyPI release & requires database
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'relax-requirements
            (lambda _
              (substitute* "setup.py"
-               (("0.4.3") ,(package-version python2-django-tagging))
-               (("<1.9.99") (string-append "<="
-                             ,(package-version python2-django))))
+               ;; Allow newer versions of django-tagging.
+               (("django-tagging==")
+                "django-tagging>="))
              #t))
          ;; Don't install to /opt
          (add-after 'unpack 'do-not-install-to-/opt
            (lambda _ (setenv "GRAPHITE_NO_PREFIX" "1") #t)))))
     (propagated-inputs
-     `(("python2-cairocffi" ,python2-cairocffi)
-       ("python2-pytz" ,python2-pytz)
-       ("python2-whisper" ,python2-whisper)
-       ("python2-django" ,python2-django)
-       ("python2-django-tagging" ,python2-django-tagging)
-       ("python2-scandir" ,python2-scandir)
-       ("python2-urllib3" ,python2-urllib3)
-       ("python2-pyparsing" ,python2-pyparsing)
-       ("python2-txamqp" ,python2-txamqp)))
-    (home-page "http://graphiteapp.org/")
+     `(("python-cairocffi" ,python-cairocffi)
+       ("python-pytz" ,python-pytz)
+       ("python-whisper" ,python-whisper)
+       ("python-django" ,python-django-2.2)
+       ("python-django-tagging" ,python-django-tagging)
+       ("python-scandir" ,python-scandir)
+       ("python-urllib3" ,python-urllib3)
+       ("python-pyparsing" ,python-pyparsing)
+       ("python-txamqp" ,python-txamqp)))
+    (home-page "https://graphiteapp.org/")
     (synopsis "Scalable realtime graphing system")
     (description "Graphite is a scalable real-time graphing system that does
 two things: store numeric time-series data, and render graphs of this data on
 demand.")
     (license license:asl2.0)))
+
+(define-public python2-graphite-web
+  (deprecated-package "python2-graphite-web" graphite-web))
 
 (define-public python-prometheus-client
   (package
@@ -453,7 +457,7 @@ written in Go with pluggable metric collectors.")
 (define-public collectd
   (package
     (name "collectd")
-    (version "5.11.0")
+    (version "5.12.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -462,7 +466,7 @@ written in Go with pluggable metric collectors.")
                     ".tar.bz2"))
               (sha256
                (base32
-                "1cjxksxdqcqdccz1nbnc2fp6yy84qq361ynaq5q8bailds00mc9p"))
+                "1mh97afgq6qgmpvpr84zngh58m0sl1b4wimqgvvk376188q09bjv"))
               (patches (search-patches "collectd-5.11.0-noinstallvar.patch"))))
     (build-system gnu-build-system)
     (arguments

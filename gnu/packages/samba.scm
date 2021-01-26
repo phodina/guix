@@ -5,9 +5,11 @@
 ;;; Copyright © 2016 Adonay "adfeno" Felipe Nogueira <https://libreplanet.org/wiki/User:Adfeno> <adfeno@openmailbox.org>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017, 2018, 2020 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2020 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -31,6 +33,7 @@
   #:use-module (guix build-system gnu)
   #:use-module (guix licenses)
   #:use-module (guix utils)
+  #:use-module (gnu packages)
   #:use-module (gnu packages acl)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages autotools)
@@ -41,6 +44,8 @@
   #:use-module (gnu packages cups)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages docbook)
+  #:use-module (gnu packages glib)
+  #:use-module (gnu packages gnome)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages kerberos)
   #:use-module (gnu packages linux)
@@ -59,14 +64,14 @@
 (define-public cifs-utils
   (package
     (name "cifs-utils")
-    (version "6.10")
+    (version "6.12")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://download.samba.org/pub/linux-cifs/"
                            "cifs-utils/cifs-utils-" version ".tar.bz2"))
        (sha256 (base32
-                "19q4b5bzlxhn1hpi843xrp6f50d33w7m0rs26krkg5h3x742kz4j"))))
+                "1vw570pvir73kl4y6fhd6ns936ankimkhb1ii43yh8lr0p1xqbcj"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -82,12 +87,6 @@
     (arguments
      `(#:phases
        (modify-phases %standard-phases
-         (replace 'bootstrap
-           ;; Force a bootstrap to fix a ‘cannot find install-sh, install.sh,
-           ;; or shtool’ error since version 6.10.
-           (lambda _
-             (invoke "autoreconf" "-vfi")
-             #t))
          (add-before 'configure 'set-root-sbin
            (lambda* (#:key outputs #:allow-other-keys)
              ;; Don't try to install into "/sbin".
@@ -173,68 +172,77 @@ external dependencies.")
 (define-public samba
   (package
     (name "samba")
-    (version "4.12.3")
+    (version "4.13.3")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://download.samba.org/pub/samba/stable/"
                            "samba-" version ".tar.gz"))
        (sha256
-        (base32 "09w7aap1cjc41ayhaksm1igc7p7gl40fad4a1l6q4ds9a2jbrb9z"))
+        (base32 "0hb5fli4kgwg376c289mcmdqszd51vs8pzzrw7j6yr9k7za8a1f1"))
+       (patches (search-patches "samba-fix-fcntl-hint-detection.patch"))
        (modules '((guix build utils)))
        (snippet
         '(begin
-           ;; TODO: also remove the bundled ‘third_party/popt’.
+           ;; XXX: Some bundled libraries (e.g, popt, cmocka) are used from
+           ;; the system, but their bundled sources must be kept as they
+           ;; include the WAF scripts used for detecting them.
            (delete-file-recursively "third_party/pyiso8601")
            #t))))
     (build-system gnu-build-system)
     (arguments
-     `(#:phases
+     `(#:make-flags '("TEST_OPTIONS=--quick") ;some tests are very long
+       #:phases
        (modify-phases %standard-phases
-         (add-before 'configure 'locate-docbook-stylesheets
+         (add-before 'configure 'setup-docbook-stylesheets
            (lambda* (#:key inputs #:allow-other-keys)
-             ;; XXX for some reason XML_CATALOG_FILES is not respected.
-             (substitute* '("buildtools/wafsamba/samba_conftests.py"
-                            "buildtools/wafsamba/wafsamba.py"
-                            "docs-xml/xslt/man.xsl")
-               (("http://docbook.sourceforge.net/release/xsl/current/")
-                (string-append (assoc-ref inputs "docbook-xsl")
-                               "/xml/xsl/docbook-xsl-"
-                               ,(package-version docbook-xsl) "/")))
+             ;; Append Samba's own DTDs to XML_CATALOG_FILES
+             ;; (c.f. docs-xml/build/README).
+             (copy-file "docs-xml/build/catalog.xml.in"
+                        "docs-xml/build/catalog.xml")
+             (substitute* "docs-xml/build/catalog.xml"
+               (("/@abs_top_srcdir@")
+                (string-append (getcwd) "/docs-xml")))
+             ;; Honor XML_CATALOG_FILES.
+             (substitute* "buildtools/wafsamba/wafsamba.py"
+               (("XML_CATALOG_FILES=\"\\$\\{SAMBA_CATALOGS\\}" all)
+                (string-append all " $XML_CATALOG_FILES")))
              #t))
          (replace 'configure
-           ;; samba uses a custom configuration script that runs waf.
+           ;; Samba uses a custom configuration script that runs WAF.
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out    (assoc-ref outputs "out"))
                     (libdir (string-append out "/lib")))
                (invoke "./configure"
+                       "--enable-selftest"
                        "--enable-fhs"
-                       ;; XXX: heimdal not packaged.
-                       "--bundled-libraries=com_err"
                        (string-append "--prefix=" out)
                        "--sysconfdir=/etc"
+                       "--localstatedir=/var"
                        ;; Install public and private libraries into
                        ;; a single directory to avoid RPATH issues.
                        (string-append "--libdir=" libdir)
                        (string-append "--with-privatelibdir=" libdir)))))
-         (add-before 'install 'disable-etc-samba-directory-creation
+         (add-before 'install 'disable-etc,var-samba-directories-setup
            (lambda _
              (substitute* "dynconfig/wscript"
-               (("bld\\.INSTALL_DIR\\(\"\\$\\{CONFIGDIR\\}\"\\)")
-                ""))
+               (("bld\\.INSTALL_DIR.*") ""))
              #t)))
-       ;; XXX: The test infrastructure attempts to set password with
-       ;; smbpasswd, which fails with "smbpasswd -L can only be used by root."
-       ;; So disable tests until there's a workaround.
+       ;; FIXME: The test suite seemingly hangs after failing to provision the
+       ;; test environment.
        #:tests? #f))
-    (inputs                                   ; TODO: Add missing dependencies
+    (inputs
      `(("acl" ,acl)
+       ("cmocka" ,cmocka)
        ("cups" ,cups)
-       ;; ("gamin" ,gamin)
+       ("gamin" ,gamin)
+       ("dbus", dbus)
        ("gpgme" ,gpgme)
        ("gnutls" ,gnutls)
+       ("heimdal" ,heimdal)
        ("jansson" ,jansson)
        ("libarchive" ,libarchive)
+       ("libtirpc" ,libtirpc)
        ("linux-pam" ,linux-pam)
        ("lmdb" ,lmdb)
        ("openldap" ,openldap)
@@ -253,11 +261,11 @@ external dependencies.")
        ("pkg-config" ,pkg-config)
        ("python-iso8601" ,python-iso8601)
        ("rpcsvc-proto" ,rpcsvc-proto)   ; for 'rpcgen'
-
        ;; For generating man pages.
        ("docbook-xml" ,docbook-xml-4.2)
        ("docbook-xsl" ,docbook-xsl)
-       ("xsltproc" ,libxslt)))
+       ("xsltproc" ,libxslt)
+       ("libxml2", libxml2)))           ;for XML_CATALOG_FILES
     (home-page "https://www.samba.org/")
     (synopsis
      "The standard Windows interoperability suite of programs for GNU and Unix")
@@ -435,51 +443,48 @@ key-value pair databases and a real LDAP database.")
     (license lgpl3+)))
 
 (define-public ppp
-  ;; This git commit contains unreleased fixes for CVE-2020-8597.
-  (let ((revision "1")
-        (commit "8d45443bb5c9372b4c6a362ba2f443d41c5636af"))
-    (package
-      (name "ppp")
-      (version (git-version "2.4.8" revision commit))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                      (url "https://github.com/paulusmack/ppp")
-                      (commit commit)))
-                (file-name (git-file-name name version))
-                (sha256
-                 (base32
-                  "06cf8fb84l3h2zy5da4j7k2j1qjv2gfqn986sf43xgj75605aks2"))))
-      (build-system gnu-build-system)
-      (arguments
-       '(#:tests? #f                    ; no check target
-         #:make-flags '("CC=gcc")
-         #:phases
-         (modify-phases %standard-phases
-           (add-before 'configure 'patch-Makefile
-             (lambda* (#:key inputs #:allow-other-keys)
-               (let ((libc    (assoc-ref inputs "libc"))
-                     (openssl (assoc-ref inputs "openssl"))
-                     (libpcap (assoc-ref inputs "libpcap")))
-                 (substitute* "pppd/Makefile.linux"
-                   (("/usr/include/crypt\\.h")
-                    (string-append libc "/include/crypt.h"))
-                   (("/usr/include/openssl")
-                    (string-append openssl "/include/openssl"))
-                   (("/usr/include/pcap-bpf.h")
-                    (string-append libpcap "/include/pcap-bpf.h")))
-                 #t))))))
-      (inputs
-       `(("libpcap" ,libpcap)
-         ("openssl" ,(@ (gnu packages tls) openssl))))
-      (synopsis "Implementation of the Point-to-Point Protocol")
-      (home-page "https://ppp.samba.org/")
-      (description
-       "The Point-to-Point Protocol (PPP) provides a standard way to establish
+  (package
+    (name "ppp")
+    (version "2.4.9")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/paulusmack/ppp")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1bhhksdclsnkw54a517ndrw55q5zljjbh9pcqz1z4a2z2flxpsgk"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:tests? #f                    ; no check target
+       #:make-flags '("CC=gcc")
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'patch-Makefile
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((libc    (assoc-ref inputs "libc"))
+                   (openssl (assoc-ref inputs "openssl"))
+                   (libpcap (assoc-ref inputs "libpcap")))
+               (substitute* "pppd/Makefile.linux"
+                 (("/usr/include/crypt\\.h")
+                  (string-append libc "/include/crypt.h"))
+                 (("/usr/include/openssl")
+                  (string-append openssl "/include/openssl"))
+                 (("/usr/include/pcap-bpf.h")
+                  (string-append libpcap "/include/pcap-bpf.h")))
+               #t))))))
+    (inputs
+     `(("libpcap" ,libpcap)
+       ("openssl" ,(@ (gnu packages tls) openssl))))
+    (synopsis "Implementation of the Point-to-Point Protocol")
+    (home-page "https://ppp.samba.org/")
+    (description
+     "The Point-to-Point Protocol (PPP) provides a standard way to establish
 a network connection over a serial link.  At present, this package supports IP
 and IPV6 and the protocols layered above them, such as TCP and UDP.")
-      ;; pppd, pppstats and pppdump are under BSD-style notices.
-      ;; some of the pppd plugins are GPL'd.
-      ;; chat is public domain.
-      (license (list bsd-3 bsd-4 gpl2+ public-domain)))))
+    ;; pppd, pppstats and pppdump are under BSD-style notices.
+    ;; some of the pppd plugins are GPL'd.
+    ;; chat is public domain.
+    (license (list bsd-3 bsd-4 gpl2+ public-domain))))
 

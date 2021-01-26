@@ -50,7 +50,6 @@
 
             %installer-configuration-file
             %installer-target-dir
-            %configuration-file-width
             format-configuration
             configuration->file))
 
@@ -88,7 +87,7 @@
                               (rewind-strategy 'previous)
                               (menu-proc (const #f)))
   "Run the COMPUTE procedure of all <installer-step> records in STEPS
-sequencially. If the &installer-step-abort condition is raised, fallback to a
+sequentially.  If the &installer-step-abort condition is raised, fallback to a
 previous install-step, accordingly to the specified REWIND-STRATEGY.
 
 REWIND-STRATEGY possible values are 'previous, 'menu and 'start.  If 'previous
@@ -218,7 +217,6 @@ stored in RESULTS. Return #f otherwise."
 
 (define %installer-configuration-file (make-parameter "/mnt/etc/config.scm"))
 (define %installer-target-dir (make-parameter "/mnt"))
-(define %configuration-file-width (make-parameter 79))
 
 (define (format-configuration steps results)
   "Return the list resulting from the application of the procedure defined in

@@ -1,5 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2020 Martin Becze <mjbecze@riseup.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -27,6 +28,7 @@
   #:use-module (guix packages)
   #:use-module (guix sets)
   #:use-module (guix modules)
+  #:use-module ((guix utils) #:select (version-major+minor))
   #:use-module ((guix build utils) #:select (find-files))
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
@@ -49,19 +51,23 @@
                (module-ref (resolve-interface module) variable))))
     (match-lambda
       ("guile"      (ref '(gnu packages guile) 'guile-3.0/libgc-7))
-      ("guile-json" (ref '(gnu packages guile) 'guile-json-3))
+      ("guile-avahi" (ref '(gnu packages guile-xyz) 'guile-avahi))
+      ("guile-json" (ref '(gnu packages guile) 'guile-json-4))
       ("guile-ssh"  (ref '(gnu packages ssh)   'guile-ssh))
       ("guile-git"  (ref '(gnu packages guile) 'guile-git))
+      ("guile-semver"  (ref '(gnu packages guile-xyz) 'guile-semver))
       ("guile-sqlite3" (ref '(gnu packages guile) 'guile-sqlite3))
+      ("guile-zlib" (ref '(gnu packages guile) 'guile-zlib))
+      ("guile-lzlib" (ref '(gnu packages guile) 'guile-lzlib))
+      ("guile-zstd" (ref '(gnu packages guile) 'guile-zstd))
       ("guile-gcrypt"  (ref '(gnu packages gnupg) 'guile-gcrypt))
-      ("gnutls"     (ref '(gnu packages tls) 'guile3.0-gnutls))
-      ("zlib"       (ref '(gnu packages compression) 'zlib))
-      ("lzlib"      (ref '(gnu packages compression) 'lzlib))
+      ("gnutls"     (ref '(gnu packages tls) 'gnutls))
       ("gzip"       (ref '(gnu packages compression) 'gzip))
       ("bzip2"      (ref '(gnu packages compression) 'bzip2))
       ("xz"         (ref '(gnu packages compression) 'xz))
       ("po4a"       (ref '(gnu packages gettext) 'po4a))
       ("gettext"       (ref '(gnu packages gettext) 'gettext-minimal))
+      ("gcc-toolchain" (ref '(gnu packages commencement) 'gcc-toolchain))
       (_            #f))))                        ;no such package
 
 
@@ -398,6 +404,12 @@ a list of extra files, such as '(\"contributing\")."
                         (find-files directory
                                     "\\.[a-z]{2}(_[A-Z]{2})?\\.po$")))
 
+          (define parallel-jobs
+            ;; Limit thread creation by 'n-par-for-each'.  Going beyond can
+            ;; lead libgc 8.0.4 to abort with:
+            ;; mmap(PROT_NONE) failed
+            (min (parallel-job-count) 4))
+
           (mkdir #$output)
           (copy-recursively #$documentation "."
                             #:log (%make-void-port "w"))
@@ -413,14 +425,14 @@ a list of extra files, such as '(\"contributing\")."
           (setenv "LC_ALL" "en_US.UTF-8")
           (setlocale LC_ALL "en_US.UTF-8")
 
-          (n-par-for-each (parallel-job-count)
+          (n-par-for-each parallel-jobs
                           (match-lambda
                             ((language . po)
                              (translate-texi "guix" po language
                                              #:extras '("contributing"))))
                           (available-translations "." "guix-manual"))
 
-          (n-par-for-each (parallel-job-count)
+          (n-par-for-each parallel-jobs
                           (match-lambda
                             ((language . po)
                              (translate-texi "guix-cookbook" po language)))
@@ -580,6 +592,48 @@ that provide Guile modules."
 
   (computed-file name build))
 
+(define (quiet-guile guile)
+  "Return a wrapper that does the same as the 'guile' executable of GUILE,
+except that it does not complain about locales and falls back to 'en_US.utf8'
+instead of 'C'."
+  (define gcc
+    (specification->package "gcc-toolchain"))
+
+  (define source
+    (search-path %load-path
+                 "gnu/packages/aux-files/guile-launcher.c"))
+
+  (define effective
+    (version-major+minor (package-version guile)))
+
+  (define build
+    ;; XXX: Reuse <c-compiler> from (guix scripts pack) instead?
+    (with-imported-modules '((guix build utils))
+      #~(begin
+          (use-modules (guix build utils)
+                       (srfi srfi-26))
+
+          (mkdir-p (string-append #$output "/bin"))
+
+          (setenv "PATH" #$(file-append gcc "/bin"))
+          (setenv "C_INCLUDE_PATH"
+                  (string-join
+                   (map (cut string-append <> "/include")
+                        '#$(match (bag-transitive-build-inputs
+                                   (package->bag guile))
+                             (((labels packages . _) ...)
+                              (filter package? packages))))
+                   ":"))
+          (setenv "LIBRARY_PATH" #$(file-append gcc "/lib"))
+
+          (invoke "gcc" #$(local-file source) "-Wall" "-g0" "-O2"
+                  "-I" #$(file-append guile "/include/guile/" effective)
+                  "-L" #$(file-append guile "/lib")
+                  #$(string-append "-lguile-" effective)
+                  "-o" (string-append #$output "/bin/guile")))))
+
+  (computed-file "guile-wrapper" build))
+
 (define* (guix-command modules
                        #:key source (dependencies '())
                        guile (guile-version (effective-version)))
@@ -596,18 +650,26 @@ load path."
 
   (program-file "guix-command"
                 #~(begin
+                    ;; Remove the empty extension from the search path.
+                    (set! %load-extensions '(".scm"))
+
                     (set! %load-path
-                      (cons (string-append #$module-directory
-                                           "/share/guile/site/"
-                                           (effective-version))
-                            %load-path))
+                      (append (list (string-append #$module-directory
+                                                   "/share/guile/site/"
+                                                   (effective-version))
+                                    (string-append #$guile "/share/guile/"
+                                                   (effective-version)))
+                              %load-path))
 
                     (set! %load-compiled-path
-                      (cons (string-append #$module-directory
-                                           "/lib/guile/"
-                                           (effective-version)
-                                           "/site-ccache")
-                            %load-compiled-path))
+                      (append (list (string-append #$module-directory
+                                                   "/lib/guile/"
+                                                   (effective-version)
+                                                   "/site-ccache")
+                                    (string-append #$guile "/lib/guile/"
+                                                   (effective-version)
+                                                   "/ccache"))
+                              %load-compiled-path))
 
                     ;; To maximize the chances that locales are set up right
                     ;; out-of-the-box, bundle "common" UTF-8 locales.
@@ -634,7 +696,9 @@ load path."
                       ;; XXX: It would be more convenient to change it to:
                       ;;   (exit (apply guix-main (command-line)))
                       (apply guix-main (command-line))))
-                #:guile guile))
+
+                ;; Use a 'guile' variant that doesn't complain about locales.
+                #:guile (quiet-guile guile)))
 
 (define (miscellaneous-files source)
   "Return data files taken from SOURCE."
@@ -722,18 +786,26 @@ Info manual."
                          (copy-recursively #$miscellany #$output
                                            #:log (%make-void-port "w")))))))
 
+(define (transitive-package-dependencies package)
+  "Return the list of packages propagated by PACKAGE, including PACKAGE
+itself."
+  (match (package-transitive-propagated-inputs package)
+    (((labels packages _ ...) ...)
+     (cons package packages))))
+
 (define* (compiled-guix source #:key (version %guix-version)
                         (pull-version 1)
                         (name (string-append "guix-" version))
                         (guile-version (effective-version))
                         (guile-for-build (default-guile))
-                        (zlib (specification->package "zlib"))
-                        (lzlib (specification->package "lzlib"))
                         (gzip (specification->package "gzip"))
                         (bzip2 (specification->package "bzip2"))
                         (xz (specification->package "xz"))
                         (guix (specification->package "guix")))
   "Return a file-like object that contains a compiled Guix."
+  (define guile-avahi
+    (specification->package "guile-avahi"))
+
   (define guile-json
     (specification->package "guile-json"))
 
@@ -746,20 +818,29 @@ Info manual."
   (define guile-sqlite3
     (specification->package "guile-sqlite3"))
 
+  (define guile-zlib
+    (specification->package "guile-zlib"))
+
+  (define guile-lzlib
+    (specification->package "guile-lzlib"))
+
+  (define guile-zstd
+    (specification->package "guile-zstd"))
+
   (define guile-gcrypt
     (specification->package "guile-gcrypt"))
+
+  (define guile-semver
+    (specification->package "guile-semver"))
 
   (define gnutls
     (specification->package "gnutls"))
 
   (define dependencies
-    (match (append-map (lambda (package)
-                         (cons (list "x" package)
-                               (package-transitive-propagated-inputs package)))
-                       (list guile-gcrypt gnutls guile-git guile-json
-                             guile-ssh guile-sqlite3))
-      (((labels packages _ ...) ...)
-       packages)))
+    (append-map transitive-package-dependencies
+                (list guile-gcrypt gnutls guile-git guile-avahi
+                      guile-json guile-semver guile-ssh guile-sqlite3
+                      guile-zlib guile-lzlib guile-zstd)))
 
   (define *core-modules*
     (scheme-node "guix-core"
@@ -803,6 +884,11 @@ Info manual."
                                (name name))
                              (scheme-modules* source "guix"))
                  (list *core-modules*)
+
+                 #:extra-files
+                 `(("guix/graph.js" ,(local-file "../guix/graph.js"))
+                   ("guix/d3.v3.js" ,(local-file "../guix/d3.v3.js")))
+
                  #:extensions dependencies
                  #:guile-for-build guile-for-build))
 
@@ -884,9 +970,7 @@ Info manual."
                  '()
                  #:extra-modules
                  `(((guix config)
-                    => ,(make-config.scm #:zlib zlib
-                                         #:lzlib lzlib
-                                         #:gzip gzip
+                    => ,(make-config.scm #:gzip gzip
                                          #:bzip2 bzip2
                                          #:xz xz
                                          #:package-name
@@ -983,7 +1067,7 @@ Info manual."
                                       (variables rest ...))))))
     (variables %localstatedir %storedir %sysconfdir)))
 
-(define* (make-config.scm #:key zlib lzlib gzip xz bzip2
+(define* (make-config.scm #:key gzip xz bzip2
                           (package-name "GNU Guix")
                           (package-version "0")
                           (bug-report-address "bug-guix@gnu.org")
@@ -1004,8 +1088,6 @@ Info manual."
                                %state-directory
                                %store-database-directory
                                %config-directory
-                               %libz
-                               %liblz
                                %gzip
                                %bzip2
                                %xz))
@@ -1048,15 +1130,7 @@ Info manual."
                    (define %bzip2
                      #+(and bzip2 (file-append bzip2 "/bin/bzip2")))
                    (define %xz
-                     #+(and xz (file-append xz "/bin/xz")))
-
-                   (define %libz
-                     #+(and zlib
-                            (file-append zlib "/lib/libz")))
-
-                   (define %liblz
-                     #+(and lzlib
-                            (file-append lzlib "/lib/liblz"))))
+                     #+(and xz (file-append xz "/bin/xz"))))
 
                ;; Guile 2.0 *requires* the 'define-module' to be at the
                ;; top-level or the 'toplevel-ref' in the resulting .go file are

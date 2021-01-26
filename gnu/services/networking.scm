@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
@@ -14,6 +14,7 @@
 ;;; Copyright © 2019 Sou Bunnbu <iyzsong@member.fsf.org>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2021 Oleg Pykhalov <go.wigust@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -42,6 +43,7 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
+  #:use-module (gnu packages cluster)
   #:use-module (gnu packages connman)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages linux)
@@ -61,7 +63,9 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-26)
+  #:use-module (srfi srfi-43)
   #:use-module (ice-9 match)
+  #:use-module (json)
   #:re-export (static-networking-service
                static-networking-service-type)
   #:export (%facebook-host-aliases
@@ -180,7 +184,21 @@
             pagekite-configuration-kitesecret
             pagekite-configuration-frontend
             pagekite-configuration-kites
-            pagekite-configuration-extra-file))
+            pagekite-configuration-extra-file
+
+            yggdrasil-service-type
+            yggdrasil-configuration
+            yggdrasil-configuration?
+            yggdrasil-configuration-autoconf?
+            yggdrasil-configuration-config-file
+            yggdrasil-configuration-log-level
+            yggdrasil-configuration-log-to
+            yggdrasil-configuration-json-config
+            yggdrasil-configuration-package
+
+            keepalived-configuration
+            keepalived-configuration?
+            keepalived-service-type))
 
 ;;; Commentary:
 ;;;
@@ -265,7 +283,9 @@ fe80::1%lo0 apps.facebook.com\n")
                    (and (zero? (cdr (waitpid pid)))
                         (read-pid-file #$pid-file)))))
       (stop #~(make-kill-destructor))))
-   isc-dhcp))
+   isc-dhcp
+   (description "Run @command{dhcp}, a Dynamic Host Configuration
+Protocol (DHCP) client, on all the non-loopback network interfaces.")))
 
 (define-deprecated (dhcp-client-service #:key (dhcp isc-dhcp))
   dhcp-client-service-type
@@ -540,9 +560,7 @@ make an initial adjustment of more than 1,000 seconds."
   (constraint-from         openntpd-constraint-from
                            (default '()))
   (constraints-from        openntpd-constraints-from
-                           (default '()))
-  (allow-large-adjustment? openntpd-allow-large-adjustment?
-                           (default #f))) ; upstream default
+                           (default '())))
 
 (define (openntpd-configuration->string config)
 
@@ -574,8 +592,7 @@ make an initial adjustment of more than 1,000 seconds."
      "\n")))                              ;add a trailing newline
 
 (define (openntpd-shepherd-service config)
-  (let ((openntpd (openntpd-configuration-openntpd config))
-        (allow-large-adjustment? (openntpd-allow-large-adjustment? config)))
+  (let ((openntpd (openntpd-configuration-openntpd config)))
 
     (define ntpd.conf
       (plain-file "ntpd.conf" (openntpd-configuration->string config)))
@@ -587,10 +604,7 @@ make an initial adjustment of more than 1,000 seconds."
            (start #~(make-forkexec-constructor
                      (list (string-append #$openntpd "/sbin/ntpd")
                            "-f" #$ntpd.conf
-                           "-d" ;; don't daemonize
-                           #$@(if allow-large-adjustment?
-                                  '("-s")
-                                  '()))
+                           "-d") ;; don't daemonize
                      ;; When ntpd is daemonized it repeatedly tries to respawn
                      ;; while running, leading shepherd to disable it.  To
                      ;; prevent spamming stderr, redirect output to logfile.
@@ -1163,7 +1177,8 @@ wireless networking."))))
             (start #~(make-forkexec-constructor
                       (list (string-append #$connman
                                            "/sbin/connmand")
-                            "-n" "-r"
+                            "--nodaemon"
+                            "--nodnsproxy"
                             #$@(if disable-vpn? '("--noplugin=vpn") '()))
 
                       ;; As connman(8) notes, when passing '-n', connman
@@ -1323,7 +1338,7 @@ whatever the thing is supposed to do).")))
   (wpa-supplicant     wpa-supplicant-configuration-wpa-supplicant ;<package>
                       (default wpa-supplicant))
   (requirement        wpa-supplicant-configuration-requirement    ;list of symbols
-                      (default '(user-processes dbus-system loopback syslogd)))
+                      (default '(user-processes loopback syslogd)))
   (pid-file           wpa-supplicant-configuration-pid-file       ;string
                       (default "/var/run/wpa_supplicant.pid"))
   (dbus?              wpa-supplicant-configuration-dbus?          ;Boolean
@@ -1342,7 +1357,9 @@ whatever the thing is supposed to do).")))
      (list (shepherd-service
             (documentation "Run the WPA supplicant daemon")
             (provision '(wpa-supplicant))
-            (requirement requirement)
+            (requirement (if dbus?
+                             (cons 'dbus-system requirement)
+                             requirement))
             (start #~(make-forkexec-constructor
                       (list (string-append #$wpa-supplicant
                                            "/sbin/wpa_supplicant")
@@ -1746,5 +1763,147 @@ table inet filter {
    (description
     "Run @url{https://pagekite.net/,PageKite}, a tunneling solution to make
 local servers publicly accessible on the web, even behind NATs and firewalls.")))
+
+
+;;;
+;;; Yggdrasil
+;;;
+
+(define-record-type* <yggdrasil-configuration>
+  yggdrasil-configuration
+  make-yggdrasil-configuration
+  yggdrasil-configuration?
+  (package yggdrasil-configuration-package
+           (default yggdrasil))
+  (json-config yggdrasil-configuration-json-config
+               (default '()))
+  (config-file yggdrasil-config-file
+               (default "/etc/yggdrasil-private.conf"))
+  (autoconf? yggdrasil-configuration-autoconf?
+             (default #f))
+  (log-level yggdrasil-configuration-log-level
+             (default 'info))
+  (log-to yggdrasil-configuration-log-to
+          (default 'stdout)))
+
+(define (yggdrasil-configuration-file config)
+  (define (scm->yggdrasil-json x)
+    (define key-value?
+      dotted-list?)
+    (define (param->camel str)
+      (string-concatenate
+       (map
+	string-capitalize
+	(string-split str (cut eqv? <> #\-)))))
+    (cond
+     ((key-value? x)
+      (let ((k (car x))
+	    (v (cdr x)))
+	(cons
+	 (if (symbol? k)
+	     (param->camel (symbol->string k))
+	     k)
+	 v)))
+     ((list? x) (map scm->yggdrasil-json x))
+     ((vector? x) (vector-map scm->yggdrasil-json x))
+     (else x)))
+  (computed-file
+   "yggdrasil.conf"
+   #~(call-with-output-file #$output
+       (lambda (port)
+         ;; it's HJSON, so comments are a-okay
+         (display "# Generated by yggdrasil-service\n" port)
+         (display #$(scm->json-string
+                     (scm->yggdrasil-json
+                      (yggdrasil-configuration-json-config config)))
+                  port)))))
+
+(define (yggdrasil-shepherd-service config)
+  "Return a <shepherd-service> for yggdrasil with CONFIG."
+  (define yggdrasil-command
+    #~(append
+       (list (string-append
+              #$(yggdrasil-configuration-package config)
+              "/bin/yggdrasil")
+             "-useconffile"
+             #$(yggdrasil-configuration-file config))
+       (if #$(yggdrasil-configuration-autoconf? config)
+           '("-autoconf")
+           '())
+       (let ((extraconf #$(yggdrasil-config-file config)))
+         (if extraconf
+             (list "-extraconffile" extraconf)
+             '()))
+       (list "-loglevel"
+             #$(symbol->string
+		(yggdrasil-configuration-log-level config))
+             "-logto"
+             #$(symbol->string
+		(yggdrasil-configuration-log-to config)))))
+  (list (shepherd-service
+         (documentation "Connect to the Yggdrasil mesh network")
+         (provision '(yggdrasil))
+         (requirement '(networking))
+         (start #~(make-forkexec-constructor
+                   #$yggdrasil-command
+                   #:log-file "/var/log/yggdrasil.log"
+                   #:group "yggdrasil"))
+         (stop #~(make-kill-destructor)))))
+
+(define %yggdrasil-accounts
+  (list (user-group (name "yggdrasil") (system? #t))))
+
+(define yggdrasil-service-type
+  (service-type
+   (name 'yggdrasil)
+   (description
+    "Connect to the Yggdrasil mesh network.
+See yggdrasil -genconf for config options.")
+   (extensions
+    (list (service-extension shepherd-root-service-type
+                             yggdrasil-shepherd-service)
+          (service-extension account-service-type
+                             (const %yggdrasil-accounts))
+          (service-extension profile-service-type
+                             (compose list yggdrasil-configuration-package))))))
+
+
+;;;
+;;; Keepalived
+;;;
+
+(define-record-type* <keepalived-configuration>
+  keepalived-configuration make-keepalived-configuration
+  keepalived-configuration?
+  (keepalived  keepalived-configuration-keepalived  ;<package>
+               (default keepalived))
+  (config-file keepalived-configuration-config-file ;file-like
+               (default #f)))
+
+(define keepalived-shepherd-service
+  (match-lambda
+    (($ <keepalived-configuration> keepalived config-file)
+     (list
+      (shepherd-service
+       (provision '(keepalived))
+       (documentation "Run keepalived.")
+       (requirement '(loopback))
+       (start #~(make-forkexec-constructor
+                 (list (string-append #$keepalived "/sbin/keepalived")
+                       "--dont-fork" "--log-console" "--log-detail"
+                       "--pid=/var/run/keepalived.pid"
+                       (string-append "--use-file=" #$config-file))
+                 #:pid-file "/var/run/keepalived.pid"
+                 #:log-file "/var/log/keepalived.log"))
+       (respawn? #f)
+       (stop #~(make-kill-destructor)))))))
+
+(define keepalived-service-type
+  (service-type (name 'keepalived)
+                (extensions (list (service-extension shepherd-root-service-type
+                                                     keepalived-shepherd-service)))
+                (description
+                 "Run @uref{https://www.keepalived.org/, Keepalived}
+routing software.")))
 
 ;;; networking.scm ends here

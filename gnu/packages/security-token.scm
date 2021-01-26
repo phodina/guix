@@ -4,10 +4,11 @@
 ;;; Copyright © 2016 Mike Gerwitz <mtg@gnu.org>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
-;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2018, 2019 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2018 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2020 Raphaël Mélotte <raphael.melotte@mind.be>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -43,6 +44,7 @@
   #:use-module (gnu packages dns)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages graphviz)
+  #:use-module (gnu packages gnupg)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
@@ -85,11 +87,11 @@
                (("/bin/echo") (which "echo")))
              #t)))))
     (native-inputs
-     `(("pcsc-lite" ,pcsc-lite)         ; only required for headers
-       ("perl" ,perl)
+     `(("perl" ,perl)
        ("pkg-config" ,pkg-config)))
     (inputs
-     `(("libusb" ,libusb)))
+     `(("libusb" ,libusb)
+       ("pcsc-lite" ,pcsc-lite)))
     (home-page "https://ccid.apdu.fr/")
     (synopsis "PC/SC driver for USB smart card devices")
     (description
@@ -102,7 +104,7 @@ readers and is needed to communicate with such devices through the
 (define-public eid-mw
   (package
     (name "eid-mw")
-    (version "4.4.27")
+    (version "5.0.11")
     (source
      (origin
        (method git-fetch)
@@ -111,13 +113,15 @@ readers and is needed to communicate with such devices through the
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "17lw8iwp7h5cs3db80sysr84ffi333cf2vrhncs9l6hy6glfl2v1"))))
+        (base32 "0590cz00cny749p99srv880gpgzvxaf9fwm2lghv3nw0qdsilss8"))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
+       ("autoconf-archive" ,autoconf-archive)
        ("automake" ,automake)
        ("gettext" ,gettext-minimal)
        ("libtool" ,libtool)
+       ("libassuan" ,libassuan)
        ("pkg-config" ,pkg-config)
        ("perl" ,perl)))
     (inputs
@@ -130,16 +134,33 @@ readers and is needed to communicate with such devices through the
        ("libxml2" ,libxml2)
        ("cyrus-sasl" ,cyrus-sasl)))
     (arguments
-     `(#:phases
+     `(#:configure-flags
+       (list "--disable-static")
+       #:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'bootstrap
+         (replace 'bootstrap
            (lambda _
              ;; configure.ac relies on ‘git --describe’ to get the version.
              ;; Patch it to just return the real version number directly.
              (substitute* "scripts/build-aux/genver.sh"
                (("/bin/sh") (which "sh"))
                (("^(GITDESC=).*" _ match) (string-append match ,version "\n")))
-             (invoke "sh" "./bootstrap.sh"))))))
+             (invoke "sh" "./bootstrap.sh")))
+         (add-after 'unpack 'make-reproducible
+           (lambda _
+             (substitute* "scripts/mac/create-vers.sh"
+               (("NOW=.*")
+                "NOW=1970-01-01\n"))
+             #t))
+         ;; Remove failing test that was removed upstream after version 5.0.8.
+         ;; See: https://github.com/Fedict/eid-mw/commit/3d1187b1b61118b9ae97607903d3d2fc0bad7518
+         (add-before 'check 'remove-failing-test
+           (lambda _
+             (substitute* "tests/unit/Makefile.am"
+               (("sign_state ordering cardcom_common")
+                "sign_state ordering #cardcom_common"))
+             #t))
+         )))
     (synopsis "Belgian eID Middleware")
     (description "The Belgian eID Middleware is required to authenticate with
 online services using the Belgian electronic identity card.")
@@ -197,14 +218,14 @@ with a PKCS #11 Cryptographic Token Interface.")
 (define-public pcsc-lite
   (package
     (name "pcsc-lite")
-    (version "1.8.26")
+    (version "1.9.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://pcsclite.apdu.fr/files/"
                                   "pcsc-lite-" version ".tar.bz2"))
               (sha256
                (base32
-                "1ndvvz0fgqwz70pijymsxmx25mzryb0zav1i8jjc067ndryvxdry"))))
+                "1y9f9zipnrmgiw0mxrvcgky8vfrcmg6zh40gbln5a93i2c1x8j01"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--enable-usbdropdir=/var/lib/pcsc/drivers"
@@ -256,7 +277,7 @@ website for more information about Yubico and the YubiKey.")
 (define-public opensc
   (package
     (name "opensc")
-    (version "0.20.0")
+    (version "0.21.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -264,7 +285,7 @@ website for more information about Yubico and the YubiKey.")
                     version "/opensc-" version ".tar.gz"))
               (sha256
                (base32
-                "0qs8pabkrpj1z52bkdsk59s2z6q5m0hfh9d5j1f68qs4lksb9x5v"))))
+                "0pijycjwpll9zn83dazgsh8n9ywq0z1ragjsd1sqv3abrcfvpyrb"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases

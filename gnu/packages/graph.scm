@@ -57,18 +57,19 @@
 (define-public igraph
   (package
     (name "igraph")
-    (version "0.8.1")
+    (version "0.8.4")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/igraph/igraph/releases/"
                            "download/" version "/igraph-" version ".tar.gz"))
        (sha256
-        (base32 "0wbvrac3ip3lqmbkckhnxa2swlbc86l1h8mazdlb618kx3winvi6"))))
+        (base32 "127q6q40kbmvd62yhbz6dlfk370qiq98s1iscyagpgbpjwb4xvyf"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
-       (list "--with-external-glpk"
+       (list "--disable-static"
+             "--with-external-glpk"
              "--with-external-blas"
              "--with-external-lapack")))
     (inputs
@@ -90,14 +91,13 @@ more.")
 (define-public python-igraph
   (package (inherit igraph)
     (name "python-igraph")
-    (version "0.8.0")
+    (version "0.8.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "python-igraph" version))
        (sha256
-        (base32
-         "13mbrlmnbgbzw6y8ws7wj0a3ly3in8j4l1ngi6yxvgvxxi4bprj7"))))
+        (base32 "0wkxrs28qdvnrz7d4jzcf2bh6v2yqzx3wyfziihfgsi2gn6n60a6"))))
     (build-system python-build-system)
     (arguments
      '(#:configure-flags
@@ -121,91 +121,6 @@ more.")
        ("python-pytest" ,python-pytest)))
     (home-page "https://pypi.org/project/python-igraph/")
     (synopsis "Python bindings for the igraph network analysis library")))
-
-(define-public r-igraph
-  (package
-    (name "r-igraph")
-    (version "1.2.5")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (cran-uri "igraph" version))
-       (sha256
-        (base32
-         "126z1ygbmi3g7hk97snf22rnx680dyi30idssm5zacba5rdngp8c"))))
-    (build-system r-build-system)
-    (native-inputs
-     `(("gfortran" ,gfortran)))
-    (inputs
-     `(("gmp" ,gmp)
-       ("glpk" ,glpk)
-       ("libxml2" ,libxml2)
-       ("zlib" ,zlib)))
-    (propagated-inputs
-     `(("r-magrittr" ,r-magrittr)
-       ("r-matrix" ,r-matrix)
-       ("r-pkgconfig" ,r-pkgconfig)))
-    (home-page "https://igraph.org")
-    (synopsis "Network analysis and visualization")
-    (description
-     "This package provides routines for simple graphs and network analysis.
-It can handle large graphs very well and provides functions for generating
-random and regular graphs, graph visualization, centrality methods and much
-more.")
-    (license license:gpl2+)))
-
-(define-public r-diffusionmap
-  (package
-    (name "r-diffusionmap")
-    (version "1.2.0")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (cran-uri "diffusionMap" version))
-       (sha256
-        (base32
-         "1rvk7069brlm1s9kqj4c31mwwr3mw4hmhay95cjjjfmw5xclff2j"))))
-    (properties `((upstream-name . "diffusionMap")))
-    (build-system r-build-system)
-    (propagated-inputs
-     `(("r-igraph" ,r-igraph)
-       ("r-matrix" ,r-matrix)
-       ("r-scatterplot3d" ,r-scatterplot3d)))
-    (home-page "https://www.r-project.org")
-    (synopsis "Diffusion map")
-    (description "This package implements the diffusion map method of data
-parametrization, including creation and visualization of diffusion maps,
-clustering with diffusion K-means and regression using the adaptive regression
-model.")
-    (license license:gpl2)))
-
-(define-public r-rgraphviz
-  (package
-    (name "r-rgraphviz")
-    (version "2.32.0")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (bioconductor-uri "Rgraphviz" version))
-       (sha256
-        (base32
-         "1calpvzgcz6v7s4x6bf35kj83sga95zjp7x87p5d3qnbv7q2wz5y"))))
-    (properties `((upstream-name . "Rgraphviz")))
-    (build-system r-build-system)
-    ;; FIXME: Rgraphviz bundles the sources of an older variant of
-    ;; graphviz.  It does not build with the latest version of graphviz, so
-    ;; we do not add graphviz to the inputs.
-    (inputs `(("zlib" ,zlib)))
-    (propagated-inputs
-     `(("r-graph" ,r-graph)))
-    (native-inputs
-     `(("pkg-config" ,pkg-config)))
-    (home-page "https://bioconductor.org/packages/Rgraphviz")
-    (synopsis "Plotting capabilities for R graph objects")
-    (description
-     "This package interfaces R with the graphviz library for plotting R graph
-objects from the @code{graph} package.")
-    (license license:epl1.0)))
 
 (define-public r-rbiofabric
   (let ((commit "666c2ae8b0a537c006592d067fac6285f71890ac")

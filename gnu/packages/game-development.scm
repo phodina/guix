@@ -5,10 +5,10 @@
 ;;; Copyright © 2015, 2018 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2015, 2016, 2017 David Thompson <davet@gnu.org>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 Kei Kebreau <kkebreau@posteo.net>
+;;; Copyright © 2016, 2017, 2020 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2016, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2018 Julian Graham <joolean@gmail.com>
-;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2017 Peter Mikkelsen <petermikkelsen10@gmail.com>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
@@ -163,21 +163,22 @@ is used in some video games and movies.")
 (define-public deutex
   (package
    (name "deutex")
-   (version "5.2.1")
-   (source (origin
-            (method url-fetch)
-            (uri (string-append "https://github.com/Doom-Utils/deutex"
-                                "/releases/download/v" version "/"
-                                "deutex-" version ".tar.xz"))
-            (sha256
-             (base32
-              "07w3asqxx89wl2wfv1z3cak8v83h3ys3b39mq9qq4gyf3xdhs76n"))))
+   (version "5.2.2")
+   (source
+    (origin
+      (method url-fetch)
+      (uri (string-append "https://github.com/Doom-Utils/deutex"
+                          "/releases/download/v" version "/"
+                          "deutex-" version ".tar.zst"))
+      (sha256
+       (base32 "0psb2za6ldrlak7s8pjvli98ij5yiwjx8j1ms2v7rj9yadx0xv8h"))))
    (build-system gnu-build-system)
    (inputs
     `(("libpng" ,libpng)))
    (native-inputs
     `(("asciidoc" ,asciidoc)
-      ("pkg-config" ,pkg-config)))
+      ("pkg-config" ,pkg-config)
+      ("zstd" ,zstd)))
    (home-page "https://github.com/Doom-Utils/deutex")
    (synopsis "WAD file composer for Doom and related games")
    (description
@@ -277,14 +278,14 @@ PCM data.")
 (define-public gzochi
   (package
     (name "gzochi")
-    (version "0.12")
+    (version "0.13")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://savannah/gzochi/gzochi-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0h8yvk7154kd8zdfa9nqy73blrjq2x19kv305jcnwlmm09vvss59"))))
+                "1vcvf04qqzs3q8kaild2x7qvkwc6bwzfsisb78147b8z747j7hj0"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases
@@ -298,7 +299,7 @@ PCM data.")
     (native-inputs `(("pkgconfig" ,pkg-config)))
     (inputs `(("bdb" ,bdb)
               ("glib" ,glib)
-              ("guile" ,guile-2.2)
+              ("guile" ,guile-3.0)
               ("libmicrohttpd" ,libmicrohttpd)
               ("ncurses" ,ncurses)
               ("sdl" ,sdl)
@@ -317,14 +318,13 @@ provide connectivity for client applications written in any language.")
 (define-public nml
   (package
     (name "nml")
-    (version "0.5.2")
+    (version "0.5.3")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "nml" version))
        (sha256
-        (base32
-         "1lwf5sc5qqzrkxfx5wkkj3yh2j2nzh5r599ly5psy8yw92km24hy"))))
+        (base32 "0l5pfs8q7jrl3xscqq7pnwh5h5d17fsyjy7xspkc73sa0ayjm9jx"))))
     (build-system python-build-system)
     ;; TODO: Fix test that fails with
     ;; "AttributeError: partially initialized module 'nml.nmlop' has no
@@ -342,26 +342,22 @@ compiling NML files (along with their associated language, sound and graphic
 files) into @file{.grf} and/or @file{.nfo} files.")
     (license license:gpl2+)))
 
-(define-public python-sge-pygame
+(define-public python-sge
   (package
-    (name "python-sge-pygame")
-    (version "1.5.1")
+    (name "python-sge")
+    (version "1.7")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://savannah/stellarengine/"
-                           (version-major+minor version) "/sge-pygame-"
-                           version ".tar.gz"))
-       (file-name (string-append name "-" version ".tar.gz"))
+       (uri (pypi-uri "sge" version))
        (sha256
         (base32
-         "1rl3xjzh78sl0sq3xl8rl7cgp9v9v3h7s2pfwn7nj1vrmffzkcpd"))))
+         "02fn6v6bxk3sngwd4kd3mglrp0jlnhx7x6h8nnkik6wdv150a0wv"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-pygame" ,python-pygame)
-       ("python-six" ,python-six)
        ("python-uniseg" ,python-uniseg)))
-    (home-page "http://stellarengine.nongnu.org")
+    (home-page "https://python-sge.github.io/")
     (synopsis "2D game engine for Python")
     (description
      "The SGE Game Engine (\"SGE\", pronounced like \"Sage\") is a
@@ -370,8 +366,8 @@ you can focus on the game itself.  This makes more rapid game development
 possible, and it also makes the SGE easy to learn.")
     (license license:lgpl3+)))
 
-(define-public python2-sge-pygame
-  (package-with-python2 python-sge-pygame))
+(define-public python-sge-pygame
+  (deprecated-package "python-sge-pygame" python-sge))
 
 (define-public python-tmx
   (package
@@ -412,14 +408,15 @@ levels.")
 (define-public python-xsge
   (package
     (name "python-xsge")
-    (version "2018.02.26")
+    (version "2020.09.07")
     (source (origin
               (method url-fetch)
-              (uri (string-append "mirror://savannah/xsge/xsge/xsge-"
-                                  version ".tar.gz"))
+              (uri (string-append "https://github.com/python-sge/xsge"
+                                  "/releases/download/v" version
+                                  "/xsge-" version ".zip"))
               (sha256
                (base32
-                "0bx93hgf7cgdw2gsygbh59y8vpw37pgsa279rajw3fkdpl8vrc40"))))
+                "136xgy3f9vw636wxpqbha022avk0wyxw63mm3a2dvwhh90s716f9"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -432,12 +429,11 @@ levels.")
                      (string-append "--prefix=" (assoc-ref outputs "out"))
                      "--root=/"))))
        #:tests? #f)) ; no check target
+    (native-inputs
+     `(("unzip" ,unzip)))
     (propagated-inputs
-     `(("python-sge-pygame" ,python-sge-pygame)
-       ("python-pygame" ,python-pygame)
-       ("python-six" ,python-six)
-       ("python-tmx" ,python-tmx)))
-    (home-page "http://xsge.nongnu.org")
+     `(("python-sge" ,python-sge)))
+    (home-page "https://python-sge.github.io/")
     (synopsis "Extensions for the SGE Game Engine")
     (description
      "xSGE is a collection of modules that make doing certain tasks with the SGE
@@ -446,13 +442,10 @@ GUI toolkit, lighting and physics frameworks and @code{Tiled} TMX format
 support.")
     (license license:gpl3+)))
 
-(define-public python2-xsge
-  (package-with-python2 python-xsge))
-
 (define-public tiled
   (package
     (name "tiled")
-    (version "1.2.5")
+    (version "1.4.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -461,10 +454,11 @@ support.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "14v2zfka2y3h0r0biw1rl59585lji5074x958s4xnb352jm5h9b9"))))
+                "14bx4gywfzr2f07ldqk3la82g5ag1agj21f7ccrxip12ydmpx0xb"))))
     (build-system gnu-build-system)
     (inputs
      `(("qtbase" ,qtbase)
+       ("qtdeclarative" ,qtdeclarative)
        ("qtsvg" ,qtsvg)
        ("zlib" ,zlib)))
     (native-inputs
@@ -492,6 +486,35 @@ clone.")
     ;; As noted in 'COPYING', part of it is under GPLv2+, while the rest is
     ;; under BSD-2.
     (license license:gpl2+)))
+
+(define-public tsukundere
+  (package
+    (name "tsukundere")
+    (version "0.2.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/leoprikler/tsukundere")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0qmqch8hh7vsa8qaz853vwbkz0krb106955dnz8dsl7skbm5jpn6"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf-wrapper)
+       ("automake" ,automake)
+       ("guile" ,guile-3.0)
+       ("pkg-config" ,pkg-config)))
+    (propagated-inputs
+     `(("guile-sdl2" ,guile3.0-sdl2)))
+    (home-page "https://gitlab.com/leoprikler/tsukundere")
+    (synopsis "Visual novel engine")
+    (description "Tsukundere is a game engine geared heavily towards the
+development of visual novels, written on top of Guile-SDL2.  It is still
+experimental and at the time of writing contains little more than the Guile
+modules, that make up its runtime.")
+    (license license:lgpl3+)))
 
 (define-public sfml
   (package
@@ -588,7 +611,7 @@ sounds from presets such as \"explosion\" or \"powerup\".")
 (define-public surgescript
   (package
     (name "surgescript")
-    (version "0.5.4.3")
+    (version "0.5.4.4")
     (source
      (origin
        (method git-fetch)
@@ -597,7 +620,7 @@ sounds from presets such as \"explosion\" or \"powerup\".")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "13q81439zg1bn7gskligskjgcfq0rdapp6f3llmrlk48vnyq49s0"))))
+        (base32 "1vck1wk6r6jrrw5xzpqldplz601dfgpk5s5p45fam00nfsid0p7p"))))
      (build-system cmake-build-system)
      (arguments
       '(#:configure-flags
@@ -1049,7 +1072,14 @@ to create fully featured games and multimedia programs in the python language.")
          (method url-fetch)
          (uri (string-append "https://www.renpy.org/dl/" renpy-version
                              "/pygame_sdl2-" version ".tar.gz"))
-         (sha256 (base32 "1bmr7j9mlsc4czpgw70ld15ymyp4wxrk9hdsqad40wjwdxvvg2dr"))))
+         (sha256 (base32 "1bmr7j9mlsc4czpgw70ld15ymyp4wxrk9hdsqad40wjwdxvvg2dr"))
+         (modules '((guix build utils)))
+         (snippet
+          '(begin
+             ;; drop generated sources
+             (delete-file-recursively "gen")
+             (delete-file-recursively "gen3")
+             #t))))
       (build-system python-build-system)
       (arguments
        `(#:tests? #f                ; tests require pygame to be installed first
@@ -1068,11 +1098,6 @@ to create fully featured games and multimedia programs in the python language.")
                                       "/lib -Wl,-rpath,"
                                       (assoc-ref inputs "sdl-union")
                                       "/lib -Wl,--enable-new-dtags -lSDL2"))
-               #t))
-           (add-before 'build 'drop-generated-files
-             (lambda args
-               (delete-file-recursively "gen")
-               (delete-file-recursively "gen3")
                #t)))))
       (inputs
        `(("sdl-union"
@@ -1096,7 +1121,18 @@ developed mainly for Ren'py.")
        (method url-fetch)
        (uri (string-append "https://www.renpy.org/dl/" version
                            "/renpy-" version "-source.tar.bz2"))
-       (sha256 (base32 "1anr5cfbvbsbik4v4rvrkdkciwhg700k4lydfbs4n85raimz9mw4"))))
+       (sha256 (base32 "1anr5cfbvbsbik4v4rvrkdkciwhg700k4lydfbs4n85raimz9mw4"))
+       (modules '((guix build utils)))
+       (patches
+        (search-patches
+         "renpy-use-system-fribidi.patch"))
+       (snippet
+        '(with-directory-excursion "module"
+           ;; drop generated sources
+           (delete-file-recursively "gen")
+           ;; drop fribidi sources
+           (delete-file-recursively "fribidi-src")
+           #t))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f ; Ren'py doesn't seem to package tests
@@ -1108,6 +1144,13 @@ developed mainly for Ren'py.")
              (substitute* "renpy/editor.py"
                (("xdg-open")
                 (which "xdg-open")))
+             #t))
+         (add-after 'unpack 'fix-include-paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "module/setup.py"
+               (("/usr/include/fribidi")
+                (string-append (assoc-ref inputs "fribidi")
+                               "/include/fribidi")))
              #t))
          (add-after 'set-paths 'set-build-vars
            (lambda* (#:key inputs #:allow-other-keys)
@@ -1146,6 +1189,7 @@ developed mainly for Ren'py.")
     (inputs
      `(("ffmpeg" ,ffmpeg)
        ("freetype" ,freetype)
+       ("fribidi" ,fribidi)
        ("glew" ,glew)
        ("libpng" ,libpng)
        ("python2-pygame" ,python2-pygame-sdl2)
@@ -1535,7 +1579,7 @@ games.")
 (define-public godot
   (package
     (name "godot")
-    (version "3.2.2")
+    (version "3.2.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1544,7 +1588,7 @@ games.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1libz83mbyrkbbsmmi8z2rydv3ls0w9r4vb5v6diqqwn7ka8z804"))
+                "19vrp5lhyvxbm6wjxzn28sn3i0s8j08ca7nani8l1nrhvlc8wi0v"))
               (modules '((guix build utils)
                          (ice-9 ftw)
                          (srfi srfi-1)))
@@ -1742,22 +1786,23 @@ a 2D editor view.")
 (define-public guile-chickadee
   (package
     (name "guile-chickadee")
-    (version "0.5.0")
+    (version "0.6.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://files.dthompson.us/chickadee/"
                                   "chickadee-" version ".tar.gz"))
               (sha256
                (base32
-                "0y3s0p4zyghys48sayfhcbmxmflh8hwawnx5an2jlb3x84yr0dsx"))))
+                "1jv4jkc35b7rizz8iflh74hhk9qy665isn1xa6gqz0qp9grwb019"))))
     (build-system gnu-build-system)
     (arguments
      '(#:make-flags '("GUILE_AUTO_COMPILE=0")))
     (propagated-inputs
-     `(("guile-opengl" ,guile-opengl)
-       ("guile-sdl2" ,guile-sdl2)))
+     `(("guile-opengl" ,guile3.0-opengl)
+       ("guile-sdl2" ,guile3.0-sdl2)))
     (inputs
-     `(("guile" ,guile-2.2)
+     `(("freetype" ,freetype)
+       ("guile" ,guile-3.0)
        ("libvorbis" ,libvorbis)
        ("mpg123" ,mpg123)
        ("openal" ,openal)))
@@ -1780,48 +1825,12 @@ that parenthetically inclined game developers need to make 2D (and eventually
     (license license:gpl3+)))
 
 (define-public guile3.0-chickadee
-  (package
-    (inherit guile-chickadee)
-    (name "guile3.0-chickadee")
-    (version "0.5.0")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://files.dthompson.us/chickadee/"
-                                  "chickadee-" version ".tar.gz"))
-              (sha256
-               (base32
-                "0y3s0p4zyghys48sayfhcbmxmflh8hwawnx5an2jlb3x84yr0dsx"))))
-    (build-system gnu-build-system)
-    (propagated-inputs
-     `(("guile-opengl" ,guile3.0-opengl)
-       ("guile-sdl2" ,guile3.0-sdl2)))
-    (inputs
-     `(("guile" ,guile-3.0)
-       ("libvorbis" ,libvorbis)
-       ("mpg123" ,mpg123)
-       ("openal" ,openal)))
-    (native-inputs
-     `(("pkg-config" ,pkg-config)
-       ("texinfo" ,texinfo)))
-    (home-page "https://dthompson.us/projects/chickadee.html")
-    (synopsis "Game development toolkit for Guile Scheme with SDL2 and OpenGL")
-    (description "Chickadee is a game development toolkit for Guile Scheme
-built on top of SDL2 and OpenGL.  Chickadee aims to provide all the features
-that parenthetically inclined game developers need to make 2D (and eventually
-3D) games in Scheme, such as:
-
-@enumerate
-@item extensible, fixed-timestep game loop
-@item OpenGL-based rendering engine
-@item keyboard, mouse, controller input
-@item REPL-driven development model
-@end enumerate\n")
-    (license license:gpl3+)))
+  (deprecated-package "guile3.0-chickadee" guile-chickadee))
 
 (define-public bennu-game-development
   (package
     (name "bennu-game-development")
-    (version "348")
+    (version "353")
     (source (origin
               (method svn-fetch)
               (uri (svn-reference
@@ -1830,7 +1839,7 @@ that parenthetically inclined game developers need to make 2D (and eventually
               (file-name (string-append name "-" version))
               (sha256
                (base32
-                "0wpzsbh4zi3931493dnyl5ffmh1b7fj2sx3mzrq304z9zs4d6lqq"))
+                "1iri58ryk9lbqn585cbccnvrfkj8qxlbcsk8rpih40jhvs1j101l"))
               (modules '((guix build utils)))
               (snippet
                '(begin

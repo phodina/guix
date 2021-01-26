@@ -1,5 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017, 2019, 2020 Hartmut Goebel <h.goebel@crazy-compilers.com>
+;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -177,15 +178,14 @@ This package is part of the KDE networking module.")
 (define-public konversation
   (package
     (name "konversation")
-    (version "1.7.5")
+    (version "1.7.7")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://kde/stable/konversation/" version
                            "/src/konversation-" version ".tar.xz"))
        (sha256
-        (base32 "0h098yhlp36ls6pdvs2r93ig8dv4fys62m0h6wxccprb0qrpbgv0"))
-       (patches (search-patches "konversation-Fix-build-with-Qt-5.11.patch"))))
+        (base32 "19qqq9s8k0cl71ib33xn07f26j5ji2g4336jk65im6452cf1dv27"))))
     (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
@@ -297,7 +297,7 @@ Features are:
        ("libxml2" ,libxml2)
        ("libxstl" ,libxslt)
        ;; TODO: Mediastreamer
-       ("openssl", openssl)
+       ("openssl" ,openssl)
        ("ortp" ,ortp)
        ("phonon" ,phonon)
        ("qca" ,qca)
@@ -403,7 +403,7 @@ This package is part of the KDE networking module.")
        ("knotifyconfig" ,knotifyconfig)
        ("kparts" ,kparts)
        ("kplotting" ,kplotting)
-       ("kross", kross)
+       ("kross" ,kross)
        ("kwidgetsaddons" ,kwidgetsaddons)
        ("kwindowsystem" ,kwindowsystem)
        ("kxmlgui" ,kxmlgui)
@@ -450,7 +450,7 @@ a full-featured client for BitTorrent.")
        ("qtbase" ,qtbase)))
     (arguments
      `(#:tests? #f)) ;; 2/7 tests fail (due to network issues?)
-    (home-page "https://cgit.kde.org/libgravatar.git")
+    (home-page "https://invent.kde.org/pim/libgravatar")
     (synopsis "Online avatar lookup library")
     (description "This library retrieves avatar images based on a
 hash from a person's email address, as well as local caching to avoid
@@ -484,7 +484,7 @@ unnecessary network operations.")
        ("qca" ,qca)
        ("qtbase" ,qtbase)
        ("solid" ,solid)))
-    (home-page "https://cgit.kde.org/libktorrent.git")
+    (home-page "https://invent.kde.org/network/libktorrent")
     (synopsis "BitTorrent protocol library for C++ / Qt 5 / KDE Frameworks")
     (description "The KTorrent library supports connectivity to HTTP and UDP
 trackers, mainline DHT and the new generation Micro Transport

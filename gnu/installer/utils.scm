@@ -18,10 +18,12 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu installer utils)
+  #:use-module (gnu services herd)
   #:use-module (guix utils)
   #:use-module (guix build utils)
   #:use-module (guix i18n)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-19)
   #:use-module (srfi srfi-34)
   #:use-module (ice-9 match)
   #:use-module (ice-9 rdelim)
@@ -36,11 +38,15 @@
 
             syslog-port
             syslog
+            call-with-time
+            let/time
 
             with-server-socket
             current-server-socket
             current-clients
-            send-to-clients))
+            send-to-clients
+
+            with-silent-shepherd))
 
 (define* (read-lines #:optional (port (current-input-port)))
   "Read lines from PORT and return them as a list."
@@ -116,6 +122,17 @@ COMMAND exited successfully, #f otherwise."
 ;;;
 ;;; Logging.
 ;;;
+
+(define (call-with-time thunk kont)
+  "Call THUNK and pass KONT the elapsed time followed by THUNK's return
+values."
+  (let* ((start  (current-time time-monotonic))
+         (result (call-with-values thunk list))
+         (end    (current-time time-monotonic)))
+    (apply kont (time-difference end start) result)))
+
+(define-syntax-rule (let/time ((time result exp)) body ...)
+  (call-with-time (lambda () exp) (lambda (time result) body ...)))
 
 (define (open-syslog-port)
   "Return an open port (a socket) to /dev/log or #f if that wasn't possible."
@@ -219,3 +236,9 @@ accepting socket."
 
   (current-clients (reverse remainder))
   exp)
+
+(define-syntax-rule (with-silent-shepherd exp ...)
+  "Evaluate EXP while discarding shepherd messages."
+  (parameterize ((shepherd-message-port
+                  (%make-void-port "w")))
+    exp ...))

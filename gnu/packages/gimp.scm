@@ -3,9 +3,10 @@
 ;;; Copyright © 2016, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2018 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2018, 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2018 Thorsten Wilms <t_w_@freenet.de>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -34,19 +35,133 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages base)
+  #:use-module (gnu packages documentation)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages gnome)
+  #:use-module (gnu packages graphics)
   #:use-module (gnu packages image)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages xml)
+  #:use-module (gnu packages linux)
+  #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages patchutils)
   #:use-module (gnu packages pdf)
   #:use-module (gnu packages photo)
   #:use-module (gnu packages python)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xorg))
+
+(define-public poly2tri-c
+  (package
+    (name "poly2tri-c")
+    (version "0.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "https://storage.googleapis.com/"
+                       "google-code-archive-source/v2/code.google.com/"
+                       "poly2tri-c/source-archive.zip"))
+       (file-name
+        (string-append name "-" version ".zip"))
+       (sha256
+        (base32 "17cw0zhbnf2gb59jm26z0wcarqgdwir9jr1fpi3v9lcvyb2s3mqj"))))
+    (build-system glib-or-gtk-build-system)
+    (outputs '("out" "doc"))
+    (arguments
+     `(#:configure-flags
+       (list
+        "--disable-static")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'disable-strict-rules
+           (lambda _
+             (substitute* "configure.ac"
+               (("\\$CFLAGS -Wall -ansi -pedantic")
+                "$CFLAGS")
+               (("\\$CFLAGS -Werror")
+                "$CFLAGS"))
+             #t))
+         (add-after 'disable-strict-rules 'fix-build-errors
+           (lambda _
+             (substitute* "poly2tri-c/refine/Makefile.am"
+               (("cdt.c")
+                "rcdt.c")
+               (("cdt.h")
+                "rcdt.h")
+               (("utils.c")
+                "rutils.c")
+               (("utils.h")
+                "rutils.h"))
+             #t))
+         (add-before 'bootstrap 'configure-later
+           (lambda _
+             (setenv "NOCONFIGURE" "set")
+             #t))
+         (add-after 'build 'generate-doc
+           (lambda _
+             (invoke "doxygen")
+             #t))
+         (add-after 'install 'install-doc
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (doc (assoc-ref outputs "doc")))
+               (copy-recursively
+                "doc"
+                (string-append doc "/share/doc/poly2tri-c"))
+               #t))))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("doxygen" ,doxygen)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)
+       ("unzip" ,unzip)
+       ("which" ,which)))
+    (propagated-inputs
+     `(("glib" ,glib)))
+    (synopsis "2D constrained Delaunay triangulation library")
+    (description "Poly2Tri-C is a library for generating, refining and rendering
+2-Dimensional Constrained Delaunay Triangulations.")
+    (home-page "https://code.google.com/archive/p/poly2tri-c/")
+    (license license:bsd-3)))
+
+(define-public mrg
+  (package
+    (name "mrg")
+    (version "0.1.4")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/hodefoting/mrg")
+         (commit version)))
+       (file-name
+        (git-file-name name version))
+       (sha256
+        (base32 "106qhh0c11576cc5kh90ds0ram72d3r6n9sadw0y4krnhap6dvwk"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:glib-or-gtk? #t))   ; To wrap binaries and/or compile schemas
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (propagated-inputs
+     `(("alsa" ,alsa-lib)
+       ("cairo" ,cairo)
+       ("gtk+" ,gtk+)
+       ("mmm" ,mmm)
+       ("x11" ,libx11)))
+    (synopsis "Microraptor GUI")
+    (description "MrG is is a C API for creating user interfaces.  It can be
+used as an application writing environment or as an interactive canvas for part
+of a larger interface.")
+    (home-page "https://github.com/hodefoting/mrg")
+    (license license:lgpl2.0+)))
 
 (define-public babl
   (package
@@ -75,7 +190,7 @@
     (propagated-inputs
      ;; Propagated to satisfy ‘babl.pc’.
      `(("lcms" ,lcms)))
-    (home-page "http://gegl.org/babl/")
+    (home-page "https://gegl.org/babl/")
     (synopsis "Image pixel format conversion library")
     (description
      "Babl is a dynamic, any-to-any pixel format translation library.
@@ -90,7 +205,7 @@ provided, as well as a framework to add new color models and data types.")
 (define-public gegl
   (package
     (name "gegl")
-    (version "0.4.24")
+    (version "0.4.26")
     (source (origin
               (method url-fetch)
               (uri (list (string-append "https://download.gimp.org/pub/gegl/"
@@ -104,11 +219,26 @@ provided, as well as a framework to add new color models and data types.")
                                         "/gegl-" version ".tar.xz")))
               (sha256
                (base32
-                "0ji57s7cba94vzy49agn7x47ca61rccm6rif0cb0s6rl4ygljrbp"))))
+                "097427icgpgvcx40019b3dm8m84cchz79pixzpz648drs8p1wdqg"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags
-       (list "-Dintrospection=false")))
+       (list "-Dintrospection=false")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'extend-test-time-outs
+           (lambda _
+             ;; Multiply some poorly-chosen time-outs for busy build machines.
+             (substitute* "tests/simple/test-node-exponential.c"
+               (("G_TIME_SPAN_SECOND" match)
+                (string-append "10 * " match)))
+             (substitute* "tests/simple/test-buffer-sharing.c"
+               (("g_timeout_add_seconds\\([0-9]+" match)
+                (string-append match "0")))
+             (substitute* (find-files "tests" "^meson\\.build$")
+               (("timeout ?: [0-9]+" match)
+                (string-append match "0")))
+             #t)))))
     ;; These are propagated to satisfy 'gegl-0.4.pc'.
     (propagated-inputs
      `(("babl" ,babl)
@@ -135,7 +265,7 @@ buffers.")
 (define-public gimp
   (package
     (name "gimp")
-    (version "2.10.20")
+    (version "2.10.22")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://download.gimp.org/pub/gimp/v"
@@ -143,7 +273,7 @@ buffers.")
                                   "/gimp-" version ".tar.bz2"))
               (sha256
                (base32
-                "0g3vzh1bjffqx94mfghmwvkhncv71cgah2mnfx17q00s9f3rybz1"))))
+                "1fqqyshakvdarf1jipk2n33ibqr23ni22z3d8srq13bpydblpf1d"))))
     (build-system gnu-build-system)
     (outputs '("out"
                "doc"))                            ; 9 MiB of gtk-doc HTML
@@ -195,6 +325,7 @@ buffers.")
        ("exif" ,libexif)                ; optional, EXIF + XMP support
        ("lcms" ,lcms)                   ; optional, color management
        ("librsvg" ,librsvg)             ; optional, SVG support
+       ("libxcursor" ,libxcursor)       ; optional, Mouse Cursor support
        ("poppler" ,poppler)             ; optional, PDF support
        ("poppler-data" ,poppler-data)
        ("python" ,python-2)             ; optional, Python support
@@ -278,7 +409,7 @@ inverse fourier transform.")
 (define-public libmypaint
   (package
     (name "libmypaint")
-    (version "1.5.1")
+    (version "1.6.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/mypaint/libmypaint/"
@@ -286,7 +417,7 @@ inverse fourier transform.")
                                   version ".tar.xz"))
               (sha256
                (base32
-                "0aqcv4fyscpfhknxgfpq0v84aj2nzigqvpi4zgv2zkl41h51by5f"))))
+                "0priwpmc7dizccqvn21ig6d649bprl3xl1hmjj7nddznjgr585vl"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -406,4 +537,93 @@ MyPaint.")
 tools for healing selections (content-aware fill), enlarging the canvas and
 healing the border, increasing the resolution while adding detail, and
 transferring the style of an image.")
+    (license license:gpl3+)))
+
+(define-public glimpse
+  (package
+    (name "glimpse")
+    (version "0.2.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/glimpse-editor/Glimpse")
+                     (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0drngj2xqzxfaag6pc4xjffiw003n4y43x5rb5bf4ziv1ac51dm9"))))
+    (build-system gnu-build-system)
+    (outputs '("out"
+               "doc"))                            ; 9 MiB of gtk-doc HTML
+    (arguments
+     '(#:configure-flags
+       (list (string-append "--with-html-dir="
+                            (assoc-ref %outputs "doc")
+                            "/share/gtk-doc/html")
+             "--enable-gtk-doc"
+
+             ;; Prevent the build system from running 'gtk-update-icon-cache'
+             ;; which is not needed during the build because Guix runs it at
+             ;; profile creation time.
+             "ac_cv_path_GTK_UPDATE_ICON_CACHE=true"
+
+             ;; Disable automatic network request on startup to check for
+             ;; version updates.
+             "--disable-check-update"
+
+             ;; ./configure requests not to annoy upstream with packaging bugs.
+             "--with-bug-report-url=https://bugs.gnu.org/guix")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-sitecustomize.py
+           ;; Install 'sitecustomize.py' into glimpse's python directory to
+           ;; add pygobject and pygtk to pygimp's search path.
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((pythonpath (getenv "PYTHONPATH"))
+                    (out        (assoc-ref outputs "out"))
+                    (sitecustomize.py
+                     (string-append
+                      out "/lib/glimpse/2.0/python/sitecustomize.py")))
+               (call-with-output-file sitecustomize.py
+                 (lambda (port)
+                   (format port "import site~%")
+                   (format port "for dir in '~a'.split(':'):~%" pythonpath)
+                   (format port "    site.addsitedir(dir)~%")))))))))
+    (native-inputs
+     `(("autoconf" ,autoconf-wrapper)
+       ("automake" ,automake)
+       ("gtk-doc" ,gtk-doc)
+       ("intltool" ,intltool)
+       ("libtool" ,libtool)
+       ("libxslt" ,libxslt) ; for xsltproc
+       ("pkg-config" ,pkg-config)
+       ("glib:bin" ,glib "bin"))) ; for gdbus-codegen
+    (inputs
+     `(("babl" ,babl)
+       ("glib" ,glib)
+       ("glib-networking" ,glib-networking)
+       ("libtiff" ,libtiff)
+       ("libwebp" ,libwebp)
+       ("libjpeg" ,libjpeg-turbo)
+       ("atk" ,atk)
+       ("gexiv2" ,gexiv2)
+       ("gtk+" ,gtk+-2)
+       ("libmypaint" ,libmypaint)
+       ("mypaint-brushes" ,mypaint-brushes-1.3)
+       ("exif" ,libexif)                ; optional, EXIF + XMP support
+       ("lcms" ,lcms)                   ; optional, color management
+       ("librsvg" ,librsvg)             ; optional, SVG support
+       ("libxcursor" ,libxcursor)       ; optional, Mouse Cursor support
+       ("poppler" ,poppler)             ; optional, PDF support
+       ("poppler-data" ,poppler-data)
+       ("python" ,python-2)             ; optional, Python support
+       ("python2-pygtk" ,python2-pygtk) ; optional, Python support
+       ("gegl" ,gegl)))
+    (home-page "https://glimpse-editor.github.io/")
+    (synopsis "Glimpse Image Editor")
+    (description "The Glimpse Image Editor is an application for image
+manipulation tasks such as photo retouching, composition and authoring.
+It supports all common image formats as well as specialized ones.  It
+features a highly customizable interface that is extensible via a plugin
+system.  It was forked from the GNU Image Manipulation Program.")
     (license license:gpl3+)))

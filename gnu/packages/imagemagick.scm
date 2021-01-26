@@ -7,6 +7,8 @@
 ;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
+;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
+;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -48,14 +50,14 @@
     ;; The 7 release series has an incompatible API, while the 6 series is still
     ;; maintained. Don't update to 7 until we've made sure that the ImageMagick
     ;; users are ready for the 7-series API.
-    (version "6.9.11-11")
+    (version "6.9.11-34")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://imagemagick/ImageMagick-"
                                  version ".tar.xz"))
              (sha256
               (base32
-               "1b67rrppvm04aqr76qky5h2a0j2d161h8kwa04fv611w5xwandr2"))))
+               "0acdjkkgjgpfcwj9h9zncywjjrrgb9sh0cvfn3jamjxh5byf638s"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--with-frozenpaths" "--without-gcc-arch"
@@ -124,6 +126,20 @@ transform images, adjust image colors, apply various special effects, or draw
 text, lines, polygons, ellipses and Bézier curves.")
     (license (license:fsf-free "http://www.imagemagick.org/script/license.php"))))
 
+;; XXX: 'transcode' fails to detect the above ImageMagick, so we provide
+;; this newer version.
+(define-public imagemagick-next
+  (package
+    (inherit imagemagick)
+    (version "6.9.11-37")
+    (source (origin
+             (method url-fetch)
+             (uri (string-append "mirror://imagemagick/ImageMagick-"
+                                 version ".tar.xz"))
+             (sha256
+              (base32
+               "19r6fyhr1bycx0p6jz034mil1zh2k7hfr02is40h4g3wf9b9sdni"))))))
+
 (define-public perl-image-magick
   (package
     (name "perl-image-magick")
@@ -174,7 +190,7 @@ script.")
 (define-public graphicsmagick
   (package
     (name "graphicsmagick")
-    (version "1.3.35")
+    (version "1.3.36")
     (source
      (origin
        (method url-fetch)
@@ -187,7 +203,7 @@ script.")
                         "/GraphicsMagick-" version ".tar.xz")))
        (sha256
         (base32
-         "0l024l4hawm9s3jqrgi2j0lxgm61dqh8sgkj1017ma7y11hqv2hq"))))
+         "0ilg6fkppb4avzais1dvi3qf6ln7v3mzj7gjm83w7pwwfpg3ynsx"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -209,6 +225,7 @@ script.")
        ("libtiff" ,libtiff)
        ("libpng" ,libpng)
        ("libjpeg" ,libjpeg-turbo)
+       ("libwebp" ,libwebp)
        ("freetype" ,freetype)
        ("bzip2" ,bzip2)
        ("xz" ,xz)

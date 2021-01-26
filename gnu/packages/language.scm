@@ -1,9 +1,10 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015, 2016 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Nikita <nikita@n0.is>
 ;;; Copyright © 2019 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2020 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2020 Julien Lepiller <julien@lepiller.eu>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -22,15 +23,24 @@
 
 (define-module (gnu packages language)
   #:use-module (gnu packages)
+  #:use-module (gnu packages autotools)
+  #:use-module (gnu packages audio)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages java)
+  #:use-module (gnu packages linux)
+  #:use-module (gnu packages llvm)
+  #:use-module (gnu packages man)
   #:use-module (gnu packages ocr)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
   #:use-module (gnu packages perl-check)
   #:use-module (gnu packages swig)
+  #:use-module (gnu packages texinfo)
   #:use-module (gnu packages web)
+  #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (guix packages)
   #:use-module (guix build-system gnu)
@@ -38,10 +48,141 @@
   #:use-module (guix build-system python)
   #:use-module ((guix licenses)
                 #:select
-                (bsd-3 gpl2 gpl2+ gpl3 gpl3+ lgpl2.1 perl-license zpl2.1))
+                (bsd-3 gpl2 gpl2+ gpl3 gpl3+ lgpl2.1 lgpl2.1+ lgpl3+ perl-license zpl2.1))
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix utils))
+
+(define-public liblouis
+  (package
+    (name "liblouis")
+    (version "3.15.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/liblouis/liblouis")
+         (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1ljy5xsy7vf2r0ix0d7bqcr6qvr6897f8madsx9zlm1mrj31n5px"))))
+    (build-system gnu-build-system)
+    (outputs '("out" "bin" "doc" "python"))
+    (arguments
+     `(#:configure-flags
+       (list
+        "--disable-static"
+        "--enable-ucs4")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-python-extension
+           (lambda* (#:key outputs #:allow-other-keys)
+             (with-directory-excursion "python"
+               (invoke "python" "setup.py" "install"
+                       (string-append "--prefix="
+                                      (assoc-ref outputs "python"))
+                       "--root=/")))))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("clang-format" ,clang)
+       ("help2man" ,help2man)
+       ("libtool" ,libtool)
+       ("libyaml" ,libyaml)
+       ("makeinfo" ,texinfo)
+       ("perl" ,perl)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)))
+    (synopsis "Braille translator and back-translator")
+    (description "Liblouis is a braille translator and back-translator named in
+honor of Louis Braille.  It features support for computer and literary braille,
+supports contracted and uncontracted translation for many languages and has
+support for hyphenation.  New languages can easily be added through tables that
+support a rule- or dictionary based approach.  Tools for testing and debugging
+tables are also included.  Liblouis also supports math braille, Nemeth and
+Marburg.")
+    (home-page "http://liblouis.org/")
+    (license (list lgpl2.1+             ; library
+                   gpl3+))))            ; tools
+
+(define-public liblouisutdml
+  (package
+    (name "liblouisutdml")
+    (version "2.9.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/liblouis/liblouisutdml")
+         (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0c32cfcfp0lyfd655c9ihhh3p7lhrb9q3xbll7q5dw4km86gaq6w"))))
+    (build-system gnu-build-system)
+    (outputs '("out" "bin" "doc"))
+    (arguments
+     `(#:configure-flags
+       (list "--disable-static")))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("help2man" ,help2man)
+       ("jdk" ,icedtea "jdk")
+       ("libtool" ,libtool)
+       ("makeinfo" ,texinfo)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libxml2" ,libxml2)))
+    (propagated-inputs
+     `(("liblouis" ,liblouis)
+       ("liblouis:bin" ,liblouis "bin")))
+    (synopsis "Braille transcription services")
+    (description "Liblouisutdml is a library providing complete braille
+transcription services for xml, html and text documents.  It translates into
+appropriate braille codes and formats according to its style sheet and the
+specifications in the document.")
+    (home-page "http://liblouis.org/")
+    (license (list lgpl3+               ; library
+                   gpl3+))))            ; tools
+
+(define-public libstemmer
+  (package
+    (name "libstemmer")
+    (version "2.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri "https://snowballstem.org/dist/libstemmer_c.tgz")
+       (sha256
+        (base32 "1z2xvrjsaaypc04lwz7dg8mjm5cq1gzmn0l544pn6y2ll3r7ckh5"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ; No tests exist
+       #:make-flags
+       (list
+        (string-append "CC=" ,(cc-for-target))
+        "CFLAGS=-fPIC")
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (out-bin (string-append out "/bin"))
+                    (out-include (string-append out "/include"))
+                    (out-lib (string-append out "/lib")))
+               (install-file "stemwords" out-bin)
+               (install-file "include/libstemmer.h" out-include)
+               (rename-file "libstemmer.o" "libstemmer.a")
+               (install-file "libstemmer.a" out-lib)
+               #t))))))
+    (synopsis "Stemming Library")
+    (description "LibStemmer provides stemming library, supporting several
+languages.")
+    (home-page "https://snowballstem.org/")
+    (license bsd-3)))
 
 (define-public perl-lingua-en-findnumber
   (package
@@ -908,3 +1049,46 @@ labelled links connecting pairs of words.  The parser also produces a
 \"constituent\" (HPSG style phrase tree) representation of a sentence (showing
 noun phrases, verb phrases, etc.).")
     (license bsd-3)))
+
+(define-public praat
+  (package
+    (name "praat")
+    (version "6.1.30")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/praat/praat")
+                     (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1pjfifyv3wjn68l3i2dr83xm75nf2kxvfxrk9qqbmwz58p183jw4"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ; no test target
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda _
+             (copy-file "makefiles/makefile.defs.linux.pulse" "makefile.defs")
+             #t))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin")))
+               (mkdir-p bin)
+               (copy-file "praat" (string-append bin "/praat")))
+             #t)))))
+    (inputs
+     `(("alsa-lib" ,alsa-lib)
+       ("gtk" ,gtk+-2)
+       ("jack" ,jack-1)
+       ("publesaudio" ,pulseaudio)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (home-page "http://www.fon.hum.uva.nl/praat/")
+    (synopsis "Doing phonetics by computer")
+    (description "Praat is a tool to perform phonetics tasks.  It can do speech
+analysis (pitch, formant, intensity, ...), speech synthesis, labelling, segmenting
+and manipulation.")
+    (license gpl2+)))

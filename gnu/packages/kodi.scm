@@ -4,6 +4,7 @@
 ;;; Copyright © 2017 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -42,6 +43,7 @@
   #:use-module (gnu packages curl)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages documentation)
+  #:use-module (gnu packages file-systems)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages fribidi)
@@ -269,7 +271,7 @@ alternatives. In compilers, this can reduce the cascade of secondary errors.")
 (define-public kodi
   (package
     (name "kodi")
-    (version "18.7.1")
+    (version "18.8")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -278,7 +280,7 @@ alternatives. In compilers, this can reduce the cascade of secondary errors.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1ypn29yhy49mz9x4xqh2zfdrsbfwm1b4canvh9zvy9c1irjwf419"))
+                "0qpkpz43s207msvv3qkiy6vzqwcgmydxv3py7vc29mv6h30chrva"))
               (patches (search-patches "kodi-skip-test-449.patch"
                                        "kodi-increase-test-timeout.patch"
                                        "kodi-set-libcurl-ssl-parameters.patch"))
@@ -375,7 +377,6 @@ alternatives. In compilers, this can reduce the cascade of secondary errors.")
            (lambda _
              (invoke "make" "kodi-test"))))))
     ;; TODO: Add dependencies for:
-    ;; - nfs
     ;; - cec
     ;; - plist
     ;; - shairplay
@@ -424,6 +425,7 @@ alternatives. In compilers, this can reduce the cascade of secondary errors.")
        ("libmad" ,libmad)
        ("libmicrohttpd" ,libmicrohttpd)
        ("libmpeg2" ,libmpeg2)
+       ("libnfs" ,libnfs)
        ("libogg" ,libogg)
        ("libpng" ,libpng)
        ("libssh" ,libssh)
@@ -435,7 +437,7 @@ alternatives. In compilers, this can reduce the cascade of secondary errors.")
        ("libxrender" ,libxrender)
        ("libxslt" ,libxslt)
        ("lzo" ,lzo)
-       ("mariadb" ,mariadb "lib")
+       ("mariadb-dev" ,mariadb "lib")
        ("mariadb-dev" ,mariadb "dev")
        ("openssl" ,openssl)
        ("pcre" ,pcre)

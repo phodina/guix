@@ -3,9 +3,9 @@
 ;;; Copyright © 2015, 2017, 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2018, 2019 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Lukas Gradl <lgradl@openmailbox>
-;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016, 2017 Nikita <nikita@n0.is>
-;;; Copyright © 2016, 2017, 2019 Eric Bavier <bavier@member.fsf.org>
+;;; Copyright © 2016, 2017, 2019, 2020 Eric Bavier <bavier@posteo.net>
 ;;; Copyright © 2017 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2018, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2018 Arun Isaac <arunisaac@systemreboot.net>
@@ -17,6 +17,8 @@
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2020 Hendur Saga <hendursaga@yahoo.com>
+;;; Copyright © 2020 pukkamustard <pukkamustard@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -53,6 +55,8 @@
   #:use-module (gnu packages libffi)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages lsof)
+  #:use-module (gnu packages man)
+  #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages nettle)
   #:use-module (gnu packages password-utils)
   #:use-module (gnu packages perl)
@@ -140,7 +144,7 @@ communication, encryption, decryption, signatures, etc.")
 (define-public signify
   (package
     (name "signify")
-    (version "29")
+    (version "30")
     (home-page "https://github.com/aperezdc/signify")
     (source (origin
               (method url-fetch)
@@ -148,7 +152,7 @@ communication, encryption, decryption, signatures, etc.")
                                   "/download/v" version "/signify-" version ".tar.xz"))
               (sha256
                (base32
-                "1bzcax5kb4lr0rmpmrdpq5q0iq6b2dxzpl56li8aanbkck1c7hd9"))))
+                "11l67j04gyxnlw6zrzsygqs5cgsc1sww1rh0apl05yay131hd17n"))))
     (build-system gnu-build-system)
     ;; TODO Build with libwaive (described in README.md), to implement something
     ;; like OpenBSD's pledge().
@@ -356,10 +360,10 @@ secure operations. ")
           (base32
            "0lj38ldh8vzi11wp4ghw4k0fkwp0s04zv8k8d473p1snmbh7mx98"))))
       (inputs
-       `(("openssl" ,openssl))) ; It needs: openssl/{bn,pem,rsa,sha}.h
+       `(("openssl" ,openssl-1.0)))     ; for openssl/{bn,pem,rsa,sha}.h
       (build-system gnu-build-system)
       (arguments
-       `(#:make-flags (list "CC=gcc"
+       `(#:make-flags (list (string-append "CC=" ,(cc-for-target))
                             (string-append "PREFIX=" (assoc-ref %outputs "out"))
                             (string-append "INSTALL=" "install"))
          ;; XXX: make test would run a !VERY! long hashing of names with the use
@@ -394,18 +398,60 @@ generation of wordlists the included tool @code{worgen} can be used.  There is
 no man page, refer to the home page for usage details.")
       (license (list license:isc license:expat)))))
 
+(define-public ssss
+  (package
+    (name "ssss")
+    (version "0.5")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://point-at-infinity.org/ssss/ssss-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "15grn2fp1x8p92kxkwbmsx8rz16g93y9grl3hfqbh1jn21ama5jx"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ; No test suite
+       #:make-flags (list (string-append "PREFIX=" (assoc-ref %outputs "out"))
+                          "CC=gcc")
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure) ; no configuration to be done
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((outdir (assoc-ref outputs "out"))
+                    (bindir (string-append outdir "/bin"))
+                    (docdir (string-append outdir
+                                           "/share/doc/ssss-"
+                                           ,version)))
+               (install-file "ssss-combine" bindir)
+               (install-file "ssss-split" bindir)
+               (install-file "ssss.1" docdir)
+               (install-file "ssss.1.html" docdir)
+               #t))))))
+    (inputs
+     `(("gmp" ,gmp)))
+    (native-inputs
+     `(("xmltoman" ,xmltoman)))
+    (home-page "http://point-at-infinity.org/ssss/")
+    (synopsis "Shamir's secret sharing scheme implementation")
+    (description "@command{ssss-split} and @command{ssss-combine} are utilities that split
+and combine secrets securely using Shamir's secret sharing scheme.  This implementation
+allows for a threshold scheme where the minimum number of shares can be less than the
+total number of shares generated.")
+    (license license:gpl2+)))
+
 (define-public tomb
   (package
     (name "tomb")
-    (version "2.7")
+    (version "2.9")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://files.dyne.org/tomb/"
+              (uri (string-append "https://files.dyne.org/tomb/releases/"
                                   "Tomb-" version ".tar.gz"))
               (sha256
                (base32
-                "0x3al02796vx1cvy6y6h685c367qx70dwv471g0hmks2gr10f0cn"))
-              (patches (search-patches "tomb-fix-errors-on-open.patch"))))
+                "136nfnpaz29hngwwnzrmc858gpnvnb977gf4ldbpapw1h1k3r8mk"))))
     (build-system gnu-build-system)
     (native-inputs `(("sudo" ,sudo)))   ;presence needed for 'check' phase
     (inputs
@@ -472,7 +518,7 @@ user's graphical desktop.")
 (define-public scrypt
   (package
     (name "scrypt")
-    (version "1.2.1")
+    (version "1.3.1")
     (source
       (origin
         (method url-fetch)
@@ -480,20 +526,24 @@ user's graphical desktop.")
                             version ".tgz"))
         (sha256
          (base32
-          "0xy5yhrwwv13skv9im9vm76rybh9f29j2dh4hlh2x01gvbkza8a6"))))
+          "1hnl0r6pmyxiy4dmafmqk1db7wpc0x9rqpzqcwr9d2cmghcj6byz"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:phases (modify-phases %standard-phases
-        (add-after 'unpack 'patch-command-invocations
+     `(#:license-file-regexp "COPYRIGHT"
+       #:phases (modify-phases %standard-phases
+        (add-after 'unpack 'patch-$PATH-assumptions
           (lambda _
+            (substitute* "configure"
+              (("\\{POSIX_PATH\\}")
+               "{PATH}"))
             (substitute* "Makefile.in"
               (("command -p") ""))
             #t))
         (add-after 'install 'install-docs
           (lambda* (#:key outputs #:allow-other-keys)
             (let* ((out (assoc-ref %outputs "out"))
-                   (misc (string-append out "/share/doc/scrypt")))
-              (install-file "FORMAT" misc)
+                   (doc (string-append out "/share/doc/" ,name "-" ,version)))
+              (install-file "FORMAT" doc)
               #t))))))
     (inputs
      `(("openssl" ,openssl)))
@@ -520,12 +570,19 @@ attacks than alternative functions such as @code{PBKDF2} or @code{bcrypt}.")
         (base32
          "1d76ys6cp7fi4ng1w3mz2l0p9dbr7ljbk33dcywyimzjz8bahdng"))))
     (build-system gnu-build-system)
+    (outputs (list "out" "static"))
     (arguments
      `(#:make-flags (list (string-append "PREFIX=" %output)
                           "CC=gcc")
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure))))
+         (delete 'configure)            ; no configure script
+         (add-after 'install 'install:static
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (lib (string-append out "/lib")))
+               (install-file "libscrypt.a" lib)
+               #t))))))
     (home-page "https://lolware.net/libscrypt.html")
     (synopsis "Password hashing library")
     (description "@code{libscrypt} implements @code{scrypt} key derivation
@@ -660,7 +717,7 @@ data on your platform, so the seed itself will be as random as possible.
 (define-public crypto++
   (package
     (name "crypto++")
-    (version "8.2.0")
+    (version "8.4.0")
     (source (origin
               (method url-fetch/zipbomb)
               (uri (string-append "https://cryptopp.com/cryptopp"
@@ -668,7 +725,7 @@ data on your platform, so the seed itself will be as random as possible.
                                   ".zip"))
               (sha256
                (base32
-                "0n40hlz5jkvlcp9vxrj0fsrcfp7dm0zmmv6h52dx3f8i5qjf5w03"))))
+                "16kvfm11xv7j9a3yykzysjgw38a9b7lnc5n5x5h82g395k6ybxf0"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
@@ -719,7 +776,7 @@ data on your platform, so the seed itself will be as random as possible.
                      "libdir=" out "/lib\n"
                      "includedir=" out "/include\n\n"
                      "Name: libcrypto++-" ,version "\n"
-                     "Description: Class library of cryptographic schemes"
+                     "Description: Class library of cryptographic schemes\n"
                      "Version: " ,version "\n"
                      "Libs: -L${libdir} -lcryptopp\n"
                      "Cflags: -I${includedir}\n"))
@@ -971,10 +1028,10 @@ trivial to build for local use.  Portability is emphasized over performance.")
     (license license:unlicense)))
 
 (define-public libsecp256k1
-  (let ((commit "d644dda5c9dbdecee52d1aa259235510fdc2d4ee"))
+  (let ((commit "dbd41db16a0e91b2566820898a3ab2d7dad4fe00"))
     (package
       (name "libsecp256k1")
-      (version (git-version "20191213" "1" commit))
+      (version (git-version "20200615" "1" commit))
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
@@ -982,9 +1039,14 @@ trivial to build for local use.  Portability is emphasized over performance.")
                       (commit commit)))
                 (sha256
                  (base32
-                  "0zmx32746khsm2cx0p3pdy3j2vkwmafvf7axiixijhgcg0xjv93i"))
+                  "1fcpnksq5cqwqzshn5f0lq94b73p3frwbp04hgmmbnrndpqg6mpy"))
                 (file-name (git-file-name name version))))
       (build-system gnu-build-system)
+      (arguments
+       '(#:configure-flags '("--enable-module-recovery"
+                             "--enable-experimental"
+                             "--enable-module-ecdh"
+                             "--enable-shared")))
       (native-inputs
        `(("autoconf" ,autoconf)
          ("automake" ,automake)
@@ -1010,6 +1072,58 @@ Features:
 @end itemize\n")
       (home-page "https://github.com/bitcoin-core/secp256k1")
       (license license:unlicense))))
+
+(define-public libsecp256k1-bitcoin-cash
+  (package
+    (name "libsecp256k1-bitcoin-cash")
+    (version "0.22.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Bitcoin-ABC/secp256k1")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1rnif3iny6pz1r3g69bagzr342mm3x0v66b60csnmm1rg44bd5v1"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)))
+    (arguments
+     '(#:configure-flags '("--enable-module-recovery"
+                           "--enable-experimental"
+                           "--enable-module-ecdh"
+                           "--disable-jni"
+                           "--with-bignum=no"
+                           "--enable-module-schnorr"
+                           "--disable-static"
+                           "--enable-shared")))
+    (synopsis "Optimized C library for EC operations on curve secp256k1")
+    (description
+     "Optimized C library for cryptographic operations on curve secp256k1.
+
+This library is used for consensus critical cryptographic operations on the
+Bitcoin Cash network.
+
+Features:
+
+@itemize
+@item secp256k1 ECDSA signing/verification and key generation.
+@item secp256k1 Schnorr signing/verification (Bitcoin Cash Schnorr variant).
+@item Additive and multiplicative tweaking of secret/public keys.
+@item Serialization/parsing of secret keys, public keys, signatures.
+@item Constant time, constant memory access signing and pubkey generation.
+@item Derandomized ECDSA (via RFC6979 or with a caller provided function).
+@item Very efficient implementation.
+@item Suitable for embedded systems.
+@item Optional module for public key recovery.
+@item Optional module for ECDH key exchange (experimental).
+@item Optional module for multiset hash (experimental).
+@end itemize\n")
+    (home-page "https://github.com/Bitcoin-ABC/secp256k1")
+    (license license:expat)))
 
 (define-public stoken
   (package
@@ -1120,7 +1234,7 @@ Trusted comments are signed, thus verified, before being displayed.")
 (define-public libolm
   (package
     (name "libolm")
-    (version "3.1.5")
+    (version "3.2.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1128,15 +1242,16 @@ Trusted comments are signed, thus verified, before being displayed.")
                     (commit version)))
               (sha256
                (base32
-                "030g0jmmvhx2dh32k708sz6cdd5q1wz48i4gigh6dclqk10w28lm"))
+                "14b5cplcnbf2baq0lvz4f97m6swxpb13rvxdajxyw3s4mbvasia4"))
               (file-name (git-file-name name version))))
+    (build-system cmake-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
          (replace 'check
            (lambda _
-             (invoke "ctest" "build/tests"))))))
-    (build-system cmake-build-system)
+             (with-directory-excursion "tests"
+               (invoke "ctest" ".")))))))
     (synopsis "Implementation of the olm and megolm cryptographic ratchets")
     (description "The libolm library implements the Double Ratchet
 cryptographic ratchet.  It is written in C and C++11, and exposed as a C
@@ -1185,3 +1300,38 @@ length extension attacks supporting MD4, MD5, RIPEMD-160, SHA-0, SHA-1,
 SHA-256, SHA-512, and WHIRLPOOL hashes.")
       (home-page "https://github.com/iagox86/hash_extender")
       (license license:bsd-3))))
+
+(define-public mkp224o
+  (package
+    (name "mkp224o")
+    (version "1.5.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/cathugger/mkp224o")
+                    (commit (string-append "v" version))))
+              (sha256
+               (base32
+                "0b2cn96wg4l8jkkqqp8l2295xlmm2jc8nrw6rdqb5g0zkpfmrxbb"))
+              (file-name (git-file-name name version))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ; no test suite
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((outdir (assoc-ref outputs "out"))
+                    (bindir (string-append outdir "/bin")))
+               (install-file "mkp224o" bindir)
+               #t))))))
+    (native-inputs
+     `(("autoconf" ,autoconf)))
+    (inputs
+     `(("libsodium" ,libsodium)))
+    (synopsis "Tor hidden service v3 name generator")
+    (description "@code{mkp224o} generates valid ed25519 (hidden service
+version 3) onion addresses.  It allows one to produce customized vanity .onion
+addresses using a brute-force method.")
+    (home-page "https://github.com/cathugger/mkp224o")
+    (license license:cc0)))

@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2016, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2019, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016-2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
@@ -27,6 +27,7 @@
 (define-module (gnu packages kde-frameworks)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system qt)
+  #:use-module (guix build-system trivial)
   #:use-module (guix download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
@@ -57,6 +58,7 @@
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages image)
   #:use-module (gnu packages kerberos)
+  #:use-module (gnu packages kde-plasma)
   #:use-module (gnu packages libreoffice)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages mp3)
@@ -752,7 +754,7 @@ interfaces in the areas of colors, fonts, text, images, keyboard input.")
     (inputs
      `(("qtbase" ,qtbase)
        ("qtdeclarative" ,qtdeclarative)))
-    (home-page "https://cgit.kde.org/kholidays.git")
+    (home-page "https://invent.kde.org/frameworks/kholidays")
     (synopsis "Library for regional holiday information")
     (description "This library provides a C++ API that determines holiday and
 other special events for a geographical region.")
@@ -1045,13 +1047,12 @@ integration with a custom editor as well as a ready-to-use
        ("wayland" ,wayland)
        ("wayland-protocols" ,wayland-protocols)))
     (arguments
-     `(#:tests? #f ; FIXME tests require weston to run
-                   ; weston requires wayland flags in mesa
-       #:phases
+     `(#:phases
        (modify-phases %standard-phases
          (add-before 'check 'check-setup
            (lambda _
              (setenv "XDG_RUNTIME_DIR" "/tmp")
+             (setenv "QT_QPA_PLATFORM" "offscreen")
              #t)))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Qt-style API to interact with the wayland client and server")
@@ -1470,7 +1471,7 @@ uses a job-based interface to queue tasks and execute them in an efficient way."
               (sha256
                (base32
                 "1whsp0f87lrcn61s9rfhy0aj68hm6zgfa38mq6frlkcjksi0z1vn"))))
-    (build-system cmake-build-system)
+    (build-system qt-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)))
     (inputs
@@ -1904,7 +1905,8 @@ covers feedback and persistent events.")
                 "03rp7p7i8ihz5wg58gjs638jk7xbszknfiy2j3r979snc57g95mv"))
               ;; Default to: external paths/symlinks can be followed by a
               ;; package
-              (patches (search-patches "kpackage-allow-external-paths.patch"))))
+              (patches (search-patches "kpackage-allow-external-paths.patch"
+                                       "kpackage-fix-KF5PackageMacros.cmake.patch"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)))
@@ -2156,7 +2158,7 @@ maintaining an index of the contents of your files.")
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Access usage statistics collected by the activity manager")
     (description "The KActivitiesStats library provides a querying mechanism for
-the data that the activitiy manager collects - which documents have been opened
+the data that the activity manager collects---which documents have been opened
 by which applications, and what documents have been linked to which activity.")
     ;; triple licensed
     (license (list license:lgpl2.0+ license:lgpl2.1+ license:lgpl3+))))
@@ -3390,7 +3392,8 @@ setUrl, setUserAgent and call.")
                     name "-" version ".tar.xz"))
               (sha256
                (base32
-                "06cxajsxj62g3c37ssrrcaxb9a12zbyp2kvrjqym329k5vd89272"))))
+                "06cxajsxj62g3c37ssrrcaxb9a12zbyp2kvrjqym329k5vd89272"))
+              (patches (search-patches "plasma-framework-fix-KF5PlasmaMacros.cmake.patch"))))
     (build-system cmake-build-system)
     (propagated-inputs
      `(("kpackage" ,kpackage)

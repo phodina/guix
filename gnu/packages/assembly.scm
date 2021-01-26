@@ -2,7 +2,7 @@
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2013, 2015 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2019 Guy Fleury Iteriteka <hoonandon@gmail.com>
 ;;; Copyright © 2019 Andy Tai <atai@atai.org>
@@ -26,6 +26,7 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages assembly)
+  #:use-module (guix build-system meson)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix download)
@@ -51,7 +52,7 @@
   #:use-module (gnu packages shells)
   #:use-module (gnu packages xml)
   #:use-module ((guix utils)
-                #:select (%current-system)))
+                #:select (%current-system cc-for-target)))
 
 (define-public nasm
   (package
@@ -148,17 +149,49 @@ to the clients.")
     (home-page "https://www.gnu.org/software/lightning/")
     (license license:gpl3+)))
 
+(define-public simde
+  (package
+    (name "simde")
+    (version "0.7.0")
+    (source (origin
+             (method git-fetch)
+             (uri (git-reference
+                    (url "https://github.com/simd-everywhere/simde")
+                    (commit (string-append "v" version))))
+             (file-name (git-file-name name version))
+             (sha256
+              (base32
+               "1xf5xfzkk9rj47cichgz5ni8xs9hbpz5p6fmxr4ij721ffd002k3"))
+             (modules '((guix build utils)))
+             (snippet
+              '(begin
+                 ;; Fix the version string
+                 (substitute* "meson.build"
+                   (("0.7.0-rc2") "0.7.0"))
+                 #t))))
+    (build-system meson-build-system)
+    ;; We really want this for the headers, and the tests require a bundled library.
+    (arguments '(#:configure-flags '("-Dtests=false")))
+    (synopsis "Implementations of SIMD instruction sets for foreign systems")
+    (description "The SIMDe header-only library provides fast, portable
+implementations of SIMD intrinsics on hardware which doesn't natively support
+them, such as calling SSE functions on ARM.  There is no performance penalty if
+the hardware supports the native implementation (e.g., SSE/AVX runs at full
+speed on x86, NEON on ARM, etc.).")
+    (home-page "https://simd-everywhere.github.io/blog/")
+    (license license:expat)))
+
 (define-public fasm
   (package
     (name "fasm")
-    (version "1.73.24")
+    (version "1.73.25")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://flatassembler.net/fasm-"
                            version ".tgz"))
        (sha256
-        (base32 "142vxhs8mh8isvlzq7ir0asmqda410phzxmk9gk9b43dldskkj7k"))))
+        (base32 "0k3h61mfwslyb34kf4dnapfwl8jxlmrp4dv666wc057hkj047knn"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no tests exist
@@ -261,28 +294,36 @@ runtime")
 (define-public rgbds
   (package
     (name "rgbds")
-    (version "0.4.1")
+    (version "0.4.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/rednex/rgbds")
+                    (url "https://github.com/gbdev/rgbds")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "05djzl3h18zg2z5p2a881wjbmgikzkhf67cgk00frhw4v05sq0lf"))))
+                "0lygj7jzjlq4w0mkiir7ycysrd1p1akyvzrppjcchja05mi8wy9p"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
          (delete 'configure)
+         (add-after 'unpack 'patch-pkg-config
+           (lambda _
+             (substitute* "Makefile"
+               (("pkg-config")
+                (or (which "pkg-config")
+                    (string-append ,(%current-target-system)
+                                   "-pkg-config"))))
+             #t))
          (replace 'check
            (lambda _
              (with-directory-excursion "test/asm"
                (invoke "./test.sh"))
              (with-directory-excursion "test/link"
                (invoke "./test.sh")))))
-       #:make-flags `("CC=gcc"
+       #:make-flags `(,(string-append "CC=" ,(cc-for-target))
                       ,(string-append "PREFIX="
                                       (assoc-ref %outputs "out")))))
     (native-inputs
@@ -292,7 +333,7 @@ runtime")
        ("util-linux" ,util-linux)))
     (inputs
      `(("libpng" ,libpng)))
-    (home-page "https://github.com/rednex/rgbds")
+    (home-page "https://github.com/gbdev/rgbds")
     (synopsis "Rednex Game Boy Development System")
     (description
      "RGBDS (Rednex Game Boy Development System) is an assembler/linker
@@ -436,7 +477,7 @@ sets, both THUMB and ARM mode.")
            (origin
              (method git-fetch)
              (uri (git-reference
-                   (url "https://github.com/intelxed/mbuild.git")
+                   (url "https://github.com/intelxed/mbuild")
                    (commit "5304b94361fccd830c0e2417535a866b79c1c297")))
              (sha256
               (base32

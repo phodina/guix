@@ -9,7 +9,7 @@
 ;;; Copyright © 2016, 2019, 2020 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017, 2018 Clément Lassieur <clement@lassieur.org>
-;;; Copyright © 2017, 2018, 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Jelle Licht <jlicht@fsfe.org>
 ;;; Copyright © 2017, 2019 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017, 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
@@ -28,6 +28,7 @@
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Jean-Baptiste Note <jean-baptiste.note@m4x.org>
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
+;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -122,7 +123,7 @@ human.")
 (define-public keepassxc
   (package
     (name "keepassxc")
-    (version "2.6.0")
+    (version "2.6.3")
     (source
      (origin
        (method url-fetch)
@@ -130,7 +131,7 @@ human.")
                            "/releases/download/" version "/keepassxc-"
                            version "-src.tar.xz"))
        (sha256
-        (base32 "0fpx6pq336g1xwjl5yzvsky6vqvaa38zb8pwkgswph9slybkvlnh"))))
+        (base32 "1lgp20597dzj8qn8a71x3a6b549rvqybqx4haywwb09qiznvdq77"))))
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags '("-DWITH_XC_ALL=YES"
@@ -210,7 +211,7 @@ algorithms AES or Twofish.")
 (define-public pwsafe
   (package
     (name "pwsafe")
-    (version "3.52.0")
+    (version "3.54.1")
     (home-page "https://www.pwsafe.org/")
     (source
      (origin
@@ -219,7 +220,7 @@ algorithms AES or Twofish.")
              (url "https://github.com/pwsafe/pwsafe")
              (commit version)))
        (sha256
-        (base32 "1ka7xsl63v0559fzf3pwc1iqr37gwr4vq5iaxa2hzar2g28hsxvh"))
+        (base32 "0d51dlw98mv23nwb0b5jyji8gnb9f5cnig6kivfljl97lmr6lhvf"))
        (file-name (git-file-name name version))))
     (build-system cmake-build-system)
     (native-inputs
@@ -306,15 +307,19 @@ applications, there is xclip integration." )
 (define-public yapet
   (package
     (name "yapet")
-    (version "2.3")
+    (version "2.5")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://yapet.guengel.ch/downloads/yapet-"
                            version ".tar.xz"))
        (sha256
-        (base32 "1fl4s7v1psl52ndd6i7716i9f493aj8ipl6lgmraadnn5h26l3pm"))))
+        (base32 "0hpibsdry259cmvps35isr6jn9cd9fsk3r1h0ppjx9zxfrpqwldg"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list (string-append "--docdir=" (assoc-ref %outputs "out")
+                            "/share/doc",name "-" ,version))))
     (inputs
      `(("argon2" ,argon2)
        ("ncurses" ,ncurses)
@@ -366,7 +371,7 @@ them out, at the source.")
 (define-public libpwquality
   (package
     (name "libpwquality")
-    (version "1.4.2")
+    (version "1.4.4")
     (source (origin
               (method url-fetch)
               (uri (list
@@ -378,11 +383,20 @@ them out, at the source.")
                                    "libpwquality-" version ".tar.bz2")))
               (sha256
                (base32
-                "13hw532fmzc5xjpy75d74rlfdlxf2a8ibb4hyy9c0s92wsgf0qsj"))))
+                "0id5a8bi8xnjg11g9vzrl2xbpx65mfxclxcvis7zx1v8vhisyfyl"))))
     (build-system gnu-build-system)
     (arguments
-     ;; XXX: have RUNPATH issue.
-     '(#:configure-flags '("--disable-python-bindings")))
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'set-LDFLAGS
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (setenv "LDFLAGS"
+                     (string-append
+                      "-Wl,-rpath="
+                      (assoc-ref outputs "out") "/lib"))
+             #t)))))
+    (native-inputs
+     `(("python" ,python-wrapper)))
     (inputs
      `(("cracklib" ,cracklib)))
     (synopsis "Password quality checker")
@@ -719,7 +733,7 @@ using password-store through rofi interface:
 (define-public browserpass-native
   (package
     (name "browserpass-native")
-    (version "3.0.6")
+    (version "3.0.7")
     (source
      (origin
        (method git-fetch)
@@ -729,7 +743,7 @@ using password-store through rofi interface:
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0q3bsla07zjl6i69nj1axbkg2ia89pvh0jg6nlqgbm2kpzzbn0pz"))))
+         "1jkjslbbac49xjyjkc2b07phdm3i64z40kh6h55cl22dxjmpp1nb"))))
     (build-system go-build-system)
     (arguments
      `(#:import-path "github.com/browserpass/browserpass-native"
@@ -890,7 +904,7 @@ between hosts and entries in the password store.")
        `(("gmp" ,gmp)
          ("libpcap" ,libpcap)
          ("nss" ,nss)
-         ("openssl" ,openssl-1.0)
+         ("openssl" ,openssl)
          ("python" ,python-2)           ; For "python" and "python2" shebangs
          ("ruby" ,ruby)                 ; For genincstats.rb
          ("zlib" ,zlib)))

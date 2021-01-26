@@ -2,7 +2,7 @@
 ;;; Copyright © 2014 Taylan Ulrich Bayirli/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2014, 2015, 2016 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2016, 2017, 2018, 2019 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Tomáš Čech <sleep_walker@gnu.org>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Jelle Licht <jlicht@fsfe.org>
@@ -34,6 +34,7 @@
   #:use-module (guix build-system python)
   #:use-module (guix build-system glib-or-gtk)
   #:use-module ((guix licenses) #:prefix l:)
+  #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages adns)
   #:use-module (gnu packages boost)
@@ -55,6 +56,7 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-crypto)
+  #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages sqlite)
@@ -73,12 +75,17 @@
                                   version ".tar.xz"))
               (sha256
                (base32
-                "1wjmn96zrvmk8j1yz2ysmqd7a2x6ilvnwwapcvfzgxs2wwpnai4i"))))
+                "1wjmn96zrvmk8j1yz2ysmqd7a2x6ilvnwwapcvfzgxs2wwpnai4i"))
+              (patches (search-patches "transmission-honor-localedir.patch"))))
     (build-system glib-or-gtk-build-system)
     (outputs '("out"                      ; library and command-line interface
                "gui"))                    ; graphical user interface
     (arguments
-     '(#:glib-or-gtk-wrap-excluded-outputs '("out")
+     '(#:configure-flags
+       (list (string-append "--localedir="
+                            (assoc-ref %outputs "gui")
+                            "/share/locale"))
+       #:glib-or-gtk-wrap-excluded-outputs '("out")
        #:phases
        (modify-phases %standard-phases
          (add-after 'install 'move-gui
@@ -91,14 +98,17 @@
                (rename-file (string-append out "/bin/transmission-gtk")
                             (string-append gui "/bin/transmission-gtk"))
 
-               ;; Move the '.desktop' and icon files as well.
-               (mkdir (string-append gui "/share"))
                (for-each
                 (lambda (dir)
                   (rename-file (string-append out "/share/" dir)
                                (string-append gui "/share/" dir)))
-                '("applications" "icons" "pixmaps")))
-             #t)))))
+                '("appdata" "applications" "icons" "pixmaps"))
+
+               (mkdir-p (string-append gui "/share/man/man1"))
+               (rename-file
+                (string-append out "/share/man/man1/transmission-gtk.1")
+                (string-append gui "/share/man/man1/transmission-gtk.1"))
+             #t))))))
     (inputs
      `(("libevent" ,libevent)
        ("curl" ,curl)
@@ -306,7 +316,7 @@ Aria2 can be manipulated via built-in JSON-RPC and XML-RPC interfaces.")
 (define-public uget
   (package
     (name "uget")
-    (version "2.2.0")
+    (version "2.2.1")
     (source
      (origin
        (method url-fetch)
@@ -314,7 +324,7 @@ Aria2 can be manipulated via built-in JSON-RPC and XML-RPC interfaces.")
                            "uget%20%28stable%29/" version "/uget-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0rg2mr2cndxvnjib8zm5dp7y2hgbvnqkz2j2jmg0xlzfh9d34b2m"))))
+        (base32 "0dlrjhnm1pg2vwmp7nl2xv1aia5hyirb3021rl46x859k63zap24"))))
     (build-system gnu-build-system)
     (inputs
      `(("curl" ,curl)
@@ -353,7 +363,7 @@ downloads, download scheduling, download rate limiting.")
     (arguments
      `(#:phases (modify-phases %standard-phases
                   (delete 'configure))          ; no configure script
-       #:make-flags (list "CC=gcc"
+       #:make-flags (list (string-append "CC=" ,(cc-for-target))
                           (string-append "PREFIX=" (assoc-ref %outputs "out"))
                           "NO_HASH_CHECK=1"
                           "USE_LARGE_FILES=1"
@@ -465,29 +475,65 @@ features.")
 (define-public deluge
   (package
     (name "deluge")
-    (version "1.3.15")
+    (version "2.0.3")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
-             "http://download.deluge-torrent.org/source/deluge-"
-             version ".tar.xz"))
+             "https://ftp.osuosl.org/pub/deluge/source/"
+             (version-major+minor version) "/deluge-" version ".tar.xz"))
        (sha256
         (base32
-         "0b7rri4x0wrcj7rjghrnw1kfrsd5i7i6aq85dsg5dg1w1qa0ar59"))))
+         "14d8kn2pvr1qv8mwqrxmj85jycr73vwfqz12hzag0ararbkfhyky"))))
     (build-system python-build-system)
-    (inputs
-     `(("libtorrent" ,libtorrent-rasterbar)
-       ("python2-chardet" ,python2-chardet)
-       ("python2-pygtk" ,python2-pygtk)
-       ("python2-pyopenssl" ,python2-pyopenssl)
-       ("python2-pyxdg" ,python2-pyxdg)
-       ("python2-service-identity" ,python2-service-identity)
-       ("python2-twisted" ,python2-twisted)))
+    (propagated-inputs
+     `(("gtk+" ,gtk+)
+       ("librsvg" ,librsvg)
+       ("libtorrent" ,libtorrent-rasterbar)
+       ("python-pycairo" ,python-pycairo)
+       ("python-chardet" ,python-chardet)
+       ("python-dbus" ,python-dbus)
+       ("python-mako" ,python-mako)
+       ("python-pygobject" ,python-pygobject)
+       ("python-pillow" ,python-pillow)
+       ("python-pyopenssl" ,python-pyopenssl)
+       ("python-pyxdg" ,python-pyxdg)
+       ("python-rencode" ,python-rencode)
+       ("python-service-identity" ,python-service-identity)
+       ("python-setproctitle" ,python-setproctitle)
+       ("python-six" ,python-six)
+       ("python-twisted" ,python-twisted)
+       ("python-zope-interface" ,python-zope-interface)))
     (native-inputs
-     `(("intltool" ,intltool)))
+     `(("intltool" ,intltool)
+       ("python-wheel" ,python-wheel)))
+    ;; TODO: Enable tests.
+    ;; After "pytest-twisted" is packaged, HOME is set, and an X server is
+    ;; started, some of the tests still fail.  There are likely some tests
+    ;; that require a network connection.
     (arguments
-     `(#:python ,python-2))
+     `(#:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         ;; Remove this phase when upgrading to version 2.0.4 or beyond, as
+         ;; the issue is fixed upstream.
+         (add-after 'unpack 'fix-gettext-warning
+           (lambda _
+             (substitute* "deluge/i18n/util.py"
+               (("names='ngettext'") "names=['ngettext']"))
+             #t))
+         (add-after 'install 'wrap
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out               (assoc-ref outputs "out"))
+                   (gi-typelib-path   (getenv "GI_TYPELIB_PATH")))
+               (for-each
+                (lambda (program)
+                  (wrap-program program
+                    `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))))
+                (map (lambda (name)
+                       (string-append out "/bin/" name))
+                     '("deluge" "deluge-gtk"))))
+             #t)))))
     (home-page "https://www.deluge-torrent.org/")
     (synopsis  "Fully-featured cross-platform ​BitTorrent client")
     (description
