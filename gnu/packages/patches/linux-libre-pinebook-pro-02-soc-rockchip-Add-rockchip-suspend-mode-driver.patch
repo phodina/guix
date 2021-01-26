@@ -1,7 +1,7 @@
-From 647fe78ac65a505aefff3825760185d66ada0da2 Mon Sep 17 00:00:00 2001
+From 3248fd8a16fd3815de2f66a4693eabdb8ceae6b8 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:06:20 +0200
-Subject: [PATCH 02/26] soc: rockchip: Add rockchip suspend mode driver
+Subject: [PATCH 02/25] soc: rockchip: Add rockchip suspend mode driver
 
 Code gore, do not mainline. This belongs in ATF
 
@@ -63,10 +63,10 @@ index 000000000000..a8fd70f17597
 +		>;
 +	};
 diff --git a/drivers/soc/rockchip/Kconfig b/drivers/soc/rockchip/Kconfig
-index b71b73bf5fc5..bfadbecd0df8 100644
+index 2c13bf4dd5db..f403ab803b42 100644
 --- a/drivers/soc/rockchip/Kconfig
 +++ b/drivers/soc/rockchip/Kconfig
-@@ -26,4 +26,10 @@ config ROCKCHIP_PM_DOMAINS
+@@ -34,4 +34,10 @@ config ROCKCHIP_PM_DOMAINS
  
            If unsure, say N.
  
@@ -78,12 +78,12 @@ index b71b73bf5fc5..bfadbecd0df8 100644
 +
  endif
 diff --git a/drivers/soc/rockchip/Makefile b/drivers/soc/rockchip/Makefile
-index afca0a4c4b72..a15c0a395a33 100644
+index 875032f7344e..7aa3d5d1b330 100644
 --- a/drivers/soc/rockchip/Makefile
 +++ b/drivers/soc/rockchip/Makefile
-@@ -4,3 +4,4 @@
- #
+@@ -5,3 +5,4 @@
  obj-$(CONFIG_ROCKCHIP_GRF) += grf.o
+ obj-$(CONFIG_ROCKCHIP_IODOMAIN) += io-domain.o
  obj-$(CONFIG_ROCKCHIP_PM_DOMAINS) += pm_domains.o
 +obj-$(CONFIG_ROCKCHIP_SUSPEND_MODE) += rockchip_pm_config.o
 diff --git a/drivers/soc/rockchip/rockchip_pm_config.c b/drivers/soc/rockchip/rockchip_pm_config.c
@@ -371,5 +371,5 @@ index 000000000000..0cccd6430ef6
 +
 +#endif
 -- 
-2.28.0
+2.30.0
 

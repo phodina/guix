@@ -1,7 +1,7 @@
-From d12d494c5ef4faaaf1ecd92d74692c9a01ce9801 Mon Sep 17 00:00:00 2001
+From 6a33e51351f2ac8135c99f2640aefaf000116d3c Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Sat, 6 Jun 2020 23:45:10 +0200
-Subject: [PATCH 24/26] arm64: dts: rockchip: setup USB type c port as dual
+Subject: [PATCH 23/25] arm64: dts: rockchip: setup USB type c port as dual
  data role
 
 Some chargers try to put the charged device into device data role.
@@ -14,7 +14,7 @@ Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
-index ef9c8daa74a7..3b2ef918d386 100644
+index c505c88b5d9b..d77dca5524ff 100644
 --- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
 @@ -726,7 +726,7 @@ fusb0: fusb30x@22 {
@@ -27,5 +27,5 @@ index ef9c8daa74a7..3b2ef918d386 100644
  			op-sink-microwatt = <1000000>;
  			power-role = "dual";
 -- 
-2.28.0
+2.30.0
 

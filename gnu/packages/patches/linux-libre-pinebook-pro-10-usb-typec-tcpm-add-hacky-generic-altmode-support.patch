@@ -1,7 +1,7 @@
-From 34dd01fcb581d221aacb960a9e3a3030429c6638 Mon Sep 17 00:00:00 2001
+From 4cc23f7ad56655303ca839d2956d7f5d7c5d0696 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:23:54 +0200
-Subject: [PATCH 10/26] usb: typec: tcpm: add hacky generic altmode support
+Subject: [PATCH 10/25] usb: typec: tcpm: add hacky generic altmode support
 
 This is a hack and it is based on extcon. Do not try to mainline
 unless you are in need for some retroactive abortion by the
@@ -9,26 +9,25 @@ maintainers.
 
 Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
 ---
- drivers/usb/typec/tcpm/tcpm.c | 140 +++++++++++++++++++++++++++++++++-
- 1 file changed, 139 insertions(+), 1 deletion(-)
+ drivers/usb/typec/tcpm/tcpm.c | 139 +++++++++++++++++++++++++++++++++-
+ 1 file changed, 138 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/usb/typec/tcpm/tcpm.c b/drivers/usb/typec/tcpm/tcpm.c
-index 82b19ebd7838..9858df11590b 100644
+index a6fae1f86505..2908771f4d4e 100644
 --- a/drivers/usb/typec/tcpm/tcpm.c
 +++ b/drivers/usb/typec/tcpm/tcpm.c
-@@ -8,6 +8,7 @@
- #include <linux/completion.h>
+@@ -9,6 +9,7 @@
  #include <linux/debugfs.h>
  #include <linux/device.h>
+ #include <linux/hrtimer.h>
 +#include <linux/extcon-provider.h>
  #include <linux/jiffies.h>
  #include <linux/kernel.h>
- #include <linux/module.h>
-@@ -322,6 +323,12 @@ struct tcpm_port {
- 	/* port belongs to a self powered device */
- 	bool self_powered;
+ #include <linux/kthread.h>
+@@ -369,6 +370,11 @@ struct tcpm_port {
+ 	/* Sink caps have been queried */
+ 	bool sink_cap_done;
  
-+
 +#ifdef CONFIG_EXTCON
 +	struct extcon_dev *extcon;
 +	unsigned int *extcon_cables;
@@ -37,7 +36,7 @@ index 82b19ebd7838..9858df11590b 100644
  #ifdef CONFIG_DEBUG_FS
  	struct dentry *dentry;
  	struct mutex logbuffer_lock;	/* log buffer access lock */
-@@ -607,6 +614,35 @@ static void tcpm_debugfs_exit(const struct tcpm_port *port) { }
+@@ -654,6 +660,35 @@ static void tcpm_debugfs_exit(const struct tcpm_port *port) { }
  
  #endif
  
@@ -73,7 +72,7 @@ index 82b19ebd7838..9858df11590b 100644
  static int tcpm_pd_transmit(struct tcpm_port *port,
  			    enum tcpm_transmit_type type,
  			    const struct pd_message *msg)
-@@ -834,6 +870,8 @@ static int tcpm_set_roles(struct tcpm_port *port, bool attached,
+@@ -881,6 +916,8 @@ static int tcpm_set_roles(struct tcpm_port *port, bool attached,
  	typec_set_data_role(port->typec_port, data);
  	typec_set_pwr_role(port->typec_port, role);
  
@@ -82,26 +81,26 @@ index 82b19ebd7838..9858df11590b 100644
  	return 0;
  }
  
-@@ -1044,7 +1082,7 @@ static void svdm_consume_modes(struct tcpm_port *port, const __le32 *payload,
+@@ -1132,7 +1169,7 @@ static void svdm_consume_modes(struct tcpm_port *port, const u32 *p, int cnt)
  		paltmode->mode = i;
- 		paltmode->vdo = le32_to_cpu(payload[i]);
+ 		paltmode->vdo = p[i];
  
 -		tcpm_log(port, " Alternate mode %d: SVID 0x%04x, VDO %d: 0x%08x",
 +		tcpm_log(port, "Alternate mode %d: SVID 0x%04x, VDO %d: 0x%08x",
  			 pmdata->altmodes, paltmode->svid,
  			 paltmode->mode, paltmode->vdo);
  
-@@ -1064,6 +1102,9 @@ static void tcpm_register_partner_altmodes(struct tcpm_port *port)
- 		if (!altmode)
- 			tcpm_log(port, "Failed to register partner SVID 0x%04x",
+@@ -1154,6 +1191,9 @@ static void tcpm_register_partner_altmodes(struct tcpm_port *port)
  				 modep->altmode_desc[i].svid);
+ 			altmode = NULL;
+ 		}
 +		else
 +			tcpm_log(port, "Registered altmode 0x%04x", modep->altmode_desc[i].svid);
 +
  		port->partner_altmode[i] = altmode;
  	}
  }
-@@ -1167,9 +1208,11 @@ static int tcpm_pd_svdm(struct tcpm_port *port, const __le32 *payload, int cnt,
+@@ -1249,9 +1289,11 @@ static int tcpm_pd_svdm(struct tcpm_port *port, struct typec_altmode *adev,
  			modep->svid_index++;
  			if (modep->svid_index < modep->nsvids) {
  				u16 svid = modep->svids[modep->svid_index];
@@ -113,7 +112,7 @@ index 82b19ebd7838..9858df11590b 100644
  				tcpm_register_partner_altmodes(port);
  			}
  			break;
-@@ -2693,6 +2736,7 @@ static int tcpm_src_attach(struct tcpm_port *port)
+@@ -2836,6 +2878,7 @@ static int tcpm_src_attach(struct tcpm_port *port)
  static void tcpm_typec_disconnect(struct tcpm_port *port)
  {
  	if (port->connected) {
@@ -121,8 +120,8 @@ index 82b19ebd7838..9858df11590b 100644
  		typec_unregister_partner(port->partner);
  		port->partner = NULL;
  		port->connected = false;
-@@ -2750,6 +2794,8 @@ static void tcpm_detach(struct tcpm_port *port)
- 		port->hard_reset_count = 0;
+@@ -2902,6 +2945,8 @@ static void tcpm_detach(struct tcpm_port *port)
+ 	}
  
  	tcpm_reset_port(port);
 +
@@ -130,7 +129,7 @@ index 82b19ebd7838..9858df11590b 100644
  }
  
  static void tcpm_src_detach(struct tcpm_port *port)
-@@ -4424,6 +4470,64 @@ void tcpm_tcpc_reset(struct tcpm_port *port)
+@@ -4732,6 +4777,64 @@ void tcpm_tcpc_reset(struct tcpm_port *port)
  }
  EXPORT_SYMBOL_GPL(tcpm_tcpc_reset);
  
@@ -195,7 +194,7 @@ index 82b19ebd7838..9858df11590b 100644
  static int tcpm_fw_get_caps(struct tcpm_port *port,
  			    struct fwnode_handle *fwnode)
  {
-@@ -4434,6 +4538,23 @@ static int tcpm_fw_get_caps(struct tcpm_port *port,
+@@ -4742,6 +4845,23 @@ static int tcpm_fw_get_caps(struct tcpm_port *port,
  	if (!fwnode)
  		return -EINVAL;
  
@@ -219,7 +218,7 @@ index 82b19ebd7838..9858df11590b 100644
  	/* USB data support is optional */
  	ret = fwnode_property_read_string(fwnode, "data-role", &cap_str);
  	if (ret == 0) {
-@@ -4766,6 +4887,17 @@ struct tcpm_port *tcpm_register_port(struct device *dev, struct tcpc_dev *tcpc)
+@@ -5114,6 +5234,17 @@ struct tcpm_port *tcpm_register_port(struct device *dev, struct tcpc_dev *tcpc)
  		goto out_destroy_wq;
  
  	port->try_role = port->typec_caps.prefer_role;
@@ -237,7 +236,7 @@ index 82b19ebd7838..9858df11590b 100644
  
  	port->typec_caps.fwnode = tcpc->fwnode;
  	port->typec_caps.revision = 0x0120;	/* Type-C spec release 1.2 */
-@@ -4793,6 +4925,12 @@ struct tcpm_port *tcpm_register_port(struct device *dev, struct tcpc_dev *tcpc)
+@@ -5141,6 +5272,12 @@ struct tcpm_port *tcpm_register_port(struct device *dev, struct tcpc_dev *tcpc)
  		goto out_role_sw_put;
  	}
  
@@ -251,5 +250,5 @@ index 82b19ebd7838..9858df11590b 100644
  	tcpm_init(port);
  	mutex_unlock(&port->lock);
 -- 
-2.28.0
+2.30.0
 
