@@ -1,7 +1,7 @@
-From 5e12e8a5194513d83fd45c4e765b7bc81ee3ee0a Mon Sep 17 00:00:00 2001
+From f96cdf076bcc4a12af7670c5cb3ff584d2adf988 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:11:05 +0200
-Subject: [PATCH 03/25] firmware: Add Rockchip SIP driver
+Subject: [PATCH 02/22] firmware: Add Rockchip SIP driver
 
 Used exclusively for suspend signaling. Drop for mainline and
 use PSCI

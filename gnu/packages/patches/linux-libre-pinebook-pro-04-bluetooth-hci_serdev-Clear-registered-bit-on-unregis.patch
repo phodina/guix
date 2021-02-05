@@ -1,7 +1,7 @@
-From 6f76ad0bf7508186247a2a02ad22450c0b6244bf Mon Sep 17 00:00:00 2001
+From bbb5b65d82c2fdbe80cf5fe4d7bfefee738f110c Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:14:06 +0200
-Subject: [PATCH 05/25] bluetooth: hci_serdev: Clear registered bit on
+Subject: [PATCH 04/22] bluetooth: hci_serdev: Clear registered bit on
  unregister
 
 Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>

@@ -1,7 +1,7 @@
-From 9be0d46fe0bbcb16a413c3e5c310444c5c8223ac Mon Sep 17 00:00:00 2001
+From f39335d0fecd2a0994a5b9572064ec78d2bd746c Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:44:15 +0200
-Subject: [PATCH 20/25] arm64: dts: rockchip: add typec extcon hack
+Subject: [PATCH 18/22] arm64: dts: rockchip: add typec extcon hack
 
 Not for mainline
 
@@ -11,10 +11,10 @@ Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
  1 file changed, 5 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
-index decb212e2dca..37f967a89401 100644
+index 667eeeb019de..7c5bca24481c 100644
 --- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
-@@ -401,6 +401,7 @@ opp08 {
+@@ -394,6 +394,7 @@ mains_charger: dc-charger {
  
  &cdn_dp {
  	status = "okay";
@@ -22,7 +22,7 @@ index decb212e2dca..37f967a89401 100644
  };
  
  &cpu_b0 {
-@@ -735,6 +736,9 @@ connector {
+@@ -728,6 +729,9 @@ connector {
  				<PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM)>;
  			try-power-role = "sink";
  
@@ -32,7 +32,7 @@ index decb212e2dca..37f967a89401 100644
  			ports {
  				#address-cells = <1>;
  				#size-cells = <0>;
-@@ -1002,6 +1006,7 @@ spiflash: flash@0 {
+@@ -995,6 +999,7 @@ spiflash: flash@0 {
  };
  
  &tcphy0 {

@@ -1,7 +1,7 @@
-From 25cc182e2d2e266dc5aea0abde45220d590329bb Mon Sep 17 00:00:00 2001
+From bad8f5fa346a3de7e394ccc8ba96b9939c6de966 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:25:32 +0200
-Subject: [PATCH 11/25] phy: rockchip: typec: Set extcon capabilities
+Subject: [PATCH 10/22] phy: rockchip: typec: Set extcon capabilities
 
 Do not mainline, hack.
 

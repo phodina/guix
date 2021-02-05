@@ -482,32 +482,30 @@ corresponding UPSTREAM-SOURCE (an origin), using the given DEBLOB-SCRIPTS."
 (define %pinebook-pro-patches
   ;; Pinebook Pro patches from manjaro v5.10 branch:
   ;; https://gitlab.manjaro.org/tsys/linux-pinebook-pro.git
-  ;; Rebased for 5.10.9
+  ;; Rebased and squashed for 5.10.14
   (search-patches
-   "linux-libre-pinebook-pro-01-leds-Add-support-for-inverted-LED-triggers.patch"
-   "linux-libre-pinebook-pro-02-soc-rockchip-Add-rockchip-suspend-mode-driver.patch"
-   "linux-libre-pinebook-pro-03-firmware-Add-Rockchip-SIP-driver.patch"
-   "linux-libre-pinebook-pro-04-tty-serdev-support-shutdown-op.patch"
-   "linux-libre-pinebook-pro-05-bluetooth-hci_serdev-Clear-registered-bit-on-unregis.patch"
-   "linux-libre-pinebook-pro-06-bluetooth-hci_bcm-disable-power-on-shutdown.patch"
-   "linux-libre-pinebook-pro-07-mmc-core-pwrseq_simple-disable-mmc-power-on-shutdown.patch"
-   "linux-libre-pinebook-pro-08-regulator-core-add-generic-suspend-states-support.patch"
-   "linux-libre-pinebook-pro-09-usb-typec-bus-Catch-crash-due-to-partner-NULL-value.patch"
-   "linux-libre-pinebook-pro-10-usb-typec-tcpm-add-hacky-generic-altmode-support.patch"
-   "linux-libre-pinebook-pro-11-phy-rockchip-typec-Set-extcon-capabilities.patch"
-   "linux-libre-pinebook-pro-12-usb-typec-altmodes-displayport-Add-hacky-generic-alt.patch"
-   "linux-libre-pinebook-pro-13-sound-soc-codecs-es8316-Run-micdetect-only-if-jack-s.patch"
-   "linux-libre-pinebook-pro-14-ASoC-soc-jack.c-supported-inverted-jack-detect-GPIOs.patch"
-   "linux-libre-pinebook-pro-15-arm64-dts-rockchip-add-default-rk3399-rockchip-suspe.patch"
-   "linux-libre-pinebook-pro-16-arm64-dts-rockchip-enable-earlycon.patch"
-   "linux-libre-pinebook-pro-17-arm64-dts-rockchip-reserve-memory-for-ATF-rockchip-S.patch"
-   "linux-libre-pinebook-pro-18-arm64-dts-rockchip-use-power-led-for-disk-activity-i.patch"
-   "linux-libre-pinebook-pro-20-arm64-dts-rockchip-add-typec-extcon-hack.patch"
-   "linux-libre-pinebook-pro-21-arm64-dts-rockchip-add-rockchip-suspend-node.patch"
-   "linux-libre-pinebook-pro-22-arm64-configs-add-defconfig-for-Pinebook-Pro.patch"
-   "linux-libre-pinebook-pro-23-arm64-dts-rockchip-setup-USB-type-c-port-as-dual-dat.patch"
-   "linux-libre-pinebook-pro-24-arm64-configs-Update-Pinbook-Pro-defconfig-to-v5.8-r.patch"
-   "linux-libre-pinebook-pro-25-soc-rockchip-Port-rockchip_pm_config-driver-to-Linux.patch"))
+   "linux-libre-pinebook-pro-01-soc-rockchip-Add-rockchip-suspend-mode-driver.patch"
+   "linux-libre-pinebook-pro-02-firmware-Add-Rockchip-SIP-driver.patch"
+   "linux-libre-pinebook-pro-03-tty-serdev-support-shutdown-op.patch"
+   "linux-libre-pinebook-pro-04-bluetooth-hci_serdev-Clear-registered-bit-on-unregis.patch"
+   "linux-libre-pinebook-pro-05-bluetooth-hci_bcm-disable-power-on-shutdown.patch"
+   "linux-libre-pinebook-pro-06-mmc-core-pwrseq_simple-disable-mmc-power-on-shutdown.patch"
+   "linux-libre-pinebook-pro-07-regulator-core-add-generic-suspend-states-support.patch"
+   "linux-libre-pinebook-pro-08-usb-typec-bus-Catch-crash-due-to-partner-NULL-value.patch"
+   "linux-libre-pinebook-pro-09-usb-typec-tcpm-add-hacky-generic-altmode-support.patch"
+   "linux-libre-pinebook-pro-10-phy-rockchip-typec-Set-extcon-capabilities.patch"
+   "linux-libre-pinebook-pro-11-usb-typec-altmodes-displayport-Add-hacky-generic-alt.patch"
+   "linux-libre-pinebook-pro-12-sound-soc-codecs-es8316-Run-micdetect-only-if-jack-s.patch"
+   "linux-libre-pinebook-pro-13-ASoC-soc-jack.c-supported-inverted-jack-detect-GPIOs.patch"
+   "linux-libre-pinebook-pro-14-arm64-dts-rockchip-add-default-rk3399-rockchip-suspe.patch"
+   "linux-libre-pinebook-pro-15-arm64-dts-rockchip-enable-earlycon.patch"
+   "linux-libre-pinebook-pro-16-arm64-dts-rockchip-reserve-memory-for-ATF-rockchip-S.patch"
+   "linux-libre-pinebook-pro-17-arm64-dts-rockchip-use-power-led-for-disk-activity-i.patch"
+   "linux-libre-pinebook-pro-18-arm64-dts-rockchip-add-typec-extcon-hack.patch"
+   "linux-libre-pinebook-pro-19-arm64-dts-rockchip-add-rockchip-suspend-node.patch"
+   "linux-libre-pinebook-pro-20-arm64-configs-add-defconfig-for-Pinebook-Pro.patch"
+   "linux-libre-pinebook-pro-21-arm64-dts-rockchip-setup-USB-type-c-port-as-dual-dat.patch"
+   "linux-libre-pinebook-pro-22-soc-rockchip-Port-rockchip_pm_config-driver-to-Linux.patch"))
 
 (define (source-with-patches source patches)
   (origin

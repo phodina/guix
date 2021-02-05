@@ -1,7 +1,7 @@
-From 0864be1539abd7d484d70b9644e1aae5493762cc Mon Sep 17 00:00:00 2001
+From 60a2b2a921205f5a42c94f7e9c491ca7d11ad820 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:15:08 +0200
-Subject: [PATCH 06/25] bluetooth: hci_bcm: disable power on shutdown
+Subject: [PATCH 05/22] bluetooth: hci_bcm: disable power on shutdown
 
 Firmware behaves wonky when not power cycled over reboots
 

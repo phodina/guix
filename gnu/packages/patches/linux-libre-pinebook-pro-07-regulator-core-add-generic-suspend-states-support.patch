@@ -1,7 +1,7 @@
-From 76c1a1db722fc5927588e6f72402a21474a9dcbe Mon Sep 17 00:00:00 2001
+From c54fa5c850858a70cfab20bf81ec8b0fb0b9e4c2 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:19:31 +0200
-Subject: [PATCH 08/25] regulator: core: add generic suspend states support
+Subject: [PATCH 07/22] regulator: core: add generic suspend states support
 
 This commit adds genric suspend support for regualtors without
 explicit suspend ops.

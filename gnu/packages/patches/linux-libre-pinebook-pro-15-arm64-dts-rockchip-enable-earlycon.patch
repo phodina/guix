@@ -1,7 +1,7 @@
-From 3b788af95d6d865b47e7cbbcfff8dd088417ebe8 Mon Sep 17 00:00:00 2001
+From 6a2021b2b1b12fd451fa64abdb5035e966869b14 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:39:55 +0200
-Subject: [PATCH 16/25] arm64: dts: rockchip: enable earlycon
+Subject: [PATCH 15/22] arm64: dts: rockchip: enable earlycon
 
 Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
 ---
