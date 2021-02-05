@@ -1,7 +1,7 @@
-From c6e32234b528d57bfd068e13dbdd184a420dffe2 Mon Sep 17 00:00:00 2001
+From 9d17d48ded2440f543fa2c7468a7fc976cea9458 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:38:03 +0200
-Subject: [PATCH 15/25] arm64: dts: rockchip: add default rk3399
+Subject: [PATCH 14/22] arm64: dts: rockchip: add default rk3399
  rockchip-suspend node
 
 Again this has no place in mainline. Should be handled by ATF

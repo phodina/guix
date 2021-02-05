@@ -1,7 +1,7 @@
-From a3d0420f6b403f4831c7158903d74651d92c426b Mon Sep 17 00:00:00 2001
+From 7ef823687e24b71de4280fcf4c4b32fc05c3be12 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:40:31 +0200
-Subject: [PATCH 17/25] arm64: dts: rockchip: reserve memory for ATF rockchip
+Subject: [PATCH 16/22] arm64: dts: rockchip: reserve memory for ATF rockchip
  SIP
 
 Definitely not for mainline

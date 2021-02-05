@@ -1,7 +1,7 @@
-From e635f9ae42726f2db386558c7f0b1470fec3e734 Mon Sep 17 00:00:00 2001
+From b867286f70ce1368a0536ba45846f318473736e0 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Tue, 16 Jun 2020 21:29:29 +0200
-Subject: [PATCH 25/25] soc: rockchip: Port rockchip_pm_config driver to Linux
+Subject: [PATCH 22/22] soc: rockchip: Port rockchip_pm_config driver to Linux
  5.8
 
 Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>

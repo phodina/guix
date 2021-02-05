@@ -1,7 +1,7 @@
-From 56ed7bf8b832acd44124979f271039edafc3926e Mon Sep 17 00:00:00 2001
+From e4f2d18bd78d5df019f9f68b56c9d6e8fa12afb5 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:22:09 +0200
-Subject: [PATCH 09/25] usb: typec: bus: Catch crash due to partner NULL value
+Subject: [PATCH 08/22] usb: typec: bus: Catch crash due to partner NULL value
 
 Think this has been fixed upstream, have not seen it happen for ages.
 Drop on next rebase.

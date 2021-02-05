@@ -1,7 +1,7 @@
-From 1ee1be64645deae2dd53a01d73898f0bf755e78c Mon Sep 17 00:00:00 2001
+From 31ceda56288f7679eeffc8fc892ab2c65c1e74b9 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <t.schramm@manjaro.org>
 Date: Thu, 28 May 2020 14:42:54 +0200
-Subject: [PATCH 18/25] arm64: dts: rockchip: use power led for disk-activity
+Subject: [PATCH 17/22] arm64: dts: rockchip: use power led for disk-activity
  indication
 
 Signed-off-by: Tobias Schramm <t.schramm@manjaro.org>
