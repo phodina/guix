@@ -94,7 +94,7 @@
         ("rust-cxx-build" ,rust-cxx-build-0.5)
         ("rust-gettext-rs" ,rust-gettext-rs-0.5)
         ("rust-libc" ,rust-libc-0.2)
-        ("rust-natord" ,rust-natord-1.0)
+        ("rust-natord" ,rust-natord-1)
         ("rust-nom" ,rust-nom-6)
         ("rust-once-cell" ,rust-once-cell-1)
         ("rust-rand" ,rust-rand-0.7)
@@ -196,7 +196,10 @@ file system, and many more features.")
         (base32 "1g9463bvswsm899j6dfhslcg6np70m5wq143mjicr24zy8d17bm7"))))
     (build-system glib-or-gtk-build-system)
     (arguments
-     `(#:phases
+     `(#:configure-flags
+       (list
+         "--disable-static")
+       #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'prepare-build-environment
            (lambda* (#:key inputs #:allow-other-keys)
@@ -222,7 +225,8 @@ file system, and many more features.")
        ("pkg-config" ,pkg-config)
        ("which" ,which)))
     (inputs
-     `(("glib-networking" ,glib-networking)
+     `(("glib" ,glib)
+       ("glib-networking" ,glib-networking)
        ("gnome-keyring" ,gnome-keyring)
        ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
        ("gstreamer" ,gstreamer)
@@ -230,11 +234,14 @@ file system, and many more features.")
        ("libnotify" ,libnotify)
        ("libpeas" ,libpeas)
        ("libsecret" ,libsecret)
+       ("libsoup" ,libsoup)
        ("libxml2" ,libxml2)
        ("libxslt" ,libxslt)
+       ("pango" ,pango)
        ("python" ,python)
        ("python-pycairo" ,python-pycairo)
        ("python-pygobject" ,python-pygobject)
+       ("sqlite" ,sqlite)
        ("webkitgtk" ,webkitgtk)))
     (home-page "https://lzone.de/liferea/")
     (synopsis "News reader for GTK/GNOME")

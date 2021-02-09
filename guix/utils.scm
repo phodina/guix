@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2014, 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2014 Ian Denhardt <ian@zenhack.net>
@@ -8,6 +8,7 @@
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2018, 2020 Marius Bakke <marius@gnu.org>
 ;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2021 Simon Tournier <zimon.toutoune@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37,6 +38,7 @@
   #:use-module (guix memoization)
   #:use-module ((guix build utils) #:select (dump-port mkdir-p delete-file-recursively))
   #:use-module ((guix build syscalls) #:select (mkdtemp! fdatasync))
+  #:use-module ((guix combinators) #:select (fold2))
   #:use-module (guix diagnostics)           ;<location>, &error-location, etc.
   #:use-module (ice-9 format)
   #:use-module (ice-9 regex)
@@ -88,6 +90,7 @@
             version-major+minor+point
             version-major+minor
             version-major
+            version-unique-prefix
             guile-version>?
             version-prefix?
             string-replace-substring
@@ -114,7 +117,10 @@
             call-with-decompressed-port
             compressed-output-port
             call-with-compressed-output-port
-            canonical-newline-port))
+            canonical-newline-port
+
+            string-distance
+            string-closest))
 
 
 ;;;
@@ -589,6 +595,38 @@ minor version numbers from version-string."
   "Return the major version number as string from the version-string."
   (version-prefix version-string 1))
 
+(define (version-unique-prefix version versions)
+  "Return the shortest version prefix to unambiguously identify VERSION among
+VERSIONS.  For example:
+
+  (version-unique-prefix \"2.0\" '(\"3.0\" \"2.0\"))
+  => \"2\"
+
+  (version-unique-prefix \"2.2\" '(\"3.0.5\" \"2.0.9\" \"2.2.7\"))
+  => \"2.2\"
+
+  (version-unique-prefix \"27.1\" '(\"27.1\"))
+  => \"\"
+"
+  (define not-dot
+    (char-set-complement (char-set #\.)))
+
+  (define other-versions
+    (delete version versions))
+
+  (let loop ((prefix     '())
+             (components (string-tokenize version not-dot)))
+    (define prefix-str
+      (string-join prefix "."))
+
+    (if (any (cut string-prefix? prefix-str <>) other-versions)
+        (match components
+          ((head . tail)
+           (loop `(,@prefix ,head) tail))
+          (()
+           version))
+        prefix-str)))
+
 (define (version>? a b)
   "Return #t when A denotes a version strictly newer than B."
   (eq? '> (version-compare a b)))
@@ -846,6 +884,46 @@ be determined."
          ((or ('filename . #f) #f)
           ;; raising an error would upset Geiser users
           #f))))))
+
+
+;;;
+;;; String comparison.
+;;;
+
+(define (string-distance s1 s2)
+  "Compute the Levenshtein distance between two strings."
+  ;; Naive implemenation
+  (define loop
+    (mlambda (as bt)
+      (match as
+        (() (length bt))
+        ((a s ...)
+         (match bt
+           (() (length as))
+           ((b t ...)
+            (if (char=? a b)
+                (loop s t)
+                (1+ (min
+                     (loop as t)
+                     (loop s bt)
+                     (loop s t))))))))))
+
+  (let ((c1 (string->list s1))
+        (c2 (string->list s2)))
+    (loop c1 c2)))
+
+(define* (string-closest trial tests #:key (threshold 3))
+  "Return the string from TESTS that is the closest from the TRIAL,
+according to 'string-distance'.  If the TESTS are too far from TRIAL,
+according to THRESHOLD, then #f is returned."
+  (identity                              ;discard second return value
+    (fold2 (lambda (test closest minimal)
+             (let ((dist (string-distance trial test)))
+               (if (and  (< dist minimal) (< dist threshold))
+                   (values test dist)
+                   (values closest minimal))))
+           #f +inf.0
+           tests)))
 
 ;;; Local Variables:
 ;;; eval: (put 'call-with-progress-reporter 'scheme-indent-function 1)

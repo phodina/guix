@@ -24,6 +24,7 @@
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2020 Holgr Peters <holger.peters@posteo.de>
+;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -49,6 +50,7 @@
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages crypto)
+  #:use-module (gnu packages curl)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages dbm)
   #:use-module (gnu packages rails)
@@ -1100,6 +1102,43 @@ line of code.")
     ;; of the Expat license.
     (license license:bsd-3)))
 
+(define-public ruby-awesome-print
+  (package
+    (name "ruby-awesome-print")
+    (version "1.8.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "awesome_print" version))
+       (sha256
+        (base32
+         "14arh1ixfsd6j5md0agyzvksm5svfkvchb90fp32nn7y3avcmc2h"))))
+    (build-system ruby-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             ;; Remove failing test.
+             (for-each delete-file
+                       '("spec/ext/nokogiri_spec.rb"
+                         "spec/colors_spec.rb"
+                         "spec/formats_spec.rb"
+                         "spec/methods_spec.rb"
+                         "spec/misc_spec.rb"
+                         "spec/objects_spec.rb"))
+             (invoke "rspec" "-c" "spec"))))))
+    (native-inputs
+     `(("ruby-nokogiri" ,ruby-nokogiri)
+       ("ruby-rspec" ,ruby-rspec)
+       ("ruby-simplecov" ,ruby-simplecov)))
+    (synopsis "Pretty print Ruby objects to visualize their structure")
+    (description
+     "Ruby dubugging companion: pretty print Ruby objects to visualize their
+structure.  Supports custom object formatting via plugins.")
+    (home-page "https://github.com/awesome-print/awesome_print")
+    (license license:expat)))
+
 (define-public ruby-pandoc-ruby
   (package
     (name "ruby-pandoc-ruby")
@@ -1161,6 +1200,31 @@ ConTeXt, PDF, RTF, DocBook XML, OpenDocument XML, ODT, GNU Texinfo, MediaWiki
 markup, groff man pages, HTML slide shows, EPUB, Microsoft Word docx, and
 more.")
     (home-page "https://github.com/xwmx/pandoc-ruby")
+    (license license:expat)))
+
+(define-public ruby-patron
+  (package
+    (name "ruby-patron")
+    (version "0.13.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "patron" version))
+       (sha256
+        (base32
+         "0523gddx88zql2mq6655k60gy2ac8vybpzkcf90lmd9nx7wl3fi9"))))
+    (build-system ruby-build-system)
+    (inputs
+     `(("curl" ,curl)))
+    (arguments
+     `(#:tests? #f))                    ; no included tests
+    (synopsis "Ruby HTTP client library based on @code{libcurl}")
+    (description
+     "Patron is a Ruby HTTP client library based on @code{libcurl}.  It does
+not try to expose the full power (read complexity) of @code{libcurl} but
+instead tries to provide a sane API while taking advantage of @code{libcurl}
+under the hood.")
+    (home-page "https://github.com/toland/patron")
     (license license:expat)))
 
 (define-public ruby-slim
@@ -1455,6 +1519,30 @@ loader for the file type associated with a filename extension, and it augments
     (description "This package provides a Ruby-based Parsing Expression
 Grammar (PEG) parser generator Domain Specific Language (DSL).")
     (home-page "https://github.com/cjheath/treetop")
+    (license license:expat)))
+
+(define-public ruby-typhoeus
+  (package
+    (name "ruby-typhoeus")
+    (version "1.4.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "typhoeus" version))
+       (sha256
+        (base32
+         "1m22yrkmbj81rzhlny81j427qdvz57yk5wbcf3km0nf3bl6qiygz"))))
+    (build-system ruby-build-system)
+    (arguments
+     `(#:tests? #f))                    ; no included tests
+    (propagated-inputs
+     `(("ruby-ethon" ,ruby-ethon)))
+    (synopsis "@code{libcurl} wrapper in Ruby")
+    (description
+     "Like a modern code version of the mythical beast with 100 serpent heads,
+Typhoeus runs HTTP requests in parallel while cleanly encapsulating handling
+logic.")
+    (home-page "https://github.com/typhoeus/typhoeus")
     (license license:expat)))
 
 (define-public ruby-rubocop-performance
@@ -2319,6 +2407,30 @@ features such as multi-language support, auto escaping, auto trimming spaces
 around @code{<% %>}, a changeable embedded pattern, and Ruby on Rails
 support.")
     (home-page "http://www.kuwata-lab.com/erubis/")
+    (license license:expat)))
+
+(define-public ruby-ethon
+  (package
+    (name "ruby-ethon")
+    (version "0.12.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "ethon" version))
+       (sha256
+        (base32
+         "0gggrgkcq839mamx7a8jbnp2h7x2ykfn34ixwskwb0lzx2ak17g9"))))
+    (build-system ruby-build-system)
+    (arguments
+     `(#:tests? #f))                    ; no included tests
+    (inputs
+     `(("curl" ,curl)))
+    (propagated-inputs
+     `(("ruby-ffi" ,ruby-ffi)))
+    (synopsis "Very lightweight @code{libcurl} wrapper")
+    (description
+     "Ethon is a very basic @code{libcurl} wrapper using ffi.")
+    (home-page "https://github.com/typhoeus/ethon")
     (license license:expat)))
 
 (define-public ruby-execjs
@@ -11269,6 +11381,48 @@ characteristics.")
     (home-page "https://github.com/sinatra/mustermann")
     (license license:expat)))
 
+(define-public ruby-html-proofer
+  (package
+    (name "ruby-html-proofer")
+    (version "3.18.5")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/gjtorikian/html-proofer")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1pxb0fajb3l3lm7sqj548qwl7vx6sx3jy7n4cns9d4lqx7s9r9xb"))))
+    (build-system ruby-build-system)
+    (arguments
+     `(;; FIXME: Tests depend on rubocop-standard.
+       #:tests? #f))
+    (native-inputs
+     `(("ruby-awesome-print" ,ruby-awesome-print)
+       ("ruby-redcarpet" ,ruby-redcarpet)
+       ("ruby-rspec" ,ruby-rspec)
+       ("ruby-rubocop" ,ruby-rubocop)
+       ("ruby-rubocop-performance" ,ruby-rubocop-performance)
+       ("ruby-pry-byebug" ,ruby-pry-byebug)))
+    (propagated-inputs
+     `(("ruby-addressable" ,ruby-addressable)
+       ("ruby-mercenary" ,ruby-mercenary)
+       ("ruby-nokogumbo" ,ruby-nokogumbo)
+       ("ruby-parallel" ,ruby-parallel)
+       ("ruby-rainbow" ,ruby-rainbow)
+       ("ruby-typhoeus" ,ruby-typhoeus)
+       ("ruby-yell" ,ruby-yell)))
+    (synopsis "Test your rendered HTML files to make sure they're accurate")
+    (description
+     "HTMLProofer is a set of tests to validate your HTML output.  These
+tests check if your image references are legitimate, if they have alt tags,
+if your internal links are working, and so on.  It's intended to be an
+all-in-one checker for your output.")
+    (home-page "https://github.com/gjtorikian/html-proofer")
+    (license license:expat)))
+
 (define-public ruby-htmlentities
   (package
     (name "ruby-htmlentities")
@@ -11763,4 +11917,31 @@ defined in @file{.travis.yml} on your local machine, using @code{rvm},
     (description "Rugged is a library for accessing libgit2 in Ruby.  It gives
 you the speed and portability of libgit2 with the beauty of the Ruby
 language.")
+    (license license:expat)))
+
+(define-public ruby-yell
+  (package
+    (name "ruby-yell")
+    (version "2.2.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "yell" version))
+       (sha256
+        (base32
+         "1g16kcdhdfvczn7x81jiq6afg3bdxmb73skqjyjlkp5nqcy6y5hx"))))
+    (build-system ruby-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             (invoke "rake" "examples")))))) ; there is no test target.
+    (synopsis
+     "Extensible logging library for Ruby")
+    (description
+     "Yell is a comprehensive logging replacement for Ruby.  It defines
+multiple adapters, various log level combinations and message formatting
+options.")
+    (home-page "https://github.com/rudionrails/yell")
     (license license:expat)))

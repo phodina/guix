@@ -28,7 +28,7 @@
 ;;; Copyright © 2019 Jakob L. Kreuze <zerodaysfordays@sdf.org>
 ;;; Copyright © 2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
-;;; Copyright © 2019 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2019, 2021 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2019, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
@@ -676,7 +676,10 @@ hostname.")
      `(;; Assume System V `setpgrp (void)', which is the default on GNU
        ;; variants (`AC_FUNC_SETPGRP' is not cross-compilation capable.)
        #:configure-flags
-       '("--with-libpam" "ac_cv_func_setpgrp_void=yes")
+       '(,@(if (hurd-target?)
+             '()
+             '("--with-libpam"))
+          "ac_cv_func_setpgrp_void=yes")
 
        #:phases
        (modify-phases %standard-phases
@@ -701,7 +704,10 @@ hostname.")
                (for-each delete-file (find-files man "^groups\\."))
                #t))))))
 
-    (inputs `(("linux-pam" ,linux-pam)))
+    (inputs
+     `(,@(if (hurd-target?)
+           '()
+           `(("linux-pam" ,linux-pam)))))
     (home-page "https://github.com/shadow-maint/shadow")
     (synopsis "Authentication-related tools such as passwd, su, and login")
     (description
@@ -1415,7 +1421,7 @@ system administrator.")
 (define-public sudo
   (package
     (name "sudo")
-    (version "1.9.5p1")
+    (version "1.9.5p2")
     (source (origin
               (method url-fetch)
               (uri
@@ -1425,7 +1431,7 @@ system administrator.")
                                     version ".tar.gz")))
               (sha256
                (base32
-                "10kqdfbfpf3vk5ihz5gwynv4pxdf1lg6ircrlanyygb549yg7pad"))
+                "0y093z4f3822rc88g9asdch12nljdamp817vjxk04mca7ks2x7jk"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -1496,7 +1502,9 @@ system administrator.")
          `(("groff" ,groff))))
     (inputs
      `(("coreutils" ,coreutils)
-       ("linux-pam" ,linux-pam)
+       ,@(if (hurd-target?)
+           '()
+           `(("linux-pam" ,linux-pam)))
        ("zlib" ,zlib)))
     (home-page "https://www.sudo.ws/")
     (synopsis "Run commands as root")
@@ -1512,7 +1520,7 @@ commands and their arguments.")
 (define-public opendoas
   (package
     (name "opendoas")
-    (version "6.8")
+    (version "6.8.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1521,7 +1529,7 @@ commands and their arguments.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1dlwnvy8r6slxcy260gfkximp1ms510wdslpfq9y6xvd2qi5izcb"))))
+                "0gfcssm21vdfg6kcrcc7hz1h4jmhy2zv29rfqyrrj3a6r9b5ah8p"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1958,7 +1966,7 @@ system is under heavy load.")
 (define-public detox
   (package
     (name "detox")
-    (version "1.3.0")
+    (version "1.3.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1967,7 +1975,7 @@ system is under heavy load.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1dd608c7g65s5lj02cddvani3q9kzirddgkjqa22ap9d4f8b9xgr"))))
+                "13mhs62m7bpff45liy65pajq5jg3i12jj90vwdkra94z9mlr2rlz"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -2095,7 +2103,7 @@ track changes in important system configuration files.")
 (define-public libcap-ng
   (package
     (name "libcap-ng")
-    (version "0.8")
+    (version "0.8.2")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2103,7 +2111,7 @@ track changes in important system configuration files.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "08cy59iassiwbmfxa5v0kb374r80290vv32f5q1mnip11av26kgi"))))
+                "1sasp1n154aqy9fz0knlb966svm7xg1zjhg1vr4q839bgjvq7h2j"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -2810,13 +2818,13 @@ a new command using the matched rule, and runs it.")
 (define-public di
   (package
     (name "di")
-    (version "4.48")
+    (version "4.48.0.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://gentoo.com/di/di-" version ".tar.gz"))
        (sha256
-        (base32 "0crvvfsxh8ryc0j19a2x52i9zacvggm8zi6j3kzygkcwnpz4km8r"))))
+        (base32 "0rxli3bcm6vlcfx2jminviv8aawwczrpp9kja5zniawy6528al30"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; obscure test failures
@@ -3432,7 +3440,7 @@ make it a perfect utility on modern distros.")
 (define-public thermald
   (package
     (name "thermald")
-    (version "2.4.1")
+    (version "2.4.2")
     (source
      (origin
       (method git-fetch)
@@ -3441,7 +3449,7 @@ make it a perfect utility on modern distros.")
              (commit (string-append "v" version))))
       (file-name (git-file-name name version))
       (sha256
-       (base32 "0rlac7v1b59m7gh767hkd8a0r4p001nd24786fnmryygbxynd2s6"))))
+       (base32 "0nzjfiis4d3ml765s65bywk5dhx5x2fb3hpiixpxzzrs50ajwasj"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -4346,3 +4354,32 @@ This program allows you to view and manipulate this EEPROM list.")
 the XMODEM/YMODEM/ZMODEM file transfer protocols.")
     (home-page "https://ohse.de/uwe/software/lrzsz.html")
     (license license:gpl2+)))
+
+(define-public nq
+  (package
+    (name "nq")
+    (version "0.3.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/leahneukirchen/nq")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1db96ykz35r273jyhf7cdknqk4p2jj9l8gbz7pjy1hq4pb6ffk99"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("perl" ,perl)))
+    (arguments
+     `(#:make-flags (list (string-append "CC=" ,(cc-for-target))
+                          (string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))))
+    (synopsis "Unix command line queue utility")
+    (description
+     "@code{nq} can create very lightweight job queue systems which require no
+setup, maintenance, supervision, or any long-running processes.")
+    (home-page "https://github.com/leahneukirchen/nq")
+    (license license:public-domain)))

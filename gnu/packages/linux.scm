@@ -50,7 +50,7 @@
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2020 Anders Thuné <asse.97@gmail.com>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
-;;; Copyright © 2020 Greg Hogan <code@greghogan.com>
+;;; Copyright © 2020, 2021 Greg Hogan <code@greghogan.com>
 ;;; Copyright © 2020 Zhu Zihao <all_but_last@163.com>
 ;;; Copyright © 2020 David Dashyan <mail@davie.li>
 ;;; Copyright © 2020 pukkamustard <pukkamustard@posteo.net>
@@ -354,7 +354,7 @@ corresponding UPSTREAM-SOURCE (an origin), using the given DEBLOB-SCRIPTS."
 
 ;; The current "stable" kernels. That is, the most recently released major
 ;; versions that are still supported upstream.
-(define-public linux-libre-5.10-version "5.10.10")
+(define-public linux-libre-5.10-version "5.10.14")
 (define deblob-scripts-5.10
   (linux-libre-deblob-scripts
    linux-libre-5.10-version
@@ -362,7 +362,7 @@ corresponding UPSTREAM-SOURCE (an origin), using the given DEBLOB-SCRIPTS."
    (base32 "0hh27ccqimagr3aij7ygwikxw66y63sqwd0xlf49bhpjd090r9a7")))
 (define-public linux-libre-5.10-pristine-source
   (let ((version linux-libre-5.10-version)
-        (hash (base32 "06fvgkrn9127xw9kly6l4ws3yv80q8xfqdzaam92lljim5pqdvb0")))
+        (hash (base32 "0ahxga1jdgn8kxln0pn8j42qxx0dhrhm9vcpwilyjnwb36gvf9zs")))
    (make-linux-libre-source version
                             (%upstream-linux-source version hash)
                             deblob-scripts-5.10)))
@@ -370,7 +370,7 @@ corresponding UPSTREAM-SOURCE (an origin), using the given DEBLOB-SCRIPTS."
 ;; The "longterm" kernels — the older releases with long-term upstream support.
 ;; Here are the support timelines:
 ;; <https://www.kernel.org/category/releases.html>
-(define-public linux-libre-5.4-version "5.4.92")
+(define-public linux-libre-5.4-version "5.4.96")
 (define deblob-scripts-5.4
   (linux-libre-deblob-scripts
    linux-libre-5.4-version
@@ -378,12 +378,12 @@ corresponding UPSTREAM-SOURCE (an origin), using the given DEBLOB-SCRIPTS."
    (base32 "1xghbbnaisjd0k1klbyn1p7r6r4x5a1bpmkm56a3gh2zvw4s7mj8")))
 (define-public linux-libre-5.4-pristine-source
   (let ((version linux-libre-5.4-version)
-        (hash (base32 "1zcl4dadyfrgmx6rh0ncy403rsqb1qs092m6zr6b3i14i3wpz4y0")))
+        (hash (base32 "1q7mz69wzk1ps5770l9bj556qyndiz2frjjsl7pigsy5brlxwa7p")))
    (make-linux-libre-source version
                             (%upstream-linux-source version hash)
                             deblob-scripts-5.4)))
 
-(define-public linux-libre-4.19-version "4.19.170")
+(define-public linux-libre-4.19-version "4.19.174")
 (define deblob-scripts-4.19
   (linux-libre-deblob-scripts
    linux-libre-4.19-version
@@ -391,12 +391,12 @@ corresponding UPSTREAM-SOURCE (an origin), using the given DEBLOB-SCRIPTS."
    (base32 "1jiaw0as1ippkrjdpd52657w5mz9qczg3y2hlra7m9k0xawwiqlf")))
 (define-public linux-libre-4.19-pristine-source
   (let ((version linux-libre-4.19-version)
-        (hash (base32 "0jjvwbxpfvmzj4z6gkd2mh3kz9vh8hsgsm0013866hzgz1j043fx")))
+        (hash (base32 "1rcy0hfbc3ny52mfrfysknm1q2scqz0g8l28j0qlyw8cx41wgxhg")))
     (make-linux-libre-source version
                              (%upstream-linux-source version hash)
                              deblob-scripts-4.19)))
 
-(define-public linux-libre-4.14-version "4.14.217")
+(define-public linux-libre-4.14-version "4.14.220")
 (define deblob-scripts-4.14
   (linux-libre-deblob-scripts
    linux-libre-4.14-version
@@ -404,33 +404,39 @@ corresponding UPSTREAM-SOURCE (an origin), using the given DEBLOB-SCRIPTS."
    (base32 "1qij18inijj6c3ma8hv98yjagnzxdxyn134da9fd23ky8q6hbvky")))
 (define-public linux-libre-4.14-pristine-source
   (let ((version linux-libre-4.14-version)
-        (hash (base32 "04adj8x7p1has4mh8ygxhqgwb1i08fz9izqw1y6xj5hh8cjnm8v2")))
+        (hash (base32 "1qip0c8nvfximgg4fj9xai741cgvi9f141bsps3zmrryjd796i6h")))
     (make-linux-libre-source version
                              (%upstream-linux-source version hash)
                              deblob-scripts-4.14)))
 
-(define-public linux-libre-4.9-version "4.9.253")
+(define-public linux-libre-4.9-version "4.9.256")
 (define deblob-scripts-4.9
   (linux-libre-deblob-scripts
-   linux-libre-4.9-version
+   ;; 4.9.256 is the same as 4.9.255, but is meant to test if anything
+   ;; breaks when the minor version overflows an 8-bit representation.
+   ;; Same story for 4.4.256.
+   ;; https://lwn.net/Articles/845206/
+   ;; http://kroah.com/log/blog/2021/02/05/8-bits-are-enough-for-a-version-number-dot-dot-dot/
+   "4.9.255"
    (base32 "1wvldzlv7q2xdbadas87dh593nxr4a8p5n0f8zpm72lja6w18hmg")
    (base32 "0fxajshb75siq39lj5h8xvhdj8lcmddkslwlyj65rhlwk6g2r4b2")))
 (define-public linux-libre-4.9-pristine-source
   (let ((version linux-libre-4.9-version)
-        (hash (base32 "065w35vb0qp4fvnwmcx7f92inmx64f9r04zzwcwbs0826nl52nws")))
+        (hash (base32 "15qlv4m56dzv195xjy4yp8qsrkbmv51vwfg0qcm664hkrb4i32y4")))
     (make-linux-libre-source version
                              (%upstream-linux-source version hash)
                              deblob-scripts-4.9)))
 
-(define-public linux-libre-4.4-version "4.4.253")
+(define-public linux-libre-4.4-version "4.4.256")
 (define deblob-scripts-4.4
   (linux-libre-deblob-scripts
-   linux-libre-4.4-version
+   ;; See the comment in deblob-scripts-4.9
+   "4.4.255"
    (base32 "0x2j1i88am54ih2mk7gyl79g25l9zz4r08xhl482l3fvjj2irwbw")
    (base32 "0hhin1jpfkd6nwrb6xqxjzl3hdxy4pn8a15hy2d3d83yw6pflbsf")))
 (define-public linux-libre-4.4-pristine-source
   (let ((version linux-libre-4.4-version)
-        (hash (base32 "0nlqnfhrkaj2s582kc0wxqi0881hgp6l9z85qx4ckflc8jwrh7k6")))
+        (hash (base32 "1z7vfy4h0mjvv0rcvvpb55x5fl16c6cgpcafz5gpjp0pw1p2lva8")))
     (make-linux-libre-source version
                              (%upstream-linux-source version hash)
                              deblob-scripts-4.4)))
@@ -1356,7 +1362,7 @@ application by hooking GStreamer into the loopback device.")
 (define-public linux-pam
   (package
     (name "linux-pam")
-    (version "1.4.0")
+    (version "1.5.1")
     (source
      (origin
        (method url-fetch)
@@ -1365,7 +1371,7 @@ application by hooking GStreamer into the loopback device.")
              version "/Linux-PAM-" version ".tar.xz"))
        (sha256
         (base32
-         "0d6hvz6lpkac08hw5wnlhfdm0fhqd0n6jf6v7fz3jhg6a6694vfd"))
+         "1z4jayf69qyyxln1gl6ch4qxfd66ib1g42garnrv2d8i1drl0790"))
        (patches (search-patches "linux-pam-no-setfsuid.patch"))))
 
     (build-system gnu-build-system)
@@ -1512,14 +1518,14 @@ deviation, and minimum and maximum values.  It can show a nice histogram too.")
 (define-public psmisc
   (package
     (name "psmisc")
-    (version "23.3")
+    (version "23.4")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://sourceforge/psmisc/psmisc/psmisc-"
                           version ".tar.xz"))
       (sha256
-       (base32 "16i7qzjmm6g0lzha8yzpfrlcxnvkgh95hkq9gdjd4zmzb8d0wxa1"))))
+       (base32 "0y8n1jd2dn4cvc5mh806d66qnq8xl0xmzczbycjwal10rvmcw33z"))))
     (build-system gnu-build-system)
     (arguments
      `(,@(if (%current-target-system)
@@ -2108,7 +2114,7 @@ intercept and print the system calls executed by the program.")
 (define-public alsa-lib
   (package
     (name "alsa-lib")
-    (version "1.2.3.2")
+    (version "1.2.4")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -2116,7 +2122,7 @@ intercept and print the system calls executed by the program.")
                    version ".tar.bz2"))
              (sha256
               (base32
-               "05dyk856ppvqymazyk1cmpln53g88cq1wjpnsygqrvnamyvwa7z8"))))
+               "1xq8d48wfy59qw4x7383j32n8j5njndw5hcgnmlg9pvclphlnmgp"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags (list (string-append "LDFLAGS=-Wl,-rpath="
@@ -2132,14 +2138,14 @@ MIDI functionality to the Linux-based operating system.")
 (define-public alsa-utils
   (package
     (name "alsa-utils")
-    (version "1.2.3")
+    (version "1.2.4")
     (source (origin
              (method url-fetch)
              (uri (string-append "ftp://ftp.alsa-project.org/pub/utils/"
                                  name "-" version ".tar.bz2"))
              (sha256
               (base32
-               "1ai1z4kf91b1m3qrpwqkc1af5vm2fkdkknqv95xdwf19q94aw6gz"))))
+               "09m4dnn4kplawprd2bl15nwa0b4r1brab3x44ga7f1fyk7aw5zwq"))))
     (build-system gnu-build-system)
     (arguments
      ;; XXX: Disable man page creation until we have DocBook.
@@ -2202,6 +2208,11 @@ MIDI functionality to the Linux-based operating system.")
     ;; ALSA applications on OSS however we do not offer OSS and OSS is
     ;; obsolete.
     (outputs '("out" "pulseaudio" "jack"))
+    (native-search-paths
+      (list (search-path-specification
+              (variable "ALSA_PLUGIN_DIR")
+              (files '("lib/alsa-lib"))
+              (separator #f))))
     (arguments
      `(#:configure-flags '(;; Do not install a "local" configuration targeted
                            ;; for /etc/alsa.  On Guix System plugins are loaded from
@@ -2384,7 +2395,7 @@ that the Ethernet protocol is much simpler than the IP protocol.")
 (define-public iproute
   (package
     (name "iproute2")
-    (version "5.9.0")
+    (version "5.10.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2392,7 +2403,7 @@ that the Ethernet protocol is much simpler than the IP protocol.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "1kys6dmhrl43iaq95n5sh02p39d7bq8i5y672qrzgwnwpjaaqpd2"))))
+                "1sakmhvh40gh4x55vzgy6cyvizqkhqalcfpvs6r0c14w62p38jm5"))))
     (build-system gnu-build-system)
     (arguments
      `( ;; There is a test suite, but it wants network namespaces and sudo.
@@ -2574,7 +2585,7 @@ Linux-based operating systems.")
 (define-public libcap
   (package
     (inherit libcap-2.31)
-    (version "2.44")
+    (version "2.45")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2582,7 +2593,7 @@ Linux-based operating systems.")
                     "libcap2/libcap-" version ".tar.xz"))
               (sha256
                (base32
-                "1qf80lifygbnxwvqjf8jz5j24n6fqqx4ixnkbf76xs2vrmcq664j"))))
+                "11ijmi7jik9iw6pdszc6bylhggghr8cza03bcrbhbqf0cpvkjrnn"))))
     (arguments
      (substitute-keyword-arguments (package-arguments libcap-2.31)
        ((#:phases phases)
@@ -4755,14 +4766,15 @@ event traces from the kernel (via the relaying through the debug file system).")
 (define-public sbc
   (package
     (name "sbc")
-    (version "1.4")
+    (version "1.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://kernel.org/linux/bluetooth/sbc-"
                                   version ".tar.xz"))
+              (patches (search-patches "sbc-fix-build-non-x86.patch"))
               (sha256
                (base32
-                "1jal98pnrjkzxlkiqy0ykh4qmgnydz9bmsp1jn581p5kddpg92si"))))
+                "1liig5856crb331dps18mp0s13zbkv7yh007zqhq97m94fcddfhc"))))
     (build-system gnu-build-system)
     (inputs
      `(("libsndfile" ,libsndfile)))
@@ -5547,7 +5559,7 @@ The package provides additional NTFS tools.")
 (define-public rdma-core
   (package
     (name "rdma-core")
-    (version "26.0")
+    (version "33.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/linux-rdma/rdma-core"
@@ -5555,27 +5567,18 @@ The package provides additional NTFS tools.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "14raqwx4pkzghiwkx1v0dq338f7xqqx8rnsxlpdnngvjy1p5l79j"))))
+                "1rah0v9gq9rksqd2c17nmydsxcjz178n7m2y4ricwlf5pq1b2yfi"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f ; no tests
        ;; Upstream uses the "ninja" build system and encourage distros
-       ;; to do the same for consistency. They also recommend using the
-       ;; "Release" build type.
-       #:build-type "Release"
+       ;; to do the same for consistency.
        #:configure-flags (list "-GNinja"
 
                                (string-append "-DRST2MAN_EXECUTABLE="
                                               (assoc-ref %build-inputs
                                                          "python-docutils")
-                                              "/bin/rst2man.py")
-
-                               ;; On some configurations, the
-                               ;; IB_USER_MAD_REGISTER_AGENT ioctl, which is
-                               ;; used by default, would return ENODEV.  To
-                               ;; avoid that, use 'write' instead of ioctls,
-                               ;; as suggested in 'CMakeList.txt'.
-                               "-DIOCTL_MODE=write")
+                                              "/bin/rst2man.py"))
        #:phases
        (modify-phases %standard-phases
          (replace 'build
@@ -6766,7 +6769,7 @@ comparing system environments.")
 (define-public libfabric
   (package
     (name "libfabric")
-    (version "1.4.1")
+    (version "1.11.2")
     (source
      (origin
        (method url-fetch)
@@ -6774,7 +6777,7 @@ comparing system environments.")
         (string-append "https://github.com/ofiwg/libfabric/releases/download/v"
                        version "/libfabric-" version ".tar.bz2"))
        (sha256
-        (base32 "19l2m1frna1l765z4j7wl8hp4rb9wrh0hy5496685hd183hmy5pv"))))
+        (base32 "1nnpfkwxhim2nqjkb1vwrb4wj4j3l6w6yvvy69fqam2snlhshazz"))))
     (build-system gnu-build-system)
     (inputs `(("rdma-core" ,rdma-core)
               ,@(match (%current-system)
@@ -7627,7 +7630,7 @@ persistent over reboots.")
 (define-public libbpf
   (package
     (name "libbpf")
-    (version "0.0.9")
+    (version "0.1.1")
     (source
      (origin
        (method git-fetch)
@@ -7637,7 +7640,7 @@ persistent over reboots.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "18l0gff7nm841mwhr7bc7x863xcyvwh58zl7mc0amnsjqlbrvqg7"))))
+         "0ilnnm4q22f8fagwp8kb37licy4ks861i2iqh2djsypqhnxvx3fv"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -7657,10 +7660,7 @@ persistent over reboots.")
        (modify-phases %standard-phases
          (delete 'configure)
          (add-before 'build 'pre-build
-           (lambda* (#:key inputs #:allow-other-keys)
-             (substitute* "scripts/check-reallocarray.sh"
-               (("/bin/rm" rm)
-                (string-append (assoc-ref inputs "coreutils") rm)))
+           (lambda _
              (chdir "src")
              #t)))))
     (home-page "https://github.com/libbpf/libbpf")
@@ -7674,7 +7674,7 @@ headers.")
 (define-public bcc
   (package
     (name "bcc")
-    (version "0.15.0")
+    (version "0.16.0")
     (source
      (origin
        (method git-fetch)
@@ -7684,7 +7684,7 @@ headers.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "1d5j9zanffa1c7lpi5fcrdlx1n7hy86xl82fam2xqr0s41q4ipxw"))))
+         "1367c0bzrpclvjvmk0sxgi49rh7j2f9izqk5a7g3yvawh1fmvvjh"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("bison" ,bison)

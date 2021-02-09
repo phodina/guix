@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014, 2015, 2017, 2018, 2019 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015 Federico Beffa <beffa@fbengineering.ch>
@@ -357,7 +357,18 @@ used throughout the world.")
               (base32
                "17bwb7dgbncrfsmchlib03k9n3xaalirb39g3yb43gg8cg6p8aqx"))))
    (build-system gnu-build-system)
-   (arguments '())))
+   (arguments
+    '(#:phases (modify-phases %standard-phases
+                 (add-after 'configure 'disable-layout-test
+                   (lambda _
+                     ;; This test requires that fontconfig uses bitmap fonts
+                     ;; such as "gs-fonts"; however providing such a package
+                     ;; alone is not enough, as the requirement comes from
+                     ;; deeper in the font stack.  Since this version of Pango
+                     ;; is only used for librsvg, simply disable the test.
+                     (substitute* "tests/Makefile"
+                       (("test-layout\\$\\(EXEEXT\\)") ""))
+                     #t)))))))
 
 (define-public pangox-compat
   (package
@@ -830,7 +841,7 @@ application suites.")
 (define-public gtk+
   (package (inherit gtk+-2)
    (name "gtk+")
-   (version "3.24.23")
+   (version "3.24.24")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnome/sources/" name "/"
@@ -838,7 +849,7 @@ application suites.")
                                 name "-" version ".tar.xz"))
             (sha256
              (base32
-              "1cg2vbwbcp7bc84ky0b69ipgdr9djhspnf5k8lajb8jphcj4v1jx"))
+              "12ipk1d376bai9v820qzhxba93kkh5abi6mhyqr4hwjvqmkl77fc"))
             (patches (search-patches "gtk3-respect-GUIX_GTK3_PATH.patch"
                                      "gtk3-respect-GUIX_GTK3_IM_MODULE_FILE.patch"))))
    (propagated-inputs
@@ -922,14 +933,14 @@ application suites.")
 (define-public guile-cairo
   (package
     (name "guile-cairo")
-    (version "1.11.1")
+    (version "1.11.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://savannah/guile-cairo/guile-cairo-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1gc642r9ndsjhhmh9bl5cbd3dwvy4dpxwhr0zpsw43y9nmz37xpl"))
+                "0yx0844p61ljd4d3d63qrawiygiw6ks02fwv2cqx7nav5kfd8ck2"))
               (modules '((guix build utils)))
               (snippet
                (begin
@@ -940,12 +951,6 @@ application suites.")
                        (string-append name "dir = " prefix
                                       "/guile/site/@GUILE_EFFECTIVE_VERSION@"
                                       suffix)))
-
-                    ;; Guile 2.x <libguile.h> used to pull in <string.h> and
-                    ;; other headers but this is no longer the case in 3.0.
-                    (substitute* (find-files "." "\\.[ch]$")
-                      (("^ *# *include.*libguile\\.h.*$")
-                       "#include <libguile.h>\n#include <string.h>\n"))
                     #t)))))
     (build-system gnu-build-system)
     (arguments

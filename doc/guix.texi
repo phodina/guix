@@ -40,7 +40,7 @@ Copyright @copyright{} 2016, 2017, 2018, 2019, 2020 Julien Lepiller@*
 Copyright @copyright{} 2016 Alex ter Weele@*
 Copyright @copyright{} 2016, 2017, 2018, 2019 Christopher Baines@*
 Copyright @copyright{} 2017, 2018, 2019 Clément Lassieur@*
-Copyright @copyright{} 2017, 2018, 2020 Mathieu Othacehe@*
+Copyright @copyright{} 2017, 2018, 2020, 2021 Mathieu Othacehe@*
 Copyright @copyright{} 2017 Federico Beffa@*
 Copyright @copyright{} 2017, 2018 Carlo Zancanaro@*
 Copyright @copyright{} 2017 Thomas Danckaert@*
@@ -48,7 +48,7 @@ Copyright @copyright{} 2017 humanitiesNerd@*
 Copyright @copyright{} 2017 Christopher Allan Webber@*
 Copyright @copyright{} 2017, 2018, 2019, 2020 Marius Bakke@*
 Copyright @copyright{} 2017, 2019, 2020 Hartmut Goebel@*
-Copyright @copyright{} 2017, 2019, 2020 Maxim Cournoyer@*
+Copyright @copyright{} 2017, 2019, 2020, 2021 Maxim Cournoyer@*
 Copyright @copyright{} 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice@*
 Copyright @copyright{} 2017 George Clemmer@*
 Copyright @copyright{} 2017 Andy Wingo@*
@@ -245,6 +245,7 @@ Channels
 * Specifying Channel Authorizations::  Defining channel authors authorizations.
 * Primary URL::                 Distinguishing mirror to original.
 * Writing Channel News::        Communicating information to channel's users.
+* Channels with Substitutes::   Using channels with available substitutes.
 
 Development
 
@@ -919,6 +920,38 @@ the @code{SCM_LOG_DRIVER_FLAGS} makefile variable as in this example:
 @example
 make check TESTS="tests/base64.scm" SCM_LOG_DRIVER_FLAGS="--brief=no"
 @end example
+
+The underlying SRFI 64 custom Automake test driver used for the 'check'
+test suite (located at @file{build-aux/test-driver.scm}) also allows
+selecting which test cases to run at a finer level, via its
+@option{--select} and @option{--exclude} options.  Here's an example, to
+run all the test cases from the @file{tests/packages.scm} test file
+whose names start with ``transaction-upgrade-entry'':
+
+@example
+export SCM_LOG_DRIVER_FLAGS="--select=^transaction-upgrade-entry"
+make check TESTS="tests/packages.scm"
+@end example
+
+Those wishing to inspect the results of failed tests directly from the
+command line can add the @option{--errors-only=yes} option to the
+@code{SCM_LOG_DRIVER_FLAGS} makefile variable and set the @code{VERBOSE}
+Automake makefile variable, as in:
+
+@example
+make check SCM_LOG_DRIVER_FLAGS="--brief=no --errors-only=yes" VERBOSE=1
+@end example
+
+The @option{--show-duration=yes} option can be used to print the
+duration of the individual test cases, when used in combination with
+@option{--brief=no}:
+
+@example
+make check SCM_LOG_DRIVER_FLAGS="--brief=no --show-duration=yes"
+@end example
+
+@xref{Parallel Test Harness,,,automake,GNU Automake} for more
+information about the Automake Parallel Test Harness.
 
 Upon failure, please email @email{bug-guix@@gnu.org} and attach the
 @file{test-suite.log} file.  Please specify the Guix version being used
@@ -3269,6 +3302,9 @@ objects, like this:
  '("emacs" "guile@@2.2" "guile@@2.2:debug"))
 @end lisp
 
+@xref{export-manifest, @option{--export-manifest}}, to learn how to
+obtain a manifest file from an existing profile.
+
 @item --roll-back
 @cindex rolling back
 @cindex undoing transactions
@@ -3571,6 +3607,48 @@ zeroth generation is never deleted.
 Note that deleting generations prevents rolling back to them.
 Consequently, this command must be used with care.
 
+@cindex manifest, exporting
+@anchor{export-manifest}
+@item --export-manifest
+Write to standard output a manifest suitable for @option{--manifest}
+corresponding to the chosen profile(s).
+
+This option is meant to help you migrate from the ``imperative''
+operating mode---running @command{guix install}, @command{guix upgrade},
+etc.---to the declarative mode that @option{--manifest} offers.
+
+Be aware that the resulting manifest @emph{approximates} what your
+profile actually contains; for instance, depending on how your profile
+was created, it can refer to packages or package versions that are not
+exactly what you specified.
+
+Keep in mind that a manifest is purely symbolic: it only contains
+package names and possibly versions, and their meaning varies over time.
+If you wish to ``pin'' channels to the revisions that were used to build
+the profile(s), see @option{--export-channels} below.
+
+@cindex pinning, channel revisions of a profile
+@item --export-channels
+Write to standard output the list of channels used by the chosen
+profile(s), in a format suitable for @command{guix pull --channels} or
+@command{guix time-machine --channels} (@pxref{Channels}).
+
+Together with @option{--export-manifest}, this option provides
+information allowing you to replicate the current profile
+(@pxref{Replicating Guix}).
+
+However, note that the output of this command @emph{approximates} what
+was actually used to build this profile.  In particular, a single
+profile might have been built from several different revisions of the
+same channel.  In that case, @option{--export-manifest} chooses the last
+one and writes the list of other revisions in a comment.  If you really
+need to pick packages from different channel revisions, you can use
+inferiors in your manifest to do so (@pxref{Inferiors}).
+
+Together with @option{--export-manifest}, this is a good starting point
+if you are willing to migrate from the ``imperative'' model to the fully
+declarative model consisting of a manifest file along with a channels
+file pinning the exact channel revision(s) you want.
 @end table
 
 Finally, since @command{guix package} may actually start build
@@ -4919,6 +4997,7 @@ updates.
 * Specifying Channel Authorizations::  Defining channel authors authorizations.
 * Primary URL::                 Distinguishing mirror to original.
 * Writing Channel News::        Communicating information to channel's users.
+* Channels with Substitutes::   Using channels with available substitutes.
 @end menu
 
 @node Specifying Additional Channels
@@ -5390,6 +5469,30 @@ xgettext -o news.po -l scheme -ken etc/news.txt
 To sum up, yes, you could use your channel as a blog.  But beware, this
 is @emph{not quite} what your users might expect.
 
+@node Channels with Substitutes
+@section Channels with Substitutes
+
+When running @command{guix pull}, Guix will first compile the
+definitions of every available package.  This is an expensive operation
+for which substitutes (@pxref{Substitutes}) may be available.  The
+following snippet in @file{channels.scm} will ensure that @command{guix
+pull} uses the latest commit with available substitutes for the package
+definitions: this is done by querying the continuous integration
+server at @url{https://ci.guix.gnu.org}.
+
+@lisp
+(use-modules (guix ci))
+
+(list (channel-with-substitutes-available
+       %default-guix-channel
+       "https://ci.guix.gnu.org"))
+@end lisp
+
+Note that this does not mean that all the packages that you will
+install after running @command{guix pull} will have available
+substitutes.  It only ensures that @command{guix pull} will not try to
+compile package definitions.  This is particularly useful when using
+machines with limited resources.
 
 @c *********************************************************************
 @node Development
@@ -7616,10 +7719,11 @@ implements the build procedure used by @uref{https://julialang.org/,
 julia} packages, which essentially is similar to running @samp{julia -e
 'using Pkg; Pkg.add(package)'} in an environment where
 @env{JULIA_LOAD_PATH} contains the paths to all Julia package inputs.
-Tests are run with @code{Pkg.test}.
+Tests are run by calling @code{/test/runtests.jl}.
 
-Julia packages require the source @code{file-name} to be the real name of the
-package, correctly capitalized.
+The Julia package name is read from the file @file{Project.toml}.  This
+value can be overridden by passing the argument @code{#:julia-file-name}
+(which must be correctly capitalized).
 
 For packages requiring shared library dependencies, you may need to write the
 @file{/deps/deps.jl} file manually.  It's usually a line of @code{const
@@ -7774,6 +7878,19 @@ passes flags specified by the @code{#:make-maker-flags} or
 @code{#:module-build-flags} parameter, respectively.
 
 Which Perl package is used can be specified with @code{#:perl}.
+@end defvr
+
+@defvr {Scheme Variable} renpy-build-system
+This variable is exported by @code{(guix build-system renpy)}.  It implements
+the more or less standard build procedure used by Ren'py games, which consists
+of loading @code{#:game} once, thereby creating bytecode for it.
+
+It further creates a wrapper script in @code{bin/} and a desktop entry in
+@code{share/applications}, both of which can be used to launch the game.
+
+Which Ren'py package is used can be specified with @code{#:renpy}.
+Games can also be installed in outputs other than ``out'' by using
+@code{#:output}.
 @end defvr
 
 @defvr {Scheme Variable} qt-build-system
@@ -14066,7 +14183,7 @@ be declared as follows:
 @lisp
 (mapped-device
   (source "vg0")
-  (target (list "vg0-alpha" "vg0-beta"))
+  (targets (list "vg0-alpha" "vg0-beta"))
   (type lvm-device-mapping))
 @end lisp
 
@@ -19344,6 +19461,11 @@ The configuration file to use when running PostgreSQL@.  The default
 behaviour uses the postgresql-config-file record with the default values
 for the fields.
 
+@item @code{log-directory} (default: @code{"/var/log/postgresql"})
+The directory where @command{pg_ctl} output will be written in a file
+named @code{"pg_ctl.log"}.  This file can be useful to debug PostgreSQL
+configuration errors for instance.
+
 @item @code{data-directory} (default: @code{"/var/lib/postgresql/data"})
 Directory in which to store the data.
 
@@ -19410,12 +19532,12 @@ local	all	all			trust
 host	all	all	127.0.0.1/32 	md5
 host	all	all	::1/128 	md5"))
             (extra-config
-             '(("session_preload_libraries"     "'auto_explain'")
-               ("random_page_cost"              "2")
-               ("auto_explain.log_min_duration" "'100ms'")
-               ("work_mem"                      "'500MB'")
-               ("logging_collector"             "on")
-               ("log_directory"                 "'/var/log/postgresql'")))))))
+             '(("session_preload_libraries"     "auto_explain")
+               ("random_page_cost"              2)
+               ("auto_explain.log_min_duration" "100 ms")
+               ("work_mem"                      "500 MB")
+               ("logging_collector"             #t)
+               ("log_directory"                 "/var/log/postgresql")))))))
 @end lisp
 
 @table @asis
@@ -19430,11 +19552,85 @@ configuration.
 @item @code{ident-file} (default: @code{%default-postgres-ident})
 Filename or G-expression for the user name mapping configuration.
 
+@item @code{socket-directory} (default: @code{"/var/run/postgresql"})
+Specifies the directory of the Unix-domain socket(s) on which PostgreSQL
+is to listen for connections from client applications.  If set to
+@code{#false} PostgreSQL does not listen on any Unix-domain sockets, in
+which case only TCP/IP sockets can be used to connect to the server.
+
 @item @code{extra-config} (default: @code{'()})
 List of additional keys and values to include in the PostgreSQL config
 file.  Each entry in the list should be a list where the first element
 is the key, and the remaining elements are the values.
 
+The values can be numbers, booleans or strings and will be mapped to
+PostgreSQL parameters types @code{Boolean}, @code{String},
+@code{Numeric}, @code{Numeric with Unit} and @code{Enumerated} described
+@uref{https://www.postgresql.org/docs/current/config-setting.html,
+here}.
+
+@end table
+@end deftp
+
+@deffn {Scheme Variable} postgresql-role-service-type
+This service allows to create PostgreSQL roles and databases after
+PostgreSQL service start.  Here is an example of its use.
+
+@lisp
+(service postgresql-role-service-type
+            (postgresql-role-configuration
+             (roles
+              (list (postgresql-role
+                     (name "test")
+                     (create-database? #t))))))
+@end lisp
+
+This service can be extended with extra roles, as in this
+example:
+
+@lisp
+(service-extension postgresql-role-service-type
+                   (const (postgresql-role
+                           (name "alice")
+                           (create-database? #t))))
+@end lisp
+@end deffn
+
+@deftp {Data Type} postgresql-role
+PostgreSQL manages database access permissions using the concept of
+roles.  A role can be thought of as either a database user, or a group
+of database users, depending on how the role is set up.  Roles can own
+database objects (for example, tables) and can assign privileges on
+those objects to other roles to control who has access to which objects.
+
+@table @asis
+@item @code{name}
+The role name.
+
+@item @code{permissions} (default: @code{'(createdb login)})
+The role permissions list.  Supported permissions are @code{bypassrls},
+@code{createdb}, @code{createrole}, @code{login}, @code{replication} and
+@code{superuser}.
+
+@item @code{create-database?} (default: @code{#f})
+Whether to create a database with the same name as the role.
+
+@end table
+@end deftp
+
+@deftp {Data Type} postgresql-role-configuration
+Data type representing the configuration of
+@var{postgresql-role-service-type}.
+
+@table @asis
+@item @code{host} (default: @code{"/var/run/postgresql"})
+The PostgreSQL host to connect to.
+
+@item @code{log} (default: @code{"/var/log/postgresql_roles.log"})
+File name of the log file.
+
+@item @code{roles} (default: @code{'()})
+The initial PostgreSQL roles to create.
 @end table
 @end deftp
 
@@ -32702,8 +32898,42 @@ The service type for the Shepherd ``root service''---i.e., PID@tie{}1.
 
 This is the service type that extensions target when they want to create
 shepherd services (@pxref{Service Types and Services}, for an example).
-Each extension must pass a list of @code{<shepherd-service>}.
+Each extension must pass a list of @code{<shepherd-service>}.  Its
+value must be a @code{shepherd-configuration}, as described below.
 @end defvr
+
+@deftp {Data Type} shepherd-configuration
+This data type represents the Shepherd's configuration.
+
+@table @code
+@item shepherd (default: @code{shepherd})
+The Shepherd package to use.
+
+@item services (default: @code{'()})
+A list of @code{<shepherd-service>} to start.
+You should probably use the service extension
+mechanism instead (@pxref{Shepherd Services}).
+@end table
+@end deftp
+
+The following example specifies the Shepherd package for the operating
+system:
+
+@lisp
+(operating-system
+  ;; ...
+  (services (append (list openssh-service-type))
+            ;; ...
+            %desktop-services)
+  ;; ...
+  ;; Use own Shepherd package.
+  (essential-services
+   (modify-services (operating-system-default-essential-services
+                     this-operating-system)
+     (shepherd-root-service-type config => (shepherd-configuration
+                                            (inherit config)
+                                            (shepherd my-shepherd))))))
+@end lisp
 
 @defvr {Scheme Variable} %shepherd-root-service
 This service represents PID@tie{}1.

@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2015, 2018 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2014, 2018 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2014, 2015, 2016, 2020 Mark H Weaver <mhw@netris.org>
@@ -257,7 +257,7 @@ compatible to GNU Pth.")
 (define-public gnupg
   (package
     (name "gnupg")
-    (version "2.2.25")
+    (version "2.2.27")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnupg/gnupg/gnupg-" version
@@ -265,7 +265,7 @@ compatible to GNU Pth.")
               (patches (search-patches "gnupg-default-pinentry.patch"))
               (sha256
                (base32
-                "02n3klqbyzxyil13sg4wa0pcwr7vs7zjaslis926yjxg8yr0fly5"))))
+                "1693s2rp9sjwvdslj94n03wnb6rxysjy0dli0q1698af044h1ril"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -434,19 +434,20 @@ gpgpme starting with version 1.7.")
               (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
-     ;; When cross-compiling, the bash script libgcrypt-config provided by
-     ;; libgcrypt must be accessible during configure phase.
-     `(,@(if (%current-target-system)
-             '(#:phases
-               (modify-phases %standard-phases
-                 (add-before 'configure 'add-libgrypt-config
-                   (lambda _
-                     (setenv "PATH" (string-append
-                                     (assoc-ref %build-inputs "libgcrypt")
-                                     "/bin:"
-                                     (getenv "PATH")))
-                     #t))))
-             '())))
+     ;; Work around <https://bugs.gnu.org/20272> to achieve reproducible
+     ;; builds.
+     '(#:parallel-build? #f
+
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'add-libgrypt-config
+           (lambda* (#:key inputs target #:allow-other-keys)
+             (when target
+               ;; When cross-compiling, the bash script 'libgcrypt-config'
+               ;; must be accessible during the configure phase.
+               (setenv "PATH"
+                       (string-append (assoc-ref inputs "libgcrypt")
+                                      "/bin:" (getenv "PATH")))))))))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("autoconf" ,autoconf)
@@ -784,14 +785,14 @@ including tools for signing keys, keyring analysis, and party preparation.
 (define-public pinentry-tty
   (package
     (name "pinentry-tty")
-    (version "1.1.0")
+    (version "1.1.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnupg/pinentry/pinentry-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "0w35ypl960pczg5kp6km3dyr000m1hf0vpwwlh72jjkjza36c1v8"))))
+                "0zx5vg6wws2sp2yxwi01b8i1pnsqkydncpj7x0p8xl9y05ja04nd"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--enable-pinentry-tty")))
@@ -869,10 +870,6 @@ passphrase when @code{gpg} is run and needs it.")))
   (package
     (inherit pinentry-tty)
     (name "pinentry-efl")
-    (source
-      (origin
-        (inherit (package-source pinentry-tty))
-        (patches (search-patches "pinentry-efl.patch"))))
     (arguments
      '(#:configure-flags '("--enable-pinentry-efl"
                            "--enable-fallback-curses")
@@ -890,14 +887,14 @@ passphrase when @code{gpg} is run and needs it.")))
      `(("efl" ,efl)
        ,@(package-inputs pinentry-tty)))
     (description
-   "Pinentry provides a console and a graphical interface for the
-@dfn{Enlightenment Foundation Libraries} (EFL) that allows users to enter a
+   "Pinentry provides a console and a graphical interface for @acronym{EFL,
+the Enlightenment Foundation Libraries} that allows users to enter a
 passphrase when @code{gpg} is run and needs it.")))
 
 (define-public pinentry-rofi
   (package
     (name "pinentry-rofi")
-    (version "2.0.1")
+    (version "2.0.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -905,7 +902,7 @@ passphrase when @code{gpg} is run and needs it.")))
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
-               (base32 "044bnldz7k74s873jwsjgff176l1jsvpbaka7d1wcj8b5pwqv2av"))))
+               (base32 "0kjzvgni9srl8h5c52pqrvgdxs6avv0nhgk19apd97sx10qdwdhk"))))
     (build-system gnu-build-system)
     (arguments
      `(#:modules
@@ -917,41 +914,22 @@ passphrase when @code{gpg} is run and needs it.")))
            %standard-phases
          (add-after 'install 'hall-wrap-binaries
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let* ((compiled-dir
-                     (lambda (out version)
-                       (string-append out "/lib/guile/" version "/site-ccache")))
-                    (uncompiled-dir
-                     (lambda (out version)
-                       (string-append
-                        out
-                        "/share/guile/site"
-                        (if (string-null? version) "" "/")
-                        version)))
-                    (dep-path
-                     (lambda (env path)
-                       (list env ":" 'prefix (list path))))
-                    (out (assoc-ref outputs "out"))
+             (let* ((out (assoc-ref outputs "out"))
                     (bin (string-append out "/bin/"))
-                    (site (uncompiled-dir out "")))
+                    (site (string-append out "/share/guile/site"))
+                    (rofi-bin (string-append (assoc-ref inputs "rofi") "/bin")))
                (match (scandir site)
                  (("." ".." version)
-                  (for-each
-                   (lambda (file)
-                     (wrap-program
-                         (string-append bin file)
-                       (dep-path
-                        "PATH"
-                        (string-append (assoc-ref inputs "rofi") "/bin"))
-                       (dep-path
-                        "GUILE_LOAD_PATH"
-                        (uncompiled-dir out version))
-                       (dep-path
-                        "GUILE_LOAD_COMPILED_PATH"
-                        (compiled-dir out version))))
-                   ,''("pinentry-rofi"))
-                  #t))))))))
+                  (wrap-program
+                      (string-append bin "pinentry-rofi")
+                    (list "PATH" ":" 'prefix `(,rofi-bin)))
+                  #t)))))
+         (add-after 'compress-documentation 'installcheck
+           (lambda* rest
+             (invoke "make" "installcheck"))))))
     (native-inputs
      `(("autoconf" ,autoconf)
+       ("autoconf-archive" ,autoconf-archive)
        ("automake" ,automake)
        ("pkg-config" ,pkg-config)
        ("texinfo" ,texinfo)))

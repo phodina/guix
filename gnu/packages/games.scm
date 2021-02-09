@@ -53,9 +53,10 @@
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2020 Trevor Hass <thass@okstate.edu>
-;;; Copyright © 2020 Leo Prikler <leo.prikler@student.tugraz.at>
+;;; Copyright © 2020, 2021 Leo Prikler <leo.prikler@student.tugraz.at>
 ;;; Copyright © 2020 Lu hux <luhux@outlook.com>
 ;;; Copyright © 2020 Tomás Ortín Fernández <tomasortin@mailbox.org>
+;;; Copyright © 2021 Olivier Rojon <o.rojon@posteo.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -856,6 +857,52 @@ powerful monstrosities, from zombies to giant insects to killer robots and
 things far stranger and deadlier, and against the others like yourself, that
 want what you have.")
     (license license:cc-by-sa3.0)))
+
+(define-public cockatrice
+  (let ((release-date "2021-01-26"))
+    (package
+      (name "cockatrice")
+      (version "2.8.0")
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/Cockatrice/Cockatrice")
+               (commit (string-append release-date "-Release-" version))))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "0q8ffcklb2b7hcqhy3d2f9kz9aw22pp04pc9y4sslyqmf17pwnz9"))
+         (modules '((guix build utils)))
+         (snippet
+          ;; Strip image URLs as they point towards non-free web services
+          '(substitute* "cockatrice/src/settings/downloadsettings.cpp"
+             (("downloadURLs.append\\(\".*\"\\);") "")))))
+      (build-system cmake-build-system)
+      (arguments
+       `(#:configure-flags '("-DWITH_SERVER=1"
+                             "-DWITH_CLIENT=1"
+                             "-DWITH_ORACLE=1"
+                             "-DTEST=1")))
+      (native-inputs
+       `(("googletest" ,googletest)
+         ("pkg-config" ,pkg-config)))
+      (inputs
+       `(("protobuf" ,protobuf)
+         ("qtbase" ,qtbase)
+         ("qtmultimedia" ,qtmultimedia)
+         ("qtsvg" ,qtsvg)
+         ("qttools" ,qttools)
+         ("qtwebsockets" ,qtwebsockets)
+         ("xz" ,xz)
+         ("zlib" ,zlib)))
+      (home-page "https://cockatrice.github.io")
+      (synopsis "Tabletop card game simulator")
+      (description "Cockatrice is a program for playing tabletop card games
+over a network.  Its server design prevents users from manipulating the game
+for unfair advantage.  The client also provides a single-player mode, which
+allows users to brew while offline.")
+      (license license:gpl2))))
 
 (define-public corsix-th
   (package
@@ -6104,11 +6151,13 @@ small robot living in the nano world, repair its maker.")
               (method git-fetch)
               (uri (git-reference
                     (url "https://github.com/teeworlds/teeworlds")
-                    (commit version)))
+                    (commit version)
+                    ;; There are two submodules in datasrc/{languages,maps}
+                    (recursive? #t)))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "169dl83q08zl4h813az8hjs4rs3dms9yjn6bnsld4fjcj0imvvc6"))
+                "1l19ksmimg6b8zzjy0skyhh7z11ql7n5gvilkv7ay5x2b9ndbqwz"))
               (modules '((guix build utils)
                          (ice-9 ftw)
                          (ice-9 regex)
@@ -6121,15 +6170,12 @@ small robot living in the nano world, repair its maker.")
                             (remove (cut string-match "(^.)|(^md5$)" <>)
                                     (scandir base-dir)))
                   #t))))
-    (build-system gnu-build-system)
+    (build-system cmake-build-system)
     (arguments
      `(#:tests? #f                      ; no tests included
-       #:modules ((guix build gnu-build-system)
-                  (guix build utils)
-                  (srfi srfi-26))
        #:phases
        (modify-phases %standard-phases
-         (replace 'configure
+         (add-after 'unpack 'patch-paths
            (lambda* (#:key outputs #:allow-other-keys)
              ;; Embed path to assets.
              (substitute* "src/engine/shared/storage.cpp"
@@ -6138,51 +6184,7 @@ small robot living in the nano world, repair its maker.")
                                (assoc-ref outputs "out")
                                "/share/teeworlds/data"
                                "\"")))
-
-             ;; Bam expects all files to have a recent time stamp.
-             (for-each (cut utime <> 1 1)
-                       (find-files "."))
-
-             ;; Do not use bundled libraries.
-             (substitute* "bam.lua"
-               (("local json = Compile.+$")
-                "local json = nil
-settings.link.libs:Add(\"jsonparser\")")
-               (("local png = Compile.+$")
-                "local png = nil
-settings.link.libs:Add(\"pnglite\")")
-               (("local wavpack = Compile.+$")
-                "local wavpack = nil
-settings.link.libs:Add(\"wavpack\")")
-               (("if config\\.zlib\\.value == 1")
-                "if config.zlib.value"))
-             (substitute* "src/engine/client/graphics_threaded.cpp"
-               (("engine/external/pnglite/pnglite\\.h")
-                "pnglite.h"))
-             (substitute* "src/engine/client/sound.cpp"
-               (("engine/external/wavpack/wavpack\\.h")
-                "wavpack/wavpack.h"))
-             #t))
-         (replace 'build
-           (lambda _
-             (invoke "bam" "-a" "-v" "conf=release")))
-         (replace 'install
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let* ((arch ,(system->linux-architecture
-                            (or (%current-target-system)
-                                (%current-system))))
-                    (build (string-append "build/" (if (string=? arch "i386")
-                                                       "x86" arch)
-                                          "/release/"))
-                    (data-built (string-append build "data/"))
-                    (out (assoc-ref outputs "out"))
-                    (bin (string-append out "/bin/"))
-                    (data (string-append out "/share/teeworlds/data/")))
-               (for-each (cut install-file <> bin)
-                         (map (cut string-append build <>)
-                              '("teeworlds" "teeworlds_srv")))
-               (copy-recursively data-built data)
-               #t))))))
+             #t)))))
     (inputs
      `(("freetype" ,freetype)
        ("glu" ,glu)
@@ -6193,17 +6195,17 @@ settings.link.libs:Add(\"wavpack\")")
        ("sdl2-image" ,sdl2-image)
        ("sdl2-mixer" ,sdl2-mixer)
        ("wavpack" ,wavpack)
+       ("openssl" ,openssl)
        ("zlib" ,zlib)))
     (native-inputs
-     `(("bam" ,bam)
-       ("python" ,python-wrapper)
+     `(("python" ,python-wrapper)
        ("pkg-config" ,pkg-config)))
     (home-page "https://www.teeworlds.com")
     (synopsis "2D retro multiplayer shooter game")
     (description "Teeworlds is an online multiplayer game.  Battle with up to
 16 players in a variety of game modes, including Team Deathmatch and Capture
 The Flag.  You can even design your own maps!")
-    (license license:bsd-3)))
+    (license (list license:bsd-3 license:cc-by-sa3.0)))) ; game+maps&languages
 
 (define-public enigma
   (package
@@ -6377,14 +6379,14 @@ fish.  The whole game is accompanied by quiet, comforting music.")
 (define-public crawl
   (package
     (name "crawl")
-    (version "0.26.0")
+    (version "0.26.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/crawl/crawl/releases/download/"
                            version "/stone_soup-" version "-nodeps.tar.xz"))
        (sha256
-        (base32 "1m81x1sp6p2ka5w2nib3pcw5w5iv58z41c8aqn0dayi1lb3yslfb"))
+        (base32 "1d8p2np2q5951wqphq2f4dyvv976m2lh82b0qp7w9pp1h8zzi1ff"))
        (patches (search-patches "crawl-upgrade-saves.patch"))))
     (build-system gnu-build-system)
     (inputs
@@ -7128,7 +7130,7 @@ elements to achieve a simple goal in the most complex way possible.")
 (define-public pioneer
   (package
     (name "pioneer")
-    (version "20200203")
+    (version "20210203")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -7137,7 +7139,7 @@ elements to achieve a simple goal in the most complex way possible.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1011xsi94jhw98mhm8kryq8ajig0qfbrdx5xdasi92bd4nk7lcp8"))))
+                "1zyi1xyghj99hz8fa6dywpscj6flp04fspnlgxbivf3rgmnxflg7"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))

@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015, 2016, 2017, 2018 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2015, 2016, 2018, 2019, 2020 Pjotr Prins <pjotr.guix@thebird.nl>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
@@ -2822,6 +2822,86 @@ sequencing data.  It uses paired-ends and split-reads to sensitively and
 accurately delineate genomic rearrangements throughout the genome.")
     (license license:gpl3+)))
 
+(define-public trf
+  (package
+    (name "trf")
+    (version "4.09.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/Benson-Genomics-Lab/TRF")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32 "0fhwr4s1mf8nw8fr5imwjvjr42b59p97zr961ifm8xl1bajz4wpg"))))
+    (build-system gnu-build-system)
+    (home-page "https://github.com/Benson-Genomics-Lab/TRF")
+    (synopsis "Tandem Repeats Finder: a program to analyze DNA sequences")
+    (description "A tandem repeat in DNA is two or more adjacent, approximate
+copies of a pattern of nucleotides.  Tandem Repeats Finder is a program to
+locate and display tandem repeats in DNA sequences.  In order to use the
+program, the user submits a sequence in FASTA format.  The output consists of
+two files: a repeat table file and an alignment file.  Submitted sequences may
+be of arbitrary length. Repeats with pattern size in the range from 1 to 2000
+bases are detected.")
+    (license license:agpl3+)))
+
+(define-public repeat-masker
+  (package
+    (name "repeat-masker")
+    (version "4.1.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://www.repeatmasker.org/"
+                                  "RepeatMasker/RepeatMasker-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32 "03144sl9kh5ni2i33phi7x2pjndzbm5bjw3r4kqvmm6hxyb4k4x2"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #false ; there are none
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (replace 'build
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((share (string-append (assoc-ref outputs "out")
+                                         "/share/RepeatMasker")))
+               (mkdir-p share)
+               (copy-recursively "." share)
+               (with-directory-excursion share
+                 (invoke "perl" "configure"
+                         "--trf_prgm" (which "trf")
+                         "--hmmer_dir"
+                         (string-append (assoc-ref inputs "hmmer")
+                                        "/bin"))))))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out   (assoc-ref outputs "out"))
+                    (share (string-append out "/share/RepeatMasker"))
+                    (bin   (string-append out "/bin"))
+                    (path  (getenv "PERL5LIB")))
+               (install-file (string-append share "/RepeatMasker") bin)
+               (wrap-program (string-append bin "/RepeatMasker")
+                 `("PERL5LIB" ":" prefix (,path ,share)))))))))
+    (inputs
+     `(("perl" ,perl)
+       ("perl-text-soundex" ,perl-text-soundex)
+       ("python" ,python)
+       ("python-h5py" ,python-h5py)
+       ("hmmer" ,hmmer)
+       ("trf" ,trf)))
+    (home-page "https://github.com/Benson-Genomics-Lab/TRF")
+    (synopsis "Tandem Repeats Finder: a program to analyze DNA sequences")
+    (description "A tandem repeat in DNA is two or more adjacent, approximate
+copies of a pattern of nucleotides.  Tandem Repeats Finder is a program to
+locate and display tandem repeats in DNA sequences.  In order to use the
+program, the user submits a sequence in FASTA format.  The output consists of
+two files: a repeat table file and an alignment file.  Submitted sequences may
+be of arbitrary length. Repeats with pattern size in the range from 1 to 2000
+bases are detected.")
+    (license license:osl2.1)))
+
 (define-public diamond
   (package
     (name "diamond")
@@ -5632,7 +5712,7 @@ phylogenies.")
                             "/include/htslib/sam.h")
              (string-append "SAMLIBS="
                             (assoc-ref %build-inputs "htslib")
-                            "/lib/libhts.a"))
+                            "/lib/libhts.so"))
        #:phases
        (modify-phases %standard-phases
          ;; No "configure" script.
@@ -7188,6 +7268,45 @@ factor.  CENTIPEDE is an unsupervised learning algorithm that discriminates
 between two different types of motif instances using as much relevant
 information as possible.")
     (license (list license:gpl2+ license:gpl3+))))
+
+(define-public r-demultiplex
+  (let ((commit "6e2a1422c8e6f418cfb271997eebc91f9195f299")
+        (revision "1"))
+    (package
+      (name "r-demultiplex")
+      (version (git-version "1.0.2" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/chris-mcginnis-ucsf/MULTI-seq")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "01kv88wp8vdaq07sjk0d3d1cb553mq1xqg0war81pgmg63bgi38w"))))
+      (properties `((upstream-name . "deMULTIplex")))
+      (build-system r-build-system)
+      (propagated-inputs
+       `(("r-kernsmooth" ,r-kernsmooth)
+         ("r-reshape2" ,r-reshape2)
+         ("r-rtsne" ,r-rtsne)
+         ("r-shortread" ,r-shortread)
+         ("r-stringdist" ,r-stringdist)))
+      (home-page "https://github.com/chris-mcginnis-ucsf/MULTI-seq")
+      (synopsis "MULTI-seq pre-processing and classification tools")
+      (description
+       "deMULTIplex is an R package for analyzing single-cell RNA sequencing
+data generated with the MULTI-seq sample multiplexing method.  The package
+includes software to
+
+@enumerate
+@item Convert raw MULTI-seq sample barcode library FASTQs into a sample
+  barcode UMI count matrix, and
+@item Classify cell barcodes into sample barcode groups.
+@end enumerate
+")
+      (license license:cc0))))
 
 (define-public r-genefilter
   (package
@@ -15090,18 +15209,18 @@ library automatically handles index file generation and use.")
              (let* ((out (assoc-ref outputs "out"))
                     (pkgconfig (string-append out "/lib/pkgconfig")))
                (mkdir-p pkgconfig)
-               (with-output-to-file (string-append pkgconfig "/libvcflib.pc")
+               (with-output-to-file (string-append pkgconfig "/vcflib.pc")
                  (lambda _
                    (format #t "prefix=~a~@
                            exec_prefix=${prefix}~@
                            libdir=${exec_prefix}/lib~@
                            includedir=${prefix}/include~@
                            ~@
-                           Name: libvcflib~@
+                           Name: vcflib~@
                            Version: ~a~@
-                           Requires: smithwaterman, fastahack~@
+                           Requires: smithwaterman, fastahack, tabixpp~@
                            Description: C++ library for parsing and manipulating VCF files~@
-                           Libs: -L${libdir} -llibvcflib~@
+                           Libs: -L${libdir} -lvcflib~@
                            Cflags: -I${includedir}~%"
                            out ,version)))
                  #t))))))
@@ -15488,44 +15607,3 @@ biological processes.  SBML is useful for models of metabolism, cell
 signaling, and more.  It continues to be evolved and expanded by an
 international community.")
     (license license:lgpl2.1+)))
-
-(define-public grocsvs
-  ;; The last release is out of date and new features have been added.
-  (let ((commit "ecd956a65093a0b2c41849050e4512d46fecea5d")
-        (revision "1"))
-    (package
-      (name "grocsvs")
-      (version (git-version "0.2.6.1" revision commit))
-      (source (origin
-                (method git-fetch)
-                (uri (git-reference
-                       (url "https://github.com/grocsvs/grocsvs")
-                       (commit commit)))
-                (file-name (git-file-name name version))
-                (sha256
-                 (base32 "14505725gr7qxc17cxxf0k6lzcwmgi64pija4mwf29aw70qn35cc"))
-                (patches (search-patches "grocsvs-dont-use-admiral.patch"))))
-      (build-system python-build-system)
-      (arguments
-       `(#:tests? #f            ; No test suite.
-         #:python ,python-2))   ; Only python-2 supported.
-      (inputs
-       `(("python2-h5py" ,python2-h5py)
-         ("python2-ipython-cluster-helper" ,python2-ipython-cluster-helper)
-         ("python2-networkx" ,python2-networkx)
-         ("python2-psutil" ,python2-psutil)
-         ("python2-pandas" ,python2-pandas)
-         ("python2-pybedtools" ,python2-pybedtools)
-         ("python2-pyfaidx" ,python2-pyfaidx)
-         ("python2-pygraphviz" ,python2-pygraphviz)
-         ("python2-pysam" ,python2-pysam)
-         ("python2-scipy" ,python2-scipy)))
-      (home-page "https://github.com/grocsvs/grocsvs")
-      (synopsis "Genome-wide reconstruction of complex structural variants")
-      (description
-       "@dfn{Genome-wide Reconstruction of Complex Structural Variants}
-(GROC-SVs) is a software pipeline for identifying large-scale structural
-variants, performing sequence assembly at the breakpoints, and reconstructing
-the complex structural variants using the long-fragment information from the
-10x Genomics platform.")
-       (license license:expat))))

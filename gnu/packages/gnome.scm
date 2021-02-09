@@ -44,7 +44,7 @@
 ;;; Copyright © 2019 David Wilson <david@daviwil.com>
 ;;; Copyright © 2019, 2020 Raghav Gururajan <raghavgururajan@disroot.org>
 ;;; Copyright © 2019, 2020 Jonathan Brielmaier <jonathan.brielmaier@web.de>
-;;; Copyright © 2019, 2020 Leo Prikler <leo.prikler@student.tugraz.at>
+;;; Copyright © 2019, 2020, 2021 Leo Prikler <leo.prikler@student.tugraz.at>
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2020 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2020 raingloom <raingloom@riseup.net>
@@ -793,6 +793,65 @@ patterns.")
      (list
       license:lgpl2.1+
       license:gpl2+))))
+
+(define-public gnome-recipes
+  (package
+    (name "gnome-recipes")
+    (version "2.0.4")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.gnome.org/GNOME/recipes")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1h049mzqnlcfqwrhmzbq3pzzdglvy2bn9fj1p8wql7a60pn8sr32"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:glib-or-gtk? #t
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'skip-gtk-update-icon-cache
+           (lambda _
+             (substitute* "meson_post_install.py"
+               (("gtk-update-icon-cache") (which "true")))
+             #t))
+         (add-after 'unpack 'unpack-libgd
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((libgd (assoc-ref inputs "libgd")))
+               (copy-recursively libgd "subprojects/libgd")
+               #t))))))
+    (inputs
+     `(("glib" ,glib)
+       ("gnome-autoar" ,gnome-autoar)
+       ("gnome-online-accounts:lib" ,gnome-online-accounts "lib")
+       ("gspell" ,gspell)
+       ("gtk+" ,gtk+)
+       ("json-glib" ,json-glib)
+       ("libcanberra" ,libcanberra)
+       ("libsoup" ,libsoup)
+       ("rest" ,rest)))
+    (native-inputs
+     `(("desktop-file-utils" ,desktop-file-utils) ; for update-desktop-database
+       ("gettext" ,gettext-minimal)
+       ("glib:bin" ,glib "bin")
+       ("itstool" ,itstool)
+       ("libgd"
+        ,(origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://gitlab.gnome.org/GNOME/libgd")
+                 (commit "c7c7ff4e05d3fe82854219091cf116cce6b19de0")))
+           (file-name (git-file-name "libgd" version))
+           (sha256
+            (base32 "16yld0ap7qj1n96h4f2sqkjmibg7xx5xwkqxdfzam2nmyfdlrrrs"))))
+       ("pkg-config" ,pkg-config)))
+    (home-page "https://wiki.gnome.org/Apps/Recipes")
+    (synopsis "Discover recipes for preparing food")
+    (description "GNOME Recipes helps you discover what to cook today,
+tomorrow, the rest of the week and for special occasions.")
+    (license license:gpl3+)))
 
 (define-public gnome-photos
   (package
@@ -2956,19 +3015,31 @@ configuring CUPS.")
 (define-public libnotify
   (package
     (name "libnotify")
-    (version "0.7.7")
+    (version "0.7.9")
     (source
      (origin
-      (method url-fetch)
-      (uri (string-append "mirror://gnome/sources/" name "/"
-                          (version-major+minor version)  "/"
-                          name "-" version ".tar.xz"))
-      (sha256
-       (base32
-        "017wgq9n00hx39n0hm784zn18hl721hbaijda868cm96bcqwxd4w"))))
-    (build-system gnu-build-system)
+       (method url-fetch)
+       (uri (string-append "mirror://gnome/sources/" name "/"
+                           (version-major+minor version)  "/"
+                           name "-" version ".tar.xz"))
+       (sha256
+        (base32
+         "0qa7cx6ra5hwqnxw95b9svgjg5q6ynm8y843iqjszxvds5z53h36"))))
+    (build-system meson-build-system)
     (arguments
-     `(#:configure-flags '("--disable-static")))
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-docbook
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; Don't attempt to download XSL schema.
+             (substitute* "meson.build"
+               (("http://docbook.sourceforge.net/release/xsl-ns/current\
+/manpages/docbook.xsl")
+                (string-append (assoc-ref inputs "docbook-xsl")
+                               "/xml/xsl/docbook-xsl-"
+                               ,(package-version docbook-xsl)
+                               "/manpages/docbook.xsl")))
+             #t)))))
     (propagated-inputs
      `(;; In Requires of libnotify.pc.
        ("gdk-pixbuf" ,gdk-pixbuf)
@@ -2977,9 +3048,14 @@ configuring CUPS.")
      `(("gtk+" ,gtk+)
        ("libpng" ,libpng)))
     (native-inputs
-      `(("pkg-config" ,pkg-config)
-        ("glib" ,glib "bin")
-        ("gobject-introspection" ,gobject-introspection)))
+     `(("pkg-config" ,pkg-config)
+       ("glib" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+
+       ;; For the documentation.
+       ("gtk-doc" ,gtk-doc)
+       ("xsltproc" ,libxslt)
+       ("docbook-xsl" ,docbook-xsl)))
     (home-page "https://developer-next.gnome.org/libnotify/")
     (synopsis
      "GNOME desktop notification library")
@@ -6433,7 +6509,7 @@ DAV, and others.")
 (define-public gusb
   (package
     (name "gusb")
-    (version "0.3.0")
+    (version "0.3.5")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -6442,7 +6518,7 @@ DAV, and others.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "002pg0p4qzzk5dkyiynm483ir26zxrn4k71c7f6j85mfsdzbgli7"))))
+                "0ifhdqhpyxwsg0z9s1anj7cf5pya5qsqyp5ksh9n7mqwa4lrjkl8"))))
     (build-system meson-build-system)
     (native-inputs
      `(("gobject-introspection" ,gobject-introspection)
@@ -11825,7 +11901,7 @@ integrated profiler via Sysprof, debugging support, and more.")
 (define-public komikku
   (package
     (name "komikku")
-    (version "0.25.1")
+    (version "0.26.0")
     (source
      (origin
        (method git-fetch)
@@ -11835,7 +11911,7 @@ integrated profiler via Sysprof, debugging support, and more.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "03skci66y9qqiv4bqbbc0w6d6agilwmx95cw7sribj06zcykm7m3"))))
+         "1g5rhp3d97v0s8nk536vqpv6qd4gha4h27bfdkypcqa42h8wyxm2"))))
     (build-system meson-build-system)
     (arguments
      `(#:glib-or-gtk? #t

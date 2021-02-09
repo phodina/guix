@@ -55,6 +55,7 @@
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix utils)
+  #:use-module (guix build-system gnu)
   #:use-module (guix build-system r)
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
@@ -63,6 +64,7 @@
   #:use-module (gnu packages bioinformatics)
   #:use-module (gnu packages c)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages fontutils)
@@ -1722,6 +1724,131 @@ in R and Shiny via the D3 visualization library.")
       ;; JavaScript source code of d3-sankey, which is released under the
       ;; 3-clause BSD license.
       (license (list license:gpl3+ license:bsd-3)))))
+
+(define-public r-wesanderson
+  (package
+    (name "r-wesanderson")
+    (version "0.3.6")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "wesanderson" version))
+       (sha256
+        (base32
+         "09mr6p2jmqdjq27cz974w5hyxgn929zp9z3inhxqmmh1582fmdi2"))))
+    (properties `((upstream-name . "wesanderson")))
+    (build-system r-build-system)
+    (home-page "https://github.com/karthik/wesanderson")
+    (synopsis "Wes Anderson color palette generator")
+    (description
+     "This package provides color palettes that have been generated mostly
+from Wes Anderson movies.")
+    (license license:expat)))
+
+(define-public r-tablerdash
+  (package
+    (name "r-tablerdash")
+    (version "0.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "tablerDash" version))
+       (sha256
+        (base32
+         "1mnp6lxa7d669r325aynq1n3f35r9sy4v1fvdh4cymbf33s8mkmm"))
+       (snippet
+        '(begin
+           ;; Delete minified JavaScript
+           (for-each delete-file
+                     '("inst/tablerDash-0.1.0/require.min.js"
+                       "inst/bootstrap-4.0.0/bootstrap.bundle.min.js"))
+           #true))))
+    (properties `((upstream-name . "tablerDash")))
+    (build-system r-build-system)
+    (arguments
+     `(#:modules ((guix build utils)
+                  (guix build r-build-system)
+                  (srfi srfi-1))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'process-javascript
+           (lambda* (#:key inputs #:allow-other-keys)
+             (with-directory-excursion "inst"
+               (call-with-values
+                   (lambda ()
+                     (unzip2
+                      `((,(assoc-ref inputs "js-requirejs")
+                         "tablerDash-0.1.0/require.min.js")
+                        (,(assoc-ref inputs "js-bootstrap")
+                         "bootstrap-4.0.0/bootstrap.bundle.min.js"))))
+                 (lambda (sources targets)
+                   (for-each (lambda (source target)
+                               (format #t "Processing ~a --> ~a~%"
+                                       source target)
+                               (invoke "esbuild" source "--minify"
+                                       (string-append "--outfile=" target)))
+                             sources targets))))
+             #t)))))
+    (propagated-inputs
+     `(("r-htmltools" ,r-htmltools)
+       ("r-knitr" ,r-knitr)
+       ("r-shiny" ,r-shiny)))
+    (native-inputs
+     `(("esbuild" ,esbuild)
+       ("js-requirejs"
+        ,(origin
+           (method url-fetch)
+           (uri "https://raw.githubusercontent.com/requirejs/requirejs/2.3.5/require.js")
+           (sha256
+            (base32
+             "06w32mwqii9cx409ivda88z58qbkcdb4p6hf6jawchsgagaziyds"))))
+       ("js-bootstrap"
+        ,(origin
+           (method url-fetch)
+           (uri "https://raw.githubusercontent.com/twbs/bootstrap/\
+v4.0.0/dist/js/bootstrap.bundle.js")
+           (sha256
+            (base32
+             "0cvfqffn45vfbj3fk6wmrhkyndhk4id89vgydssbbzxjkfwprfrj"))))))
+    (home-page "https://rinterface.github.io/tablerDash/")
+    (synopsis "Tabler API for Shiny")
+    (description
+     "This package provides an R interface to the
+@url{https://tabler.io,Tabler} HTML template.  tablerDash is a light Bootstrap
+4 dashboard template.  There are different layouts available such as a one
+page dashboard or a multi-page template, where the navigation menu is
+contained in the navigation bar.")
+    (license license:gpl2+)))
+
+(define-public r-spelling
+  (package
+    (name "r-spelling")
+    (version "2.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "spelling" version))
+       (sha256
+        (base32
+         "179nj9w1v27qq9q5240ddvggp0795998sxyqjvbqjvq9dmach3bl"))))
+    (properties `((upstream-name . "spelling")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-commonmark" ,r-commonmark)
+       ("r-hunspell" ,r-hunspell)
+       ("r-knitr" ,r-knitr)
+       ("r-xml2" ,r-xml2)))
+    (home-page "https://docs.ropensci.org/spelling/")
+    (synopsis "Tools for spell checking in R")
+    (description
+     "This is an R package for spell checking common document formats
+including LaTeX, markdown, manual pages, and DESCRIPTION files.  It includes
+utilities to automate checking of documentation and vignettes as a unit test
+during @code{R CMD check}.  Both British and American English are supported
+out of the box and other languages can be added.  In addition, packages may
+define a wordlist to allow custom terminology without having to abuse
+punctuation.")
+    (license license:expat)))
 
 (define-public r-crosstalk
   (package
@@ -4973,6 +5100,41 @@ functions to compile LaTeX documents, and install missing LaTeX packages
 automatically.")
     (license license:expat)))
 
+(define-public r-tinytest
+  (package
+    (name "r-tinytest")
+    (version "1.2.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "tinytest" version))
+       (sha256
+        (base32
+         "1asryjrah3fj39gg0c6yxgpr142j5bg2n990v7q8r0a5pb8gcr45"))))
+    (properties `((upstream-name . "tinytest")))
+    (build-system r-build-system)
+    (home-page "https://github.com/markvanderloo/tinytest")
+    (synopsis "Lightweight unit testing framework")
+    (description
+     "This package provides a lightweight unit testing framework.  Main
+features:
+
+@enumerate
+@item install tests with the package;
+@item test results are treated as data that can be stored and manipulated;
+@item test files are R scripts interspersed with test commands, that can be
+  programmed over;
+@item fully automated build-install-test sequence for packages;
+@item skip tests when not run locally (e.g. on CRAN);
+@item flexible and configurable output printing;
+@item compare computed output with output stored with the package;
+@item run tests in parallel;
+@item extensible by other packages;
+@item report side effects.
+@end enumerate
+")
+    (license license:gpl3)))
+
 (define-public r-network
   (package
     (name "r-network")
@@ -6489,6 +6651,31 @@ promises, but with a syntax that is idiomatic R.")
 using the @code{snow} package.")
     (license license:gpl2)))
 
+(define-public r-fst
+  (package
+    (name "r-fst")
+    (version "0.9.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "fst" version))
+       (sha256
+        (base32
+         "0vwclzxww8mw9nnpyj29bn71mrr8jjg7ka03979h9rbzw6d9bjrr"))))
+    (properties `((upstream-name . "fst")))
+    (build-system r-build-system)
+    (propagated-inputs `(("r-rcpp" ,r-rcpp)))
+    (home-page "http://www.fstpackage.org")
+    (synopsis "Fast serialization of data frames")
+    (description
+     "The fst package for R provides a fast, easy and flexible way to
+serialize data frames.  With access speeds of multiple GB/s, fst is
+specifically designed to unlock the potential of high speed solid state disks.
+Data frames stored in the fst format have full random access, both in column
+and rows.  The fst format allows for random access of stored data and
+compression with the LZ4 and ZSTD compressors.")
+    (license license:agpl3)))
+
 (define-public r-snowfall
   (package
    (name "r-snowfall")
@@ -6511,6 +6698,176 @@ to the cluster management tool @code{sfCluster}, but can also used without
 it.")
    (license license:gpl2+)))
 
+(define-public r-rgexf
+  (package
+    (name "r-rgexf")
+    (version "0.16.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "rgexf" version))
+       (sha256
+        (base32
+         "1vj5ha1qx0xzflchxf25ycys6clfn9y32m1717afzkvhmkwisrra"))
+       (snippet
+        '(begin
+           ;; Delete minified JavaScript files
+           (for-each delete-file
+                     '("inst/gexf-js/js/jquery-2.0.2.min.js"
+                       "inst/gexf-js/js/jquery-ui-1.10.3.custom.min.js"
+                       "inst/gexf-js/js/jquery.mousewheel.min.js"))
+           #true))))
+    (properties `((upstream-name . "rgexf")))
+    (build-system r-build-system)
+    (arguments
+     `(#:modules ((guix build utils)
+                  (guix build r-build-system)
+                  (srfi srfi-1)
+                  (ice-9 popen))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'process-javascript
+           (lambda* (#:key inputs #:allow-other-keys)
+             (invoke "unzip" "-d" "/tmp" (assoc-ref inputs "js-jquery-ui"))
+             (with-directory-excursion "inst/gexf-js/js/"
+               (call-with-values
+                   (lambda ()
+                     (unzip2
+                      `((,(assoc-ref inputs "js-jquery")
+                         "jquery-2.0.2.min.js")
+                        ("/tmp/jquery-ui-1.10.3/ui/jquery-ui.js"
+                         "jquery-ui-1.10.3.custom.min.js")
+                        (,(assoc-ref inputs "js-jquery-mousewheel")
+                         "jquery.mousewheel.min.js"))))
+                 (lambda (sources targets)
+                   (for-each (lambda (source target)
+                               (format #true "Processing ~a --> ~a~%"
+                                       source target)
+                               (invoke "esbuild" source "--minify"
+                                       (string-append "--outfile=" target)))
+                             sources targets))))
+             #t)))))
+    (propagated-inputs
+     `(("r-igraph" ,r-igraph)
+       ("r-servr" ,r-servr)
+       ("r-xml" ,r-xml)))
+    (native-inputs
+     `(("r-knitr" ,r-knitr)
+       ("esbuild" ,esbuild)
+       ("unzip" ,unzip)
+       ("js-jquery"
+        ,(origin
+           (method url-fetch)
+           (uri "https://code.jquery.com/jquery-2.0.2.js")
+           (sha256
+            (base32
+             "0v818bxpw48gdk8i95qqqij80r9jcgisi2r4ac6xnxca20h0gvfj"))))
+       ("js-jquery-ui"
+        ,(origin
+           (method url-fetch)
+           (uri "https://jqueryui.com/resources/download/jquery-ui-1.10.3.zip")
+           (sha256
+            (base32
+             "00xpfy0l69nj2yan4s8k65ldsrlfsjkmyw2dwcg93dc8mv454vxx"))))
+       ("js-jquery-mousewheel"
+        ,(origin
+           (method url-fetch)
+           (uri "https://raw.githubusercontent.com/jquery/jquery-mousewheel/\
+3.0.6/jquery.mousewheel.js")
+           (sha256
+            (base32
+             "19lk5xy2s47bx8hsa7j6bg012f8yw6d770g230bcnm559kf4nc6v"))))))
+    (home-page "https://gvegayon.github.io/rgexf")
+    (synopsis "Build, import and export GEXF graph files")
+    (description
+     "Create, read and write GEXF (Graph Exchange XML Format) graph
+files (used in Gephi and others).  It allows the user to easily build/read
+graph files including attributes, GEXF visual attributes (such as color, size,
+and position), network dynamics (for both edges and nodes) and edge weighting.
+Users can build/handle graphs element-by-element or massively through
+data-frames, visualize the graph on a web browser through gexf-js (a
+JavaScript library) and interact with the igraph package.")
+    (license license:expat)))
+
+(define-public r-data-tree
+  (package
+    (name "r-data-tree")
+    (version "1.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "data.tree" version))
+       (sha256
+        (base32
+         "0pizmx2312zsym4m42b97q2184bg3hibvbdrblcga05xln84qrs0"))))
+    (properties `((upstream-name . "data.tree")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-r6" ,r-r6)
+       ("r-stringi" ,r-stringi)))
+    (native-inputs
+     `(("r-knitr" ,r-knitr)))
+    (home-page "http://github.com/gluc/data.tree")
+    (synopsis "General purpose hierarchical data structure")
+    (description
+     "Create tree structures from hierarchical data, and traverse the tree in
+various orders.  Aggregate, cumulate, print, plot, convert to and from
+data.frame and more.  This is useful for decision trees, machine learning,
+finance, conversion from and to JSON, and many other applications.")
+    (license license:gpl2+)))
+
+(define-public r-collapsibletree
+  (package
+    (name "r-collapsibletree")
+    (version "0.1.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "collapsibleTree" version))
+       (sha256
+        (base32
+         "0b65pbp1wnpsrayqi630ds4r98jvcvynnlp6wxdqrnnr9nzw5343"))
+       (snippet
+        '(begin
+           ;; Delete minified JavaScript file
+           (delete-file "inst/htmlwidgets/lib/d3-4.10.2/d3.min.js")
+           #true))))
+    (properties
+     `((upstream-name . "collapsibleTree")))
+    (build-system r-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'process-javascript
+           (lambda* (#:key inputs #:allow-other-keys)
+             (with-directory-excursion "inst/htmlwidgets/lib/d3-4.10.2/"
+               (let ((source (assoc-ref inputs "d3.v4.js"))
+                     (target "d3.min.js"))
+                 (format #t "Processing ~a --> ~a~%"
+                         source target)
+                 (invoke "esbuild" source "--minify"
+                         (string-append "--outfile=" target)))))))))
+    (propagated-inputs
+     `(("r-data-tree" ,r-data-tree)
+       ("r-htmlwidgets" ,r-htmlwidgets)))
+    (native-inputs
+     `(("esbuild" ,esbuild)
+       ("d3.v4.js"
+        ,(origin
+           (method url-fetch)
+           (uri "https://d3js.org/d3.v4.js")
+           (sha256
+            (base32
+             "0y7byf6kcinfz9ac59jxc4v6kppdazmnyqfav0dm4h550fzfqqlg"))))))
+    (home-page "https://github.com/AdeelK93/collapsibleTree")
+    (synopsis "Interactive collapsible tree diagrams using D3.js")
+    (description
+     "This is a package for interactive Reingold-Tilford tree diagrams created
+using D3.js, where every node can be expanded and collapsed by clicking on it.
+Tooltips and color gradients can be mapped to nodes using a numeric column in
+the source data frame.")
+    (license license:gpl3+)))
+
 (define-public r-rappdirs
   (package
     (name "r-rappdirs")
@@ -6529,6 +6886,64 @@ it.")
      "This package provides an easy way to determine which directories on the
 user's computer should be used to save data, caches and logs.  It is a port of
 Python's @url{https://github.com/ActiveState/appdirs,Appdirs} to R.")
+    (license license:expat)))
+
+(define-public r-rastervis
+  (package
+    (name "r-rastervis")
+    (version "0.49")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "rasterVis" version))
+       (sha256
+        (base32
+         "0d12h7xqcwy1wps6yya9nzfppbnsxpmbkqmy3a8pvxpg81l632kk"))))
+    (properties `((upstream-name . "rasterVis")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-hexbin" ,r-hexbin)
+       ("r-lattice" ,r-lattice)
+       ("r-latticeextra" ,r-latticeextra)
+       ("r-raster" ,r-raster)
+       ("r-rcolorbrewer" ,r-rcolorbrewer)
+       ("r-sp" ,r-sp)
+       ("r-viridislite" ,r-viridislite)
+       ("r-zoo" ,r-zoo)))
+    (home-page "https://oscarperpinan.github.io/rastervis/")
+    (synopsis "Visualization methods for raster data")
+    (description
+     "This package provides methods for enhanced visualization and interaction
+with raster data.  It implements visualization methods for quantitative data
+and categorical data, both for univariate and multivariate rasters.  It also
+provides methods to display spatiotemporal rasters, and vector fields.")
+    (license license:gpl3)))
+
+(define-public r-rentrez
+  (package
+    (name "r-rentrez")
+    (version "1.2.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "rentrez" version))
+       (sha256
+        (base32
+         "0x1g2f6hvkqqlb39z8m5qxhcvsizddic5i7rpqw0wy77xfbna9gv"))))
+    (properties `((upstream-name . "rentrez")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-httr" ,r-httr)
+       ("r-jsonlite" ,r-jsonlite)
+       ("r-xml" ,r-xml)))
+    (native-inputs
+     `(("r-knitr" ,r-knitr)))
+    (home-page "https://docs.ropensci.org/rentrez/")
+    (synopsis "Entrez in R")
+    (description
+     "This package provides an R interface to the NCBI's EUtils API,
+allowing users to search databases like GenBank PubMed, process the results of
+those searches and pull data into their R sessions.")
     (license license:expat)))
 
 (define-public r-renv
@@ -10857,6 +11272,33 @@ Anderson-Darling Distribution\".")
     ;; Any version of the GPL.
     (license license:gpl3+)))
 
+(define-public r-sodium
+  (package
+    (name "r-sodium")
+    (version "1.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "sodium" version))
+       (sha256
+        (base32
+         "1zxzi8xvxnhgcd5qrylf08nz1cdq3aslrswjas440qg63ypmbf6w"))))
+    (properties `((upstream-name . "sodium")))
+    (build-system r-build-system)
+    (inputs
+     `(("libsodium" ,libsodium)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("r-knitr" ,r-knitr)))
+    (home-page "https://github.com/jeroen/sodium")
+    (synopsis "R bindings to the libsodium crypto library")
+    (description
+     "This package provides bindings to libsodium: a library for encryption,
+decryption, signatures, password hashing and more.  Sodium uses curve25519, a
+Diffie-Hellman function by Daniel Bernstein, which has become very popular
+after it was discovered that the NSA had backdoored Dual EC DRBG.")
+    (license license:expat)))
+
 (define-public r-softimpute
   (package
     (name "r-softimpute")
@@ -13157,6 +13599,49 @@ several common set, element and attribute related tasks.")
     (description
      "This package adds additional Twitter Bootstrap components to Shiny.")
     (license license:gpl3)))
+
+(define-public r-shinyjqui
+  (package
+    (name "r-shinyjqui")
+    (version "0.3.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "shinyjqui" version))
+       (sha256
+        (base32
+         "0n4ijxmkp8x6dwrsxwvx0zgd8b5129cmn6q6rrav38v1q5k8889x"))
+       (snippet
+        '(begin
+           (delete-file "inst/www/shinyjqui.min.js")))))
+    (properties `((upstream-name . "shinyjqui")))
+    (build-system r-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'process-javascript
+           (lambda* (#:key inputs #:allow-other-keys)
+             (with-directory-excursion "inst/www/"
+               (let ((source "shinyjqui.js")
+                     (target "shinyjqui.min.js"))
+                 (format #true "Processing ~a --> ~a~%"
+                         source target)
+                 (invoke "esbuild" source "--minify"
+                         (string-append "--outfile=" target)))))))))
+    (propagated-inputs
+     `(("r-htmltools" ,r-htmltools)
+       ("r-htmlwidgets" ,r-htmlwidgets)
+       ("r-jsonlite" ,r-jsonlite)
+       ("r-shiny" ,r-shiny)))
+    (native-inputs
+     `(("r-knitr" ,r-knitr)
+       ("esbuild" ,esbuild)))
+    (home-page "https://github.com/yang-tang/shinyjqui")
+    (synopsis "jQuery UI interactions and effects for Shiny")
+    (description
+     "This is an extension to Shiny that brings interactions and animation
+effects from the jQuery UI library.")
+    (license license:expat)))
 
 (define-public r-outliers
   (package
@@ -18694,6 +19179,26 @@ the align-and-count method.")
     ;; Any version of the GPL
     (license (list license:gpl2+ license:gpl3+))))
 
+(define-public r-filelock
+  (package
+    (name "r-filelock")
+    (version "1.0.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "filelock" version))
+       (sha256
+        (base32
+         "00ql5fw1hidpfnm0szaavf43ahmsnvdbi8i5lr1nrcc90yaiaadc"))))
+    (properties `((upstream-name . "filelock")))
+    (build-system r-build-system)
+    (home-page "https://github.com/r-lib/filelock")
+    (synopsis "Portable file locking")
+    (description
+     "This library lets you place an exclusive or shared lock on a file using
+the appropriate system call provided by the underlying operating system.")
+    (license license:expat)))
+
 (define-public r-filematrix
   (package
     (name "r-filematrix")
@@ -22198,6 +22703,39 @@ a formula and @code{data.frame} plus some additional arguments for priors.")
 trend test.")
     (license license:gpl2+)))
 
+(define-public r-keyring
+  (package
+    (name "r-keyring")
+    (version "1.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "keyring" version))
+       (sha256
+        (base32
+         "1hpfd4hbx43i39l995rg86kfxi7wlyla1gv8mwcdr4xx7z122zzq"))))
+    (properties `((upstream-name . "keyring")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-assertthat" ,r-assertthat)
+       ("r-filelock" ,r-filelock)
+       ("r-getpass" ,r-getpass)
+       ("r-openssl" ,r-openssl)
+       ("r-r6" ,r-r6)
+       ("r-rappdirs" ,r-rappdirs)
+       ("r-sodium" ,r-sodium)
+       ("r-yaml" ,r-yaml)))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (home-page "https://github.com/r-lib/keyring")
+    (synopsis "Access the system credential store from R")
+    (description
+     "This package provides a platform-independent API to access the operating
+system's credential store.  It currently supports Keychain on macOS,
+Credential Store on Windows, the Secret Service API on GNU/Linux, and a
+simple, platform independent store implemented with environment variables.
+Additional storage back-ends can be added easily.")
+    (license license:expat)))
+
 (define-public r-zyp
   (package
     (name "r-zyp")
@@ -23168,6 +23706,31 @@ multi-state models.")
      "This package creates scatterpie plots, especially useful for plotting
 pies on a map.")
     (license license:artistic2.0)))
+
+(define-public r-scrypt
+  (package
+    (name "r-scrypt")
+    (version "0.1.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "scrypt" version))
+       (sha256
+        (base32
+         "14iblgbp9v2by8fjbrpsd59iknp5babcz7j3yv1yxxzcwyb6wrrm"))))
+    (properties `((upstream-name . "scrypt")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-rcpp" ,r-rcpp)))
+    (home-page "https://github.com/rstudio/rscrypt")
+    (synopsis "Key derivation functions for R based on Scrypt")
+    (description
+     "This package provides functions for working with the scrypt key
+derivation functions.  Scrypt is a password-based key derivation function
+created by Colin Percival.  The algorithm was specifically designed to make it
+costly to perform large-scale custom hardware attacks by requiring large
+amounts of memory.")
+    (license license:bsd-2)))
 
 (define-public r-boruta
   (package
@@ -25782,3 +26345,217 @@ tuning, e.g. Grid Search, Random Search, or Simulated Annealing.  Various
 termination criteria can be set and combined.  The class @code{AutoTuner} provides a
 convenient way to perform nested resampling in combination with @code{mlr3}.")
     (license license:lgpl3)))
+
+(define-public r-fontliberation
+  (package
+    (name "r-fontliberation")
+    (version "0.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "fontLiberation" version))
+       (sha256
+        (base32
+         "1w1rl0g4ayyp8lwppmz9yzj9cizg7i50g07216jkm1q5w0is9pmc"))))
+    (properties
+     `((upstream-name . "fontLiberation")))
+    (build-system r-build-system)
+    (home-page "https://cran.r-project.org/package=fontLiberation")
+    (synopsis "Liberation fonts")
+    (description
+     "This package provides a placeholder for the Liberation fontset intended
+for the fontquiver package.  This fontset covers the 12 combinations of
+families (sans, serif, mono) and faces (plain, bold, italic, bold italic)
+supported in R graphics devices.")
+    (license license:silofl1.1)))
+
+(define-public r-fontbitstreamvera
+  (package
+    (name "r-fontbitstreamvera")
+    (version "0.1.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "fontBitstreamVera" version))
+       (sha256
+        (base32
+         "0nipdlmhjv1wr3aidcl97nk6mppdkd65krgwqnhdsnv0jpfv761j"))))
+    (properties
+     `((upstream-name . "fontBitstreamVera")))
+    (build-system r-build-system)
+    (home-page "https://cran.r-project.org/package=fontBitstreamVera")
+    (synopsis "Fonts for fontquiver")
+    (description
+     "This package is a placeholder for the Bitstream Vera font. It is
+intended for the fontquiver package.")
+    (license
+     (license:fsdg-compatible
+      "https://www.gnome.org/fonts/#Final_Bitstream_Vera_Fonts"
+      "The Font Software may be sold as part of a larger software package but
+no copy of one or more of the Font Software typefaces may be sold by
+itself."))))
+
+(define-public r-fontquiver
+  (package
+    (name "r-fontquiver")
+    (version "0.2.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "fontquiver" version))
+       (sha256
+        (base32
+         "0qv3i9hch7cygl9983s3w68wfh5qvym2jkm52pp06p6mq8a1i1wm"))))
+    (properties `((upstream-name . "fontquiver")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-fontbitstreamvera" ,r-fontbitstreamvera)
+       ("r-fontliberation" ,r-fontliberation)))
+    (home-page "https://cran.r-project.org/package=fontquiver")
+    (synopsis "Set of installed fonts")
+    (description
+     "This package provides a set of fonts.  This is useful when you want to
+avoid system fonts to make sure your outputs are reproducible.")
+    (license license:gpl3)))
+
+(define-public r-freetypeharfbuzz
+  (package
+    (name "r-freetypeharfbuzz")
+    (version "0.2.6")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "freetypeharfbuzz" version))
+       (sha256
+        (base32
+         "0r3icgnq3jk4fm6z92cmhzdmflbk5df8zsmjg0dzpc4y48xafnk7"))))
+    (properties
+     `((upstream-name . "freetypeharfbuzz")))
+    (build-system r-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'prepare-static-libraries
+           (lambda* (#:key inputs #:allow-other-keys)
+             (mkdir-p "src/target/include")
+             (let ((freetype (assoc-ref inputs "static-freetype"))
+                   (harfbuzz (assoc-ref inputs "static-harfbuzz")))
+               (substitute* "src/Makevars.in"
+                 (("include @MK_FILE@") "") ; do not build static libs
+                 (("^HB_STATIC_LIB =.*")
+                  (string-append "HB_STATIC_LIB = " harfbuzz "/lib/libharfbuzz.a\n"))
+                 (("^FT_STATIC_LIB =.*")
+                  (string-append "FT_STATIC_LIB = " freetype "/lib/libfreetype.a\n")))
+               (copy-recursively (string-append freetype "/include")
+                                 "src/target/include")
+               (copy-recursively (string-append harfbuzz "/include")
+                                 "src/target/include")))))))
+    (propagated-inputs
+     `(("r-fontquiver" ,r-fontquiver)))
+    ;; This may defeat the purpose of this package as our versions of freetype
+    ;; and harfbuzz obviously differ from the tarballs offered by this
+    ;; project.  On the other hand, Guix arguably does a better job at
+    ;; "ensur[ing] deterministic computation".
+    (native-inputs
+     `(("static-freetype"
+        ,(package
+           (inherit (static-package freetype))
+           (arguments
+            `(#:configure-flags
+              (list "--enable-static=yes"
+                    "--with-pic=yes"
+                    "--without-zlib"
+                    "--without-bzip2"
+                    "--without-png"
+                    "--without-harfbuzz")))))
+       ("static-harfbuzz"
+        ,(package
+           (inherit (static-package harfbuzz))
+           (arguments
+            `(#:tests? #false ; fail because shared library is disabled
+              #:configure-flags
+              (list "--enable-static=yes"
+		    "--enable-shared=no"
+		    "--with-pic=yes"
+		    "--with-freetype=yes"
+		    "--without-icu"
+		    "--without-cairo"
+		    "--without-fontconfig"
+		    "--without-glib")))))))
+    (inputs
+     `(("zlib" ,zlib)))
+    (home-page "https://cran.r-project.org/package=freetypeharfbuzz")
+    (synopsis "Deterministic computation of text box metrics")
+    (description
+     "Unlike other tools that dynamically link to the Cairo stack,
+freetypeharfbuzz is statically linked to specific versions of the FreeType and
+harfbuzz libraries.  This ensures deterministic computation of text box
+extents for situations where reproducible results are crucial (for instance
+unit tests of graphics).")
+    (license license:gpl3)))
+
+(define-public r-vdiffr
+  (package
+    (name "r-vdiffr")
+    (version "0.3.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "vdiffr" version))
+       (sha256
+        (base32
+         "0i0xdr8dakbkkgrhp0zvlnv3rxhc8h5naqq416mr5zv9q8i4p8jc"))
+       (snippet
+        '(begin
+           (delete-file "inst/htmlwidgets/lib/jquery.min.js")))))
+    (properties `((upstream-name . "vdiffr")))
+    (build-system r-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'process-javascript
+           (lambda* (#:key inputs #:allow-other-keys)
+             (with-directory-excursion "inst/htmlwidgets/lib/"
+               (let ((source (assoc-ref inputs "js-jquery"))
+                     (target "jquery.min.js"))
+                 (format #true "Processing ~a --> ~a~%"
+                         source target)
+                 (invoke "esbuild" source "--minify"
+                         (string-append "--outfile=" target)))))))))
+    (inputs
+     `(("freetype" ,freetype)
+       ("harfbuzz" ,harfbuzz)))
+    (propagated-inputs
+     `(("r-bh" ,r-bh)
+       ("r-devtools" ,r-devtools)
+       ("r-diffobj" ,r-diffobj)
+       ("r-fontquiver" ,r-fontquiver)
+       ("r-freetypeharfbuzz" ,r-freetypeharfbuzz)
+       ("r-gdtools" ,r-gdtools)
+       ("r-glue" ,r-glue)
+       ("r-htmltools" ,r-htmltools)
+       ("r-htmlwidgets" ,r-htmlwidgets)
+       ("r-purrr" ,r-purrr)
+       ("r-r6" ,r-r6)
+       ("r-rcpp" ,r-rcpp)
+       ("r-rlang" ,r-rlang)
+       ("r-shiny" ,r-shiny)
+       ("r-testthat" ,r-testthat)
+       ("r-usethis" ,r-usethis)
+       ("r-xml2" ,r-xml2)))
+    (native-inputs
+     `(("esbuild" ,esbuild)
+       ("js-jquery"
+        ,(origin
+           (method url-fetch)
+           (uri "https://code.jquery.com/jquery-1.12.4.js")
+           (sha256
+            (base32
+             "0x9mrc1668icvhpwzvgafm8xm11x9lfai9nwr66aw6pjnpwkc3s3"))))))
+    (home-page "https://github.com/r-lib/vdiffr")
+    (synopsis "Visual regression testing and graphical diffing")
+    (description
+     "This package is an extension to the testthat package that makes it easy
+to add graphical unit tests.  It provides a Shiny application to manage the
+test cases.")
+    (license license:gpl3)))

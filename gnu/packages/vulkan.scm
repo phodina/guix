@@ -150,7 +150,7 @@ SPIR-V, aiming to emit GLSL or MSL that looks like human-written code.")
 (define-public glslang
   (package
     (name "glslang")
-    (version "8.13.3743")
+    (version "10-11.0.0")
     (source
      (origin
        (method git-fetch)
@@ -159,7 +159,7 @@ SPIR-V, aiming to emit GLSL or MSL that looks like human-written code.")
              (commit version)))
        (sha256
         (base32
-         "0d20wfpp2fmbnz1hnsjr9xc62lxpj86ik2qyviqbni0pqj212cry"))
+         "14mn2awswl022ls75mfpsnpsl0ai0jgfbqj3sxcsqawyj5f432py"))
        (file-name (string-append name "-" version "-checkout"))))
     (build-system cmake-build-system)
     (arguments
@@ -183,7 +183,7 @@ interpretation of the specifications for these languages.")
 (define-public vulkan-headers
   (package
     (name "vulkan-headers")
-    (version "1.2.148")
+    (version "1.2.164")
     (source
      (origin
        (method git-fetch)
@@ -193,7 +193,7 @@ interpretation of the specifications for these languages.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "1c877npvmkv2qxac308m3x0ij3il7hy5xk3fwsfi7s9dcsaxi63j"))))
+         "11wzxvwim4jna1yssbmprl211dhmz8vmrd498zww3bghzlj7bljv"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f))                    ; No tests.
@@ -207,7 +207,7 @@ interpretation of the specifications for these languages.")
 (define-public vulkan-loader
   (package
     (name "vulkan-loader")
-    (version "1.2.148")
+    (version "1.2.162")
     (source
      (origin
        (method git-fetch)
@@ -217,7 +217,7 @@ interpretation of the specifications for these languages.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0rxh4q09k0pdl3xlvxdv5qkak4d7az25gijxr5w170fjnd8yfrhk"))))
+         "15gx9ab6w1sjq9hkpbas7z2f8f47j6mlln6p3w26qmydjj8gfjjv"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
@@ -261,7 +261,7 @@ and the ICD.")
 (define-public vulkan-tools
   (package
     (name "vulkan-tools")
-    (version "1.2.148")
+    (version "1.2.162")
     (source
      (origin
        (method git-fetch)
@@ -271,7 +271,7 @@ and the ICD.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "1908fw4rvg5iaim8ph0c0bzhac6jplg8dhfs6dpxd1dapzwqllkf"))))
+         "129wzk7xj3vn3c8b4p7fzkd0npl58118s2i1d88gsfnlix54nagq"))))
     (build-system cmake-build-system)
     (inputs
      `(("glslang" ,glslang)
@@ -298,7 +298,7 @@ API.")
 (define-public shaderc
   (package
     (name "shaderc")
-    (version "2020.0")
+    (version "2020.4")
     (source
      (origin
        (method git-fetch)
@@ -308,12 +308,16 @@ API.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "1kqqvsvib01bsmfbdy3fbwwpvkcdlfb6k71kjvzb3crql7w0rxff"))))
+         "07h78nd964h2bdm4drzws8i1gvyal8a3wlhbcm5qxqk6vknv8hrk"))))
     (build-system cmake-build-system)
     (arguments
      `(;; FIXME: Skip most of the tests, because enabling system gtest breaks
        ;; the build: <https://github.com/google/shaderc/issues/470>.
-       #:configure-flags '("-DSHADERC_SKIP_TESTS=ON")
+       #:configure-flags
+       (list "-DSHADERC_SKIP_TESTS=ON"
+             ;; Note: despite the name, this just specifies the headers.
+             (string-append "-Dglslang_SOURCE_DIR="
+                            (assoc-ref %build-inputs "glslang") "/include/glslang"))
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'do-not-look-for-bundled-sources
@@ -351,10 +355,10 @@ shader compilation.")
     (license license:asl2.0)))
 
 (define-public vkd3d
-  (let ((commit "ecda316ef54d70bf1b3e860755241bb75873e53f")) ; Release 1.1.
+  (let ((commit "56cd4a94d541707959ce7677af6d1a34739e5579")) ; Release 1.2.
     (package
      (name "vkd3d")
-     (version "1.1")
+     (version "1.2")
      (source
       (origin
        (method git-fetch)
@@ -363,7 +367,7 @@ shader compilation.")
              (commit commit)))
        (sha256
         (base32
-         "05a28kspy8gzng181w28zjqdb3pj2ss83b0lwnppxbcdzsz7rvrf"))
+         "1n4a622drgnprvz5hjxzyzcsg2lp5rlf1sajki2vzf5gsx6fdpk8"))
        (file-name (string-append name "-" version "-checkout"))))
      (build-system gnu-build-system)
      (arguments

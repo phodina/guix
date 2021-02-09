@@ -373,14 +373,14 @@ freedesktop.org project.")
   ;; Updating this will rebuild over 700 packages through libinput-minimal.
   (package
     (name "libinput")
-    (version "1.16.2")
+    (version "1.16.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://freedesktop.org/software/libinput/"
                                   "libinput-" version ".tar.xz"))
               (sha256
                (base32
-                "1ab0q4iya07kvjd2g1vzamj9h57qldi15h3b8324vg3szr88qggw"))))
+                "0acywdjppj5i591l879bnqa9cs4vgdwnhilwk550x5x8sl33m4k5"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags '("-Ddocumentation=false")
@@ -1480,7 +1480,7 @@ wish to perform colour calibration.")
 (define-public libfprint
   (package
     (name "libfprint")
-    (version "1.90.6")
+    (version "1.90.7")
     (source
      (origin
        (method git-fetch)
@@ -1489,7 +1489,7 @@ wish to perform colour calibration.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0hagm1i78mrd772y3cinr7bda4myx0v4bixwqnqbxknds8m9h8sg"))))
+        (base32 "00pmdpxxjj4sh8qjq9ch3pylgg9w019rg1bbaw53a4wr637rrz43"))))
     (build-system meson-build-system)
     (arguments
      '(#:configure-flags
@@ -2021,14 +2021,15 @@ useful with system integration.")
        ("xvfb" ,xorg-server-for-tests)))
     (inputs
      `(("dbus-glib" ,dbus-glib)
-       ("gtk+" ,gtk+)
-       ("libdbusmenu" ,libdbusmenu)
        ("libindicator" ,libindicator)
        ("python@2" ,python-2)
        ("python2-pygtk" ,python2-pygtk)
        ("python2-pygobject-2" ,python2-pygobject-2)
        ;; ("mono" ,mono) ; requires non-packaged gapi
        ("vala" ,vala)))
+    (propagated-inputs
+     `(("gtk+" ,gtk+)
+       ("libdbusmenu" ,libdbusmenu)))
     (arguments
      ;; FIXME: do not hardcode gtk version
      `(#:configure-flags '("--with-gtk=3")

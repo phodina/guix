@@ -413,7 +413,7 @@ management D-Bus specification.")
 (define-public xfce4-panel
   (package
     (name "xfce4-panel")
-    (version "4.16.0")
+    (version "4.16.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/xfce/"
@@ -421,7 +421,7 @@ management D-Bus specification.")
                                   name "-" version ".tar.bz2"))
               (sha256
                (base32
-                "0gf57hgx6v44bc2hj570inkafbi291scc6wbhmr6sc3xngp9m5sy"))
+                "14arjxpvnxdl0a0ajifrmy2py3hv5qy4fykl52wdp4k5pv39n2gs"))
               (patches (search-patches "xfce4-panel-plugins.patch"))))
     (build-system gnu-build-system)
     (arguments
@@ -1069,7 +1069,7 @@ the desktop wallpaper.")
 (define-public xfce4-taskmanager
   (package
     (name "xfce4-taskmanager")
-    (version "1.4.0")
+    (version "1.4.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/apps/"
@@ -1077,7 +1077,7 @@ the desktop wallpaper.")
                                   "xfce4-taskmanager-" version ".tar.bz2"))
               (sha256
                (base32
-                "0hvx7qqkiyq81axcbkqfv39bn84x8gjzrybq3w3hkz0mzkfq8mk5"))))
+                "0nsvjrsg8bc4wbqqq9y9r4nvdsz3443q0qz05k68qjdxwzyx4h8i"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -1206,7 +1206,7 @@ of data to either CD/DVD/BD.")
 (define-public mousepad
   (package
     (name "mousepad")
-    (version "0.5.1")
+    (version "0.5.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/apps/mousepad/"
@@ -1214,7 +1214,7 @@ of data to either CD/DVD/BD.")
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "10m52yrh89j7xbr299m9f0mqrhqz95lp3qi5zbqd0bg839xjfbix"))))
+                "13pvisqhq5rjrkfdw635z600167920fxqzg1ngvismaf39iwbb9h"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '(;; Use the GSettings keyfile backend rather than
@@ -1357,7 +1357,7 @@ A plugin for the Xfce panel is also available.")
 (define-public xfce4-cpugraph-plugin
   (package
    (name "xfce4-cpugraph-plugin")
-   (version "1.2.0")
+   (version "1.2.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
@@ -1366,7 +1366,7 @@ A plugin for the Xfce panel is also available.")
                                   "/xfce4-cpugraph-plugin-" version ".tar.bz2"))
               (sha256
                (base32
-                "19rdc3k085z7bv8365g26vz6iy9dx2f4x4q3wszsjmq5pvdxsrkq"))))
+                "0jljxyvxq4kmf5wz7wkq6wma4bq1qsnlv3lx6527lhcipnddynk1"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -1501,7 +1501,7 @@ precedence rules, and the following functions and common constants.")
 (define-public xfce4-cpufreq-plugin
   (package
    (name "xfce4-cpufreq-plugin")
-   (version "1.2.3")
+   (version "1.2.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
@@ -1510,7 +1510,7 @@ precedence rules, and the following functions and common constants.")
                                   "/xfce4-cpufreq-plugin-" version ".tar.bz2"))
               (sha256
                (base32
-                "1g07rpbq61dbdz0zvvb0xz6ipympxadwknn5y5q3v85k0nr9qfbx"))))
+                "17kzy156xqnbk4apskg005p7r09q7zb8crifad5mbawc7ysihll1"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -1620,7 +1620,7 @@ be clicked to open the chosen mount point.")
 (define-public xfce4-genmon-plugin
   (package
    (name "xfce4-genmon-plugin")
-   (version "4.1.0")
+   (version "4.1.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
@@ -1629,7 +1629,7 @@ be clicked to open the chosen mount point.")
                                   "/xfce4-genmon-plugin-" version ".tar.bz2"))
               (sha256
                (base32
-                "0zafr1jrw87l7h4z3wp88gj7n5mcygm22aw42vdpnp2l8x5nn9fi"))))
+                "0d81npcqnmkw2qaqa8c6igh9j5r4ivgb15zcjwxjkyhrzz89y4dj"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)
@@ -1886,7 +1886,7 @@ favorite search engine or bug tracker right from the Xfce panel.")
 (define-public xfce4-statusnotifier-plugin
   (package
    (name "xfce4-statusnotifier-plugin")
-   (version "0.2.2")
+   (version "0.2.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://archive.xfce.org/src/panel-plugins/"
@@ -1895,7 +1895,7 @@ favorite search engine or bug tracker right from the Xfce panel.")
                                   "/xfce4-statusnotifier-plugin-" version ".tar.bz2"))
               (sha256
                (base32
-                "1yic99jx7013pywpd0k31pxab8s8lv3wcq364iha99qhsm25k42c"))))
+                "1d2n56g12dhnjznrq7xvr6d3brpp0lmm080xmgjb7ybc1yygpxrc"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)

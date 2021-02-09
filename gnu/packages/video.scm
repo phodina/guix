@@ -47,6 +47,8 @@
 ;;; Copyright © 2020 Alexandru-Sergiu Marton <brown121407@posteo.ro>
 ;;; Copyright © 2020 Ivan Kozlov <kanichos@yandex.ru>
 ;;; Copyright © 2020 Antoine Côté <antoine.cote@posteo.net>
+;;; Copyright © 2021 Alexey Abramov <levenson@mmer.org>
+;;; Copyright © 2021 Andrew Tropin <andrew@trop.in>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -73,6 +75,7 @@
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix svn-download)
+  #:use-module (guix hg-download)
   #:use-module (guix build-system cargo)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system copy)
@@ -247,7 +250,7 @@
        ("faac" ,faac)
        ("ffmpeg" ,ffmpeg)
        ("freetype" ,freetype)
-       ("imagemagick" ,imagemagick-next)
+       ("imagemagick" ,imagemagick)
        ("lame" ,lame)
        ("liba52" ,liba52)
        ("libdv" ,libdv)
@@ -1330,19 +1333,14 @@ libebml is a C++ library to read and write EBML files.")
 (define-public libva
   (package
     (name "libva")
-    (version "2.9.0")
+    (version "2.10.0")
     (source
      (origin
        (method url-fetch)
-       (uri (list
-             ;; Newer releases are only available on GitHub.
-             (string-append "https://github.com/01org/libva/releases/download/"
-                            version "/libva-" version ".tar.bz2")
-             ;; Keep the old URL around for compatibility.
-             (string-append "https://www.freedesktop.org/software/vaapi/releases/"
-                            "libva/libva-" version "/libva-" version ".tar.bz2")))
+       (uri (string-append "https://github.com/intel/libva/releases/download/"
+                           version "/libva-" version ".tar.bz2"))
        (sha256
-        (base32 "0jsq6ia3fzyzvq7lxsrn4a8kn2kx4z3v777xkxn6k4ny5lww2i73"))))
+        (base32 "0dh2zjn6wi74ga75r6pbrrj8hjm213zyxvn9bv78z0fra1dy70gs"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -3088,7 +3086,9 @@ be used for realtime video capture via Linux-specific APIs.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1k1asqiqw757v59ayx0w029ril947hs0lcp8n91knzjl891fr4nc"))))
+                "1k1asqiqw757v59ayx0w029ril947hs0lcp8n91knzjl891fr4nc"))
+              (patches
+               (search-patches "obs-modules-location.patch"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags
@@ -3103,6 +3103,15 @@ be used for realtime video capture via Linux-specific APIs.")
                (wrap-program (string-append out "/bin/obs")
                  `("QT_PLUGIN_PATH" ":" prefix (,plugin-path))))
              #t)))))
+    (native-search-paths
+     (list (search-path-specification
+            (variable "OBS_PLUGINS_DIRECTORY")
+            (separator #f)                         ;single entry
+            (files '("lib/obs-plugins")))
+           (search-path-specification
+            (variable "OBS_PLUGINS_DATA_DIRECTORY")
+            (separator #f)                         ;single entry
+            (files '("share/obs/obs-plugins")))))
     (native-inputs
      `(("cmocka" ,cmocka)
        ("pkg-config" ,pkg-config)))
@@ -3133,6 +3142,67 @@ from many input sources such as webcams, X11 (for screencasting), PulseAudio,
 and JACK.")
     (home-page "https://obsproject.com")
     (license license:gpl2+)))
+
+(define-public obs-spectralizer
+  (package
+    (name "obs-spectralizer")
+    (version "1.3.3")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+              (url "https://github.com/univrsal/spectralizer")
+              (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+
+        ;; Remove bundled Windows DLLs.
+        (snippet '(delete-file-recursively "fftw3"))
+        (modules '((guix build utils)))
+
+        (sha256
+         (base32
+          "0q75cnyqydpvfda51zm9gxqj3wqr99ad0lxzjhw0ld67qvj1ag6i"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f
+       #:configure-flags
+       (list "-DGLOBAL_INSTALLATION=ON" "-DUSE_CMAKE_LIBDIR=ON")))
+    (inputs `(("obs" ,obs)
+              ("fftw" ,fftw)))
+    (home-page "https://github.com/univrsal/spectralizer")
+    (synopsis "OBS plugin for audio visualization")
+    (description "This OBS plugins allows you to vizualize MPD and internal
+OBS audio sources.")
+    (license license:gpl2)))
+
+(define-public obs-wlrobs
+  (package
+    (name "obs-wlrobs")
+    (version "1.0")
+    (source
+      (origin
+        (method hg-fetch)
+        (uri (hg-reference
+              (url "https://hg.sr.ht/~scoopta/wlrobs")
+              (changeset (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+         (base32
+          "1faiq2gdb7qis3m1hilm4pz8lkmkab75vzm608dbiazahhybf96p"))))
+    (build-system meson-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (propagated-inputs `() )
+    (inputs `(("obs" ,obs)
+              ("libx11" ,libx11 "out")
+              ("wayland" ,wayland)
+              ("wayland-protocols" ,wayland-protocols)))
+    (home-page "https://hg.sr.ht/~scoopta/wlrobs")
+    (synopsis "OBS plugin for Wayland (wlroots) screen capture")
+    (description
+     "This OBS plugin allows you to capture the screen on wlroots-based
+Wayland compositors.")
+    (license license:gpl3+)))
 
 (define-public libvdpau
   (package
@@ -4789,7 +4859,7 @@ result in several formats:
         ("rust-simd-helpers" ,rust-simd-helpers-0.1)
         ("rust-thiserror" ,rust-thiserror-1)
         ("rust-toml" ,rust-toml-0.5)
-        ("rust-vergen" ,rust-vergen-3.1)
+        ("rust-vergen" ,rust-vergen-3)
         ("rust-y4m" ,rust-y4m-0.5))
        #:cargo-development-inputs
        (("rust-assert-cmd" ,rust-assert-cmd-1)
