@@ -194,14 +194,15 @@ Guile.")
 (define-public mes
   (package
     (inherit mes-0.19)
-    (version "0.22-123-g9cd754498")
+    (version "0.22-124-33cf5ea5e8")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://lilypond.org/janneke/mes/"
-                                  "mes-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                    (url "git://git.savannah.gnu.org/mes.git")
+                    (commit "33cf5ea5e820e21a8f46de7df08a8b49bb8f62ee")))
               (sha256
                (base32
-                "0j01q0b024yyh84csf1ja830b3sqxlax7gkbyrn933da0n9vghzr"))))
+                "10kdx9zr82lvz2qampskzb38zk21vrx8sjpwpjcnpad3cw5vhw32"))))
     (supported-systems '("armhf-linux" "aarch64-linux"
                          "i686-linux" "x86_64-linux"))
     (propagated-inputs
