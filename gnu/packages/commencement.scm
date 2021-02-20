@@ -1565,7 +1565,10 @@ ac_cv_c_float_format='IEEE (little-endian)'
                       (cppflags (string-append
                                  ;;" -D __STDC__=1"
                                  " -D MES_BOOTSTRAP=1"
-                                 " -D BOOTSTRAP_GLIBC=1"))
+                                 " -D BOOTSTRAP_GLIBC=1"
+                                 ,(if (equal? triplet "arm-unknown-linux-gnu")
+                                      " -D __ARM_EABI__=1"
+                                      "")))
                       (cflags (string-append " -L " (getcwd))))
                  (setenv "CONFIG_SHELL" shell)
                  (setenv "SHELL" shell)
