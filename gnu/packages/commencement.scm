@@ -1225,6 +1225,13 @@ $MES -e '(mescc)' module/mescc.scm -- \"$@\"
                (substitute* "bfd/configure"
                  (("^sed -e '/SRC-POTFILES.*" all)
                   "echo -e 'all:\\n\\ttrue\\n\\ninstall:\\n\\ttrue\\n' > po/Makefile\n"))
+               ;; Avoid "cannot execute binary file: Exec format error"
+               ;; on aarch64-linux
+               (substitute* "gas/config/tc-arm.c"
+                 ((" *bfd_set_private_flags \\(stdoutput, flags\\);" all)
+                  (string-append
+                   "    flags = 0x5000200; // Version5 EABI, soft-float ABI\n"
+                   all)))
                #t))
            (replace 'configure         ; needs classic invocation of configure
              (lambda* (#:key configure-flags #:allow-other-keys)
