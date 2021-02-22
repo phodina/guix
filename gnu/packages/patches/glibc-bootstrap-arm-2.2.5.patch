@@ -3,7 +3,7 @@ Not presented upstream.
 From 84d31256c0b37f7f73ff2145a7f6c9a6a9faaf35 Mon Sep 17 00:00:00 2001
 From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
 Date: Sun, 10 Jan 2021 15:01:05 +0100
-Subject: [PATCH 1/8] bootstrappable: arm: Guard __NR_sigaction,
+Subject: [PATCH 1/9] bootstrappable: arm: Guard __NR_sigaction,
  __NR_sigpending, __NR_sigprocmask, __NR_sigreturn, __NR_sigsuspend.
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
@@ -108,7 +108,7 @@ Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
 From 911c8692ba908f545429610a90d13ce3de0576b3 Mon Sep 17 00:00:00 2001
 From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
 Date: Tue, 12 Jan 2021 12:43:50 +0100
-Subject: [PATCH 2/8] bootstrappable: arm: Fixup for __restrict_arr.
+Subject: [PATCH 2/9] bootstrappable: arm: Fixup for __restrict_arr.
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 
@@ -172,7 +172,7 @@ Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
 From 335bf269cae7ccbae8209b875cc451cbd6ef2b73 Mon Sep 17 00:00:00 2001
 From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
 Date: Tue, 12 Jan 2021 12:44:46 +0100
-Subject: [PATCH 3/8] bootstrappable: arm: Portability or cpp arithmetic
+Subject: [PATCH 3/9] bootstrappable: arm: Portability or cpp arithmetic
  ?error.
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
@@ -202,7 +202,7 @@ Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
 From 2cf31225fef8a11fe201f9dae1f1f17779508d4f Mon Sep 17 00:00:00 2001
 From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
 Date: Tue, 12 Jan 2021 12:45:40 +0100
-Subject: [PATCH 4/8] bootstrappable: arm: Guard __NR_ipc, __NR_sigreturn,
+Subject: [PATCH 4/9] bootstrappable: arm: Guard __NR_ipc, __NR_sigreturn,
  __NR_rt_sigreturn.
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
@@ -662,7 +662,7 @@ Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
 From 7415adb7fa53e8c6df0be266b1422cb7a98b26af Mon Sep 17 00:00:00 2001
 From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
 Date: Sun, 21 Feb 2021 10:22:03 +0100
-Subject: [PATCH 5/8] bootstrappable: arm: Add missing headers.
+Subject: [PATCH 5/9] bootstrappable: arm: Add missing headers.
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 
@@ -700,7 +700,7 @@ Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
 From 48ae1c92a4a19494d38c32fe7d83c5e09ca4b355 Mon Sep 17 00:00:00 2001
 From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
 Date: Tue, 12 Jan 2021 13:01:59 +0100
-Subject: [PATCH 6/8] bootstrappable: arm: Avoid fpu_setw.
+Subject: [PATCH 6/9] bootstrappable: arm: Avoid fpu_setw.
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 
@@ -734,7 +734,7 @@ Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
 From 3597394200bafed1291ff65039db6cf9cec03b59 Mon Sep 17 00:00:00 2001
 From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
 Date: Sun, 21 Feb 2021 00:14:16 +0100
-Subject: [PATCH 7/8] bootstrappable: arm: Guard __NR_getrlimit.
+Subject: [PATCH 7/9] bootstrappable: arm: Guard __NR_getrlimit.
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 
@@ -765,17 +765,18 @@ index f7af934..72f4c54 100644
 Jan Nieuwenhuizen <janneke@gnu.org> | GNU LilyPond http://lilypond.org
 Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
 
-From dda9f6d081d68848a1d602c375e0d7a8871e4ae4 Mon Sep 17 00:00:00 2001
+From e0764cfa9e3ff4b120723b87a66d2e9c7a500aef Mon Sep 17 00:00:00 2001
 From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
 Date: Sat, 20 Feb 2021 15:32:53 +0100
-Subject: [PATCH 8/8] bootstrappable: arm: Support EABI system calls.
+Subject: [PATCH 8/9] bootstrappable: arm: Support EABI system calls.
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 
 * sysdeps/unix/sysv/linux/arm/sysdep.h (DO_CALL,INLINE_SYSCALL)
 [__ARM_EABI__]: Use eabi calling convention for syscalls.
-* sysdeps/arm/dl-machine.h (CLEAR_CACHE): Likewise.
-* sysdeps/unix/sysv/linux/arm/brk.c (__brk): Likewise.Likewise.
+* sysdeps/arm/dl-machine.h (CLEAR_CACHE): Likewise.  Use 0xf0002
+instead of 0x9f0002.
+* sysdeps/unix/sysv/linux/arm/brk.c (__brk): Likewise.
 * sysdeps/unix/sysv/linux/arm/clone.S: Likewise.
 * sysdeps/unix/sysv/linux/arm/mmap.S: Likewise.
 * sysdeps/unix/sysv/linux/arm/mmap64.S: Likewise.
@@ -795,7 +796,7 @@ Content-Type: text/plain; charset=UTF-8
  9 files changed, 134 insertions(+)
 
 diff --git a/sysdeps/arm/dl-machine.h b/sysdeps/arm/dl-machine.h
-index 2d802b7..02c48bd 100644
+index 2d802b7..f0558bb 100644
 --- a/sysdeps/arm/dl-machine.h
 +++ b/sysdeps/arm/dl-machine.h
 @@ -32,6 +32,19 @@
@@ -808,7 +809,7 @@ index 2d802b7..02c48bd 100644
 +  register unsigned long _beg __asm ("a1") = (unsigned long)(BEG);	\
 +  register unsigned long _end __asm ("a2") = (unsigned long)(END);	\
 +  register unsigned long _flg __asm ("a3") = 0;				\
-+  __asm __volatile ("mov r7, 0x9f0002\n\t"				\
++  __asm __volatile ("mov r7, 0xf0002\n\t"				\
 +		    "swi 0x0		@ sys_cacheflush"		\
 +		    : /* no outputs */					\
 +		    : /* no inputs */					\
@@ -1082,6 +1083,169 @@ index b10117e..ba2259d 100644
  	cmn	a1, #4096
  	RETINSTR(movcc, pc, lr)
      	b	PLTJMP(C_SYMBOL_NAME(__syscall_error))
+-- 
+Jan Nieuwenhuizen <janneke@gnu.org> | GNU LilyPond http://lilypond.org
+Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
+
+From 030ccc9978c73eccddbaf8049b02a5cecf913383 Mon Sep 17 00:00:00 2001
+From: "Jan (janneke) Nieuwenhuizen" <janneke@gnu.org>
+Date: Mon, 22 Feb 2021 07:06:39 +0100
+Subject: [PATCH 9/9] bootstrappable: arm: Add #warning when using OABI.
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+
+---
+ sysdeps/arm/dl-machine.h                  | 1 +
+ sysdeps/unix/sysv/linux/arm/brk.c         | 1 +
+ sysdeps/unix/sysv/linux/arm/clone.S       | 1 +
+ sysdeps/unix/sysv/linux/arm/mmap.S        | 1 +
+ sysdeps/unix/sysv/linux/arm/mmap64.S      | 1 +
+ sysdeps/unix/sysv/linux/arm/sigrestorer.S | 2 ++
+ sysdeps/unix/sysv/linux/arm/socket.S      | 1 +
+ sysdeps/unix/sysv/linux/arm/sysdep.h      | 3 +++
+ sysdeps/unix/sysv/linux/arm/vfork.S       | 2 ++
+ 9 files changed, 13 insertions(+)
+
+diff --git a/sysdeps/arm/dl-machine.h b/sysdeps/arm/dl-machine.h
+index f0558bb..c0ac564 100644
+--- a/sysdeps/arm/dl-machine.h
++++ b/sysdeps/arm/dl-machine.h
+@@ -45,6 +45,7 @@
+ 		    : "a1","r7");					\
+ }
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+ #define CLEAR_CACHE(BEG,END)						\
+ {									\
+   register unsigned long _beg __asm ("a1") = (unsigned long)(BEG);	\
+diff --git a/sysdeps/unix/sysv/linux/arm/brk.c b/sysdeps/unix/sysv/linux/arm/brk.c
+index d5d0904..8d7ffae 100644
+--- a/sysdeps/unix/sysv/linux/arm/brk.c
++++ b/sysdeps/unix/sysv/linux/arm/brk.c
+@@ -38,6 +38,7 @@ __brk (void *addr)
+        : "r"(addr), "i" (SYS_ify (brk))
+        : "a1","r7");
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+   asm ("mov a1, %1\n"	/* save the argment in r0 */
+        "swi %2\n"	/* do the system call */
+        "mov %0, a1;"	/* keep the return value */
+diff --git a/sysdeps/unix/sysv/linux/arm/clone.S b/sysdeps/unix/sysv/linux/arm/clone.S
+index bd088b4..e0c5d8f 100644
+--- a/sysdeps/unix/sysv/linux/arm/clone.S
++++ b/sysdeps/unix/sysv/linux/arm/clone.S
+@@ -50,6 +50,7 @@ ENTRY(__clone)
+ 	swi	0x0
+ 	ldr	r7, [sp], #4
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+ 	swi	SYS_ify(clone)
+ #endif // !__ARM_EABI__
+ 	movs	a1, a1
+diff --git a/sysdeps/unix/sysv/linux/arm/mmap.S b/sysdeps/unix/sysv/linux/arm/mmap.S
+index 97b4a55..f003f54 100644
+--- a/sysdeps/unix/sysv/linux/arm/mmap.S
++++ b/sysdeps/unix/sysv/linux/arm/mmap.S
+@@ -47,6 +47,7 @@ ENTRY (__mmap)
+ 	swi	0x0
+ 	ldr	r7, [sp], #4
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+ 	swi	SYS_ify (mmap)
+ #endif // !__ARM_EABI__
+ 
+diff --git a/sysdeps/unix/sysv/linux/arm/mmap64.S b/sysdeps/unix/sysv/linux/arm/mmap64.S
+index 8cb40f5..462fc28 100644
+--- a/sysdeps/unix/sysv/linux/arm/mmap64.S
++++ b/sysdeps/unix/sysv/linux/arm/mmap64.S
+@@ -42,6 +42,7 @@ ENTRY (__mmap64)
+ 	swi	0x0
+ 	ldr	r7, [sp], #4
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+ 	swi	SYS_ify (mmap2)
+ #endif // !__ARM_EABI__
+ 	cmn	r0, $4096
+diff --git a/sysdeps/unix/sysv/linux/arm/sigrestorer.S b/sysdeps/unix/sysv/linux/arm/sigrestorer.S
+index 54aa196..2985f08 100644
+--- a/sysdeps/unix/sysv/linux/arm/sigrestorer.S
++++ b/sysdeps/unix/sysv/linux/arm/sigrestorer.S
+@@ -30,6 +30,7 @@ ENTRY(__default_sa_restorer)
+ 	swi	0x0
+ 	ldr	r7, [sp], #4
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+ 	swi	SYS_ify(sigreturn)
+ #endif // !__ARM_EABI__
+ #endif
+@@ -43,6 +44,7 @@ ENTRY(__default_rt_sa_restorer)
+ 	swi	0x0
+ 	ldr	r7, [sp], #4
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+ 	swi	SYS_ify(rt_sigreturn)
+ #endif // !__ARM_EABI__
+ 
+diff --git a/sysdeps/unix/sysv/linux/arm/socket.S b/sysdeps/unix/sysv/linux/arm/socket.S
+index f0d6e08..3bf16e9 100644
+--- a/sysdeps/unix/sysv/linux/arm/socket.S
++++ b/sysdeps/unix/sysv/linux/arm/socket.S
+@@ -78,6 +78,7 @@ ENTRY (__socket)
+ 	swi 0x0
+ 	ldr	r7, [sp], #4
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+ 	swi SYS_ify(socketcall)
+ #endif // !__ARM_EABI__
+ #endif
+diff --git a/sysdeps/unix/sysv/linux/arm/sysdep.h b/sysdeps/unix/sysv/linux/arm/sysdep.h
+index f8e88e4..37b8cb6 100644
+--- a/sysdeps/unix/sysv/linux/arm/sysdep.h
++++ b/sysdeps/unix/sysv/linux/arm/sysdep.h
+@@ -102,6 +102,7 @@
+     swi 0x0;					\
+     UNDOARGS_##args
+ #else //!__ARM_EABI__
++#warning Using ARM_OABI
+ #define DO_CALL(args, syscall_name)		\
+     DOARGS_##args				\
+     swi SYS_ify (syscall_name); 		\
+@@ -129,6 +130,7 @@
+ #define UNDOARGS_7 ldmfd sp!, {r4, r5, r6, r7};
+ 
+ #else //!__ARM_EABI__
++#warning Using ARM_OABI
+ 
+ #define DOARGS_0 /* nothing */
+ #define DOARGS_1 /* nothing */
+@@ -176,6 +178,7 @@
+        }							\
+      (int) _sys_result; })
+ #else //!__ARM_EABI__
++#warning Using ARM_OABI
+ #define INLINE_SYSCALL(name, nr, args...)			\
+   ({ unsigned int _sys_result;					\
+      {								\
+diff --git a/sysdeps/unix/sysv/linux/arm/vfork.S b/sysdeps/unix/sysv/linux/arm/vfork.S
+index ba2259d..9b0c9ec 100644
+--- a/sysdeps/unix/sysv/linux/arm/vfork.S
++++ b/sysdeps/unix/sysv/linux/arm/vfork.S
+@@ -35,6 +35,7 @@ ENTRY (__vfork)
+ 	swi	0x0
+ 	ldr	r7, [sp], #4
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+ 	swi	__NR_vfork
+ #endif // !__ARM_EABI__
+ 	cmn	a1, #4096
+@@ -53,6 +54,7 @@ ENTRY (__vfork)
+ 	swi	0x0
+ 	ldr	r7, [sp], #4
+ #else // !__ARM_EABI__
++#warning Using ARM_OABI
+ 	swi	__NR_fork
+ #endif // !__ARM_EABI__
+ 	cmn	a1, #4096
 -- 
 Jan Nieuwenhuizen <janneke@gnu.org> | GNU LilyPond http://lilypond.org
 Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
