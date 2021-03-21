@@ -432,7 +432,7 @@ upstream source.
 @subsection Package Naming
 
 @cindex package name
-A package has actually two names associated with it:
+A package actually has two names associated with it.
 First, there is the name of the @emph{Scheme variable}, the one following
 @code{define-public}.  By this name, the package can be made known in the
 Scheme code, for instance as input to another package.  Second, there is
@@ -1016,7 +1016,6 @@ your @code{operating-system} configuration:
 (service qemu-binfmt-service-type
  (qemu-binfmt-configuration
    (platforms (lookup-qemu-platforms "arm" "aarch64"))
-   (guix-support? #t)))
 @end lisp
 
 Then reconfigure your system.
@@ -1086,10 +1085,12 @@ everything has been successfully built.  This allows us to fix issues
 before they hit users, and to reduce the window during which pre-built
 binaries are not available.
 
-Generally, branches other than @code{master} are considered
-@emph{frozen} if there has been a recent evaluation, or there is a
-corresponding @code{-next} branch.  Please ask on the mailing list or
-IRC if unsure where to place a patch.
+When we decide to start building the @code{staging} or
+@code{core-updates} branches, they will be forked and renamed with the
+suffix @code{-frozen}, at which time only bug fixes may be pushed to the
+frozen branches.  The @code{core-updates} and @code{staging} branches
+will remain open to accept patches for the next cycle.  Please ask on
+the mailing list or IRC if unsure where to place a patch.
 @c TODO: It would be good with badges on the website that tracks these
 @c branches.  Or maybe even a status page.
 
@@ -1371,6 +1372,12 @@ you're confident, it's OK to commit.
 
 That last part is subject to being adjusted, allowing individuals to commit
 directly on non-controversial changes on parts they’re familiar with.
+
+In order to reduce the possibility of mistakes, committers will have
+their Savannah account removed from the Guix Savannah project and their
+key removed from @file{.guix-authorizations} after 12 months of
+inactivity; they can ask to regain commit access by emailing the
+maintainers, without going through the vouching process.
 
 One last thing: the project keeps moving forward because committers not
 only push their own awesome changes, but also offer some of their time

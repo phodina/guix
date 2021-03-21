@@ -35,13 +35,19 @@
   #:use-module (gnu packages bash)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
+  #:use-module (gnu packages curl)
+  #:use-module (gnu packages databases)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages engineering)
   #:use-module (gnu packages fltk)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gd)
+  #:use-module (gnu packages geo)
+  #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages glib)
+  #:use-module (gnu packages gnome)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
@@ -67,11 +73,13 @@
   #:use-module (gnu packages tex)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages video)
+  #:use-module (gnu packages xiph)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system python)
   #:use-module (guix build-system qt))
 
@@ -578,17 +586,22 @@ using GNU Radio and the Qt GUI toolkit.")
 (define-public fldigi
   (package
     (name "fldigi")
-    (version "4.1.17")
+    (version "4.1.18")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "http://www.w1hkj.com/files/fldigi/fldigi-"
-                           version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://git.code.sf.net/p/fldigi/fldigi")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "1gzff60sn3h05279f9mdi1rkdws52m28shcil16911lvlq6ki13m"))))
+        (base32 "177qnl1bxy46rqwdxizfy2i3mxk5bzz733cp445rfzl7b6yf6zrn"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("gettext" ,gettext-minimal)
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("alsa-lib" ,alsa-lib)
        ("fltk" ,fltk)
@@ -617,14 +630,18 @@ hardware.")
     (version "1.3.52")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "http://www.w1hkj.com/files/flrig/flrig-"
-                           version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://git.code.sf.net/p/fldigi/flrig")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "18c154080vl25cy4l5amh96abm6kzm7mzld9h58pabc28yqq8zl8"))))
+        (base32 "0vxn1wy5b2zfq20k93rfgq34m1nd3mxd74h8l98f90d85fhcqggy"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("fltk" ,fltk)
        ("libx11" ,libx11)
@@ -645,14 +662,18 @@ or USB connection.")
     (version "2.2.05")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "http://www.w1hkj.com/files/flamp/flamp-"
-                           version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://git.code.sf.net/p/fldigi/flamp")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "19z1kghhdf7bq6hi2j0mzlsn2nhpn3gl1a623x3inmsk80yw3ck4"))))
+        (base32 "0ll2wbhyh1sb4iqsypwrd118mrgw3vbsdbz442qhk4r6l8kjzblq"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("fltk" ,fltk)
        ("libx11" ,libx11)
@@ -672,14 +693,18 @@ or USB connection.")
     (version "1.3.5")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "http://www.w1hkj.com/files/flwrap/flwrap-"
-                           version ".tar.gz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://git.code.sf.net/p/fldigi/flwrap")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "0qqivqkkravcg7j45740xfky2q3k7czqpkj6y364qff424q2pppg"))))
+        (base32 "0xkhr82smfr7wpb9xl05wf7bz3vi2mr4xkcr2s8v6mblhgsdhqwg"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)))
     (inputs
      `(("fltk" ,fltk)
        ("libx11" ,libx11)
@@ -755,7 +780,7 @@ you must extend 'udev-service-type' with this package.  E.g.:
 (define-public hamlib
   (package
     (name "hamlib")
-    (version "3.3")
+    (version "4.1")
     (source
      (origin
        (method url-fetch)
@@ -763,7 +788,7 @@ you must extend 'udev-service-type' with this package.  E.g.:
              "https://github.com/Hamlib/Hamlib/releases/download/"
              version "/hamlib-" version ".tar.gz"))
        (sha256
-        (base32 "10788mgrhbc57zpzakcxv5aqnr2819pcshml6fbh8zvnkja562y9"))))
+        (base32 "0hi3nc1k55mxff05amdv5iwryaz6r3205l24q0bg7l84f53bkm5l"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
@@ -797,7 +822,7 @@ users.")
   (package
     (inherit hamlib)
     (name "wsjtx-hamlib")
-    (version "2.2.2")
+    (version "2.3.0")
     (source
      (origin
        (method git-fetch)
@@ -806,7 +831,7 @@ users.")
              (commit (string-append "wsjtx-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "01h5ps0yq5vi1x9rkw742gx6a5fj02zhbpi89i412qdfbnyk35cv"))))
+        (base32 "0ampwqs7p0g8pdnwpdrbvwyqag065n96amgb3v4z332nw0nxvm10"))))
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
@@ -831,7 +856,7 @@ users.")
 (define-public wsjtx
   (package
     (name "wsjtx")
-    (version "2.2.2")
+    (version "2.3.0")
     (source
      (origin
        (method git-fetch)
@@ -840,13 +865,7 @@ users.")
              (commit (string-append "wsjtx-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0fhws44gg05d9y2al0pcdnxwxwh4bazcfl0g5mq2ks1r7w23wi5x"))
-       (modules '((guix build utils)))
-       (snippet
-        '(begin
-           ;; Delete bundled boost to use the shared one.
-           (delete-file-recursively "boost")
-           #t))))
+        (base32 "1qf8r88ssara3pddvd3jpv5phzxwnanvdj00dxgmzq0c2jqcy2a8"))))
     (build-system qt-build-system)
     (native-inputs
      `(("asciidoc" ,asciidoc)
@@ -1188,3 +1207,196 @@ NanoVNA vector network analyzers.")
 (sometimes called DSSTV).  It is compatible with most of MMSSTV and EasyPal.")
     (license (list license:gpl2+
                    license:qwt1.0))))
+
+(define-public direwolf
+  (package
+    (name "direwolf")
+    (version "1.6")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/wb2osz/direwolf")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0xmz64m02knbrpasfij4rrq53ksxna5idxwgabcw4n2b1ig7pyx5"))))
+    (build-system cmake-build-system)
+    (inputs
+     `(("alsa-lib" ,alsa-lib)
+       ("hamlib" ,hamlib)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-paths
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* "conf/CMakeLists.txt"
+               (("DESTINATION /etc")
+                (string-append "DESTINATION "
+                               (assoc-ref outputs "out")
+                               "/etc"))))))))
+    (home-page "https://github.com/wb2osz/direwolf")
+    (synopsis "TNC for Amateur Packet Radio")
+    (description
+     "Dire Wolf is a Terminal Node Controller (TNC) for Amateur Packet Radio.
+It can perform as:
+@itemize
+@item APRS GPS tracker,
+@item Digipeater,
+@item Internet gateway (IGate)
+@item APRStt gateway
+@end itemize\n")
+    (license license:gpl2+)))
+
+(define-public aldo
+  (package
+    (name "aldo")
+    (version "0.7.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://savannah/aldo/aldo-" version ".tar.bz2"))
+       (sha256
+        (base32 "14lzgldqzbbzydsy1cai3wln3hpyj1yhj8ji3wygyzr616fq9f7i"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("ao" ,ao)))
+    (home-page "https://www.nongnu.org/aldo/")
+    (synopsis "Morse code tutor")
+    (description
+     "Aldo is a morse code learning tool providing four type of training
+methods:
+
+@itemize
+@item Classic exercice,
+@item Koch method,
+@item Read from file,
+@item Callsign exercice.
+@end itemize\n")
+    (license license:gpl3+)))
+
+(define-public unixcw
+  (package
+    (name "unixcw")
+    (version "3.6.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://sourceforge/unixcw/unixcw-"
+                           version ".tar.gz"))
+       (sha256
+        (base32 "15wriwv91583kmmyijbzam3dpclzmg4qjyfzjv5f75x9b0gqabxm"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("alsa-lib" ,alsa-lib)
+       ("ncurses" ,ncurses)
+       ("pulseaudio" ,pulseaudio)
+       ("qtbase" ,qtbase)))
+    (arguments
+     `(#:configure-flags '("--disable-static")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* '("configure"
+                            "src/config.h.in"
+                            "src/cwcp/Makefile.am"
+                            "src/cwcp/Makefile.in")
+               (("-lcurses")
+                "-lncurses"))
+             (substitute* "src/libcw/libcw_pa.c"
+               (("libpulse-simple.so" all)
+                (string-append (assoc-ref inputs "pulseaudio")
+                               "/lib/" all))))))))
+    (home-page "http://unixcw.sourceforge.net/")
+    (synopsis "Morse code library and programs")
+    (description
+     "@code{unixcw} is a project providing the libcw library and a set of
+programs using the library: cw, cwgen, cwcp and xcwcp.  The programs are
+intended for people who want to learn receiving and sending morse code.")
+    (license license:gpl2+)))
+
+(define-public gnuais
+  (package
+    (name "gnuais")
+    (version "0.3.3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/rubund/gnuais")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1rik5fdfslszdn3yvj769jzmnv9pirzf76ki33bjjzk7nkabbnlm"))))
+    (build-system cmake-build-system)
+    (native-inputs
+     `(("mariadb-dev" ,mariadb "dev")
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("alsa-lib" ,alsa-lib)
+       ("curl" ,curl)
+       ("gtk+" ,gtk+)
+       ("libsoup" ,libsoup-minimal)
+       ("mariadb-lib" ,mariadb "lib")
+       ("osm-gps-map" ,osm-gps-map)
+       ("pulseaudio" ,pulseaudio)))
+    (arguments
+     `(#:tests? #f ; No test suite
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-paths
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* "src/cfgfile.c"
+               (("/usr/share/")
+                (string-append (assoc-ref outputs "out") "/share/"))))))))
+    (home-page "http://gnuais.sourceforge.net/")
+    (synopsis "AIS message demodulator and decoder")
+    (description
+     "This program contains algorithms to demodulate and decode AIS (Automatic
+Identification System) messages sent by ships and coast stations.")
+    (license license:gpl2+)))
+
+(define-public kappanhang
+  (package
+    (name "kappanhang")
+    (version "1.3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/nonoo/kappanhang")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1ycy8avq5s7zspfi0d9klqcwwkpmcaz742cigd7pmcnbbhspcicp"))))
+    (build-system go-build-system)
+    (arguments
+     '(#:import-path "github.com/nonoo/kappanhang"
+       #:install-source? #f))
+    (inputs
+     `(("go-github-com-akosmarton-papipes",go-github-com-akosmarton-papipes)
+       ("go-github-com-fatih-color" ,go-github-com-fatih-color)
+       ("go-github-com-google-goterm" ,go-github-com-google-goterm)
+       ("go-github-com-mattn-go-isatty" ,go-github-com-mattn-go-isatty)
+       ("go-github-com-mesilliac-pulse-simple"
+        ,go-github-com-mesilliac-pulse-simple)
+       ("go-github-com-pborman-getopt" ,go-github-com-pborman-getopt)
+       ("go-go-uber-org-multierr" ,go-go-uber-org-multierr)
+       ("go-go-uber-org-zap" ,go-go-uber-org-zap)))
+    (home-page "https://github.com/nonoo/kappanhang")
+    (synopsis "Client for Icom RS-BA1 server")
+    (description
+     "Kappanhang remotely opens audio channels and a serial port to an Icom
+RS-BA1 server.  The application is mainly developed for connecting to the Icom
+IC-705 transceiver, which has built-in WiFi and RS-BA1 server.
+
+Compatible hardware/software:
+@itemize
+@item Icom RS-BA1 server software,
+@item Icom IC-705
+@item Icom IC-9700
+@end itemize\n")
+    (license license:expat)))

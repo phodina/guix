@@ -47,13 +47,13 @@
 (define-public python-django
   (package
     (name "python-django")
-    (version "3.1.3")
+    (version "3.1.7")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "Django" version))
               (sha256
                (base32
-                "13rz3v0bwk8i3xcccn5awbafahab3cyk8wwv57v2xazdzxspgf0l"))))
+                "19v5lfijnjx18y9ax962z3gnbxy9k8i3w4j0qfzcp85nx4p7kkij"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -132,13 +132,13 @@ to the @dfn{don't repeat yourself} (DRY) principle.")
 (define-public python-django-2.2
   (package
     (inherit python-django)
-    (version "2.2.17")
+    (version "2.2.19")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "Django" version))
               (sha256
                (base32
-                "0qdq0h2gw45j0h9j22c2sdn49ybl7jsrcyraskb9snknsyj70lyg"))))
+                "0hysjf8bz4g8xrn2cdx6pmawimpyr6ag2fg3jxsnc1byr3g3bhih"))))
     (native-inputs
      `(;; XXX: In 2.2 and 3.0, selenium is required for the test suite.
        ("python-selenium" ,python-selenium)

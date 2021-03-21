@@ -253,7 +253,7 @@ provided, as well as a framework to add new color models and data types.")
      `(("pkg-config" ,pkg-config)
        ("glib" ,glib "bin")             ; for gtester
        ("intltool" ,intltool)))
-    (home-page "http://gegl.org")
+    (home-page "https://gegl.org")
     (synopsis "Graph based image processing framework")
     (description "GEGL (Generic Graphics Library) provides infrastructure to
 do demand based cached non destructive image editing on larger than RAM
@@ -518,6 +518,8 @@ MyPaint.")
                (mkdir-p target)
                #t))))))
     (native-inputs
+     ;; avoid ./autogen.sh: ./configure: /bin/sh: bad interpreter:
+     ;; No such file or directory
      `(("autoconf" ,autoconf-wrapper)
        ("automake" ,automake)
        ("glib" ,glib "bin")                       ; glib-gettextize
@@ -590,7 +592,7 @@ transferring the style of an image.")
                    (format port "for dir in '~a'.split(':'):~%" pythonpath)
                    (format port "    site.addsitedir(dir)~%")))))))))
     (native-inputs
-     `(("autoconf" ,autoconf-wrapper)
+     `(("autoconf" ,autoconf)
        ("automake" ,automake)
        ("gtk-doc" ,gtk-doc)
        ("intltool" ,intltool)

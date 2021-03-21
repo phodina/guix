@@ -453,7 +453,9 @@ test = { path = \"../libtest\" }
             (variable "LIBRARY_PATH")
             (files '("lib" "lib64")))))
 
-    (supported-systems '("x86_64-linux"))
+    (supported-systems
+     (delete "i686-linux"               ; fails to build, see #35519
+             %supported-systems))
     (synopsis "Compiler for the Rust programming language")
     (description "Rust is a systems programming language that provides memory
 safety and thread safety guarantees.")
@@ -820,7 +822,10 @@ jemalloc = \"" jemalloc "/lib/libjemalloc_pic.a" "\"
                  (substitute* "src/tools/cargo/tests/testsuite/generate_lockfile.rs"
                    ;; This test wants to update the crate index.
                    (("fn no_index_update") "#[ignore]\nfn no_index_update"))
-                 #t)))))))))
+                 #t))))))
+      (supported-systems
+       (delete "aarch64-linux"          ; fails to build, see #47019
+               (package-supported-systems base-rust))))))
 
 (define-public rust-1.27
   (let ((base-rust
@@ -1450,6 +1455,10 @@ move around."
 (define-public rust-1.49
   (rust-bootstrapped-package rust-1.48 "1.49.0"
     "0yf7kll517398dgqsr7m3gldzj0iwsp3ggzxrayckpqzvylfy2mm"))
+
+(define-public rust-1.50
+  (rust-bootstrapped-package rust-1.49 "1.50.0"
+    "0pjs7j62maiyvkmhp9zrxl528g2n0fphp4rq6ap7aqdv0a6qz5wm"))
 
 ;; TODO(staging): Bump this variable to the latest packaged rust.
 (define-public rust rust-1.45)

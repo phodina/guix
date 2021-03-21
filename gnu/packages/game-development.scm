@@ -17,7 +17,7 @@
 ;;; Copyright © 2019 Pierre Neidhardt <mail@ambrevar.xyz>
 ;;; Copyright © 2019, 2020, 2021 Leo Prikler <leo.prikler@student.tugraz.at>
 ;;; Copyright © 2019 Jethro Cao <jethrocao@gmail.com>
-;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2020, 2021 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Timotej Lazar <timotej.lazar@araneo.si>
 ;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;;
@@ -529,7 +529,7 @@ clone.")
                    all)))
                #t))))))
     (native-inputs
-     `(("autoconf" ,autoconf-wrapper)
+     `(("autoconf" ,autoconf)
        ("automake" ,automake)
        ("guile" ,guile-3.0)
        ("pkg-config" ,pkg-config)
@@ -638,7 +638,7 @@ sounds from presets such as \"explosion\" or \"powerup\".")
 (define-public surgescript
   (package
     (name "surgescript")
-    (version "0.5.4.4")
+    (version "0.5.5")
     (source
      (origin
        (method git-fetch)
@@ -647,12 +647,13 @@ sounds from presets such as \"explosion\" or \"powerup\".")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1vck1wk6r6jrrw5xzpqldplz601dfgpk5s5p45fam00nfsid0p7p"))))
+        (base32 "0xwd4g7n0b0rxkpbyshkzyl472h1y606ghyvf8gv034n3jz2g4jk"))))
      (build-system cmake-build-system)
      (arguments
       '(#:configure-flags
         (let ((share (string-append (assoc-ref %outputs "out") "/share")))
-          (list (string-append "-DICON_PATH=" share "/pixmaps")
+          (list "-DWANT_STATIC=NO"
+                (string-append "-DICON_PATH=" share "/pixmaps")
                 (string-append "-DMETAINFO_PATH=" share "/metainfo")))
         #:tests? #f))
      (home-page "https://docs.opensurge2d.org")
@@ -1131,7 +1132,7 @@ to create fully featured games and multimedia programs in the python language.")
           ,(sdl-union (list sdl2 sdl2-image sdl2-mixer sdl2-ttf)))))
       (native-inputs
        `(("python2-cython" ,python2-cython)))
-      (home-page "http://www.renpy.org/")
+      (home-page "https://www.renpy.org/")
       (synopsis "Reimplementation of the Pygame API using SDL2")
       (description "Pygame_SDL2 reimplements the Pygame API using SDL2,
 staying close to the original, but also adding some SDL2-specific features.
@@ -2393,7 +2394,7 @@ game engine.  id Tech 2 is the engine originally behind Quake 2.")
 (define-public dhewm3
   (package
     (name "dhewm3")
-    (version "1.5.0")
+    (version "1.5.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2401,7 +2402,7 @@ game engine.  id Tech 2 is the engine originally behind Quake 2.")
                     version "/dhewm3-" version "-src.tar.xz"))
               (sha256
                (base32
-                "0dmd1876az5q8gbjrd1jk8zidz11ydj607z3m8m5kvw2yj136jzv"))))
+                "0s2brx6wyljhjbpli97iy4lc4fqqsvdc09raz8njg0vgzcsiyrri"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f                      ; No tests.

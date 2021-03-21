@@ -32,9 +32,13 @@
 ;;; Copyright © 2019, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
-;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
+;;; Copyright © 2020, 2021 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Morgan Smith <Morgan.J.Smith@outlook.com>
+;;; Copyright © 2021 Zheng Junjie <873216071@qq.com>
+;;; Copyright © 2021 Stefan Reichör <stefan@xsteve.at>
+;;; Copyright © 2021 qblade <qblade@protonmail.com>
+;;; Copyright © 2021 Hyunseok Kim <lasnesne@lagunposprasihopre.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -217,7 +221,7 @@ usual file attributes can be checked for inconsistencies.")
 (define-public progress
   (package
     (name "progress")
-    (version "0.15")
+    (version "0.16")
     (source
      (origin
        (method git-fetch)
@@ -225,7 +229,7 @@ usual file attributes can be checked for inconsistencies.")
              (url "https://github.com/Xfennec/progress")
              (commit (string-append "v" version))))
        (sha256
-        (base32 "1cnb4ixlhshn139mj5sr42k5m6gjjbyqvkn1324c47niwrgp7dqm"))
+        (base32 "0gf10j9zd8spain94b5kigknwbdqajiy6fjsa5hhwsc1biz34hcj"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (native-inputs
@@ -458,7 +462,7 @@ graphs and can export its output to different formats.")
 (define-public facter
   (package
     (name "facter")
-    (version "4.0.49")
+    (version "4.0.51")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -467,7 +471,7 @@ graphs and can export its output to different formats.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0l7gic5ql5xiy5s6rb0j9ydyaal5bcxl10bx45khcgdr9zg16pb1"))))
+                "1s98rq2wjmh8bqdfdibvfp9j2ynd97k0c4hairryrzl9nna3j542"))))
     (build-system ruby-build-system)
     (arguments
      `(#:phases
@@ -526,6 +530,42 @@ or via the @code{facter} Ruby library.")
     (home-page "https://github.com/puppetlabs/facter-ng")
     (license license:expat)))
 
+(define-public ttyload
+  (let ((revision "1")
+        (commit "f9495372801ce4b4dad98ad854203e694c31c1eb"))
+    (package
+      (name "ttyload")
+      (version (git-version "0.5.3" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/lindes/ttyload")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0ldb7a13b9v876c6cbrs78pkizj64drnqx95z5shfbwgpwfhr4im"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f      ; no tests
+         #:make-flags
+         (list (string-append "CC=" ,(cc-for-target)))
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'configure)
+           (replace 'install
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((out (assoc-ref outputs "out"))
+                      (bin (string-append out "/bin")))
+                 (install-file "ttyload" bin)))))))
+      (home-page "https://www.daveltd.com/src/util/ttyload/")
+      (synopsis "Console based color-coded graphs of CPU load average")
+      (description
+       "Show graphs for 1 minute, 5 minute, 15 minute load averages on the
+console.")
+      ;; This package uses a modified version of the "ISC License".
+      (license (license:non-copyleft "file://LICENSE")))))
+
 (define-public htop
   (package
     (name "htop")
@@ -574,6 +614,40 @@ application (for console or X terminals) and requires ncurses.")
     (synopsis "Linux/OSX/FreeBSD resource monitor")
     (description "Resource monitor that shows usage and stats for processor,
 memory, disks, network and processes.")
+    (license license:asl2.0)))
+
+(define-public bpytop
+  (package
+    (name "bpytop")
+    (version "1.0.63")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "bpytop" version))
+       (sha256
+        (base32
+         "0ql72s842g56rnzdqja6m53lw5y68c4gb540ihp1bjg7x9ycim11"))))
+    (build-system python-build-system)
+    (inputs
+     `(("python-psutil" ,python-psutil)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-themes
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((themes (string-append (assoc-ref outputs "out")
+                                          "/lib/python"
+                                          ,(version-major+minor
+                                            (package-version python))
+                                          "/site-packages/bpytop-themes")))
+               (mkdir-p themes)
+               (copy-recursively "bpytop-themes" themes)))))))
+    (home-page
+     "https://github.com/aristocratos/bpytop")
+    (synopsis "Resource monitor")
+    (description "Resource monitor that shows usage and stats for processor,
+memory, disks, network and processes.  It's a Python port of
+@command{bashtop}.")
     (license license:asl2.0)))
 
 (define-public pies
@@ -970,7 +1044,7 @@ connection alive.")
 (define-public isc-dhcp
   (let* ((bind-major-version "9")
          (bind-minor-version "11")
-         (bind-patch-version "22")
+         (bind-patch-version "29")
          (bind-release-type "")         ; for patch release, use "-P"
          (bind-release-version "")      ; for patch release, e.g. "6"
          (bind-version (string-append bind-major-version
@@ -1107,7 +1181,7 @@ connection alive.")
                                         "/bind-" bind-version ".tar.gz"))
                     (sha256
                      (base32
-                      "1j9a4r83a77mp8k1y8z524c9rzdqgd8rzwczd6zwmw86a00xiimg"))))
+                      "01vvkvlhsxz4ffz2fw86z0fsf170b93jjnn5710ai6vfri8wgfy7"))))
 
                 ("coreutils*" ,coreutils)
                 ("sed*" ,sed)))
@@ -1124,14 +1198,14 @@ tools: server, client, and relay agent.")
 (define-public libpcap
   (package
     (name "libpcap")
-    (version "1.9.1")
+    (version "1.10.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.tcpdump.org/release/libpcap-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "153h1378diqyc27jjgz6gg5nxmb4ddk006d9xg69nqavgiikflk3"))))
+                "07ibr6zzfh1wk5gqcbnlyh6v0dfmhpfd0fqj5y3yxvzf4ckb84ld"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("bison" ,bison)
@@ -1152,14 +1226,14 @@ network statistics collection, security monitoring, network debugging, etc.")
 (define-public tcpdump
   (package
     (name "tcpdump")
-    (version "4.9.3")
+    (version "4.99.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.tcpdump.org/release/tcpdump-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0434vdcnbqaia672rggjzdn4bb8p8dchz559yiszzdk0sjrprm1c"))))
+                "0hmqh2fx8rgs9v1mk3vpywj61xvkifz260q685xllxr8jmxg3wlc"))))
     (build-system gnu-build-system)
     (inputs `(("libpcap" ,libpcap)
               ("openssl" ,openssl)))
@@ -1421,7 +1495,7 @@ system administrator.")
 (define-public sudo
   (package
     (name "sudo")
-    (version "1.9.5p2")
+    (version "1.9.6p1")
     (source (origin
               (method url-fetch)
               (uri
@@ -1431,7 +1505,7 @@ system administrator.")
                                     version ".tar.gz")))
               (sha256
                (base32
-                "0y093z4f3822rc88g9asdch12nljdamp817vjxk04mca7ks2x7jk"))
+                "146alf6cwnzjcckia8m0ibcj9ram2z469f5z7v6vkzpsb30cvsd9"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -1582,7 +1656,9 @@ features of sudo with a fraction of the codebase.")
                     ;; Disable D-Bus to save ~14MiB on the closure size.
                     (("^CONFIG_CTRL_IFACE_DBUS" line _)
                      (string-append "#" line)))
-                    #t))))
+                  #t))
+              (patches
+               (search-patches "wpa-supplicant-CVE-2021-27803.patch"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1746,7 +1822,9 @@ command.")
                                   ".tar.gz"))
               (sha256
                (base32
-                "1mrbvg4v7vm7mknf0n29mf88k3s4a4qj6r4d51wq8hmjj1m7s7c8"))))
+                "1mrbvg4v7vm7mknf0n29mf88k3s4a4qj6r4d51wq8hmjj1m7s7c8"))
+              (patches
+               (search-patches "wpa-supplicant-CVE-2021-27803.patch"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1919,13 +1997,13 @@ development, not the kernel implementation of ACPI.")
 (define-public s-tui
   (package
     (name "s-tui")
-    (version "1.0.2")
+    (version "1.1.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "s-tui" version))
        (sha256
-        (base32 "0xkfdaz5np21311ffdvhks58155qby8j8scbcixhvjd913pj66qx"))))
+        (base32 "1clk59wf6v1lq33h4x5qwxvz5ng9mfkp1s6ynxa58w2raq8dbmy5"))))
     (build-system python-build-system)
     (inputs
      `(("python-psutil" ,python-psutil)
@@ -2051,6 +2129,33 @@ indented listing of files, which is colorized ala dircolors if the LS_COLORS
 environment variable is set and output is to tty.")
     (home-page "http://mama.indstate.edu/users/ice/tree/")
     (license license:gpl2+)))
+
+(define-public lr
+  (package
+    (name "lr")
+    (version "1.5.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://git.vuxu.org/lr/")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1wv2acm4r5y5gg6f64v2hiwpg1f3lnr4fy1a9zssw77fmdc7ys3j"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f
+       #:make-flags (list (string-append "CC=" ,(cc-for-target))
+                          (string-append "PREFIX=" %output))
+       #:phases (modify-phases %standard-phases
+                  (delete 'configure))))
+    (synopsis "Tool to generate customized file listings")
+    (description
+     "lr is a tool for generating file listings, which includes the best
+features of ls(1), find(1), stat(1) and du(1).")
+    (home-page "https://git.vuxu.org/lr/about")
+    (license license:expat)))
 
 (define-public direvent
   (package
@@ -2214,13 +2319,13 @@ of supported upstream metrics systems simultaneously.")
 (define-public ansible
   (package
     (name "ansible")
-    (version "2.9.16")
+    (version "2.9.18")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "ansible" version))
        (sha256
-        (base32 "0j1icfqff25zm9sq6j41ipl6gcj3i67mb5bqbjf2f2q1yx6rm8sk"))))
+        (base32 "0g6rsnh02zq5nizamgakl2wvgz7hk1lpnjn9akldrcpa55vygzjm"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-bcrypt" ,python-bcrypt)
@@ -2818,13 +2923,13 @@ a new command using the matched rule, and runs it.")
 (define-public di
   (package
     (name "di")
-    (version "4.48.0.1")
+    (version "4.49")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://gentoo.com/di/di-" version ".tar.gz"))
+       (uri (string-append "mirror://sourceforge/diskinfo-di/di-" version ".tar.gz"))
        (sha256
-        (base32 "0rxli3bcm6vlcfx2jminviv8aawwczrpp9kja5zniawy6528al30"))))
+        (base32 "1y38jhp2bpwbwzdzjlhgfqc7bxxz9cwapxd61799zjf54jkslkf0"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; obscure test failures
@@ -3440,7 +3545,7 @@ make it a perfect utility on modern distros.")
 (define-public thermald
   (package
     (name "thermald")
-    (version "2.4.2")
+    (version "2.4.3")
     (source
      (origin
       (method git-fetch)
@@ -3449,7 +3554,7 @@ make it a perfect utility on modern distros.")
              (commit (string-append "v" version))))
       (file-name (git-file-name name version))
       (sha256
-       (base32 "0nzjfiis4d3ml765s65bywk5dhx5x2fb3hpiixpxzzrs50ajwasj"))))
+       (base32 "1ibihgpmx038xci0k2h471scs5ssn7z5kcvjrfz63qf2ppdf9yh8"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -3638,7 +3743,7 @@ Python loading in HPC environments.")
   (let ((real-name "inxi"))
     (package
       (name "inxi-minimal")
-      (version "3.2.02-2")
+      (version "3.3.01-1")
       (source
        (origin
          (method git-fetch)
@@ -3647,7 +3752,7 @@ Python loading in HPC environments.")
                (commit version)))
          (file-name (git-file-name real-name version))
          (sha256
-          (base32 "0fwx798v9kwiwkgbj97w6rjdanwf7ap65vvq1fqy7gd9x78xcxsq"))))
+          (base32 "06r5iq78ldrvr5fmmb5mchaaji49195fsgx9ysr1mjs122rp13y1"))))
       (build-system trivial-build-system)
       (inputs
        `(("bash" ,bash-minimal)
@@ -3816,10 +3921,42 @@ support forum.  It runs with the @code{/exec} command in most IRC clients.")
     (description "This package provides @code{udev} bindings for Python.")
     (license license:lgpl2.1)))
 
+(define-public vmtouch
+  (package
+    (name "vmtouch")
+    (version "1.3.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/hoytech/vmtouch/")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "08da6apzfkfjwasn4dxrlfxqfx7arl28apdzac5nvm0fhvws0dxk"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("perl" ,perl)))
+    (arguments
+     `(#:tests? #f                      ; no tests
+       #:make-flags
+       (list
+        (string-append "CC=" ,(cc-for-target))
+        (string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))))
+    (home-page "https://github.com/hoytech/vmtouch/")
+    (synopsis "Portable file system cache diagnostics and control")
+    (description
+     "vmtouch is a tool for learning about and controlling the file system
+cache of unix and unix-like systems.")
+    (license license:bsd-3)))
+
 (define-public solaar
   (package
     (name "solaar")
-    (version "1.0.4")
+    (version "1.0.5")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -3828,7 +3965,7 @@ support forum.  It runs with the @code{/exec} command in most IRC clients.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "15wzxxr2m5349kkvcs3k5clg1rsmvh6by2066qm4hlgvjwmigggy"))))
+                "17gkr2lf1kzp1198gcdr30j3c8xd81kg7ly12aar1jrgi6lc7klk"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -3839,8 +3976,15 @@ support forum.  It runs with the @code{/exec} command in most IRC clients.")
              #t)))))
     (propagated-inputs
      `(("python-pygobject" ,python-pygobject)
-       ("python-pyudev" ,python-pyudev)))
-    (home-page "https://smxi.org/docs/inxi.htm")
+       ("python-pyudev" ,python-pyudev)
+
+       ;; For GUI.
+       ("python-pyyaml" ,python-pyyaml)
+       ("python-psutil" ,python-psutil)
+       ("python-xlib" ,python-xlib)
+       ("gtk+" ,gtk+)
+       ("python-pygobject" ,python-pygobject)))
+    (home-page "https://pwr-solaar.github.io/Solaar/")
     (synopsis "Linux devices manager for the Logitech Unifying Receiver")
     (description "This package provides tools to manage clients of the
 Logitech Unifying Receiver.")
@@ -3850,7 +3994,7 @@ Logitech Unifying Receiver.")
   (package
     (name "lynis")
     ;; Also update the ‘lynis-sdk’ input to the commit matching this release.
-    (version "2.7.5")
+    (version "3.0.3")
     (source
      (origin
        (method git-fetch)
@@ -3859,7 +4003,7 @@ Logitech Unifying Receiver.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1lkkbvxm0rgrrlx0szaxmf8ghc3d26wal96sgqk84m37mvs1f7p0"))
+        (base32 "0sdjh2f1563qalp740vkaaxdxl56ny98h168cggpm10h2yq366gr"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -3876,10 +4020,10 @@ Logitech Unifying Receiver.")
            (method git-fetch)
            (uri (git-reference
                  (url "https://github.com/CISOfy/lynis-sdk")
-                 (commit "bf1c1d95121da9ca79a9eac5a15ed8d81e34094d")))
+                 (commit "ea7a39774fbd71113a1955cf1a4937b489935174")))
            (file-name (git-file-name "lynis-sdk" version))
            (sha256
-            (base32 "1ndz5v0039dqa87cva2dk55a8hkw0fibsw8hh2ddmny9qkr4l3dp"))))))
+            (base32 "0q5j2myshjkz9qwvcg8n7c33yw2cp80yvzhckd60qmzabv4g4qb5"))))))
     (arguments
      `(#:phases
        (modify-phases %standard-phases

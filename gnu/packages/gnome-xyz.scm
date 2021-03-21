@@ -9,6 +9,7 @@
 ;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Ryan Prior <rprior@protonmail.com>
 ;;; Copyright © 2020 Ellis Kenyo <me@elken.dev>
+;;; Copyright © 2020 Stefan Reichör <stefan@xsteve.at>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,6 +33,7 @@
   #:use-module (guix build-system meson)
   #:use-module (guix git-download)
   #:use-module (guix packages)
+  #:use-module (guix utils)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
@@ -779,6 +781,70 @@ dark elements.  It supports GNOME, Unity, Xfce, and Openbox.")
 (define-public numix-theme
   (deprecated-package "numix-theme" numix-gtk-theme))
 
+(define-public orchis-theme
+  (package
+    (name "orchis-theme")
+    (version "2021-02-28")
+    (source
+      (origin
+        (method git-fetch)
+        (uri
+          (git-reference
+            (url "https://github.com/vinceliuice/Orchis-theme")
+            (commit version)))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32
+           "1qp3phiza93qllrjm5xjjca5b7l2sbng8c382khy9m97grxvcq0y"))
+        (modules '((guix build utils)
+                   (ice-9 regex)
+                   (srfi srfi-26)))
+        (snippet
+         '(begin
+            (for-each
+             (lambda (f)
+               (let* ((r (make-regexp "\\.scss"))
+                      (f* (regexp-substitute #f (regexp-exec r f) 'pre ".css")))
+                 (if (file-exists? f*)
+                     (delete-file f*))))
+             (find-files "." ".*\\.scss"))
+            #t))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags (list
+                          "--dest" (string-append
+                                    (assoc-ref %outputs "out")
+                                    "/share/themes")
+                          "--theme" "all"
+                          "--radio-color")
+       #:tests? #f ; no tests
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'bootstrap)
+         (delete 'configure)
+         (replace 'build (lambda _ (invoke "./parse-sass.sh")))
+         (replace 'install
+           (lambda* (#:key configure-flags #:allow-other-keys)
+             (mkdir-p
+              (cadr (or (member "--dest" configure-flags)
+                        (member "-d" configure-flags))))
+             (apply invoke "./install.sh" configure-flags)
+             #t)))))
+    (inputs
+     `(("gtk-engines" ,gtk-engines)))
+    (native-inputs
+     `(;("coreutils" ,coreutils)
+       ("gtk+" ,gtk+)
+       ("sassc" ,sassc)))
+    (home-page "https://github.com/vinceliuice/Orchis-theme")
+    (synopsis "Material Design theme for a wide range of environments")
+    (description "Orchis is a Material Design them for GNOME/GTK based
+desktop environments.  It is based on materia-theme and adds more color
+variants.")
+    (license (list license:gpl3            ; According to COPYING.
+                   license:lgpl2.1         ; Some style sheets.
+                   license:cc-by-sa4.0)))) ; Some icons
+
 (define-public markets
   (package
     (name "markets")
@@ -888,3 +954,42 @@ feature-set for programming Vala effectively.")
    (description "Nordic is a Gtk3.20+ theme created using the Nord color
 pallete.")
    (license license:gpl3))))
+
+(define-public tiramisu
+  (let ((commit "8eb946dae0e2f98d3850d89e1bb535640e8c3266")
+        (revision "0"))
+    (package
+      (name "tiramisu")
+      (version (git-version "1.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/Sweets/tiramisu")
+                      (commit commit)))
+                (sha256
+                 (base32
+                  "0wz2r8369d40vnxswknx0zxzbs03gzv0nc8al4g0ffg972p15j25"))
+                (file-name (git-file-name name version))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           (delete 'configure)
+           (delete 'check)
+           (replace 'install
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let ((out (assoc-ref outputs "out")))
+                 (install-file "tiramisu" (string-append out "/bin"))
+                 #t))))
+         #:make-flags
+         (list (string-append "CC=" ,(cc-for-target)))))
+      (inputs
+       `(("glib" ,glib)))
+      (native-inputs
+       `(("pkg-config" ,pkg-config)))
+      (home-page "https://github.com/Sweets/tiramisu")
+      (synopsis "Desktop notifications, the UNIX way")
+      (description "tiramisu is a notification daemon based on dunst that
+outputs notifications to STDOUT in order to allow the user to process
+notifications any way they prefer.")
+      (license license:expat))))

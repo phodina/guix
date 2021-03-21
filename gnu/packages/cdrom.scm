@@ -3,7 +3,7 @@
 ;;; Copyright © 2013, 2014 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2015 Paul van der Walt <paul@denknerd.org>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 John Darrington <jmd@gnu.org>
@@ -156,10 +156,14 @@ extraction from CDs.")
 libcdio.")
     (license gpl3+)))
 
+;; Xorriso is used by Guix for creating ISO images. If you change this package,
+;; please make sure the Guix functionality still works by running some related
+;; system tests.
+;; For example, try running `make check-system TESTS=iso-image-installer`.
 (define-public xorriso
   (package
     (name "xorriso")
-    (version "1.5.4.pl02")
+    (version "1.5.2")
     (outputs '("out" "gui"))
     (source (origin
              (method url-fetch)
@@ -167,7 +171,7 @@ libcdio.")
                                  version ".tar.gz"))
              (sha256
               (base32
-               "0wi92lxpm3dcjglmmfbh4z37w8jmbx0qmhh98gvzbjwx98ykkiry"))))
+               "1rqpzj95f70jfwpn4lamasfgqpizjsipz12aprdhri777b4zas9v"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -858,14 +862,14 @@ laid out on the image.")
 (define-public libburn
   (package
     (name "libburn")
-    (version "1.5.2")
+    (version "1.5.4")
     (source (origin
              (method url-fetch)
              (uri (string-append "http://files.libburnia-project.org/releases/"
                                  "libburn-" version ".tar.gz"))
              (sha256
               (base32
-               "09sjrvq8xsj1gnl2wwyv4lbmicyzzl6x1ac2rrn53xnp34bxnckv"))))
+               "0m1vyry6pi115nysfgb0cg313qqhnlxqdg7f920wpiar0z8mjl2j"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -880,14 +884,14 @@ DVD-RW, DVD-R, DVD-R/DL, BD-R, and BD-RE.")
 (define-public libisofs
   (package
     (name "libisofs")
-    (version "1.5.2")
+    (version "1.5.4")
     (source (origin
              (method url-fetch)
              (uri (string-append "http://files.libburnia-project.org/releases/"
                                  "libisofs-" version ".tar.gz"))
              (sha256
               (base32
-               "002mcyqwg625a8hqvsrmgm26mhhfwj0j7rahfhsqirmk02b16npg"))))
+               "13m82l13cb5d7ca53dv3akma1jr9gw0hnnshdwqpj6ahly0fv85a"))))
     (build-system gnu-build-system)
     (inputs
      `(("zlib" ,zlib)

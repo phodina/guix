@@ -22,11 +22,13 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu services cuirass)
+  #:use-module (guix channels)
   #:use-module (guix gexp)
   #:use-module (guix records)
   #:use-module (guix utils)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages ci)
+  #:use-module (gnu packages databases)
   #:use-module (gnu packages version-control)
   #:use-module (gnu services)
   #:use-module (gnu services base)
@@ -34,6 +36,8 @@
   #:use-module (gnu services shepherd)
   #:use-module (gnu services admin)
   #:use-module (gnu system shadow)
+  #:use-module (srfi srfi-1)
+  #:use-module (ice-9 match)
   #:export (<cuirass-remote-server-configuration>
             cuirass-remote-server-configuration
             cuirass-remote-server-configuration?
@@ -93,6 +97,8 @@
                     (default "cuirass"))
   (interval         cuirass-configuration-interval ;integer (seconds)
                     (default 60))
+  (parameters       cuirass-configuration-parameters ;string
+                    (default #f))
   (remote-server    cuirass-configuration-remote-server
                     (default #f))
   (database         cuirass-configuration-database ;string
@@ -109,8 +115,6 @@
                     (default #f))
   (fallback?        cuirass-configuration-fallback? ;boolean
                     (default #f))
-  (zabbix-uri       cuirass-configuration-zabbix-uri ;string
-                    (default #f))
   (extra-options    cuirass-configuration-extra-options
                     (default '())))
 
@@ -123,6 +127,7 @@
         (user             (cuirass-configuration-user config))
         (group            (cuirass-configuration-group config))
         (interval         (cuirass-configuration-interval config))
+        (parameters       (cuirass-configuration-parameters config))
         (remote-server    (cuirass-configuration-remote-server config))
         (database         (cuirass-configuration-database config))
         (port             (cuirass-configuration-port config))
@@ -131,12 +136,11 @@
         (use-substitutes? (cuirass-configuration-use-substitutes? config))
         (one-shot?        (cuirass-configuration-one-shot? config))
         (fallback?        (cuirass-configuration-fallback? config))
-        (zabbix-uri       (cuirass-configuration-zabbix-uri config))
         (extra-options    (cuirass-configuration-extra-options config)))
     `(,(shepherd-service
         (documentation "Run Cuirass.")
         (provision '(cuirass))
-        (requirement '(guix-daemon postgres networking))
+        (requirement '(guix-daemon postgres postgres-roles networking))
         (start #~(make-forkexec-constructor
                   (list (string-append #$cuirass "/bin/cuirass")
                         "--cache-directory" #$cache-directory
@@ -144,15 +148,15 @@
                         #$(scheme-file "cuirass-specs.scm" specs)
                         "--database" #$database
                         "--interval" #$(number->string interval)
+                        #$@(if parameters
+                               (list (string-append
+                                      "--parameters="
+                                      parameters))
+                               '())
                         #$@(if remote-server '("--build-remote") '())
                         #$@(if use-substitutes? '("--use-substitutes") '())
                         #$@(if one-shot? '("--one-shot") '())
                         #$@(if fallback? '("--fallback") '())
-                        #$@(if zabbix-uri
-                               (list (string-append
-                                      "--zabbix-uri="
-                                      zabbix-uri))
-                               '())
                         #$@extra-options)
 
                   #:environment-variables
@@ -167,7 +171,7 @@
       ,(shepherd-service
         (documentation "Run Cuirass web interface.")
         (provision '(cuirass-web))
-        (requirement '(guix-daemon postgres networking))
+        (requirement '(cuirass))
         (start #~(make-forkexec-constructor
                   (list (string-append #$cuirass "/bin/cuirass")
                         "--cache-directory" #$cache-directory
@@ -176,6 +180,11 @@
                         "--port" #$(number->string port)
                         "--listen" #$host
                         "--interval" #$(number->string interval)
+                        #$@(if parameters
+                               (list (string-append
+                                      "--parameters="
+                                      parameters))
+                               '())
                         #$@(if use-substitutes? '("--use-substitutes") '())
                         #$@(if fallback? '("--fallback") '())
                         #$@extra-options)
@@ -192,7 +201,7 @@
                (shepherd-service
                 (documentation "Run Cuirass remote build server.")
                 (provision '(cuirass-remote-server))
-                (requirement '(avahi-daemon cuirass guix-daemon networking))
+                (requirement '(avahi-daemon cuirass))
                 (start #~(make-forkexec-constructor
                           (list (string-append #$cuirass "/bin/remote-server")
                                 (string-append "--database=" #$database)
@@ -207,6 +216,11 @@
                                        (list (string-append
                                               "--publish-port="
                                               (number->string publish-port)))
+                                       '())
+                                #$@(if parameters
+                                       (list (string-append
+                                              "--parameters="
+                                              parameters))
                                        '())
                                 #$@(if trigger-url
                                        (list
@@ -256,8 +270,6 @@
          (remote-cache   (and remote-server
                               (cuirass-remote-server-configuration-cache
                                remote-server)))
-         (db             (dirname
-                          (cuirass-configuration-database config)))
          (user           (cuirass-configuration-user config))
          (log            "/var/log/cuirass")
          (group          (cuirass-configuration-group config)))
@@ -266,7 +278,6 @@
           (use-modules (guix build utils))
 
           (mkdir-p #$cache)
-          (mkdir-p #$db)
           (mkdir-p #$log)
 
           (when #$remote-cache
@@ -275,7 +286,6 @@
           (let ((uid (passwd:uid (getpw #$user)))
                 (gid (group:gid (getgr #$group))))
             (chown #$cache uid gid)
-            (chown #$db uid gid)
             (chown #$log uid gid)
 
             (when #$remote-cache
@@ -299,6 +309,8 @@
      (service-extension activation-service-type cuirass-activation)
      (service-extension shepherd-root-service-type cuirass-shepherd-service)
      (service-extension account-service-type cuirass-account)
+     ;; Make sure postgresql and postgresql-role are instantiated.
+     (service-extension postgresql-service-type (const #t))
      (service-extension postgresql-role-service-type
                         cuirass-postgresql-role)))
    (description
@@ -311,6 +323,8 @@
                     (default cuirass))
   (workers          cuirass-remote-worker-workers ;int
                     (default 1))
+  (server           cuirass-remote-worker-server ;string
+                    (default #f))
   (systems          cuirass-remote-worker-systems ;list
                     (default (list (%current-system))))
   (log-file         cuirass-remote-worker-log-file ;string
@@ -326,7 +340,8 @@
   "Return a <shepherd-service> for the Cuirass remote worker service with
 CONFIG."
   (match-record config <cuirass-remote-worker-configuration>
-    (cuirass workers systems log-file publish-port public-key private-key)
+    (cuirass workers server systems log-file publish-port
+             public-key private-key)
     (list (shepherd-service
            (documentation "Run Cuirass remote build worker.")
            (provision '(cuirass-remote-worker))
@@ -335,6 +350,9 @@ CONFIG."
                      (list (string-append #$cuirass "/bin/remote-worker")
                            (string-append "--workers="
                                           #$(number->string workers))
+                           #$@(if server
+                                  (list (string-append "--server=" server))
+                                  '())
                            #$@(if systems
                                   (list (string-append
                                          "--systems="

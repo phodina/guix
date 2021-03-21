@@ -7,6 +7,7 @@
 ;;; Copyright © 2019 Meiyo Peng <meiyo@riseup.net>
 ;;; Copyright © 2020 Paul Garlick <pgarlick@tourbillion-technology.com>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
+;;; Copyright © 2021 Greg Hogan <code@greghogan.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -166,14 +167,14 @@ different programming languages.")
 (define-public fmt
   (package
     (name "fmt")
-    (version "7.0.3")
+    (version "7.1.3")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/fmtlib/fmt/releases/download/"
                            version "/fmt-" version ".zip"))
        (sha256
-        (base32 "0kgajl3qsrdyj0csqsz8b8h84kasdy0pnh16byl0y1vlsaddzkyy"))))
+        (base32 "17sc10hfg087z0s774lnn05wwy3bfzmcv7j448p92pr0s02cb62x"))))
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags '("-DBUILD_SHARED_LIBS=ON")))
@@ -270,14 +271,14 @@ seen in a terminal.")
 (define-public highlight
   (package
     (name "highlight")
-    (version "3.60")
+    (version "3.62")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://www.andre-simon.de/zip/highlight-"
                            version ".tar.bz2"))
        (sha256
-        (base32 "098xwzj70f2kp9zbfknlqca41lgdjv71clfx1m84151xdszv8p56"))))
+        (base32 "088di7qxd6b2r22qljllhnly0r9a0lfnwnfqswjn23s09awjbl6p"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no tests

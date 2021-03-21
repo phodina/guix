@@ -2,6 +2,7 @@
 ;;; Copyright © 2017 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2018 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2020 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -28,6 +29,7 @@
   #:use-module (guix packages)
   #:use-module (guix records)
   #:use-module (guix gexp)
+  #:use-module (guix modules)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-34)
@@ -256,9 +258,9 @@
   (let ((id (knot-key-configuration-id key)))
     (unless (and (string? id) (not (equal? id "")))
       (error-out "key id must be a non empty string.")))
-  (unless (memq '(#f hmac-md5 hmac-sha1 hmac-sha224 hmac-sha256 hmac-sha384 hmac-sha512)
-                (knot-key-configuration-algorithm key))
-          (error-out "algorithm must be one of: #f, 'hmac-md5, 'hmac-sha1,
+  (unless (memq (knot-key-configuration-algorithm key)
+                '(#f hmac-md5 hmac-sha1 hmac-sha224 hmac-sha256 hmac-sha384 hmac-sha512))
+    (error-out "algorithm must be one of: #f, 'hmac-md5, 'hmac-sha1,
 'hmac-sha224, 'hmac-sha256, 'hmac-sha384 or 'hmac-sha512")))
 
 (define (verify-knot-keystore-configuration keystore)
@@ -267,9 +269,9 @@
   (let ((id (knot-keystore-configuration-id keystore)))
     (unless (and (string? id) (not (equal? id "")))
       (error-out "keystore id must be a non empty string.")))
-  (unless (memq '(pem pkcs11)
-                (knot-keystore-configuration-backend keystore))
-          (error-out "backend must be one of: 'pem or 'pkcs11")))
+  (unless (memq (knot-keystore-configuration-backend keystore)
+                '(pem pkcs11))
+    (error-out "backend must be one of: 'pem or 'pkcs11")))
 
 (define (verify-knot-policy-configuration policy)
   (unless (knot-policy-configuration? policy)
@@ -288,7 +290,7 @@
     (unless (and (string? id) (not (equal? id "")))
       (error-out "acl id must be a non empty string."))
     (unless (and (list? address)
-                 (fold (lambda (x1 x2) (and (string? x1) (string? x2))) "" address))
+                 (every string? address))
       (error-out "acl address must be a list of strings.")))
   (unless (boolean? (knot-acl-configuration-deny? acl))
     (error-out "deny? must be #t or #f.")))
@@ -607,17 +609,14 @@
           (shell (file-append shadow "/sbin/nologin")))))
 
 (define (knot-activation config)
-  #~(begin
-      (use-modules (guix build utils))
-      (define (mkdir-p/perms directory owner perms)
-        (mkdir-p directory)
-        (chown directory (passwd:uid owner) (passwd:gid owner))
-        (chmod directory perms))
-      (mkdir-p/perms #$(knot-configuration-run-directory config)
-                     (getpwnam "knot") #o755)
-      (mkdir-p/perms "/var/lib/knot" (getpwnam "knot") #o755)
-      (mkdir-p/perms "/var/lib/knot/keys" (getpwnam "knot") #o755)
-      (mkdir-p/perms "/var/lib/knot/keys/keys" (getpwnam "knot") #o755)))
+  (with-imported-modules (source-module-closure '((gnu build activation)))
+    #~(begin
+        (use-modules (gnu build activation))
+        (mkdir-p/perms #$(knot-configuration-run-directory config)
+                       (getpwnam "knot") #o755)
+        (mkdir-p/perms "/var/lib/knot" (getpwnam "knot") #o755)
+        (mkdir-p/perms "/var/lib/knot/keys" (getpwnam "knot") #o755)
+        (mkdir-p/perms "/var/lib/knot/keys/keys" (getpwnam "knot") #o755))))
 
 (define (knot-shepherd-service config)
   (let* ((config-file (knot-config-file config))

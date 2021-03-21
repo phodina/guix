@@ -11,7 +11,7 @@
 ;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2016 Al McElrath <hello@yrns.org>
-;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020, 2021 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Lukas Gradl <lgradl@openmailbox.org>
 ;;; Copyright © 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016, 2017 Troy Sankey <sankeytms@gmail.com>
@@ -40,6 +40,7 @@
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2020 B. Wilson <elaexuotee@wilsonb.com>
 ;;; Copyright © 2020 divoplade <d@divoplade.fr>
+;;; Copyright © 2021 Xinglu Chen <public@yoctocell.xyz>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -57,6 +58,7 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages mail)
+  #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages aspell)
@@ -410,7 +412,7 @@ to run without any changes.")
 (define-public fetchmail
   (package
     (name "fetchmail")
-    (version "6.4.14")
+    (version "6.4.17")
     (source
      (origin
        (method url-fetch)
@@ -418,7 +420,7 @@ to run without any changes.")
                            (version-major+minor version) "/"
                            "fetchmail-" version ".tar.xz"))
        (sha256
-        (base32 "1jxxb3qyrh7118fwqa3bhirjh97j2w8r71s8vcb6vp3w1wwhfis2"))))
+        (base32 "1ijh9l7pg2yk5s5h1yj3vpd1az31giqy9bjrna10daj13gqws6x4"))))
     (build-system gnu-build-system)
     (inputs
      `(("openssl" ,openssl)))
@@ -445,7 +447,7 @@ aliasing facilities to work just as they would on normal mail.")
 (define-public mutt
   (package
     (name "mutt")
-    (version "2.0.5")
+    (version "2.0.6")
     (source (origin
              (method url-fetch)
              (uri (list
@@ -455,7 +457,7 @@ aliasing facilities to work just as they would on normal mail.")
                                    version ".tar.gz")))
              (sha256
               (base32
-               "0k80s27sf7djb7zxj81ihksr8jkr71mfaa8976fzh41i1pn5l7g2"))
+               "165mpivdhvhavglykwlz0hss2akxd6i6l40rgxs29mjzi52irqw1"))
              (patches (search-patches "mutt-store-references.patch"))))
     (build-system gnu-build-system)
     (inputs
@@ -1249,14 +1251,14 @@ invoking @command{notifymuch} from the post-new hook.")
 (define-public notmuch
   (package
     (name "notmuch")
-    (version "0.31.3")
+    (version "0.31.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://notmuchmail.org/releases/notmuch-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "1jisflxdly1nlyy17212ch3hk96dns4j9f5552jz724gs2p42h28"))))
+                "0magnyjjhhv11nwcm2596hdxszrj61y69i0hmwqdc3v6cxjvcqc6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:modules ((guix build gnu-build-system)
@@ -1438,14 +1440,14 @@ pairs have previously synchronized.")
 (define-public getmail
   (package
     (name "getmail")
-    (version "5.14")
+    (version "5.15")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://pyropus.ca/software/getmail/old-versions/"
                            "getmail-" version ".tar.gz"))
        (sha256
-        (base32 "1hcrd9h4g12f5gvl1djsbchcjry02ghq4icdr897s8v48pkrzagk"))))
+        (base32 "0ahn2jyj4ka996qzs99id59pwxv6sqxp61g7drcf53rzzigq0lyl"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f                      ; no tests
@@ -1474,7 +1476,7 @@ useful features.")
              (sha256
                (base32 "0g7an003simfdn7ihg9yjv7hl2czsmjsndjrp39i7cad8icixscn"))))
     (build-system gnu-build-system)
-    (native-inputs `(("autoconf" ,autoconf-wrapper)
+    (native-inputs `(("autoconf" ,autoconf)
                      ("automake" ,automake)
                      ("libtool" ,libtool)
                      ("pkg-config" ,pkg-config)))
@@ -1754,7 +1756,7 @@ facilities for checking incoming mail.")
   (package
     (name "dovecot")
     ;; Also update dovecot-pigeonhole when updating to a new minor version.
-    (version "2.3.13")
+    (version "2.3.14")
     (source
      (origin
        (method url-fetch)
@@ -1762,7 +1764,7 @@ facilities for checking incoming mail.")
                            (version-major+minor version) "/"
                            "dovecot-" version ".tar.gz"))
        (sha256
-        (base32 "1i7ijss79a23v7b6lycfzaa8r5rh01k0h0b9h0j4a6n11sw7by53"))))
+        (base32 "0jm3p52z619v7ajh533g2g7d790k82fk0w7ry0zqlm8ymzrxgcy8"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1823,7 +1825,7 @@ It supports mbox/Maildir and its own dbox/mdbox formats.")
   (let ((dovecot-version (version-major+minor (package-version dovecot))))
     (package
       (name "dovecot-pigeonhole")
-      (version "0.5.13")
+      (version "0.5.14")
       (source
        (origin
          (method url-fetch)
@@ -1831,7 +1833,7 @@ It supports mbox/Maildir and its own dbox/mdbox formats.")
                "https://pigeonhole.dovecot.org/releases/" dovecot-version "/"
                "dovecot-" dovecot-version "-pigeonhole-" version ".tar.gz"))
          (sha256
-          (base32 "05xz2d82ck6lmv94nbc3qff09j8b60a5640i3fmqwqsvv9kfa7wi"))
+          (base32 "1lmjzz4kd90wbdslacybizd1dks4bhwmrx39lj8b19naldw0zjk8"))
          (modules '((guix build utils)))
          (snippet
           '(begin
@@ -1986,14 +1988,14 @@ hashing scheme (such as scrypt) plug-in for @code{Dovecot}.")
 (define-public isync
   (package
     (name "isync")
-    (version "1.3.3")
+    (version "1.4.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/isync/isync/"
                            version "/isync-" version ".tar.gz"))
        (sha256 (base32
-                "10n8ykag0q3ws6fc15xqyg3v980v5nq3kzpablly2rh2z7vkn8gj"))))
+                "0l01880fcyqn6xq9n8236ha5n2a3wl5g8rmv22z8nv5hgfsxndhd"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("perl" ,perl)))
@@ -3909,7 +3911,9 @@ It is a replacement for the @command{urlview} program.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "07h48s5qf08503pp9kafqbwipdqghiif22ghki7z8j67gyp04l6l"))))
+                "07h48s5qf08503pp9kafqbwipdqghiif22ghki7z8j67gyp04l6l"))
+              (patches (search-patches "ytnef-CVE-2021-3403.patch"
+                                       "ytnef-CVE-2021-3404.patch"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("autoconf" ,autoconf)
@@ -3920,6 +3924,45 @@ It is a replacement for the @command{urlview} program.")
     (description "This package provides a TNEF stream reader library and
 related tools to process winmail.dat files.")
     (license license:gpl2+)))
+
+(define-public l2md
+  ;; No official release.
+  (let ((commit "f7286b49bb5fce25c898c143712fe34ad4d7864e")
+        (revision "1"))
+    (package
+      (name "l2md")
+      (version (git-version "0.1.0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://git.kernel.org/pub/scm/linux/kernel/git/dborkman/l2md.git")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0hxz8i70v1xgv30zjclfvmjqszn073c7i8nwmswi2lr6vd7cklvp"))))
+      (build-system gnu-build-system)
+      (inputs
+       `(("libgit2" ,libgit2)))
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           (delete 'configure)          ;no configure scripts
+           (delete 'check)              ;no tests
+           (add-before 'install 'mkdir
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let ((l2md (string-append (assoc-ref outputs "out") "/bin")))
+                 (mkdir-p l2md)))))
+         #:make-flags
+         (list ,(string-append "CC=" (cc-for-target))
+               (string-append "PREFIX=" %output "/bin"))))
+      (home-page
+       "https://git.kernel.org/pub/scm/linux/kernel/git/dborkman/l2md.git")
+      (synopsis "Import public-inbox archives via Git")
+      (description
+       "The @command{l2md} command line tool imports public-inbox archives via
+Git and exports them in maildir format or to an MDA through a pipe.")
+      (license license:gpl2))))
 
 (define-public public-inbox
   (package

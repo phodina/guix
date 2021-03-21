@@ -114,6 +114,7 @@ MODULES =					\
   guix/channels.scm				\
   guix/gnu-maintenance.scm			\
   guix/self.scm					\
+  guix/substitutes.scm				\
   guix/upstream.scm				\
   guix/licenses.scm				\
   guix/lint.scm				\
@@ -250,6 +251,7 @@ MODULES =					\
   guix/import/github.scm   			\
   guix/import/gnome.scm				\
   guix/import/gnu.scm				\
+  guix/import/go.scm				\
   guix/import/hackage.scm			\
   guix/import/json.scm				\
   guix/import/kde.scm				\
@@ -293,6 +295,7 @@ MODULES =					\
   guix/scripts/import/elpa.scm  		\
   guix/scripts/import/gem.scm			\
   guix/scripts/import/gnu.scm			\
+  guix/scripts/import/go.scm			\
   guix/scripts/import/hackage.scm		\
   guix/scripts/import/json.scm  		\
   guix/scripts/import/nix.scm			\
@@ -360,6 +363,10 @@ AUX_FILES =						\
   gnu/packages/aux-files/chromium/master-preferences.json		\
   gnu/packages/aux-files/emacs/guix-emacs.el		\
   gnu/packages/aux-files/guix.vim			\
+  gnu/packages/aux-files/linux-libre/5.11-arm.conf	\
+  gnu/packages/aux-files/linux-libre/5.11-arm64.conf	\
+  gnu/packages/aux-files/linux-libre/5.11-i686.conf	\
+  gnu/packages/aux-files/linux-libre/5.11-x86_64.conf	\
   gnu/packages/aux-files/linux-libre/5.10-arm.conf	\
   gnu/packages/aux-files/linux-libre/5.10-arm64.conf	\
   gnu/packages/aux-files/linux-libre/5.10-i686.conf	\
@@ -451,6 +458,7 @@ SCM_TESTS =					\
   tests/git-authenticate.scm			\
   tests/glob.scm				\
   tests/gnu-maintenance.scm			\
+  tests/go.scm					\
   tests/grafts.scm				\
   tests/graph.scm				\
   tests/gremlin.scm				\
@@ -476,6 +484,7 @@ SCM_TESTS =					\
   tests/scripts.scm				\
   tests/search-paths.scm			\
   tests/services.scm				\
+  tests/services/file-sharing.scm		\
   tests/services/linux.scm			\
   tests/sets.scm				\
   tests/size.scm				\
@@ -603,14 +612,7 @@ EXTRA_DIST +=						\
   etc/historical-authorizations				\
   build-aux/build-self.scm				\
   build-aux/compile-all.scm				\
-  build-aux/hydra/evaluate.scm				\
-  build-aux/hydra/gnu-system.scm			\
-  build-aux/hydra/guix.scm				\
-  build-aux/hydra/guix-modular.scm			\
-  build-aux/cuirass/gnu-system.scm			\
-  build-aux/cuirass/guix-modular.scm			\
   build-aux/cuirass/hurd-manifest.scm			\
-  build-aux/cuirass/hydra-to-cuirass.scm		\
   build-aux/check-final-inputs-self-contained.scm	\
   build-aux/check-channel-news.scm			\
   build-aux/compile-as-derivation.scm			\
@@ -950,28 +952,18 @@ check-channel-news: $(GOBJECTS)
 	$(AM_V_at)$(top_builddir)/pre-inst-env "$(GUILE)"	\
 	  "$(top_srcdir)/build-aux/check-channel-news.scm"
 
-# Compute the Hydra jobs and write them in the target file.
-hydra-jobs.scm: $(GOBJECTS)
-	$(AM_V_at)$(MKDIR_P) "`dirname "$@"`"
+# Compute the Cuirass jobs.
+cuirass-jobs: $(GOBJECTS)
+	rm -rf "$@"
+	$(AM_V_at)$(MKDIR_P) "$@"
 	$(AM_V_GEN)$(top_builddir)/pre-inst-env "$(GUILE)"		\
-	  "$(top_srcdir)/build-aux/hydra/evaluate.scm"			\
-	  "$(top_srcdir)/build-aux/hydra/gnu-system.scm" > "$@.tmp"
-	$(AM_V_at)mv "$@.tmp" "$@"
-
-# Compute the Cuirass jobs and write them in the target file.
-cuirass-jobs.scm: $(GOBJECTS)
-	$(AM_V_at)$(MKDIR_P) "`dirname "$@"`"
-	$(AM_V_GEN)$(top_builddir)/pre-inst-env "$(GUILE)"		\
-	  "$(top_srcdir)/build-aux/hydra/evaluate.scm"			\
-	  "$(top_srcdir)/build-aux/cuirass/gnu-system.scm" 		\
-	  cuirass > "$@.tmp"
-	$(AM_V_at)mv "$@.tmp" "$@"
+	  "$(top_srcdir)/build-aux/cuirass/evaluate.scm" "$@"
 
 .PHONY: gen-ChangeLog gen-AUTHORS gen-tarball-version
 .PHONY: assert-no-store-file-names assert-binaries-available
 .PHONY: assert-final-inputs-self-contained check-channel-news
 .PHONY: clean-go make-go as-derivation authenticate
-.PHONY: update-guix-package update-NEWS release
+.PHONY: update-guix-package update-NEWS cuirass-jobs release
 
 # Downloading up-to-date PO files.
 

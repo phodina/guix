@@ -19,6 +19,7 @@
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Hendur Saga <hendursaga@yahoo.com>
 ;;; Copyright © 2020 pukkamustard <pukkamustard@posteo.net>
+;;; Copyright © 2021 Ellis Kenyő <me@elken.dev>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -71,6 +72,7 @@
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages tcl)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages xml)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
@@ -78,6 +80,7 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system cargo)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system copy)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system go)
   #:use-module (guix build-system perl)
@@ -111,7 +114,7 @@ communication, encryption, decryption, signatures, etc.")
 (define-public libmd
   (package
     (name "libmd")
-    (version "1.0.1")
+    (version "1.0.3")
     (source (origin
             (method url-fetch)
             (uri
@@ -122,7 +125,7 @@ communication, encryption, decryption, signatures, etc.")
                              version ".tar.xz")))
             (sha256
              (base32
-              "0waclg2d5qin3r26gy5jvy4584ik60njc8pqbzwk0lzq3j9ynkp1"))))
+              "0jmga8y94h857ilra3qjaiax3wd5pd6mx1h120zhl9fcjmzhj0js"))))
     (build-system gnu-build-system)
     (synopsis "Message Digest functions from BSD systems")
     (description
@@ -884,14 +887,14 @@ SHA256, SHA512, SHA3, AICH, ED2K, Tiger, DC++ TTH, BitTorrent BTIH, GOST R
 (define-public botan
   (package
     (name "botan")
-    (version "2.12.1")
+    (version "2.17.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://botan.randombit.net/releases/"
                                   "Botan-" version ".tar.xz"))
               (sha256
                (base32
-                "1ada3ga7b0z4m0vjmxlvfi4nsic2l8kjcy85jwss3z2i58a5y0vy"))))
+                "121vn1aryk36cpks70kk4c4cfic5g0qs82bf92xap9258ijkn4kr"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
@@ -913,6 +916,8 @@ SHA256, SHA512, SHA3, AICH, ED2K, Tiger, DC++ TTH, BitTorrent BTIH, GOST R
 
                        ;; Recommended by upstream
                        "--with-zlib" "--with-bzip2" "--with-sqlite3"))))
+         (add-before 'check 'library-path-for-tests
+           (lambda _ (setenv "LD_LIBRARY_PATH" (getcwd))))
          (replace 'check
            (lambda _ (invoke "./botan-test"))))))
     (native-inputs
@@ -1234,7 +1239,7 @@ Trusted comments are signed, thus verified, before being displayed.")
 (define-public libolm
   (package
     (name "libolm")
-    (version "3.2.1")
+    (version "3.2.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1242,7 +1247,7 @@ Trusted comments are signed, thus verified, before being displayed.")
                     (commit version)))
               (sha256
                (base32
-                "14b5cplcnbf2baq0lvz4f97m6swxpb13rvxdajxyw3s4mbvasia4"))
+                "0qji25wiwmkxyfpraxj96c54hyayqmjkvwh0gsy5gb5pz5bp4mcy"))
               (file-name (git-file-name name version))))
     (build-system cmake-build-system)
     (arguments
@@ -1335,3 +1340,39 @@ version 3) onion addresses.  It allows one to produce customized vanity .onion
 addresses using a brute-force method.")
     (home-page "https://github.com/cathugger/mkp224o")
     (license license:cc0)))
+
+(define-public transcrypt
+  (package
+    (name "transcrypt")
+    (version "2.1.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/elasticdog/transcrypt")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "0bpz1hazbhfb6pqi68x55kq6a31bgh6vwij836slmi4jqiwvnh5a"))
+       (file-name (git-file-name name version))))
+    (inputs
+     `(("git" ,git)
+       ("openssl" ,openssl)))
+    (build-system copy-build-system)
+    (arguments
+     `(#:install-plan
+       '(("transcrypt" "bin/transcrypt")
+         ("man/transcrypt.1" "share/man/man1/transcrypt.1")
+         ("contrib/bash/transcrypt"
+          "share/bash-completion/completions/transcrypt")
+         ("contrib/zsh/_transcrypt"
+          "share/zsh/site-functions/_transcrypt"))))
+    (home-page "https://github.com/elasticdog/transcrypt")
+    (synopsis "Transparently encrypt files within a git repository")
+    (description
+     "Transcrypt is a script to configure transparent encryption of sensitive
+files stored in a Git repository.  Files that you choose will be automatically
+encrypted when you commit them, and automatically decrypted when you check
+them out.  The process will degrade gracefully, so even people without your
+encryption password can safely commit changes to the repository's
+non-encrypted files.")
+    (license license:expat)))

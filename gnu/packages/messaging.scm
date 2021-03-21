@@ -78,9 +78,12 @@
   #:use-module (gnu packages guile)
   #:use-module (gnu packages icu4c)
   #:use-module (gnu packages image)
+  #:use-module (gnu packages kde)
+  #:use-module (gnu packages kerberos)
   #:use-module (gnu packages less)
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages libidn)
+  #:use-module (gnu packages libreoffice)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages logging)
   #:use-module (gnu packages lua)
@@ -103,6 +106,7 @@
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages readline)
+  #:use-module (gnu packages ruby)
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages tcl)
@@ -130,10 +134,66 @@
   #:use-module (guix packages)
   #:use-module (guix utils))
 
+(define-public psi
+  (package
+    (name "psi")
+    (version "1.5")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append "mirror://sourceforge/psi/Psi/"
+                       version "/psi-" version ".tar.xz"))
+       (modules '((guix build utils)))
+       (snippet
+        `(begin
+           (delete-file-recursively "3rdparty")))
+       (sha256
+        (base32 "1dxmm1d1zr0pfs51lba732ipm6hm2357jlfb934lvarzsh7karri"))))
+    (build-system qt-build-system)
+    (arguments
+     `(#:tests? #f                      ; No target
+       #:configure-flags
+       (list
+        "-DUSE_ENCHANT=ON"
+        "-DUSE_CCACHE=OFF")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-cmake
+           (lambda _
+             (substitute* "cmake/modules/FindHunspell.cmake"
+               (("hunspell-1.6")
+                "hunspell-1.7"))
+             #t)))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)
+       ("ruby" ,ruby)))
+    (inputs
+     `(("aspell" ,aspell)
+       ("enchant" ,enchant-1.6)
+       ("hunspell" ,hunspell)
+       ("libidn" ,libidn)
+       ("qca" ,qca)
+       ("qtbase" ,qtbase)
+       ("qtmultimedia" ,qtmultimedia)
+       ("qtsvg" ,qtsvg)
+       ("qtwebkit" ,qtwebkit)
+       ("qtx11extras" ,qtx11extras)
+       ("x11" ,libx11)
+       ("xext" ,libxext)
+       ("xcb" ,libxcb)
+       ("zlib" ,zlib)))
+    (synopsis "Qt-based XMPP Client")
+    (description "Psi is a capable XMPP client aimed at experienced users.
+Its design goals are simplicity and stability.")
+    (home-page "https://psi-im.org")
+    (license license:gpl2+)))
+
 (define-public libgnt
   (package
     (name "libgnt")
-    (version "2.14.0")
+    (version "2.14.1")
     (source
      (origin
        (method url-fetch)
@@ -141,7 +201,7 @@
         (string-append "mirror://sourceforge/pidgin/libgnt/"
                        version "/libgnt-" version ".tar.xz"))
        (sha256
-        (base32 "1grs9fxl404rscscxk1ff55fzjnwjqrisjxbasbssmcp1h1s4zkb"))))
+        (base32 "1n2bxg0ignn53c08cp69pj4sdg53kwlqn23rincyjmpr327fdhsy"))))
     (build-system meson-build-system)
     (outputs '("out" "doc"))
     (arguments
@@ -931,14 +991,14 @@ simultaneously and therefore appear under the same nickname on IRC.")
 (define-public python-nbxmpp
   (package
     (name "python-nbxmpp")
-    (version "1.0.2")
+    (version "2.0.2")
     (source
      (origin
        (method url-fetch)
        (uri
         (pypi-uri "nbxmpp" version))
        (sha256
-        (base32 "0vw5drr077w9ks4crnw6pwa4735ycyjdcm54knc3w4in4x5027wr"))))
+        (base32 "1482fva70i01w60fk70c0fhqmqgzi1fb4xflllz2v6c8mdqkd1m3"))))
     (build-system python-build-system)
     (native-inputs
      `(("glib:bin" ,glib "bin")))
@@ -946,6 +1006,7 @@ simultaneously and therefore appear under the same nickname on IRC.")
      `(("glib" ,glib)
        ("glib-networking" ,glib-networking)
        ("libsoup" ,libsoup)
+       ("python-gssapi" ,python-gssapi)
        ("python-idna" ,python-idna)
        ("python-precis-i18n" ,python-precis-i18n)
        ("python-pygobject" ,python-pygobject)))
@@ -962,7 +1023,7 @@ of xmpppy.")
 (define-public gajim
   (package
     (name "gajim")
-    (version "1.2.2")
+    (version "1.3.1")
     (source
      (origin
        (method url-fetch)
@@ -971,7 +1032,7 @@ of xmpppy.")
                        (version-major+minor version)
                        "/gajim-" version ".tar.gz"))
        (sha256
-        (base32 "1gfcp3b5nq43xxz5my8vfhfxnnli726j3hzcgwh9fzrzzd9ic3gx"))
+        (base32 "070h1n3miq99z6ln77plk3jlisgfqfs2yyn4rhchpf25zd8is1ba"))
        (patches (search-patches "gajim-honour-GAJIM_PLUGIN_PATH.patch"))))
     (build-system python-build-system)
     (arguments
@@ -985,6 +1046,13 @@ of xmpppy.")
         (guix build utils))
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'disable-failing-tests
+           (lambda _
+             ;; ModuleNotFoundError: No module named 'gajim.gui.emoji_data'
+             ;; https://dev.gajim.org/gajim/gajim/-/issues/10478
+             (delete-file "test/lib/gajim_mocks.py")
+             (delete-file "test/unit/test_gui_interface.py")
+             #t))
          (replace 'check
            (lambda _
              ;; Tests require a running X server.
@@ -1046,7 +1114,6 @@ of xmpppy.")
        ("geoclue" ,geoclue)
        ("glib" ,glib)
        ("glib-networking" ,glib-networking)
-       ("gnome-keyring" ,gnome-keyring)
        ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
        ("gsound",gsound)
        ("gspell" ,gspell)
@@ -1054,6 +1121,7 @@ of xmpppy.")
        ("gst-plugins-base" ,gst-plugins-base)
        ("gtk+" ,gtk+)
        ("gupnp-igd" ,gupnp-igd)
+       ("libsecret" ,libsecret)
        ("libsoup" ,libsoup)
        ("libxss" ,libxscrnsaver)
        ("network-manager" ,network-manager)
@@ -1078,7 +1146,7 @@ and OpenPGP) and available in 29 languages.")
 (define-public gajim-omemo
   (package
     (name "gajim-omemo")
-    (version "2.6.80")
+    (version "2.7.13")
     (source
      (origin
        (method url-fetch/zipbomb)
@@ -1087,7 +1155,7 @@ and OpenPGP) and available in 29 languages.")
          "https://ftp.gajim.org/plugins_releases/omemo_"
          version ".zip"))
        (sha256
-        (base32 "179hgx091c12258335znn1540jhp4z3n3wv5ksrgqq7l3jgc93d7"))))
+        (base32 "1msr71rvik05wjpa2inpkadddad2rxaqbqcww5qrdrcz75pm8brn"))))
     (build-system trivial-build-system)
     (arguments
      `(#:modules ((guix build utils))
@@ -1116,7 +1184,7 @@ multi-client end-to-end encryption.")
 (define-public gajim-openpgp
   (package
     (name "gajim-openpgp")
-    (version "1.2.14")
+    (version "1.3.9")
     (source
      (origin
        (method url-fetch/zipbomb)
@@ -1125,7 +1193,7 @@ multi-client end-to-end encryption.")
          "https://ftp.gajim.org/plugins_releases/openpgp_"
          version ".zip"))
        (sha256
-        (base32 "0wdjpf1i4pvl4ha4plfpywwi9aw5n2mhrpv8mmbidpawxqfbd94b"))))
+        (base32 "0fzvvrap1hmj4rbrcjs6cs5c9l9c0795bgw9vxxxk915n6j91m23"))))
     (build-system trivial-build-system)
     (arguments
      `(#:modules ((guix build utils))
@@ -1140,7 +1208,8 @@ multi-client end-to-end encryption.")
            #t))))
     (propagated-inputs
      `(("python-cryptography" ,python-cryptography)
-       ("python-gnupg" ,python-gnupg)))
+       ("python-gnupg" ,python-gnupg)
+       ("python-gpg" ,python-gpg)))
     (synopsis "Gajim OpenPGP plugin")
     (description "Gajim-OpenPGP is a plugin that adds support for the OpenPGP
 Encryption to Gajim.")
@@ -1882,7 +1951,7 @@ many bug fixes.")
 (define-public loudmouth
   (package
     (name "loudmouth")
-    (version "1.5.3")
+    (version "1.5.4")
     (source
      (origin
        (method url-fetch)
@@ -1890,16 +1959,29 @@ many bug fixes.")
                            name "-" version ".tar.bz2"))
        (sha256
         (base32
-         "0b6kd5gpndl9nzis3n6hcl0ldz74bnbiypqgqa1vgb0vrcar8cjl"))))
+         "03adv5xc84l9brcx0dpyqyffmsclans8yfrpnd357k6x3wfckjri"))))
     (build-system gnu-build-system)
+    (outputs '("out" "doc"))
+    (arguments
+     `(#:configure-flags
+       (list
+        "--disable-static"
+        "--enable-gtk-doc"
+        (string-append "--with-html-dir="
+                       (assoc-ref %outputs "doc")
+                       "/share/gtk-doc/html"))
+       #:make-flags
+       (list
+        "CFLAGS=-Wno-error=all")))
     (inputs
      `(("glib" ,glib)
        ("gnutls" ,gnutls)
+       ("krb5" ,mit-krb5)
        ("libidn" ,libidn)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("check" ,check)
-       ("glib" ,glib "bin") ; gtester
+       ("glib" ,glib "bin")             ; gtester
        ("gtk-doc" ,gtk-doc)))
     (home-page "https://mcabber.com/")
     (description
@@ -1914,28 +1996,35 @@ protocol allows.")
 (define-public mcabber
   (package
     (name "mcabber")
-    (version "1.1.1")
+    (version "1.1.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://mcabber.com/files/"
                            name "-" version ".tar.bz2"))
        (sha256
-        (base32 "0ngrcc8nzpzk4vw36ni3w073149zsi0yjh922xy9cy5a7srwx2fp"))))
+        (base32 "0q1i5acyghsmzas88qswvki8kkk2nfpr8zapgnxbcd3lwcxl38f4"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:configure-flags (list "--enable-otr"
-                               "--enable-aspell")))
+     `(#:configure-flags
+       (list
+        "--disable-static"
+        "--enable-otr"
+        "--enable-enchant"
+        "--enable-aspell")))
     (inputs
      `(("gpgme" ,gpgme)
        ("libotr" ,libotr)
        ("aspell" ,aspell)
+       ("enchant" ,enchant-1.6)
        ("libidn" ,libidn)
        ("glib" ,glib)
        ("ncurses" ,ncurses)
        ("loudmouth" ,loudmouth)))
     (native-inputs
-     `(("pkg-config" ,pkg-config)))
+     `(("perl" ,perl)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)))
     (home-page "https://mcabber.com")
     (description
      "Mcabber is a small XMPP (Jabber) console client, which includes features
@@ -2001,13 +2090,22 @@ is also scriptable and extensible via Guile.")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://github.com/boothj5/libmesode")
+                    (url "https://github.com/profanity-im/libmesode")
                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
                (base32
                 "1bxnkhrypgv41qyy1n545kcggmlw1hvxnhwihijhhcf2pxd2s654"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags (list "--disable-static")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-make
+           (lambda _
+             (substitute* "Makefile.am"
+               (("'\\^xmpp_'") "'.'"))
+             #t)))))
     (inputs
      `(("expat" ,expat)
        ("openssl" ,openssl)))
@@ -2020,14 +2118,14 @@ is also scriptable and extensible via Guile.")
     (description "Libmesode is a fork of libstrophe for use with Profanity
 XMPP Client.  In particular, libmesode provides extra TLS functionality such as
 manual SSL certificate verification.")
-    (home-page "https://github.com/boothj5/libmesode")
+    (home-page "https://github.com/profanity/libmesode")
     ;; Dual-licensed.
     (license (list license:gpl3+ license:x11))))
 
 (define-public libstrophe
   (package
     (name "libstrophe")
-    (version "0.9.3")
+    (version "0.10.1")
     (source
      (origin
        (method git-fetch)
@@ -2036,8 +2134,17 @@ manual SSL certificate verification.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1g1l0w9z9hdy5ncdvd9097gi7k7783did6py5h9camlpb2fnk5mk"))))
+        (base32 "11d341avsfr0z4lq15cy5dkmff6qpy91wkgzdpfdy31l27pa1g79"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags (list "--disable-static")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-make
+           (lambda _
+             (substitute* "Makefile.am"
+               (("'\\^xmpp_'") "'.'"))
+             #t)))))
     (inputs
      `(("expat" ,expat)
        ("openssl" ,openssl)))
@@ -2071,6 +2178,7 @@ are both supported).")
     (arguments
      `(#:configure-flags
        (list
+        "--disable-static"
         "--enable-notifications"
         "--enable-python-plugins"
         "--enable-c-plugins"
@@ -2092,10 +2200,12 @@ are both supported).")
        ("glib" ,glib)
        ("gpgme" ,gpgme)
        ("gtk+" ,gtk+-2)
+       ("libgcrypt" ,libgcrypt)
        ("libmesode" ,libmesode)
        ("libnotify" ,libnotify)
        ("libotr" ,libotr)
        ("libsignal-protocol-c" ,libsignal-protocol-c)
+       ;; ("libxss" ,libxss)
        ("ncurses" ,ncurses)
        ("openssl" ,openssl)
        ("python" ,python-wrapper)
@@ -2389,13 +2499,13 @@ QMatrixClient project.")
 (define-public hangups
   (package
     (name "hangups")
-    (version "0.4.11")
+    (version "0.4.13")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "hangups" version))
        (sha256
-        (base32 "165lravvlsgkv6pp3vgg785ihycvs43qzqxw2d2yygrc6pbhqlyv"))))
+        (base32 "015g635vnrxk5lf9n80rdcmh6chv8kmla1k2j7m1iijijs519ngn"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -2666,5 +2776,140 @@ as phones, embedded computers or microcontrollers.")
     (home-page "https://mosquitto.org/")
     ;; Dual licensed.
     (license (list license:epl1.0 license:edl1.0))))
+
+(define-public psi-plus
+  (package
+    (name "psi-plus")
+    (version "1.5.1482")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/psi-plus/psi-plus-snapshots")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (modules '((guix build utils)))
+       (snippet
+        `(begin
+           (delete-file-recursively "3rdparty")))
+       (sha256
+        (base32 "0lcx616hchwf492m1dm8ddb4qd2pmgf703ajnnb0y9ky99kgg8q2"))))
+    (build-system qt-build-system)
+    (arguments
+     `(#:tests? #f                      ; No target
+       #:imported-modules
+       (,@%qt-build-system-modules
+        (guix build glib-or-gtk-build-system))
+       #:modules
+       ((guix build qt-build-system)
+        ((guix build glib-or-gtk-build-system)
+         #:prefix glib-or-gtk:)
+        (guix build utils))
+       #:configure-flags
+       (list
+        "-DBUILD_PSIMEDIA=ON"           ; For A/V support
+        "-DENABLE_PLUGINS=ON"
+        "-DUSE_HUNSPELL=OFF"            ; Use Enchant instead
+        "-DUSE_ENCHANT=ON"
+        "-DUSE_CCACHE=OFF")             ; Not required
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-source
+           (lambda _
+             (substitute* "CMakeLists.txt"
+               (("\\$\\{PROJECT_SOURCE_DIR\\}/3rdparty/http-parser/http_parser.h")
+                "")
+               (("\\$\\{PROJECT_SOURCE_DIR\\}/3rdparty/qhttp/qhttp.pro")
+                "")
+               (("\\$\\{PROJECT_SOURCE_DIR\\}/3rdparty/qite/qite.pro")
+                "")
+               (("add_subdirectory\\( 3rdparty \\)")
+                ""))
+             (substitute* "src/CMakeLists.txt"
+               (("\\$\\{PROJECT_SOURCE_DIR\\}/3rdparty/qite/libqite")
+                "")
+               (("\\$\\{PROJECT_SOURCE_DIR\\}/3rdparty/http-parser")
+                "")
+               (("\\$\\{PROJECT_SOURCE_DIR\\}/3rdparty/qhttp/src/private")
+                "")
+               (("\\$\\{PROJECT_SOURCE_DIR\\}/3rdparty/qhttp/src")
+                "")
+               (("\\$\\{PROJECT_SOURCE_DIR\\}/3rdparty")
+                "")
+               (("add_dependencies\\(\\$\\{PROJECT_NAME\\} qhttp\\)")
+                "target_link_libraries(${PROJECT_NAME} qhttp)"))
+             (substitute* "src/src.cmake"
+               (("include\\(\\$\\{PROJECT_SOURCE_DIR\\}/3rdparty/qite/libqite/libqite.cmake\\)")
+                "list(APPEND EXTRA_LIBS qite)"))
+             (substitute* '("src/filesharingmanager.h" "src/widgets/psirichtext.cpp"
+                            "src/filesharingmanager.cpp" "src/widgets/psitextview.cpp"
+                            "src/chatview_te.cpp" "src/msgmle.cpp")
+               (("qite.h")
+                "qite/qite.h")
+               (("qiteaudio.h")
+                "qite/qiteaudio.h")
+               (("qiteaudiorecorder.h")
+                "qite/qiteaudiorecorder.h"))
+             #t))
+         (add-after 'install 'wrap-env
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (for-each
+                (lambda (name)
+                  (let ((file (string-append out "/bin/" name))
+                        (gst-plugin-path (getenv "GST_PLUGIN_SYSTEM_PATH"))
+                        (gi-typelib-path (getenv "GI_TYPELIB_PATH")))
+                    (wrap-program file
+                      `("GST_PLUGIN_SYSTEM_PATH" ":" prefix (,gst-plugin-path))
+                      `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path)))))
+                '("psi-plus")))
+             #t))
+         (add-after 'wrap-env 'glib-or-gtk-compile-schemas
+           (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-compile-schemas))
+         (add-after 'glib-or-gtk-compile-schemas 'glib-or-gtk-wrap
+           (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap)))))
+    (native-inputs
+     `(("glib:bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("perl" ,perl)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)
+       ("ruby" ,ruby)))
+    (inputs
+     `(("blake2" ,libb2)
+       ("dbus" ,dbus)
+       ("enchant" ,enchant)
+       ("glib" ,glib)
+       ("gstreamer" ,gstreamer)
+       ("gst-plugins-base" ,gst-plugins-base)
+       ("http-parser" ,http-parser)
+       ("libgcrypt" ,libgcrypt)
+       ("libgpg-error" ,libgpg-error)
+       ("libidn" ,libidn)
+       ("libotr" ,libotr)
+       ("libsignal-protocol-c" ,libsignal-protocol-c)
+       ("libtidy" ,tidy-html)
+       ("openssl" ,openssl)
+       ("qca" ,qca)
+       ("qhttp" ,qhttp)
+       ("qite" ,qite)
+       ("qtbase" ,qtbase)
+       ("qtkeychain" ,qtkeychain)
+       ("qtmultimedia" ,qtmultimedia)
+       ("qtsvg" ,qtsvg)
+       ("qtx11extras" ,qtx11extras)
+       ("usrsctp" ,usrsctp)
+       ("x11" ,libx11)
+       ("xext" ,libxext)
+       ("xcb" ,libxcb)
+       ("xss" ,libxscrnsaver)
+       ("zlib" ,zlib)))
+    (home-page "https://psi-plus.com/")
+    (synopsis "Qt-based XMPP Client")
+    (description
+     "Psi+ is a spin-off of Psi XMPP client.  It is a powerful XMPP client
+designed for experienced users.")
+    (license license:gpl2+)))
 
 ;;; messaging.scm ends here

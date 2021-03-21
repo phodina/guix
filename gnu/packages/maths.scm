@@ -30,7 +30,7 @@
 ;;; Copyright © 2018 Eric Brown <brown@fastmail.com>
 ;;; Copyright © 2018 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2018 Amin Bandali <bandali@gnu.org>
-;;; Copyright © 2019 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2019, 2021 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2019 Steve Sprang <scs@stevesprang.com>
 ;;; Copyright © 2019 Robert Smith <robertsmith@posteo.net>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
@@ -42,6 +42,7 @@
 ;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2020 Simon Tournier <zimon.toutoune@gmail.com>
 ;;; Copyright © 2020 Martin Becze <mjbecze@riseup.net>
+;;; Copyright © 2021 Gerd Heber <gerd.heber@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -1219,6 +1220,25 @@ extremely large and complex data collections.")
         (base32 "0pm5xxry55i0h7wmvc7svzdaa90rnk7h78rrjmnlkz2ygsn8y082"))
        (patches (search-patches "hdf5-config-date.patch"))))))
 
+(define-public hdf5-1.12
+  (package/inherit hdf5-1.8
+    (version "1.12.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (list (string-append "https://support.hdfgroup.org/ftp/HDF5/releases/"
+                                 "hdf5-" (version-major+minor version)
+                                 "/hdf5-" version "/src/hdf5-"
+                                 version ".tar.bz2")
+                  (string-append "https://support.hdfgroup.org/ftp/HDF5/"
+                                 "current"
+                                 (apply string-append
+                                        (take (string-split version #\.) 2))
+                                 "/src/hdf5-" version ".tar.bz2")))
+       (sha256
+        (base32 "0qazfslkqbmzg495jafpvqp0khws3jkxa0z7rph9qvhacil6544p"))
+       (patches (search-patches "hdf5-config-date.patch"))))))
+
 (define-public hdf5
   ;; Default version of HDF5.
   hdf5-1.10)
@@ -1908,15 +1928,15 @@ can solve two kinds of problems:
 (define-public octave-cli
   (package
     (name "octave-cli")
-    (version "6.1.0")
+    (version "6.2.0")
     (source
      (origin
       (method url-fetch)
       (uri (string-append "mirror://gnu/octave/octave-"
-                          version ".tar.lz"))
+                          version ".tar.xz"))
       (sha256
        (base32
-        "0355s0pi8603ccs2j08zym3nalgalslxn83s37zq8nkrrkwxrjfk"))))
+        "06id09zspya24gshcwgp039cp35c06150mdlxysawgnbrhj16wkv"))))
     (build-system gnu-build-system)
     (inputs
      `(("alsa-lib" ,alsa-lib)
@@ -1951,8 +1971,7 @@ can solve two kinds of problems:
        ("texinfo" ,texinfo)
        ("zlib" ,zlib)))
     (native-inputs
-     `(("lzip" ,lzip)
-       ("gfortran" ,gfortran)
+     `(("gfortran" ,gfortran)
        ("pkg-config" ,pkg-config)
        ("perl" ,perl)
        ;; The following inputs are not actually used in the build process.
@@ -2616,7 +2635,7 @@ savings are consistently > 5x.")
                           "test.log" "error.log" "RDict.db"
                           "uninstall.py"))
               #t))))))
-    (home-page "http://slepc.upv.es")
+    (home-page "https://slepc.upv.es")
     (synopsis "Scalable library for eigenproblems")
     (description "SLEPc is a software library for the solution of large sparse
 eigenproblems on parallel computers.  It can be used for the solution of
@@ -3504,7 +3523,7 @@ point numbers.")
 (define-public wxmaxima
   (package
     (name "wxmaxima")
-    (version "20.12.2")
+    (version "21.02.0")
     (source
      (origin
        (method git-fetch)
@@ -3513,13 +3532,12 @@ point numbers.")
              (commit (string-append "Version-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1rxnxk7yanb9ac5pxbii6k7gg3b09pbp9rmwvsvgpbrk17mg79r9"))))
+        (base32 "19sab596ydwz65151bwymnfilyfmr8qcxb0k8cxlnj1gmdldlyz6"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("gettext" ,gettext-minimal)))
     (inputs
-     `(("libomp" ,libomp)
-       ("wxwidgets" ,wxwidgets)
+     `(("wxwidgets" ,wxwidgets)
        ("maxima" ,maxima)
        ;; Runtime support.
        ("adwaita-icon-theme" ,adwaita-icon-theme)
@@ -4851,7 +4869,7 @@ theories} (SMT) solver.  It provides a C/C++ API, as well as Python bindings.")
                ;; Test scripts are generated, patch the shebang
                (("#!/bin/bash") (string-append "#!" (which "sh"))))
              #t)))))
-    (home-page "http://elpa.mpcdf.mpg.de")
+    (home-page "https://elpa.mpcdf.mpg.de")
     (synopsis "Eigenvalue solvers for symmetric matrices")
     (description
      "The ELPA library provides efficient and scalable direct eigensolvers for

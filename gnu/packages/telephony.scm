@@ -19,6 +19,7 @@
 ;;; Copyright © 2020 Raghav Gururajan <raghavgururajan@disroot.org>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
+;;; Copyright © 2021 LibreMiami <packaging-guix@libremiami.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -323,14 +324,14 @@ GNU ccRTP stack and serves as library for other RTP stacks
 (define-public osip
   (package
    (name "osip")
-   (version "5.1.2")
+   (version "5.2.0")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/osip/libosip2-" version ".tar.gz"))
             (patches (search-patches "osip-CVE-2017-7853.patch"))
             (sha256
              (base32
-              "148j1i0zkwf09qdpk3nc5sssj1dvppw7p0n9rgrg8k56447l1h1b"))))
+              "0xdk3cszkzb8nb757gl47slrr13mf6xz43ab4k343fv8llp8pd2g"))))
    (build-system gnu-build-system)
 
    (synopsis "Library implementing SIP (RFC-3261)")
@@ -515,34 +516,37 @@ address of one of the participants.")
 (define-public mumble
   (package
     (name "mumble")
-    (version "1.3.3")
+    (version "1.3.4")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://mumble.info/snapshot/stable/"
-                                  name "-" version ".tar.gz"))
+              (uri
+               (string-append
+                "https://github.com/mumble-voip/mumble/releases/download/"
+                version "/" name "-" version ".tar.gz"))
               (sha256
                (base32
-                "101gw1334zmqsbjrba5dq1v4p2nxcs37g2yrzvkcra6s9ri4fw3j"))
-              (modules '((guix build utils)))
+                "14v0rgy1a5alxmz7ly95y38bdj0hx79yysgkcd8r8p9qqfzlwpv1"))
+              (modules '((guix build utils)
+                         (ice-9 ftw)
+                         (srfi srfi-1)))
               (snippet
                `(begin
-                  ;; Remove bundled software.  Keep arc4random, celt-0.7.0,
-                  ;; celt-0.11.0, qqbonjour, rnnoise, smallft.
-                  (for-each
-                    delete-file-recursively
-                    '("3rdparty/GL" ; in mesa
-                      "3rdparty/mach-override-build" ; for macx
-                      "3rdparty/mach-override-src"
-                      "3rdparty/minhook-build" ; for win32
-                      "3rdparty/minhook-src"
-                      "3rdparty/opus-build" ; in opus
-                      "3rdparty/opus-src"
-                      "3rdparty/speex-build" ; in speex
-                      "3rdparty/speex-src"
-                      "3rdparty/speexdsp-src" ; in speexdsp
-                      "3rdparty/xinputcheck-build" ; for win32
-                      "3rdparty/xinputcheck-src"))
-                  #t))))
+                  (let ((keep
+                         '("arc4random-src"
+                           "celt-0.7.0-build"
+                           "celt-0.7.0-src"
+                           "celt-0.11.0-build"
+                           "celt-0.11.0-src"
+                           "qqbonjour-src"
+                           "rnnoise-build"
+                           "rnnoise-src"
+                           "smallft-src")))
+	            (with-directory-excursion "3rdparty"
+	              (for-each delete-file-recursively
+			        (lset-difference string=?
+                                                 (scandir ".")
+                                                 (cons* "." ".." keep))))
+                    #t)))))
     (build-system qt-build-system)
     (arguments
      `(#:tests? #f  ; no "check" target
@@ -886,8 +890,8 @@ Initiation Protocol (SIP) and a multimedia framework.")
     (build-system gnu-build-system)
     (inputs
      `(("alsa-lib" ,alsa-lib)
-       ("libopusenc" ,libopusenc)
        ("openssl" ,openssl)
+       ("opus" ,opus)
        ("pulseaudio" ,pulseaudio)))
     (arguments
      `(#:phases

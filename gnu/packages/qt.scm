@@ -105,6 +105,39 @@
   #:use-module (gnu packages xml)
   #:use-module (srfi srfi-1))
 
+(define-public qite
+  (let ((commit "75fb3b6bbd5c6a5a8fc35e08a6efbfb588ed546a")
+        (revision "74"))
+    (package
+      (name "qite")
+      (version (git-version "0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri
+          (git-reference
+           (url "https://github.com/Ri0n/qite")
+           (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0jmmgy9pvk9hwwph1nwy7hxhczy8drhl4ymhnjjn6yx7bckssvsq"))))
+      (build-system qt-build-system)
+      (arguments
+       `(#:tests? #f                    ; no target
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'chdir
+             (lambda _
+               (chdir "libqite")
+               #t)))))
+      (inputs
+       `(("qtbase" ,qtbase)
+         ("qtmultimedia" ,qtmultimedia)))
+      (home-page "https://github.com/Ri0n/qite/")
+      (synopsis "Qt Interactive Text Elements")
+      (description "Qite allows to manage interactive elements on QTextEdit.")
+      (license license:asl2.0))))
+
 (define-public qt5ct
   (package
     (name "qt5ct")
@@ -161,34 +194,52 @@ window managers, that don't provide Qt integration by themselves.")
     (license license:bsd-2)))
 
 (define-public materialdecoration
-  (package
-    (name "materialdecoration")
-    (version "1.1.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri
-        (git-reference
-         (url "https://github.com/lirios/materialdecoration.git")
-         (commit "2079487116c6c794af3a15452342a69293039b46")))
-       (file-name
-        (git-file-name name version))
-       (sha256
-        (base32 "1pczmxbmnsgj9s1g6ap55qq2q4ccibcnhsw9b6cl5rzgc48izy06"))))
-    (build-system qt-build-system)
-    (native-inputs
-     `(("cmake-shared" ,cmake-shared)
-       ("extra-cmake-modules" ,extra-cmake-modules)
-       ("pkg-config" ,pkg-config)))
-    (inputs
-     `(("qtbase" ,qtbase)
-       ("qtwayland" ,qtwayland)
-       ("wayland" ,wayland)))
-    (synopsis "Material Decoration for Qt")
-    (description "MaterialDecoration is a client-side decoration for Qt
+  (let ((commit "6a5de23f2e5162fbee39d16f938473ff970a2ec0")
+        (revision "9"))
+    (package
+      (name "materialdecoration")
+      (version
+       (git-version "1.1.0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri
+          (git-reference
+           (url "https://github.com/lirios/materialdecoration.git")
+           (commit commit)))
+         (file-name
+          (git-file-name name version))
+         (sha256
+          (base32 "1zdrcb39fhhmn76w8anv1dnspz26pdl6izmj1mlm02aza4y8ffp4"))
+         (modules '((guix build utils)
+                    (ice-9 ftw)
+                    (srfi srfi-1)))
+         (snippet
+          `(begin
+             (delete-file-recursively "cmake/3rdparty")))))
+      (build-system qt-build-system)
+      (arguments
+       `(#:tests? #f                    ; No target
+         #:configure-flags
+         (list
+          (string-append "-DCMAKE_CXX_FLAGS=-I"
+                         (assoc-ref %build-inputs "qtbase")
+                         "/include/qt5/QtXkbCommonSupport/"
+                         ,(package-version qtbase)))))
+      (native-inputs
+       `(("cmake-shared" ,cmake-shared)
+         ("extra-cmake-modules" ,extra-cmake-modules)
+         ("pkg-config" ,pkg-config)))
+      (inputs
+       `(("qtbase" ,qtbase)
+         ("qtwayland" ,qtwayland)
+         ("wayland" ,wayland)
+         ("xkbcommon" ,libxkbcommon)))
+      (synopsis "Material Decoration for Qt")
+      (description "MaterialDecoration is a client-side decoration for Qt
 applications on Wayland.")
-    (home-page "https://github.com/lirios/materialdecoration")
-    (license license:lgpl3+)))
+      (home-page "https://github.com/lirios/materialdecoration")
+      (license license:lgpl3+))))
 
 (define-public grantlee
   (package
@@ -2012,7 +2063,7 @@ module provides support functions to the automatically generated code.")
     (license license:gpl3)))
 
 (define-public python2-sip
-  (package (inherit python-sip)
+  (package/inherit python-sip
     (name "python2-sip")
     (native-inputs
      `(("python" ,python-2)))))
@@ -2197,13 +2248,13 @@ itself.")
 ;; Ultimately, it would be nicer to have a more modular set of python-pyqt-*
 ;; packages that could be used together.
 (define-public python-pyqt-without-qtwebkit
-  (package (inherit python-pyqt)
+  (package/inherit python-pyqt
     (name "python-pyqt-without-qtwebkit")
     (inputs
      (alist-delete "qtwebkit" (package-inputs python-pyqt)))))
 
 (define-public python2-pyqt
-  (package (inherit python-pyqt)
+  (package/inherit python-pyqt
     (name "python2-pyqt")
     (propagated-inputs
      `(("python-enum34" ,python2-enum34)
@@ -2349,7 +2400,7 @@ indicators, code completion and call tips.")
     (license license:gpl3+)))
 
 (define-public python-qscintilla
-  (package (inherit qscintilla)
+  (package/inherit qscintilla
     (name "python-qscintilla")
     (arguments
      `(#:configure-flags
@@ -2397,7 +2448,7 @@ This package provides the Python bindings.")))
 ;; variables such as PYTHONPATH, so we need to build a union package to make
 ;; it work.
 (define-public python-pyqt+qscintilla
-  (package (inherit python-pyqt)
+  (package/inherit python-pyqt
     (name "python-pyqt+qscintilla")
     (source #f)
     (build-system trivial-build-system)
@@ -2454,6 +2505,117 @@ This package provides the Python bindings.")))
       "QtKeychain is a Qt library to store passwords and other secret data
 securely.  It will not store any data unencrypted unless explicitly requested.")
     (license license:bsd-3)))
+
+(define-public qtsolutions
+  (let ((commit "9568abd142d581b67b86a5f63d823a34b0612702")
+        (revision "53"))
+    (package
+      (name "qtsolutions")
+      (version (git-version "0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/qtproject/qt-solutions")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "17fnmassflm3vxi0krpr6fff368jy38cby31a48rban4nqqmgx7n"))
+         (modules '((guix build utils)
+                    (ice-9 ftw)
+                    (srfi srfi-1)))
+         (snippet
+          ;; Unvendor QtLockFile from QtSingleApplication.
+          '(begin
+             (with-directory-excursion "qtsingleapplication/src"
+               (for-each delete-file
+                         (find-files "." "qtlockedfile.*\\.(h|cpp)"))
+                 (substitute* "qtsingleapplication.pri"
+                   ;; Add include path of LockedFile.
+                   (("INCLUDEPATH \\+=")
+                    "INCLUDEPATH += ../../qtlockedfile/src")
+                   ;; Link library of LockedFile.
+                   (("LIBS \\+=")
+                    "LIBS += -lQtSolutions_LockedFile"))
+                 (substitute* '("qtlocalpeer.h" "qtlocalpeer.cpp")
+                   (("#include \"qtlockedfile.*\\.cpp\"") "")
+                   ;; Unwrap namespace added in the vendoring process.
+                   (("QtLP_Private::QtLockedFile")
+                    "QtLockedFile")))
+             #t))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f                    ; No target
+         #:imported-modules
+         ((guix build copy-build-system)
+          ,@%gnu-build-system-modules)
+         #:modules
+         (((guix build copy-build-system) #:prefix copy:)
+          (guix build gnu-build-system)
+          (guix build utils))
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'patch-source
+             (lambda* (#:key outputs #:allow-other-keys)
+               (substitute* (find-files "." "common.pri")
+                 ;; Remove unnecessary prefixes/suffixes in library names.
+                 (("qt5") "qt")
+                 (("-head") ""))
+               ;; Disable building of examples.
+               (substitute* (find-files "." "\\.pro$")
+                 (("SUBDIRS\\+=examples") ""))
+               ;; Fix deprecated functions.
+               (substitute* "qtsoap/src/qtsoap.cpp"
+                 (("toAscii") "toUtf8"))
+               #t))
+           (replace 'configure
+             (lambda _
+               (for-each (lambda (solution)
+                           (with-directory-excursion solution
+                             (invoke "./configure" "-library")
+                             (invoke "qmake")))
+                         '("qtlockedfile" "qtpropertybrowser" "qtservice"
+                           "qtsingleapplication" "qtsoap"))
+               #t))
+           (replace 'build
+             (lambda _
+               (for-each (lambda (solution)
+                           (with-directory-excursion solution
+                             (invoke "make")))
+                         '("qtlockedfile" "qtpropertybrowser" "qtservice"
+                           "qtsingleapplication" "qtsoap"))
+               #t))
+           (replace 'install
+             (lambda args
+               (for-each (lambda (solution)
+                           (with-directory-excursion solution
+                             (apply
+                              (assoc-ref copy:%standard-phases 'install)
+                              #:install-plan
+                              '(("src" "include" #:include-regexp ("\\.h$"))
+                                ("lib" "lib"))
+                              args)))
+                         '("qtlockedfile" "qtpropertybrowser" "qtservice"
+                           "qtsingleapplication" "qtsoap")))))))
+      (inputs
+       `(("qtbase" ,qtbase)))
+      (synopsis "Collection of Qt extensions")
+      (description "QtSolutions is a set of components extending Qt.
+@itemize
+@item QtLockedFile: A class that extends QFile with advisory locking functions.
+@item QtPropertyBrowser: A framework that enables the user to edit a set of
+properties.
+@item QtService: A helper for writing services such as Unix daemons.
+@item QtSingleApplication: A component that provides support for applications
+that can be only started once per user.
+@item QtSoap: A component that provides basic web service support with version
+1.1 of the SOAP protocol.
+@end itemize\n")
+      (home-page "https://doc.qt.io/archives/qq/qq09-qt-solutions.html")
+      (license (list license:bsd-3
+                     ;; QScriptParser and QScriptGrammar specifically allow
+                     ;; redistribution under GPL3 or LGPL2.1
+                     license:gpl3 license:lgpl2.1)))))
 
 (define-public qwt
   (package

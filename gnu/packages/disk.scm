@@ -224,14 +224,14 @@ tmpfs/ramfs filesystems.")
 (define-public parted
   (package
     (name "parted")
-    (version "3.3")
+    (version "3.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/parted/parted-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "0i1xp367wpqw75b20c3jnism3dg3yqj4a7a22p2jb1h1hyyv9qjp"))))
+                "0hjkv84x1bs2qqyx1fnzjqyyqrhv7kpdbq9bgydmi99d8wi80ag1"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -253,7 +253,7 @@ tmpfs/ramfs filesystems.")
        ;; For the tests.
        ("e2fsprogs" ,e2fsprogs)
        ("perl" ,perl)
-       ("python" ,python-2)
+       ("python-wrapper" ,python-wrapper)
        ("util-linux" ,util-linux)))
     (home-page "https://www.gnu.org/software/parted/")
     (synopsis "Disk partition editor")
@@ -376,23 +376,26 @@ to recover data more efficiently by only reading the necessary blocks.")
 (define-public dosfstools
   (package
     (name "dosfstools")
-    (version "4.1")
+    (version "4.2")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://github.com/" name "/" name
-                           "/releases/download/v" version "/"
-                           name "-" version ".tar.xz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/dosfstools/dosfstools")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32
-         "0wy13i3i4x2bw1hf5m4fd0myh61f9bcrs035fdlf6gyc1jksrcp6"))))
+        (base32 "1xygsixmmc9l7drxylggnzkqqiks8zmlsbhg3z723ii2ak94236s"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags (list "--enable-compat-symlinks")
        #:make-flags (list (string-append "PREFIX=" %output)
                           "CC=gcc")))
     (native-inputs
-     `(("xxd" ,xxd))) ; for tests
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ;; For tests.
+       ("xxd" ,xxd)))
     (home-page "https://github.com/dosfstools/dosfstools")
     (synopsis "Utilities for making and checking MS-DOS FAT file systems")
     (description
@@ -1116,7 +1119,7 @@ that support this feature).")
 (define-public memkind
   (package
     (name "memkind")
-    (version "1.10.1")
+    (version "1.11.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1125,7 +1128,7 @@ that support this feature).")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "11iz887f3cp5pzf1bzm644wzab8gkbhz3b7x1w6pcps71yd94ylj"))))
+                "0w5hws12l167mbr4n6a6fl0mhf8mci61fsn55lh2cxz33f7q8n2x"))))
     (build-system gnu-build-system)
     (inputs
      `(;; memkind patched jemalloc to add je_arenalookupx,
@@ -1138,7 +1141,10 @@ that support this feature).")
        ("automake" ,automake)
        ("libtool" ,libtool)))
     (arguments
-     `(#:tests? #f ; Tests require a NUMA-enabled system.
+     `(#:configure-flags
+       (list (string-append "--docdir=" (assoc-ref %outputs "out")
+                            "/share/doc/" ,name "-" ,version))
+       #:tests? #f ; Tests require a NUMA-enabled system.
        #:phases
        (modify-phases %standard-phases
          (add-before 'build 'autogen-jemalloc

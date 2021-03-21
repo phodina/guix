@@ -186,16 +186,15 @@ a server that supports the SSH-2 protocol.")
 (define-public openssh
   (package
    (name "openssh")
-   (version "8.4p1")
+   (version "8.5p1")
    (source (origin
              (method url-fetch)
              (uri (string-append "mirror://openbsd/OpenSSH/portable/"
                                  "openssh-" version ".tar.gz"))
-             (patches (search-patches "openssh-hurd.patch"
-                                      "openssh-fix-ssh-copy-id.patch"))
+             (patches (search-patches "openssh-hurd.patch"))
              (sha256
               (base32
-               "091b3pxdlj47scxx6kkf4agkx8c8sdacdxx8m1dw1cby80pd40as"))))
+               "09gc8rv7728chxraab85dzkdikaw4aph1wlcwcc9kai9si0kybzm"))))
    (build-system gnu-build-system)
    (native-inputs `(("groff" ,groff)
                     ("pkg-config" ,pkg-config)))
@@ -505,13 +504,23 @@ responsive, especially over Wi-Fi, cellular, and long-distance links.")
              "https://matt.ucc.asn.au/dropbear/releases/"
              "dropbear-" version ".tar.bz2"))
        (sha256
-        (base32 "0fy5ma4cfc2pk25mcccc67b2mf1rnb2c06ilb7ddnxbpnc85s8s8"))))
+        (base32 "0fy5ma4cfc2pk25mcccc67b2mf1rnb2c06ilb7ddnxbpnc85s8s8"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           (delete-file-recursively "libtommath")
+           (delete-file-recursively "libtomcrypt")
+           (substitute* "configure"
+             (("-ltomcrypt") "-ltomcrypt -ltommath"))
+           #t))))
     (build-system gnu-build-system)
-    (arguments `(#:tests? #f))  ; there is no "make check" or anything similar
-    ;; TODO: Investigate unbundling libtommath and libtomcrypt or at least
-    ;; cherry-picking important bug fixes from them. See <bugs.gnu.org/24674>
-    ;; for more information.
-    (inputs `(("zlib" ,zlib)))
+    (arguments
+     `(#:configure-flags '("--disable-bundled-libtom")
+       #:tests? #f))    ; there is no "make check" or anything similar
+    (inputs
+     `(("libtomcrypt" ,libtomcrypt)
+       ("libtommath" ,libtommath)
+       ("zlib" ,zlib)))
     (synopsis "Small SSH server and client")
     (description "Dropbear is a relatively small SSH server and
 client.  It runs on a variety of POSIX-based platforms.  Dropbear is
@@ -772,14 +781,14 @@ shell services and remote host selection.")
 (define-public python-asyncssh
   (package
     (name "python-asyncssh")
-    (version "2.3.0")
+    (version "2.5.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "asyncssh" version))
        (sha256
         (base32
-         "0pi6npmsgx7l9r1qrfvg8mxx3i23ipff492xz4yhrw13f56a7ga4"))))
+         "02xpzir9rmw7b7k07m3f912h6jvy9yzan9yn3ckrmqx2ffpy4r8b"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-cryptography" ,python-cryptography)

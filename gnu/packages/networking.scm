@@ -142,6 +142,35 @@
   #:use-module (gnu packages xml)
   #:use-module (ice-9 match))
 
+(define-public usrsctp
+  (package
+    (name "usrsctp")
+    (version "0.9.5.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/sctplab/usrsctp")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "10ndzkip8blgkw572n3dicl6mgjaa7kygwn3vls80liq92vf1sa9"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)
+       ("which" ,which)))
+    (home-page "https://github.com/sctplab/usrsctp/")
+    (synopsis "SCTP user-land implementation")
+    (description "UsrSCTP is a portable SCTP userland stack.  SCTP is a message
+oriented, reliable transport protocol with direct support for multihoming that
+runs on top of IP or UDP, and supports both v4 and v6 versions.")
+    (license license:bsd-3)))
+
 (define-public axel
   (package
     (name "axel")
@@ -700,8 +729,16 @@ or, more generally, MAC addresses of the same category of hardware.")
                 "0j9ilig570snbmj48230hf7ms8kvcwi2wblycqrmhh85lksd49ps"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases
+     '(#:configure-flags
+       (list "--localstatedir=/var")
+       #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'do-not-create-/run
+           (lambda _
+             (substitute* (find-files "src" "Makefile.*")
+               (("^.+install_sh.+/run.+$")
+                "\ttrue"))
+             #t))
          (add-after 'unpack 'patch-iproute2
            (lambda* (#:key inputs #:allow-other-keys)
              (let* ((iproute (assoc-ref inputs "iproute"))
@@ -805,7 +842,7 @@ useful for making transparent firewalls.")
 (define-public socat
   (package
     (name "socat")
-    (version "1.7.3.4")
+    (version "1.7.4.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -813,7 +850,7 @@ useful for making transparent firewalls.")
                     version ".tar.bz2"))
               (sha256
                (base32
-                "1z7xgnwiqpcv1j6aghhj9nqbx7cg3gpc4n9j7vi9hm7nhv5788wp"))))
+                "1sbmqqvni3ss9wyay6ik5v81kxffkra80mh4ypgj74g82iba5b1z"))))
     (build-system gnu-build-system)
     (arguments '(#:tests? #f))          ; no test suite
     (inputs `(("openssl" ,openssl)))
@@ -937,7 +974,7 @@ more.")
 (define-public czmq
   (package
     (name "czmq")
-    (version "4.2.0")
+    (version "4.2.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -946,7 +983,7 @@ more.")
                     "/" name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1szciz62sk3fm4ga9qjpxz0n0lazvphm32km95bq92ncng12kayg"))))
+                "0fdclvd7fcwixp0k57ccv7d159v3slasyhvndxfn8n1a9hh0lwjx"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--enable-drafts")
@@ -1304,7 +1341,7 @@ and up to 1 Mbit/s downstream.")
 (define-public whois
   (package
     (name "whois")
-    (version "5.5.7")
+    (version "5.5.8")
     (source
      (origin
        (method git-fetch)
@@ -1313,7 +1350,7 @@ and up to 1 Mbit/s downstream.")
               (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1w3d0ffl0ng1m4i10k968kk4xicviq24w5vwl6d8dhja61d7yd2r"))))
+        (base32 "12lhl2q1pa1qkbv0l1cpy8hn4wh5i99bqc68rlm4f7jyqlj2l82r"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no test suite
@@ -1349,14 +1386,14 @@ of the same name.")
 (define-public wireshark
   (package
     (name "wireshark")
-    (version "3.4.3")
+    (version "3.4.4")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.wireshark.org/download/src/wireshark-"
                            version ".tar.xz"))
        (sha256
-        (base32 "0ar6pxzrcpxdriz437d6ziwlhb8k5wlvrkalp3hgqwzwy1vwqrzl"))))
+        (base32 "0aad3m8nh4i75dgjs68217135bzqmhmlgjklmpjh1ihmjwgd373j"))))
     (build-system cmake-build-system)
     (arguments
      `(#:phases
@@ -1446,13 +1483,13 @@ round-robin fashion.")
 (define-public gandi.cli
   (package
     (name "gandi.cli")
-    (version "1.5")
+    (version "1.6")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri name version))
        (sha256
-        (base32 "110wc9zgxsrvw4yzp21p0ian5lcf7vhcpxhnmsc4fg9pzl2bwxd5"))))
+        (base32 "1h36jahbp7273wn3yd747kbiwjc0bm3sja67bcxdsd54ln0vyndg"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -1476,8 +1513,11 @@ round-robin fashion.")
                #t))))))
     (native-inputs
      `(("python-docutils" ,python-docutils)   ; for rst2man.py
+       ("python-pytest" ,python-pytest)
        ("python-pytest-cov" ,python-pytest-cov)
        ("python-tox" ,python-tox)))
+    (propagated-inputs
+     `(("openssh" ,openssh)))           ; used by gandi/cli/modules/iass.py
     (inputs
      `(("openssl" ,openssl)
        ("python-click" ,python-click)
@@ -1619,14 +1659,14 @@ TCP connection, TLS handshake and so on) in the terminal.")
 (define-public squid
   (package
     (name "squid")
-    (version "4.13")
+    (version "4.14")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://www.squid-cache.org/Versions/v4/squid-"
                            version ".tar.xz"))
        (sha256
-        (base32 "1q1ywpic6s7dfjj3cwzcfgscc4zq0aih462gyas7j1z683ss14b8"))))
+        (base32 "1z4zf98q24ps19fq840n0hwh6z1la65rf061kcapr29lcjm7s2gi"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags
@@ -2379,7 +2419,7 @@ procedure calls (RPCs).")
 (define-public openvswitch
   (package
     (name "openvswitch")
-    (version "2.13.0")
+    (version "2.13.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2387,7 +2427,7 @@ procedure calls (RPCs).")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0cd5vmfr6zwgcnkwys6rag6cmz68v0librpaplianv734xs74pyx"))))
+                "1wc5zspy9aln7di7m9a1qy4lv3h05gmhgd1nffhb9nxdcxqgnpgp"))))
     (build-system gnu-build-system)
     (arguments
      '(;; FIXME: many tests fail with:
@@ -2584,8 +2624,9 @@ does not use SSH and requires a pre-shared symmetric key.")
     (version "1.2.4")
     (source (origin
               (method url-fetch)
-              (uri (string-append "mirror://savannah/quagga/quagga-"
-                                  version ".tar.gz"))
+              ;; Use archived sources; see <http://issues.guix.gnu.org/47123>.
+              (uri (string-append "https://fossies.org/linux/misc/"
+                                  "quagga-" version ".tar.gz"))
               (sha256
                (base32
                 "1lsksqxij5f1llqn86pkygrf5672kvrqn1kvxghi169hqf1c0r73"))
@@ -2892,7 +2933,7 @@ remotely.")
 (define-public zyre
   (package
     (name "zyre")
-    (version "2.0.0")
+    (version "2.0.1")
     (source (origin
               (method url-fetch)
               (uri
@@ -2900,7 +2941,7 @@ remotely.")
                               version "/" name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0qz2730bng1gs9xbqxhkw88qbsmszgmmrl2g9k6xrg6r3bqvsdc7"))))
+                "13596507ma1474cjqzxym5jlvcshvw7sjhw80rdz788gyz6kz90b"))))
     (build-system gnu-build-system)
     (inputs `(("zeromq" ,zeromq)
               ("czmq" ,czmq)
@@ -3425,7 +3466,7 @@ communication.")
 (define-public frrouting
   (package
     (name "frrouting")
-    (version "6.0.2")
+    (version "7.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/FRRouting/frr/releases/"
@@ -3433,11 +3474,13 @@ communication.")
                                   ".tar.xz"))
               (sha256
                (base32
-                "0xfrvi62w8qlh46f504ka0skb7pm0g0p8vmdng4w90gsbirlzpdd"))))
+                "1a27wvxmc51sr0kchy0hjfpv19imlgrr3s9k48lik9k01g71yrdr"))))
     (build-system gnu-build-system)
     (inputs
      `(("c-ares" ,c-ares)
        ("json-c" ,json-c)
+       ("libcap" ,libcap)
+       ("libyang" ,libyang)
        ("readline" ,readline)))
     (native-inputs
      `(("perl" ,perl)
@@ -3507,6 +3550,33 @@ Supplicant.  It optimizes resource utilization by not depending on any external
 libraries and instead utilizing features provided by the Linux kernel to the
 maximum extent possible.")
     (license license:lgpl2.1+)))
+
+(define-public libyang
+  (package
+    (name "libyang")
+    (version "1.0.215")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/CESNET/libyang")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0mrs2ppmq77z8sbqgm2w0rl9bfgybd6bcxanakfww4chih6cy0dw"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "-DENABLE_BUILD_TESTS=ON" "-DENABLE_LYD_PRIV=ON")))
+    (propagated-inputs `(("pcre" ,pcre)))
+    (native-inputs `(("cmocka" ,cmocka)
+                     ("pkg-config" ,pkg-config)))
+    (home-page "https://github.com/CESNET/libyang")
+    (synopsis "YANG data modelling language library")
+    (description "libyang is a YANG data modelling language parser and toolkit
+written (and providing API) in C.  Current implementation covers YANG 1.0 (RFC
+6020) as well as YANG 1.1 (RFC 7950).")
+    (license license:bsd-3)))
 
 (define-public batctl
   (package

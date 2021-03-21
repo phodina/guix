@@ -396,47 +396,21 @@ reading and editing of existing PDF files.")
 (define-public xpdf
   (package
    (name "xpdf")
-   (version "4.02")
+   (version "4.03")
    (source
     (origin
       (method url-fetch)
-      (uri (string-append "https://xpdfreader-dl.s3.amazonaws.com/xpdf-"
-                          version "4.02.tar.gz"))
+      (uri (string-append "https://dl.xpdfreader.com/xpdf-" version ".tar.gz"))
       (sha256
-       (base32 "1rbp54mr3z2x3a3a1qmz8byzygzi223vckfam9ib5g1sfds0qf8i"))))
-   (build-system gnu-build-system)
-   (inputs `(("freetype" ,freetype)
-             ("gs-fonts" ,gs-fonts)
-             ("lesstif" ,lesstif)
-             ("libpaper" ,libpaper)
-             ("libx11" ,libx11)
-             ("libxext" ,libxext)
-             ("libxp" ,libxp)
-             ("libxpm" ,libxpm)
-             ("libxt" ,libxt)
+       (base32 "0ip81c9vy0igjnasl9iv2lz214fb01vvvdzbvjmgwc63fi1jgr0g"))))
+   (build-system cmake-build-system)
+   (inputs `(("cups" ,cups)
+             ("freetype" ,freetype)
              ("libpng" ,libpng)
+             ("qtbase" ,qtbase)
              ("zlib" ,zlib)))
    (arguments
-    `(#:tests? #f                     ; there is no check target
-      #:parallel-build? #f            ; build fails randomly on 8-way machines
-      #:configure-flags
-        (list (string-append "--with-freetype2-includes="
-                             (assoc-ref %build-inputs "freetype")
-                             "/include/freetype2"))
-      #:phases
-      (modify-phases %standard-phases
-        (replace 'install
-          (lambda* (#:key outputs inputs #:allow-other-keys #:rest args)
-            (let* ((install (assoc-ref %standard-phases 'install))
-                   (out (assoc-ref outputs "out"))
-                   (xpdfrc (string-append out "/etc/xpdfrc"))
-                   (gs-fonts (assoc-ref inputs "gs-fonts")))
-              (apply install args)
-              (substitute* xpdfrc
-                (("/usr/local/share/ghostscript/fonts")
-                 (string-append gs-fonts "/share/fonts/type1/ghostscript"))
-                (("#fontFile") "fontFile")))
-            #t)))))
+    `(#:tests? #f))                   ; there is no check target
    (synopsis "Viewer for PDF files based on the Motif toolkit")
    (description
     "Xpdf is a viewer for Portable Document Format (PDF) files.")
@@ -750,7 +724,8 @@ extracting content or merging files.")
                            "mupdf-" version "-source.tar.xz"))
        (sha256
         (base32 "16m5sksil22sshxy70xkslsb2qhvcqb1d95i9savnhds1xn4ybar"))
-       (patches (search-patches "mupdf-fix-linkage.patch"))
+       (patches (search-patches "mupdf-fix-linkage.patch"
+                                "mupdf-CVE-2021-3407.patch"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -869,7 +844,8 @@ program capable of converting PDF into other formats.")
                            "trunk/" version "/+download/"
                            "qpdfview-" version ".tar.gz"))
        (sha256
-        (base32 "0v1rl126hvblajnph2hkansgi0s8vjdc5yxrm4y3faa0lxzjwr6c"))))
+        (base32 "0v1rl126hvblajnph2hkansgi0s8vjdc5yxrm4y3faa0lxzjwr6c"))
+       (patches (search-patches "qpdfview-qt515-compat.patch"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1300,7 +1276,7 @@ python-pypdf2 instead.")
 (define-public pdfarranger
   (package
     (name "pdfarranger")
-    (version "1.7.0")
+    (version "1.7.1")
     (source
      (origin
        (method git-fetch)
@@ -1309,7 +1285,7 @@ python-pypdf2 instead.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0dmgmvpghsm938iznalbg8h8k17a5h3q466yfc67mcll428n4nx3"))))
+        (base32 "1c2mafnz8pv32wzkc2wx4q8y2x7xffpn6ag12dj7ga5n772fb6s3"))))
     (build-system python-build-system)
     (arguments
      '(#:tests? #f                      ;no tests

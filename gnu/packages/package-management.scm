@@ -132,8 +132,8 @@
   ;; Note: the 'update-guix-package.scm' script expects this definition to
   ;; start precisely like this.
   (let ((version "1.2.0")
-        (commit "a53f711422f63d7e32b8639b968cf00bcc69ffea")
-        (revision 13))
+        (commit "ec7fb669945bfb47c5e1fdf7de3a5d07f7002ccf")
+        (revision 17))
     (package
       (name "guix")
 
@@ -149,7 +149,7 @@
                       (commit commit)))
                 (sha256
                  (base32
-                  "01sky036v6dh8zwvrzl08pj4r6vkz7mjadkqbrwhak4nvds5frq8"))
+                  "1v9pwsqx8n4l6f7aj9vxv6m7vb4lyw8j5qg6mxf5zksia0qlcv2z"))
                 (file-name (string-append "guix-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
@@ -304,6 +304,7 @@ $(prefix)/etc/init.d\n")))
                                              '((assoc-ref inputs "guile"))))
                                (avahi  (assoc-ref inputs "guile-avahi"))
                                (gcrypt (assoc-ref inputs "guile-gcrypt"))
+                               (guile-lib   (assoc-ref inputs "guile-lib"))
                                (json   (assoc-ref inputs "guile-json"))
                                (sqlite (assoc-ref inputs "guile-sqlite3"))
                                (zlib   (assoc-ref inputs "guile-zlib"))
@@ -367,6 +368,7 @@ $(prefix)/etc/init.d\n")))
                              `(("guile-avahi" ,guile-avahi)))
                        ("guile-gcrypt" ,guile-gcrypt)
                        ("guile-json" ,guile-json-4)
+                       ("guile-lib" ,guile-lib)
                        ("guile-sqlite3" ,guile-sqlite3)
                        ("guile-zlib" ,guile-zlib)
                        ("guile-lzlib" ,guile-lzlib)
@@ -377,7 +379,7 @@ $(prefix)/etc/init.d\n")))
                        ;; XXX: Keep the development inputs here even though
                        ;; they're unnecessary, just so that 'guix environment
                        ;; guix' always contains them.
-                       ("autoconf" ,autoconf-wrapper)
+                       ("autoconf" ,autoconf)
                        ("automake" ,automake)
                        ("gettext" ,gettext-minimal)
                        ("texinfo" ,texinfo)
@@ -422,6 +424,7 @@ $(prefix)/etc/init.d\n")))
                `(("guile-avahi" ,guile-avahi)))
          ("guile-gcrypt" ,guile-gcrypt)
          ("guile-json" ,guile-json-4)
+         ("guile-lib" ,guile-lib)
          ("guile-sqlite3" ,guile-sqlite3)
          ("guile-ssh" ,guile-ssh)
          ("guile-git" ,guile-git)
@@ -1046,8 +1049,8 @@ environments.")
     (license (list license:gpl3+ license:agpl3+ license:silofl1.1))))
 
 (define-public guix-build-coordinator
-  (let ((commit "5c7f53b311ae18d8eeae681e02cc675ede58731e")
-        (revision "16"))
+  (let ((commit "1f79fc38a17ceda30f378efd4e7f80f252c99b4d")
+        (revision "20"))
     (package
       (name "guix-build-coordinator")
       (version (git-version "0" revision commit))
@@ -1058,7 +1061,7 @@ environments.")
                       (commit commit)))
                 (sha256
                  (base32
-                  "08l5g5f9d47rdja710dambbjv8vz1adsya9llxrfr0zklj3s4fs7"))
+                  "0d5zr5mv07pi195vva2fhclfgyzrgbk9vlnwrmy7z1jcw2p1d2zp"))
                 (file-name (string-append name "-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
@@ -1075,7 +1078,7 @@ environments.")
                (setenv "GUILE_AUTO_COMPILE" "0")
                #t))
            (add-after 'install 'wrap-executable
-             (lambda* (#:key inputs outputs #:allow-other-keys)
+             (lambda* (#:key inputs outputs target #:allow-other-keys)
                (let* ((out (assoc-ref outputs "out"))
                       (bin (string-append out "/bin"))
                       (guile (assoc-ref inputs "guile"))
@@ -1085,18 +1088,47 @@ environments.")
                  (for-each
                   (lambda (file)
                     (simple-format (current-error-port) "wrapping: ~A\n" file)
-                    (wrap-program file
-                      `("PATH" ":" prefix
-                        (,bin
-                         ;; Support building without sqitch as an input, as it
-                         ;; can't be cross-compiled yet
-                         ,@(or (and=> (assoc-ref inputs "sqitch")
-                                      list)
-                               '())))
-                      `("GUILE_LOAD_PATH" ":" prefix
-                        (,scm ,(getenv "GUILE_LOAD_PATH")))
-                      `("GUILE_LOAD_COMPILED_PATH" ":" prefix
-                        (,go ,(getenv "GUILE_LOAD_COMPILED_PATH")))))
+                    (let ((guile-inputs `("guile-json"
+                                          "guile-gcrypt"
+                                          "guix"
+                                          "guile-prometheus"
+                                          "guile-lib"
+                                          "guile-lzlib"
+                                          "guile-zlib"
+                                          "gnutls")))
+                      (wrap-program file
+                        `("PATH" ":" prefix
+                          (,bin
+                           ;; Support building without sqitch as an input, as it
+                           ;; can't be cross-compiled yet
+                           ,@(or (and=> (assoc-ref inputs "sqitch")
+                                        list)
+                                 '())))
+                        `("GUILE_LOAD_PATH" ":" prefix
+                          (,scm ,(string-join
+                                  (map (lambda (input)
+                                         (simple-format
+                                          #f "~A/share/guile/site/~A"
+                                          (assoc-ref inputs input)
+                                          version))
+                                       guile-inputs)
+                                  ":")))
+                        `("GUILE_LOAD_COMPILED_PATH" ":" prefix
+                          (,go ,(string-join
+                                 (map (lambda (input)
+                                        (simple-format
+                                         #f "~A/lib/guile/~A/site-ccache"
+                                         (assoc-ref inputs input)
+                                         version))
+                                      guile-inputs)
+                                 ":"))))
+                      (when target
+                        ;; XXX work around wrap-program picking bash for the
+                        ;; host rather than target
+                        (let ((bash (assoc-ref inputs "bash")))
+                          (substitute* file
+                            (("^#!.*/bash")
+                             (string-append "#! " bash "/bin/bash")))))))
                   (find-files bin)))
                #t))
            (delete 'strip))))             ; As the .go files aren't compatible
@@ -1116,6 +1148,9 @@ environments.")
          ("guile" ,@(assoc-ref (package-native-inputs guix) "guile"))))
       (inputs
        `(("guile" ,@(assoc-ref (package-native-inputs guix) "guile"))
+         ,@(if (%current-target-system)
+               `(("bash" ,bash-minimal))
+               '())
          ("sqlite" ,sqlite)
          ,@(if (hurd-target?)
                '()
@@ -1345,14 +1380,14 @@ the boot loader configuration.")
 (define-public flatpak
   (package
    (name "flatpak")
-   (version "1.10.1")
+   (version "1.10.2")
    (source
     (origin
      (method url-fetch)
      (uri (string-append "https://github.com/flatpak/flatpak/releases/download/"
                          version "/flatpak-" version ".tar.xz"))
      (sha256
-      (base32 "1dywvfpmszvp2wy5hvpzy8z6gz2gzmi9p302njp52p9vpx14ydf1"))))
+      (base32 "1r6xw7r3ir2vaa30n3mily6m7d51cf4qv22fkqlzzy3js0wjf5fv"))))
 
    ;; Wrap 'flatpak' so that GIO_EXTRA_MODULES is set, thereby allowing GIO to
    ;; find the TLS backend in glib-networking.
