@@ -12,7 +12,7 @@
 ;;; Copyright © 2015 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016, 2018, 2020 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2016, 2017, 2018, 2019, 2020 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020, 2021 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017, 2018, 2019, 2020 Paul Garlick <pgarlick@tourbillion-technology.com>
@@ -34,7 +34,7 @@
 ;;; Copyright © 2019 Steve Sprang <scs@stevesprang.com>
 ;;; Copyright © 2019 Robert Smith <robertsmith@posteo.net>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
-;;; Copyright © 2020 Felix Gruber <felgru@posteo.net>
+;;; Copyright © 2020, 2021 Felix Gruber <felgru@posteo.net>
 ;;; Copyright © 2020 R Veera Kumar <vkor@vkten.in>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Nicolò Balzarotti <nicolo@nixo.xyz>
@@ -43,6 +43,7 @@
 ;;; Copyright © 2020 Simon Tournier <zimon.toutoune@gmail.com>
 ;;; Copyright © 2020 Martin Becze <mjbecze@riseup.net>
 ;;; Copyright © 2021 Gerd Heber <gerd.heber@gmail.com>
+;;; Copyright © 2021 Franck Pérignon <franck.perignon@univ-grenoble-alpes.fr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -2289,7 +2290,8 @@ ASCII text files using Gmsh's own scripting language.")
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ;;("python-astropy" ,python-astropy) ;; FIXME: Package this.
-       ("qttools" ,qttools)))
+       ("qttools" ,qttools)
+       ("python-sip" ,python-sip-4)))
     (inputs
      `(("ghostscript" ,ghostscript) ;optional, for EPS/PS output
        ("python-dbus" ,python-dbus)
@@ -3246,6 +3248,63 @@ YACC = bison -pscotchyy -y -b y
     (synopsis
      "Programs and libraries for graph algorithms (32-bit integers)")))
 
+(define-public scotch-shared
+  (package (inherit scotch)
+    (name "scotch-shared")
+    (native-inputs
+     `(("gcc" ,gcc)
+       ("flex" ,flex)
+       ("bison" ,bison)))
+    (arguments
+     (substitute-keyword-arguments (package-arguments scotch)
+       ((#:phases scotch-shared-phases)
+        `(modify-phases ,scotch-shared-phases
+           (replace
+            'configure
+           (lambda _
+             ;; Otherwise, the RUNPATH will lack the final path component.
+             (setenv "RPATHFLAGS" (string-append "-Wl,-rpath="
+                                              (assoc-ref %outputs "out") "/lib"))
+            (call-with-output-file "Makefile.inc"
+              (lambda (port)
+                (format port "
+EXE =
+LIB = .so
+OBJ = .o
+MAKE = make
+AR = gcc
+ARFLAGS = -shared -o
+CAT = cat
+CCS = gcc
+CCP = mpicc
+CCD = gcc
+CPPFLAGS =~{ -D~a~}
+CFLAGS = -O2 -g -fPIC $(CPPFLAGS) $(RPATHFLAGS)
+CLIBFLAGS = -shared -fPIC
+LDFLAGS = -lz -lm -lrt -lpthread -Xlinker --no-as-needed
+CP = cp
+LEX = flex -Pscotchyy -olex.yy.c
+LN = ln
+MKDIR = mkdir
+MV = mv
+RANLIB = echo
+YACC = bison -pscotchyy -y -b y
+"
+                        '("COMMON_FILE_COMPRESS_GZ"
+                          "COMMON_PTHREAD"
+                          "COMMON_RANDOM_FIXED_SEED"
+                          "INTSIZE64"             ;use 'int64_t'
+                          ;; Prevents symbolc clashes with libesmumps
+                          "SCOTCH_RENAME"
+                          ;; XXX: Causes invalid frees in superlu-dist tests
+                          ;; "SCOTCH_PTHREAD"
+                          ;; "SCOTCH_PTHREAD_NUMBER=2"
+                          "restrict=__restrict"
+                          ))))#t))
+           (delete 'check)))))
+     (synopsis
+      "Programs and libraries for graph algorithms (shared libraries version)")))
+
 (define-public pt-scotch
   (package (inherit scotch)
     (name "pt-scotch")
@@ -3293,6 +3352,28 @@ YACC = bison -pscotchyy -y -b y
     (synopsis
      "Programs and libraries for graph algorithms (with MPI and 32-bit integers)")))
 
+(define-public pt-scotch-shared
+  (package (inherit scotch-shared)
+    (name "pt-scotch-shared")
+    (propagated-inputs
+     `(("openmpi" ,openmpi)))           ;Headers include MPI headers
+    (arguments
+     (substitute-keyword-arguments (package-arguments scotch-shared)
+       ((#:phases scotch-shared-phases)
+        `(modify-phases ,scotch-shared-phases
+           (replace
+            'build
+            (lambda _
+              (invoke "make" (format #f "-j~a" (parallel-job-count))
+                      "ptscotch" "ptesmumps")
+
+              ;; Install the serial metis compatibility library
+              (invoke "make" "-C" "libscotchmetis" "install")))
+           (add-before 'check 'mpi-setup
+             ,%openmpi-setup)))))
+    (synopsis "Graph algorithms (shared libraries version, with MPI)")))
+
+
 (define-public metis
   (package
     (name "metis")
@@ -3305,6 +3386,9 @@ YACC = bison -pscotchyy -y -b y
        (sha256
         (base32
          "1cjxgh41r8k6j029yxs8msp3z6lcnpm16g5pvckk35kc7zhfpykn"))))
+    (properties
+     `((release-monitoring-url
+        . "http://glaros.dtc.umn.edu/gkhome/metis/metis/download")))
     (build-system cmake-build-system)
     (inputs
      `(("blas" ,openblas)))
@@ -3907,7 +3991,7 @@ Fresnel integrals, and similar related functions as well.")
 (define-public suitesparse
   (package
     (name "suitesparse")
-    (version "5.8.1")
+    (version "5.9.0")
     (source
      (origin
        (method git-fetch)
@@ -3917,7 +4001,7 @@ Fresnel integrals, and similar related functions as well.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0qjlyfxs8s48rs63c2fzspisgq1kk4bwkgnhmh125hgkdhrq2w1c"))
+         "1zhkix58afw92s7p291prljdm3yi0pjg1kbi3lczdb8rb14jkz5n"))
        (patches (search-patches "suitesparse-mongoose-cmake.patch"))
        (modules '((guix build utils)))
        (snippet
@@ -3927,9 +4011,9 @@ Fresnel integrals, and similar related functions as well.")
            #t))))
     (build-system gnu-build-system)
     (arguments
-     '(#:tests? #f  ;no "check" target
+     `(#:tests? #f  ;no "check" target
        #:make-flags
-       (list "CC=gcc"
+       (list (string-append "CC=" ,(cc-for-target))
              "TBB=-ltbb"
              "MY_METIS_LIB=-lmetis"
              ;; Flags for cmake (required to build GraphBLAS and Mongoose)

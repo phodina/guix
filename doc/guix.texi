@@ -31,14 +31,14 @@ Copyright @copyright{} 2015 Taylan Ulrich Bayırlı/Kammer@*
 Copyright @copyright{} 2015, 2016, 2017, 2019, 2020, 2021 Leo Famulari@*
 Copyright @copyright{} 2015, 2016, 2017, 2018, 2019, 2020 Ricardo Wurmus@*
 Copyright @copyright{} 2016 Ben Woodcroft@*
-Copyright @copyright{} 2016, 2017, 2018 Chris Marusich@*
+Copyright @copyright{} 2016, 2017, 2018, 2021 Chris Marusich@*
 Copyright @copyright{} 2016, 2017, 2018, 2019, 2020, 2021 Efraim Flashner@*
 Copyright @copyright{} 2016 John Darrington@*
 Copyright @copyright{} 2016, 2017 Nikita Gillmann@*
 Copyright @copyright{} 2016, 2017, 2018, 2019, 2020 Jan Nieuwenhuizen@*
 Copyright @copyright{} 2016, 2017, 2018, 2019, 2020 Julien Lepiller@*
 Copyright @copyright{} 2016 Alex ter Weele@*
-Copyright @copyright{} 2016, 2017, 2018, 2019 Christopher Baines@*
+Copyright @copyright{} 2016, 2017, 2018, 2019, 2020, 2021 Christopher Baines@*
 Copyright @copyright{} 2017, 2018, 2019 Clément Lassieur@*
 Copyright @copyright{} 2017, 2018, 2020, 2021 Mathieu Othacehe@*
 Copyright @copyright{} 2017 Federico Beffa@*
@@ -49,7 +49,7 @@ Copyright @copyright{} 2017, 2021 Christopher Lemmer Webber@*
 Copyright @copyright{} 2017, 2018, 2019, 2020 Marius Bakke@*
 Copyright @copyright{} 2017, 2019, 2020 Hartmut Goebel@*
 Copyright @copyright{} 2017, 2019, 2020, 2021 Maxim Cournoyer@*
-Copyright @copyright{} 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice@*
+Copyright @copyright{} 2017, 2018, 2019, 2020, 2021 Tobias Geerinckx-Rice@*
 Copyright @copyright{} 2017 George Clemmer@*
 Copyright @copyright{} 2017 Andy Wingo@*
 Copyright @copyright{} 2017, 2018, 2019, 2020 Arun Isaac@*
@@ -240,13 +240,13 @@ Channels
 * Using a Custom Guix Channel::  Using a customized Guix.
 * Replicating Guix::            Running the @emph{exact same} Guix.
 * Channel Authentication::      How Guix verifies what it fetches.
+* Channels with Substitutes::   Using channels with available substitutes.
 * Creating a Channel::          How to write your custom channel.
 * Package Modules in a Sub-directory::  Specifying the channel's package modules location.
 * Declaring Channel Dependencies::  How to depend on other channels.
 * Specifying Channel Authorizations::  Defining channel authors authorizations.
 * Primary URL::                 Distinguishing mirror to original.
 * Writing Channel News::        Communicating information to channel's users.
-* Channels with Substitutes::   Using channels with available substitutes.
 
 Development
 
@@ -342,7 +342,7 @@ Services
 * DNS Services::                DNS daemons.
 * VPN Services::                VPN daemons.
 * Network File System::         NFS related services.
-* Continuous Integration::      The Cuirass service.
+* Continuous Integration::      Cuirass and Laminar services.
 * Power Management Services::   Extending battery life.
 * Audio Services::              The MPD.
 * Virtualization Services::     Virtualization services.
@@ -523,6 +523,17 @@ supported; in particular, there is no ongoing work to ensure that this
 architecture still works.  Should someone decide they wish to revive this
 architecture then the code is still available.
 
+@item powerpc64le-linux
+little-endian 64-bit Power ISA processors, Linux-Libre kernel.  This
+includes POWER9 systems such as the
+@uref{https://www.fsf.org/news/talos-ii-mainboard-and-talos-ii-lite-mainboard-now-fsf-certified-to-respect-your-freedom,
+RYF Talos II mainboard}. This platform is available as a "technology
+preview": although it is supported, substitutes are not yet available
+from the build farm (@pxref{Substitutes}), and some packages may fail to
+build (@pxref{Tracking Bugs and Patches}).  That said, the Guix
+community is actively working on improving this support, and now is a
+great time to try it and get involved!
+
 @end table
 
 With Guix@tie{}System, you @emph{declare} all aspects of the operating system
@@ -534,7 +545,7 @@ Manual}), the well-known GNU utilities and tool chain, as well as the
 graphical environment or system services of your choice.
 
 Guix System is available on all the above platforms except
-@code{mips64el-linux}.
+@code{mips64el-linux} and @code{powerpc64le-linux}.
 
 @noindent
 For information on porting to other architectures or kernels,
@@ -641,7 +652,7 @@ If that command fails because you do not have the required public key,
 then run this command to import it:
 
 @example
-$ wget @value{OPENPGP-SIGNING-KEY-URL} \
+$ wget '@value{OPENPGP-SIGNING-KEY-URL}' \
       -qO - | gpg --import -
 @end example
 
@@ -1043,10 +1054,10 @@ Bash syntax and the @code{shadow} commands):
 @c for why `-G' is needed.
 @example
 # groupadd --system guixbuild
-# for i in `seq -w 1 10`;
+# for i in $(seq -w 1 10);
   do
     useradd -g guixbuild -G guixbuild           \
-            -d /var/empty -s `which nologin`    \
+            -d /var/empty -s $(which nologin)   \
             -c "Guix build user $i" --system    \
             guixbuilder$i;
   done
@@ -1417,7 +1428,7 @@ the Guix daemon.
 @code{guix_daemon_socket_t} isn’t actually used.  None of the socket
 operations involve contexts that have anything to do with
 @code{guix_daemon_socket_t}.  It doesn’t hurt to have this unused label,
-but it would be preferrable to define socket rules for only this label.
+but it would be preferable to define socket rules for only this label.
 
 @item
 @code{guix gc} cannot access arbitrary links to profiles.  By design,
@@ -4211,7 +4222,7 @@ Return the derivation(s) leading to the given store items
 For example, this command:
 
 @example
-guix gc --derivers `guix package -I ^emacs$ | cut -f4`
+guix gc --derivers $(guix package -I ^emacs$ | cut -f4)
 @end example
 
 @noindent
@@ -4692,7 +4703,7 @@ these procedures.
 Inferior packages can be used transparently like any other package or
 file-like object in G-expressions (@pxref{G-Expressions}).  They are also
 transparently handled by the @code{packages->manifest} procedure, which is
-commonly use in manifests (@pxref{Invoking guix package, the
+commonly used in manifests (@pxref{Invoking guix package, the
 @option{--manifest} option of @command{guix package}}).  Thus you can insert
 an inferior package pretty much anywhere you would insert a regular package:
 in manifests, in the @code{packages} field of your @code{operating-system}
@@ -5007,13 +5018,13 @@ updates.
 * Using a Custom Guix Channel::  Using a customized Guix.
 * Replicating Guix::            Running the @emph{exact same} Guix.
 * Channel Authentication::      How Guix verifies what it fetches.
+* Channels with Substitutes::   Using channels with available substitutes.
 * Creating a Channel::          How to write your custom channel.
 * Package Modules in a Sub-directory::  Specifying the channel's package modules location.
 * Declaring Channel Dependencies::  How to depend on other channels.
 * Specifying Channel Authorizations::  Defining channel authors authorizations.
 * Primary URL::                 Distinguishing mirror to original.
 * Writing Channel News::        Communicating information to channel's users.
-* Channels with Substitutes::   Using channels with available substitutes.
 @end menu
 
 @node Specifying Additional Channels
@@ -5168,6 +5179,31 @@ the channel introduction provided by the channel authors in your
 introduction from a trusted source since that is the root of your trust.
 
 If you're curious about the authentication mechanics, read on!
+
+@node Channels with Substitutes
+@section Channels with Substitutes
+
+When running @command{guix pull}, Guix will first compile the
+definitions of every available package.  This is an expensive operation
+for which substitutes (@pxref{Substitutes}) may be available.  The
+following snippet in @file{channels.scm} will ensure that @command{guix
+pull} uses the latest commit with available substitutes for the package
+definitions: this is done by querying the continuous integration
+server at @url{https://ci.guix.gnu.org}.
+
+@lisp
+(use-modules (guix ci))
+
+(list (channel-with-substitutes-available
+       %default-guix-channel
+       "https://ci.guix.gnu.org"))
+@end lisp
+
+Note that this does not mean that all the packages that you will
+install after running @command{guix pull} will have available
+substitutes.  It only ensures that @command{guix pull} will not try to
+compile package definitions.  This is particularly useful when using
+machines with limited resources.
 
 @node Creating a Channel
 @section Creating a Channel
@@ -5484,31 +5520,6 @@ xgettext -o news.po -l scheme -ken etc/news.txt
 
 To sum up, yes, you could use your channel as a blog.  But beware, this
 is @emph{not quite} what your users might expect.
-
-@node Channels with Substitutes
-@section Channels with Substitutes
-
-When running @command{guix pull}, Guix will first compile the
-definitions of every available package.  This is an expensive operation
-for which substitutes (@pxref{Substitutes}) may be available.  The
-following snippet in @file{channels.scm} will ensure that @command{guix
-pull} uses the latest commit with available substitutes for the package
-definitions: this is done by querying the continuous integration
-server at @url{https://ci.guix.gnu.org}.
-
-@lisp
-(use-modules (guix ci))
-
-(list (channel-with-substitutes-available
-       %default-guix-channel
-       "https://ci.guix.gnu.org"))
-@end lisp
-
-Note that this does not mean that all the packages that you will
-install after running @command{guix pull} will have available
-substitutes.  It only ensures that @command{guix pull} will not try to
-compile package definitions.  This is particularly useful when using
-machines with limited resources.
 
 @c *********************************************************************
 @node Development
@@ -7752,13 +7763,13 @@ The Julia package name is read from the file @file{Project.toml}.  This
 value can be overridden by passing the argument @code{#:julia-package-name}
 (which must be correctly capitalized).
 
-Julia packages usually manage they binary dependencies via
+Julia packages usually manage their binary dependencies via
 @code{JLLWrappers.jl}, a Julia package that creates a module (named
 after the wrapped library followed by @code{_jll.jl}.
 
 To add the binary path @code{_jll.jl} packages, you need to patch the
 files under @file{src/wrappers/}, replacing the call to the macro
-@code{JLLWrappers.@@generate_wrapper_header}, adding as a secound
+@code{JLLWrappers.@@generate_wrapper_header}, adding as a second
 argument containing the store path the binary.
 
 As an example, in the MbedTLS Julia package, we add a build phase
@@ -10120,7 +10131,7 @@ Similarly, the following command builds all the available packages:
 
 @example
 guix build --quiet --keep-going \
-  `guix package -A | cut -f1,2 --output-delimiter=@@`
+  $(guix package -A | cut -f1,2 --output-delimiter=@@)
 @end example
 
 @var{package-or-derivation} may be either the name of a package found in
@@ -10253,9 +10264,10 @@ guix-daemon, @option{--timeout}}).
 @cindex build logs, verbosity
 @item -v @var{level}
 @itemx --verbosity=@var{level}
-Use the given verbosity @var{level}, an integer.  Choosing 0 means that no
-output is produced, 1 is for quiet output, and 2 shows all the build log
-output on standard error.
+Use the given verbosity @var{level}, an integer.  Choosing 0 means that
+no output is produced, 1 is for quiet output; 2 is similar to 1 but it
+additionally displays download URLs; 3 shows all the build log output on
+standard error.
 
 @item --cores=@var{n}
 @itemx -c @var{n}
@@ -10825,8 +10837,8 @@ This works regardless of how packages or derivations are specified.  For
 instance, the following invocations are equivalent:
 
 @example
-guix build --log-file `guix build -d guile`
-guix build --log-file `guix build guile`
+guix build --log-file $(guix build -d guile)
+guix build --log-file $(guix build guile)
 guix build --log-file guile
 guix build --log-file -e '(@@ (gnu packages guile) guile-2.0)'
 @end example
@@ -11541,12 +11553,12 @@ Select the given repository (a repository name).  Possible values include:
 Import metadata for a Go module using
 @uref{https://proxy.golang.org, proxy.golang.org}.
 
-This importer is highly experimental. See the source code for more info
-about the current state.
-
 @example
 guix import go gopkg.in/yaml.v2
 @end example
+
+It is possible to use a package specification with a @code{@@VERSION}
+suffix to import a specific version.
 
 Additional options include:
 
@@ -11556,6 +11568,14 @@ Additional options include:
 Traverse the dependency graph of the given upstream package recursively
 and generate package expressions for all those packages that are not yet
 in Guix.
+@item --pin-versions
+When using this option, the importer preserves the exact versions of the
+Go modules dependencies instead of using their latest available
+versions.  This can be useful when attempting to import packages that
+recursively depend on former versions of themselves to build.  When
+using this mode, the symbol of the package is made by appending the
+version to its name, so that multiple versions of the same package can
+coexist.
 @end table
 @end table
 
@@ -11567,10 +11587,13 @@ is welcome here (@pxref{Contributing}).
 @section Invoking @command{guix refresh}
 
 @cindex @command {guix refresh}
-The primary audience of the @command{guix refresh} command is developers
-of the GNU software distribution.  By default, it reports any packages
-provided by the distribution that are outdated compared to the latest
-upstream version, like this:
+The primary audience of the @command{guix refresh} command is packagers.
+As a user, you may be interested in the @option{--with-latest} option,
+which can bring you package update superpowers built upon @command{guix
+refresh} (@pxref{Package Transformation Options,
+@option{--with-latest}}).  By default, @command{guix refresh} reports
+any packages provided by the distribution that are outdated compared to
+the latest upstream version, like this:
 
 @example
 $ guix refresh
@@ -11698,6 +11721,8 @@ list of updaters).  Currently, @var{updater} may be one of:
 the updater for GNU packages;
 @item savannah
 the updater for packages hosted at @uref{https://savannah.gnu.org, Savannah};
+@item sourceforge
+the updater for packages hosted at @uref{https://sourceforge.net, SourceForge};
 @item gnome
 the updater for GNOME packages;
 @item kde
@@ -11742,6 +11767,12 @@ gnu/packages/statistics.scm:819:13: r-testthat would be upgraded from 0.10.0 to 
 gnu/packages/emacs.scm:856:13: emacs-auctex would be upgraded from 11.88.6 to 11.88.9
 @end example
 
+@item --list-updaters
+@itemx -L
+List available updaters and exit (see @option{--type} above).
+
+For each updater, display the fraction of packages it covers; at the
+end, display the fraction of packages covered by all these updaters.
 @end table
 
 In addition, @command{guix refresh} can be passed one or more package
@@ -11754,7 +11785,13 @@ $ ./pre-inst-env guix refresh -u emacs idutils gcc@@4.8
 @noindent
 The command above specifically updates the @code{emacs} and
 @code{idutils} packages.  The @option{--select} option would have no
-effect in this case.
+effect in this case.  You might also want to update definitions that
+correspond to the packages installed in your profile:
+
+@example
+$ ./pre-inst-env guix refresh -u \
+       $(guix package --list-installed | cut -f1)
+@end example
 
 When considering whether to upgrade a package, it is sometimes
 convenient to know which packages would be affected by the upgrade and
@@ -11762,13 +11799,6 @@ should be checked for compatibility.  For this the following option may
 be used when passing @command{guix refresh} one or more package names:
 
 @table @code
-
-@item --list-updaters
-@itemx -L
-List available updaters and exit (see @option{--type} above).
-
-For each updater, display the fraction of packages it covers; at the
-end, display the fraction of packages covered by all these updaters.
 
 @item --list-dependent
 @itemx -l
@@ -12326,7 +12356,7 @@ For this type of graph, it is also possible to pass a @file{.drv} file
 name instead of a package name, as in:
 
 @example
-guix graph -t derivation `guix system build -d my-config.scm`
+guix graph -t derivation $(guix system build -d my-config.scm)
 @end example
 
 @item module
@@ -12355,7 +12385,7 @@ example, the command below produces the reference graph of your profile
 (which can be big!):
 
 @example
-guix graph -t references `readlink -f ~/.guix-profile`
+guix graph -t references $(readlink -f ~/.guix-profile)
 @end example
 
 @item referrers
@@ -12927,7 +12957,7 @@ their dependencies over to @var{host}, logged in as @var{user}:
 
 @example
 guix copy --to=@var{user}@@@var{host} \
-          coreutils `readlink -f ~/.guix-profile`
+          coreutils $(readlink -f ~/.guix-profile)
 @end example
 
 If some of the items to be copied are already present on @var{host},
@@ -14798,7 +14828,7 @@ declaration.
 * DNS Services::                DNS daemons.
 * VPN Services::                VPN daemons.
 * Network File System::         NFS related services.
-* Continuous Integration::      The Cuirass service.
+* Continuous Integration::      Cuirass and Laminar services.
 * Power Management Services::   Extending battery life.
 * Audio Services::              The MPD.
 * Virtualization Services::     Virtualization services.
@@ -15169,6 +15199,12 @@ in automatically without prompting for their login name or password.
 
 @item @code{hardware-acceleration?} (default: #f)
 Whether to use hardware acceleration.
+
+@item @code{font-engine} (default: @code{"pango"})
+Font engine used in Kmscon.
+
+@item @code{font-size} (default: @code{12})
+Font size used in Kmscon.
 
 @item @code{kmscon} (default: @var{kmscon})
 The Kmscon package to use.
@@ -15620,7 +15656,7 @@ This allows neighboring Guix devices with discovery on (see
 @code{guix-configuration} above) to discover this @command{guix publish}
 instance and to automatically download substitutes from it.
 
-@item @code{compression} (default: @code{'(("gzip" 3))})
+@item @code{compression} (default: @code{'(("gzip" 3) ("zstd" 3))})
 This is a list of compression method/level tuple used when compressing
 substitutes.  For example, to compress all substitutes with @emph{both} lzip
 at level 7 and gzip at level 9, write:
@@ -16389,7 +16425,7 @@ netfilter project that aims to replace the existing iptables, ip6tables,
 arptables and ebtables framework.  It provides a new packet filtering
 framework, a new user-space utility @command{nft}, and a compatibility layer
 for iptables.  This service comes with a default ruleset
-@code{%default-nftables-ruleset} that rejecting all incomming connections
+@code{%default-nftables-ruleset} that rejecting all incoming connections
 except those to the ssh port 22.  To use it, simply write:
 
 @lisp
@@ -16792,7 +16828,7 @@ Data type representing the configuration for @code{syncthing-service-type}.
 List of command-line arguments passing to @code{syncthing} binary.
 
 @item @code{logflags} (default: @var{0})
-Sum of loging flags, see
+Sum of logging flags, see
 @uref{https://docs.syncthing.net/users/syncthing.html#cmdoption-logflags, Syncthing documentation logflags}.
 
 @item @code{user} (default: @var{#f})
@@ -25877,7 +25913,7 @@ this amount of time.  After this period, resolvers will invalidate their cache
 and check again that it still exists.
 
 @item @code{nx} (default: @code{3600})
-Default TTL of inexistant records.  This delay is usually short because you want
+Default TTL of inexistent records.  This delay is usually short because you want
 your new domains to reach everyone quickly.
 
 @end table
@@ -27085,9 +27121,9 @@ The verbosity level of the daemon.
 @subsection Continuous Integration
 
 @cindex continuous integration
-@uref{https://git.savannah.gnu.org/cgit/guix/guix-cuirass.git, Cuirass} is a
-continuous integration tool for Guix.  It can be used both for development and
-for providing substitutes to others (@pxref{Substitutes}).
+@uref{https://guix.gnu.org/cuirass/, Cuirass} is a continuous
+integration tool for Guix.  It can be used both for development and for
+providing substitutes to others (@pxref{Substitutes}).
 
 The @code{(gnu services cuirass)} module provides the following service.
 
@@ -27096,44 +27132,43 @@ The type of the Cuirass service.  Its value must be a
 @code{cuirass-configuration} object, as described below.
 @end defvr
 
-To add build jobs, you have to set the @code{specifications} field of the
-configuration.  Here is an example of a service that polls the Guix repository
-and builds the packages from a manifest.  Some of the packages are defined in
-the @code{"custom-packages"} input, which is the equivalent of
-@env{GUIX_PACKAGE_PATH}.
+To add build jobs, you have to set the @code{specifications} field of
+the configuration.  For instance, the following example will build all
+the packages provided by the @code{my-channel} channel.
 
 @lisp
 (define %cuirass-specs
-  #~(list
-     '((#:name . "my-manifest")
-       (#:load-path-inputs . ("guix"))
-       (#:package-path-inputs . ("custom-packages"))
-       (#:proc-input . "guix")
-       (#:proc-file . "build-aux/cuirass/gnu-system.scm")
-       (#:proc . cuirass-jobs)
-       (#:proc-args . ((subset . "manifests")
-                       (systems . ("x86_64-linux"))
-                       (manifests . (("config" . "guix/manifest.scm")))))
-       (#:inputs . (((#:name . "guix")
-                     (#:url . "git://git.savannah.gnu.org/guix.git")
-                     (#:load-path . ".")
-                     (#:branch . "master")
-                     (#:no-compile? . #t))
-                    ((#:name . "config")
-                     (#:url . "https://git.example.org/config.git")
-                     (#:load-path . ".")
-                     (#:branch . "master")
-                     (#:no-compile? . #t))
-                    ((#:name . "custom-packages")
-                     (#:url . "https://git.example.org/custom-packages.git")
-                     (#:load-path . ".")
-                     (#:branch . "master")
-                     (#:no-compile? . #t)))))))
+  #~(list (specification
+           (name "my-channel")
+           (build '(channels my-channel))
+           (channels
+            (cons (channel
+                   (name 'my-channel)
+                   (url "https://my-channel.git"))
+                  %default-channels)))))
 
 (service cuirass-service-type
          (cuirass-configuration
           (specifications %cuirass-specs)))
 @end lisp
+
+To build the @code{linux-libre} package defined by the default Guix
+channel, one can use the following configuration.
+
+@lisp
+(define %cuirass-specs
+  #~(list (specification
+           (name "my-linux")
+           (build '(packages "linux-libre")))))
+
+(service cuirass-service-type
+         (cuirass-configuration
+          (specifications %cuirass-specs)))
+@end lisp
+
+The other configuration possibilities, as well as the specification
+record itself are described in the Cuirass manual
+(@pxref{Specifications,,, cuirass, Cuirass}).
 
 While information related to build jobs is located directly in the
 specifications, global settings for the @command{cuirass} process are
@@ -27143,19 +27178,14 @@ accessible in other @code{cuirass-configuration} fields.
 Data type representing the configuration of Cuirass.
 
 @table @asis
+@item @code{cuirass} (default: @code{cuirass})
+The Cuirass package to use.
+
 @item @code{log-file} (default: @code{"/var/log/cuirass.log"})
 Location of the log file.
 
 @item @code{web-log-file} (default: @code{"/var/log/cuirass-web.log"})
 Location of the log file used by the web interface.
-
-@item @code{queries-log-file} (default: @code{#f})
-Location of the SQL queries log file.  By default, SQL queries logging is
-disabled.
-
-@item @code{web-queries-log-file} (default: @code{#f})
-Location of the web SQL queries log file.  By default, web SQL queries
-logging is disabled.
 
 @item @code{cache-directory} (default: @code{"/var/cache/cuirass"})
 Location of the repository cache.
@@ -27170,17 +27200,19 @@ Owner's group of the @code{cuirass} process.
 Number of seconds between the poll of the repositories followed by the
 Cuirass jobs.
 
-@item @code{queue-size} (default: @code{1})
-Size of the database writer queue.
+@item @code{parameters} (default: @code{#f})
+Read parameters from the given @var{parameters} file.  The supported
+parameters are described here (@pxref{Parameters,,, cuirass, Cuirass}).
 
-@item @code{database} (default: @code{"/var/lib/cuirass/cuirass.db"})
-Location of sqlite database which contains the build results and previously
-added specifications.
+@item @code{remote-server} (default: @code{#f})
+A @code{cuirass-remote-server-configuration} record to use the build
+remote mechanism or @code{#f} to use the default build mechanism.
 
-@item @code{ttl} (default: @code{(* 30 24 3600)})
-Specifies the time-to-live (TTL) in seconds of garbage collector roots that
-are registered for build results.  This means that build results are protected
-from garbage collection for at least @var{ttl} seconds.
+@item @code{database} (default: @code{"dbname=cuirass host=/var/run/postgresql"})
+Use @var{database} as the database containing the jobs and the past
+build results. Since Cuirass uses PostgreSQL as a database engine,
+@var{database} must be a string such as @code{"dbname=cuirass
+host=localhost"}.
 
 @item @code{port} (default: @code{8081})
 Port number used by the HTTP server.
@@ -27190,11 +27222,9 @@ Listen on the network interface for @var{host}.  The default is to
 accept connections from localhost.
 
 @item @code{specifications} (default: @code{#~'()})
-A gexp (@pxref{G-Expressions}) that evaluates to a list of specifications,
-where a specification is an association list
-(@pxref{Associations Lists,,, guile, GNU Guile Reference Manual}) whose
-keys are keywords (@code{#:keyword-example}) as shown in the example
-above.
+A gexp (@pxref{G-Expressions}) that evaluates to a list of
+specifications records.  The specification record is described in the
+Cuirass manual (@pxref{Specifications,,, cuirass, Cuirass}).
 
 @item @code{use-substitutes?} (default: @code{#f})
 This allows using substitutes to avoid building every dependencies of a job
@@ -27210,122 +27240,160 @@ packages locally.
 @item @code{extra-options} (default: @code{'()})
 Extra options to pass when running the Cuirass processes.
 
+@end table
+@end deftp
+
+@cindex remote build
+@subsubheading Cuirass remote building
+
+Cuirass supports two mechanisms to build derivations.
+
+@itemize
+@item Using the local Guix daemon.
+This is the default build mechanism.  Once the build jobs are
+evaluated, they are sent to the local Guix daemon.  Cuirass then
+listens to the Guix daemon output to detect the various build events.
+
+@item Using the remote build mechanism.
+The build jobs are not submitted to the local Guix daemon.  Instead, a
+remote server dispatches build requests to the connect remote workers,
+according to the build priorities.
+
+@end itemize
+
+To enable this build mode a @code{cuirass-remote-server-configuration}
+record must be passed as @code{remote-server} argument of the
+@code{cuirass-configuration} record.  The
+@code{cuirass-remote-server-configuration} record is described below.
+
+This build mode scales way better than the default build mode.  This is
+the build mode that is used on the GNU Guix build farm at
+@url{https://ci.guix.gnu.org}.  It should be preferred when using
+Cuirass to build large amount of packages.
+
+@deftp {Data Type} cuirass-remote-server-configuration
+Data type representing the configuration of the Cuirass remote-server.
+
+@table @asis
+@item @code{backend-port} (default: @code{5555})
+The TCP port for communicating with @code{remote-worker} processes
+using ZMQ.  It defaults to @code{5555}.
+
+@item @code{log-port} (default: @code{5556})
+The TCP port of the log server.  It defaults to @code{5556}.
+
+@item @code{publish-port} (default: @code{5557})
+The TCP port of the publish server.  It defaults to @code{5557}.
+
+@item @code{log-file} (default: @code{"/var/log/cuirass-remote-server.log"})
+Location of the log file.
+
+@item @code{cache} (default: @code{"/var/cache/cuirass/remote"})
+Use @var{cache} directory to cache build log files.
+
+@item @code{trigger-url} (default: @code{#f})
+Once a substitute is successfully fetched, trigger substitute baking at
+@var{trigger-url}.
+
+@item @code{public-key}
+@item @code{private-key}
+Use the specific @var{file}s as the public/private key pair used to sign
+the store items being published.
+
+@end table
+@end deftp
+
+At least one remote worker must also be started on any machine of the
+local network to actually perform the builds and report their status.
+
+@deftp {Data Type} cuirass-remote-worker-configuration
+Data type representing the configuration of the Cuirass remote-worker.
+
+@table @asis
 @item @code{cuirass} (default: @code{cuirass})
 The Cuirass package to use.
-@end table
-@end deftp
 
-@cindex simple cuirass
-@subsubheading Simple Cuirass
+@item @code{workers} (default: @code{1})
+Start @var{workers} parallel workers.
 
-The Cuirass service configuration described above can be a little
-intimidating.  In particular, getting the right @code{specifications}
-can prove difficult.  The @code{simple-cuirass-configuration->specs}
-procedure offers a way to generate those @code{specifications} and thus
-setup a continuous integration server more readily.
-
-@deffn {Scheme Procedure} simple-cuirass-configuration->specs @var{configuration}
-This procedure takes a @code{simple-cuirass-configuration} record as
-argument and returns the corresponding Cuirass specifications gexp.
-@end deffn
-
-@deftp {Data Type} simple-cuirass-configuration
-Data type representing the configuration of a simple Cuirass instance.
-
-@table @asis
-@item @code{build} (default: @code{all})
-The packages to be built by Cuirass.  It defaults to @code{all}, which
-means that all the discovered packages in the subsequent @code{channels}
-field are to be selected.
-
-It is also possible to set this field to a list of @code{build-manifest}
-records, so that only the packages that are part of the declared
-manifests are built.  This record is described below.
-
-@deftp {Data Type} build-manifest
-@table @asis
-@item @code{channel-name}
-The name of the channel where the manifest is located.
-
-@item @code{manifest}
-The manifest path inside the channel.
-
-@end table
-@end deftp
-
-@item @code{channels} (default: @code{%default-channels})
-The channels to be fetched by Cuirass (@pxref{Channels}).
-
-@item @code{non-package-channels} (default: @code{'()})
-List the channel names that must not be searched for packages.  That is
-often the case for the channel containing the manifest.
+@item @code{server} (default: @code{#f})
+Do not use Avahi discovery and connect to the given @code{server} IP
+address instead.
 
 @item @code{systems} (default: @code{(list (%current-system))})
-Build every discovered package for each system in this list.  By default
-only the current system is selected.
+Only request builds for the given @var{systems}.
+
+@item @code{log-file} (default: @code{"/var/log/cuirass-remote-worker.log"})
+Location of the log file.
+
+@item @code{publish-port} (default: @code{5558})
+The TCP port of the publish server.  It defaults to @code{5558}.
+
+@item @code{public-key}
+@item @code{private-key}
+Use the specific @var{file}s as the public/private key pair used to sign
+the store items being published.
 
 @end table
 @end deftp
 
-Here is an example of how to setup a Cuirass instance that builds all
-the packages declared by Guix and a user repository.  The package list
-is re-evaluated each time a commit is pushed in one of the declared
-channels.
+@subsubheading Laminar
+
+@uref{https://laminar.ohwg.net/, Laminar} is a lightweight and modular
+Continuous Integration service.  It doesn't have a configuration web UI
+instead uses version-controllable configuration files and scripts.
+
+Laminar encourages the use of existing tools such as bash and cron
+instead of reinventing them.
+
+@defvr {Scheme Procedure} laminar-service-type
+The type of the Laminar service.  Its value must be a
+@code{laminar-configuration} object, as described below.
+
+All configuration values have defaults, a minimal configuration to get
+Laminar running is shown below. By default, the web interface is
+available on port 8080.
 
 @lisp
-(service cuirass-service-type
-         (cuirass-configuration
-          (specifications
-           (simple-cuirass-configuration->specs
-            (simple-cuirass-configuration
-             (build 'all)
-             (channels (cons (channel
-                              (name 'my-guix)
-                              (url "https://my-git-repo/guix.git"))
-                             %default-channels)))))))
+(service laminar-service-type)
 @end lisp
+@end defvr
 
-In the same spirit, this builds all the packages that are part of the
-@code{guix} or @code{my-guix} channels and declared in the manifest
-located in the @code{conf} channel.
+@deftp {Data Type} laminar-configuration
+Data type representing the configuration of Laminar.
 
-@lisp
-(service cuirass-service-type
-         (cuirass-configuration
-          (specifications
-           (simple-cuirass-configuration->specs
-            (simple-cuirass-configuration
-             (build (list
-                     (build-manifest
-                      (channel-name 'conf)
-                      (manifest "guix/manifest.scm"))))
-             (channels (cons* (channel
-                               (name 'my-guix)
-                               (url "https://my-git-repo/guix.git"))
-                              (channel
-                               (name 'conf)
-                               (url "https://my-git-repo/conf.git"))
-                              %default-channels))
-             (non-package-channels '(conf)))))))
-@end lisp
+@table @asis
+@item @code{laminar} (default: @code{laminar})
+The Laminar package to use.
 
-Finally, @code{simple-cuirass-services} takes as a second optional
-argument a @code{cuirass-configuration} record.  It can be used to
-customize the configuration of the Cuirass instance.
+@item @code{home-directory} (default: @code{"/var/lib/laminar"})
+The directory for job configurations and run directories.
 
-@lisp
-(simple-cuirass-services
- (simple-cuirass-configuration
-  (build 'all)
-  (channels (cons (channel
-                   (name 'my-guix)
-                   (url "https://my-git-repo/guix.git"))
-                  %default-channels))
-  (non-package-channels '(conf)))
- (cuirass-configuration
-  (inherit %default-cuirass-config)
-  (host "0.0.0.0"))) ;listen on all interfaces.
-@end lisp
+@item @code{bind-http} (default: @code{"*:8080"})
+The interface/port or unix socket on which laminard should listen for
+incoming connections to the web frontend.
+
+@item @code{bind-rpc} (default: @code{"unix-abstract:laminar"})
+The interface/port or unix socket on which laminard should listen for
+incoming commands such as build triggers.
+
+@item @code{title} (default: @code{"Laminar"})
+The page title to show in the web frontend.
+
+@item @code{keep-rundirs} (default: @code{0})
+Set to an integer defining how many rundirs to keep per job.  The
+lowest-numbered ones will be deleted.  The default is 0, meaning all run
+dirs will be immediately deleted.
+
+@item @code{archive-url} (default: @code{#f})
+The web frontend served by laminard will use this URL to form links to
+artefacts archived jobs.
+
+@item @code{base-url} (default: @code{#f})
+Base URL to use for links to laminar itself.
+
+@end table
+@end deftp
 
 @node Power Management Services
 @subsection Power Management Services
@@ -28735,7 +28803,7 @@ service:
 @lisp
 (service qemu-binfmt-service-type
          (qemu-binfmt-configuration
-           (platforms (lookup-qemu-platforms "arm"))
+           (platforms (lookup-qemu-platforms "arm"))))
 @end lisp
 
 You can run:
@@ -31046,7 +31114,7 @@ coordinator.
 
 @deftp {Data Type} guix-build-coordinator-agent-dynamic-auth
 Data type representing an agent authenticating with a coordinator via a
-dyanmic auth token and agent name.
+dynamic auth token and agent name.
 
 @table @asis
 @item @code{agent-name}
@@ -31063,7 +31131,7 @@ database, and is used by the agent to authenticate.
 
 @deftp {Data Type} guix-build-coordinator-agent-dynamic-auth-with-file
 Data type representing an agent authenticating with a coordinator via a
-dyanmic auth token read from a file and agent name.
+dynamic auth token read from a file and agent name.
 
 @table @asis
 @item @code{agent-name}
@@ -32915,8 +32983,8 @@ system configuration file.  You can then load the image and launch a
 Docker container using commands like the following:
 
 @example
-image_id="`docker load < guix-system-docker-image.tar.gz`"
-container_id="`docker create $image_id`"
+image_id="$(docker load < guix-system-docker-image.tar.gz)"
+container_id="$(docker create $image_id)"
 docker start $container_id
 @end example
 
@@ -33440,7 +33508,7 @@ The default @command{run-vm.sh} script that is returned by an invocation of
 @command{guix system vm} does not add a @command{-nic user} flag by default.
 To get network access from within the vm add the @code{(dhcp-client-service)}
 to your system definition and start the VM using
-@command{`guix system vm config.scm` -nic user}.  An important caveat of using
+@command{$(guix system vm config.scm) -nic user}.  An important caveat of using
 @command{-nic user} for networking is that @command{ping} will not work, because
 it uses the ICMP protocol.  You'll have to use a different command to check for
 network connectivity, for example @command{guix download}.
@@ -33455,7 +33523,7 @@ To enable SSH inside a VM you need to add an SSH server like
 22 by default, to the host.  You can do this with
 
 @example
-`guix system vm config.scm` -nic user,model=virtio-net-pci,hostfwd=tcp::10022-:22
+$(guix system vm config.scm) -nic user,model=virtio-net-pci,hostfwd=tcp::10022-:22
 @end example
 
 To connect to the VM you can run
@@ -34217,7 +34285,7 @@ This service represents PID@tie{}1.
 @cindex man pages
 @cindex manual pages
 In most cases packages installed with Guix come with documentation.
-There are two main documentation formats: ``Info'', a browseable
+There are two main documentation formats: ``Info'', a browsable
 hypertext format used for GNU software, and ``manual pages'' (or ``man
 pages''), the linear documentation format traditionally found on Unix.
 Info manuals are accessed with the @command{info} command or with Emacs,
@@ -34509,7 +34577,7 @@ To verify which Bash your whole profile refers to, you can run
 (@pxref{Invoking guix gc}):
 
 @example
-guix gc -R `readlink -f ~/.guix-profile` | grep bash
+guix gc -R $(readlink -f ~/.guix-profile) | grep bash
 @end example
 
 @noindent
@@ -34517,7 +34585,7 @@ guix gc -R `readlink -f ~/.guix-profile` | grep bash
 Likewise for a complete Guix system generation:
 
 @example
-guix gc -R `guix system build my-config.scm` | grep bash
+guix gc -R $(guix system build my-config.scm) | grep bash
 @end example
 
 Lastly, to check which Bash running processes are using, you can use the
@@ -34627,7 +34695,7 @@ traditional bootstrap of the rest of the Guix System.
 
 The only significant binary bootstrap seeds that remain@footnote{
 Ignoring the 68KB @code{mescc-tools}; that will be removed later,
-together with @code{mes}.} are a Scheme intepreter and a Scheme
+together with @code{mes}.} are a Scheme interpreter and a Scheme
 compiler: GNU Mes and GNU Guile@footnote{Not shown in this graph are the
 static binaries for @file{bash}, @code{tar}, and @code{xz} that are used
 to get Guile running.}.

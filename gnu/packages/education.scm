@@ -614,14 +614,14 @@ Portuguese, Spanish and Italian.")
 (define-public fet
   (package
     (name "fet")
-    (version "5.49.0")
+    (version "5.49.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.lalescu.ro/liviu/fet/download/"
                            "fet-" version ".tar.bz2"))
        (sha256
-        (base32 "011bgr46bfi41hah1gr54va6arvr5zsvkk9zq2gfgavynwfnmny4"))))
+        (base32 "1aa8xnhwvbhvp7yigcdk7qdwqh59yyfknqbpn3ybgjljc22m8w5n"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -689,17 +689,6 @@ language and very flexible regarding to new or unknown keyboard layouts.")
         (sha256
          (base32 "10lm2p8w26c9n6lhvw3301myfss0dq7hl7rawzb3hsy1lqvmvdib"))))
     (build-system qt-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after 'configure 'patch-makefiles
-           (lambda* (#:key inputs #:allow-other-keys)
-             (let ((qtdec (assoc-ref inputs "qtdeclarative")))
-               (substitute* '("src/CMakeFiles/ktouch_autogen.dir/build.make"
-                              "src/CMakeFiles/ktouch.dir/build.make")
-                 (("/gnu/store/.*qmlcachegen")
-                  (string-append qtdec "/bin/qmlcachegen"))))
-             #t)))))
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("kdoctools" ,kdoctools)

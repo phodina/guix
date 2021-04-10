@@ -3,7 +3,7 @@
 ;;; Copyright © 2015 Tomáš Čech <sleep_walker@gnu.org>
 ;;; Copyright © 2016, 2019 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017, 2019 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2016, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2018, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2017 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2017, 2018 Ben Woodcroft <donttrustben@gmail.com>
@@ -718,7 +718,7 @@ more.")
 (define-public cgal
   (package
     (name "cgal")
-    (version "5.2")
+    (version "5.2.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -726,9 +726,7 @@ more.")
                     "/CGAL-" version ".tar.xz"))
               (sha256
                (base32
-                "08sr2k2dm4zasfbvisqpvs6djqw3rywzwpzr701an870nvnqck3l"))
-              (patches (search-patches "cgal-security-pr-5371.patch"))
-              (patch-flags '("-p2"))))
+                "1rhrpjsp4081nn2q215h78kc4msrj0081zg65k1gfp5hl88bg03y"))))
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f))                    ; no test target
@@ -755,7 +753,7 @@ many more.")
 (define-public ilmbase
   (package
     (name "ilmbase")
-    (version "2.5.2")
+    (version "2.5.5")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -764,7 +762,7 @@ many more.")
               (file-name (git-file-name "ilmbase" version))
               (sha256
                (base32
-                "1vf8bqld2bpcdi99jbr043y6vp01cp3fvbiasrn66xn91mf6imbn"))
+                "0mjzb3fd8b9pcqmrgy5cdsmvqd70hmlvjnfypi66v59h3fhrmgd8"))
               (patches (search-patches "ilmbase-fix-tests.patch"))))
     (build-system cmake-build-system)
     (arguments

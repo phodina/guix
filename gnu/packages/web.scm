@@ -10,7 +10,7 @@
 ;;; Copyright © 2015 Eric Dvorsak <eric@dvorsak.fr>
 ;;; Copyright © 2016 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2016 Jelle Licht <jlicht@fsfe.org>
-;;; Copyright © 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Rene Saavedra <rennes@openmailbox.org>
 ;;; Copyright © 2016 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2016 Clément Lassieur <clement@lassieur.org>
@@ -22,7 +22,7 @@
 ;;; Copyright © 2017, 2018, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2017 Petter <petter@mykolab.ch>
-;;; Copyright © 2017 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2017, 2021 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2017, 2019, 2020 Christopher Baines <mail@cbaines.net>
 ;;; Copyright © 2018, 2019 Julien Lepiller <julien@lepiller.eu>
@@ -367,14 +367,14 @@ the same, being completely separated from the Internet.")
     ;; ’stable’ and recommends that “in general you deploy the NGINX mainline
     ;; branch at all times” (https://www.nginx.com/blog/nginx-1-6-1-7-released/)
     ;; Consider updating the nginx-documentation package together with this one.
-    (version "1.19.8")
+    (version "1.19.9")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://nginx.org/download/nginx-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "01cb6hsaik1sfjihbrldmwrcn54gk4plfy350sl1b4rml6qik29h"))))
+                "0hfqqyfgqa6wqazmb3d434nb3r5p8szfisa0m6nfh9lqdbqdyd9f"))))
     (build-system gnu-build-system)
     (inputs `(("openssl" ,openssl)
               ("pcre" ,pcre)
@@ -457,9 +457,9 @@ and as a proxy to reduce the load on back-end HTTP or mail servers.")
 
 (define-public nginx-documentation
   ;; This documentation should be relevant for the current nginx package.
-  (let ((version "1.19.8")
-        (revision 2673)
-        (changeset "4398fd0f0341"))
+  (let ((version "1.19.9")
+        (revision 2696)
+        (changeset "f85798c1c70a"))
     (package
       (name "nginx-documentation")
       (version (simple-format #f "~A-~A-~A" version revision changeset))
@@ -471,7 +471,7 @@ and as a proxy to reduce the load on back-end HTTP or mail servers.")
                (file-name (string-append name "-" version))
                (sha256
                 (base32
-                 "1pds76h19fadmymyr6pnfh72ql6vizpv2628lqcrpqhxgwa6hcbg"))))
+                 "1ksl32jw6h3qzyxxlsdjag7fcjvk3md3hdxn6ljs8pr2nhk1v6cs"))))
       (build-system gnu-build-system)
       (arguments
        '(#:tests? #f                    ; no test suite
@@ -1331,18 +1331,17 @@ parser written in ANSI C and a small validating JSON generator.")
 (define-public libwebsockets
   (package
     (name "libwebsockets")
-    (version "1.3")
+    (version "4.1.6")
     (source (origin
               ;; The project does not publish tarballs, so we have to take
               ;; things from Git.
               (method git-fetch)
               (uri (git-reference
                     (url "https://github.com/warmcat/libwebsockets")
-                    (commit (string-append "v" version
-                                           "-chrome37-firefox30"))))
+                    (commit (string-append "v" version))))
               (sha256
                (base32
-                "12fqh2d2098mgf0ls19p9lzibpsqhv7mc5rn1yvrbfnazmcr40g4"))
+                "0x56v4hsx92vm1zibfmnqb5g3v23kzciffn3fjlsc3sly2pknhsg"))
               (file-name (string-append name "-" version))))
 
     (build-system cmake-build-system)
@@ -4071,7 +4070,7 @@ is limited to http and https.")
 (define-public perl-net-http
   (package
     (name "perl-net-http")
-    (version "6.20")
+    (version "6.21")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -4079,7 +4078,7 @@ is limited to http and https.")
                    "Net-HTTP-" version ".tar.gz"))
              (sha256
               (base32
-               "07lzfycza7qqxli18xgsnqwiwxapl0b64z33wfw62aai4hm7nllj"))))
+               "1i7fk6q1iaxzgf82mjd5hg77hvy7dbb79488cijg16dyfrds6nip"))))
     (build-system perl-build-system)
     (propagated-inputs
      `(("perl-io-socket-ssl" ,perl-io-socket-ssl)
@@ -4685,14 +4684,14 @@ their web site.")
 (define-public python-feedparser
   (package
     (name "python-feedparser")
-    (version "5.2.1")
+    (version "6.0.2")
     (source
      (origin
        (method url-fetch)
-       (uri (pypi-uri "feedparser" version ".tar.bz2"))
+       (uri (pypi-uri "feedparser" version ".tar.gz"))
        (sha256
         (base32
-         "00hb4qg2am06g81mygfi1jsbx8830024jm45g6qp9g8fr6am91yf"))))
+         "0x0hm9brh3j71645pydvlkrwxaaca9dnwd7xahwjyjaz882s200v"))))
     (build-system python-build-system)
     (arguments
      '(#:tests? #f))
@@ -4706,11 +4705,32 @@ CDF, Atom 0.3, and Atom 1.0 feeds.")
                    license:freebsd-doc)))) ; documentation
 
 (define-public python2-feedparser
-  (package-with-python2 python-feedparser))
+  (package
+    (name "python2-feedparser")
+    (version "5.2.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "feedparser" version ".tar.bz2"))
+       (sha256
+        (base32
+         "00hb4qg2am06g81mygfi1jsbx8830024jm45g6qp9g8fr6am91yf"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f
+       #:python ,python-2))
+    (home-page
+     "https://github.com/kurtmckee/feedparser")
+    (synopsis "Parse feeds in Python")
+    (description
+     "Universal feed parser which handles RSS 0.9x, RSS 1.0, RSS 2.0,
+CDF, Atom 0.3, and Atom 1.0 feeds.")
+    (license (list license:bsd-2 ; source code
+                   license:freebsd-doc)))) ; documentation
 
 (define-public guix-data-service
-  (let ((commit "b7ba8d0c2ca3aca9ba5b5f9f27b9778ee949d20e")
-        (revision "25"))
+  (let ((commit "df2a0a73f1f35ea53ba6c07a6ad4c5347ba12b8f")
+        (revision "27"))
     (package
       (name "guix-data-service")
       (version (string-append "0.0.1-" revision "." (string-take commit 7)))
@@ -4722,7 +4742,7 @@ CDF, Atom 0.3, and Atom 1.0 feeds.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "0brv64bsqysl7dncz067blwvmqrlx99c2kwrgpz6k0nqv8nzsa28"))))
+                  "1ss1prr98zdjkm97w24rd04lfnnvcw6xs0gwxqgd40briqisaa5g"))))
       (build-system gnu-build-system)
       (arguments
        '(#:modules ((guix build utils)
@@ -4781,15 +4801,15 @@ CDF, Atom 0.3, and Atom 1.0 feeds.")
                  #t)))
            (delete 'strip))))           ; As the .go files aren't compatible
       (inputs
-       `(("guix" ,guile3.0-guix)
-         ("guile-fibers" ,guile3.0-fibers)
-         ("guile-json" ,guile3.0-json)
-         ("guile-email" ,guile3.0-email)
+       `(("guix" ,guix)
+         ("guile-fibers" ,guile-fibers)
+         ("guile-json" ,guile-json-4)
+         ("guile-email" ,guile-email)
          ("guile-prometheus" ,guile-prometheus)
-         ("guile-squee" ,guile3.0-squee)
+         ("guile-squee" ,guile-squee)
          ("ephemeralpg" ,ephemeralpg)
          ("util-linux" ,util-linux)
-         ("postgresql" ,postgresql-11)
+         ("postgresql" ,postgresql-13)
          ("sqitch" ,sqitch)))
       (native-inputs
        `(("guile" ,@(assoc-ref (package-native-inputs guix) "guile"))
@@ -5888,14 +5908,14 @@ tools like SSH (Secure Shell) to reach the outside world.")
 (define-public stunnel
   (package
   (name "stunnel")
-  (version "5.58")
+  (version "5.59")
   (source
     (origin
       (method url-fetch)
       (uri (string-append "https://www.stunnel.org/downloads/stunnel-"
                           version ".tar.gz"))
       (sha256
-       (base32 "0y9vjzjqi340vy6h321r1cskb7l6a4prr9d2ysixqzjpjv04rhfl"))))
+       (base32 "17yf2n47j5hw2y9527mrkx3j7q9jk5vvg46m3hgp1wg8dggpcxqk"))))
   (build-system gnu-build-system)
   (native-inputs
    ;; For tests.
@@ -6209,9 +6229,6 @@ response.  This exists to cover all kinds of HTTP scenarios.  All endpoint respo
 JSON-encoded.")
     (license license:isc)))
 
-(define-public python2-httpbin
-  (package-with-python2 python-httpbin))
-
 (define-public python-pytest-httpbin
   (package
     (name "python-pytest-httpbin")
@@ -6311,27 +6328,31 @@ message stream (in a web server that is per connection).")
 (define-public python-httpretty
   (package
     (name "python-httpretty")
-    (version "0.9.6")
+    (version "1.0.5")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "httpretty" version))
        (sha256
-        (base32 "1p1rb4mpngh0632xrmdfhvc8yink519yfkqz97d2ww3y0x2jvd81"))))
+        (base32 "1dg0nfl7i9kjnq98ww98x2afzav4mpgiwzvjc43ily1x9my94g75"))))
     (build-system python-build-system)
-    (propagated-inputs
-     `(("python-six" ,python-six)))
+    (arguments
+     `(#:tests? #f  ; Tests require network access.
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (invoke "nosetests"))
+             #t)))))
     (native-inputs
      `(("python-coverage" ,python-coverage)
-       ("python-httplib2" ,python-httplib2)
-       ("python-mock" ,python-mock)
+       ("python-eventlet" ,python-eventlet)
        ("python-nose" ,python-nose)
-       ("python-nose-randomly" ,python-nose-randomly)
        ("python-rednose" ,python-rednose)
        ("python-requests" ,python-requests)
        ("python-sure" ,python-sure)
-       ("python-tornado" ,python-tornado)
-       ("python-urllib3" ,python-urllib3)))
+       ("python-tornado" ,python-tornado)))
     (home-page "https://httpretty.readthedocs.io")
     (synopsis "HTTP client mock for Python")
     (description "@code{httpretty} is a helper for faking web requests,

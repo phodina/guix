@@ -8,7 +8,7 @@
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2015 Andy Wingo <wingo@igalia.com>
 ;;; Copyright © 2015 David Hashe <david.hashe@dhashe.com>
-;;; Coypright © 2015, 2016, 2017, 2018, 2020, 2021 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017, 2018, 2020, 2021 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
@@ -48,6 +48,7 @@
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
+  #:use-module ((guix build utils) #:select (alist-replace))
   #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system meson)
@@ -722,7 +723,7 @@ in the GNOME project.")
    (native-inputs
     `(("gettext" ,gettext-minimal)
       ("gobject-introspection" ,gobject-introspection)
-      ("gtk-doc" ,gtk-doc)
+      ("gtk-doc" ,gtk-doc/stable)
       ("glib" ,glib "bin")
       ("pkg-config" ,pkg-config)))
    (synopsis "Assistive Technology Service Provider Interface, core components")
@@ -1829,6 +1830,17 @@ typically used to document the public API of GTK+ and GNOME libraries, but it
 can also be used to document application code.")
     (license license:gpl2+)))
 
+;; This is a variant of the 'gtk-doc' package that is not updated often.  It
+;; is intended to be used as a native-input at build-time only.  This allows
+;; the main 'gtk-doc', 'dblatex' and 'imagemagick' packages to be freely
+;; updated on the 'master' branch without triggering an excessive number of
+;; rebuilds.
+(define-public gtk-doc/stable
+  (hidden-package
+   (package/inherit gtk-doc
+     (inputs (alist-replace "dblatex" `(,dblatex/stable)
+                            (package-inputs gtk-doc))))))
+
 (define-public gtk-engines
   (package
     (name "gtk-engines")
@@ -2192,16 +2204,18 @@ displayed on the other side of the bus.")
 (define-public gtk-layer-shell
   (package
     (name "gtk-layer-shell")
-    (version "0.1.0")
+    (version "0.6.0")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append
-             "https://github.com/wmww/gtk-layer-shell/releases/download/v"
-             version "/gtk-layer-shell-" version ".tar.xz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/wmww/gtk-layer-shell")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "0ncklk3z0fzlz6p76jdcrr1ykyp1f4ykjjch4x2hfp9bwsnl4a3m"))))
+        (base32 "1kcp4p3s7sdh9lwniybjdarfy8z69j2j23hfrw98amhwhq39gdcc"))))
     (build-system meson-build-system)
+    (arguments `(#:configure-flags (list "-Dtests=true")))
     (native-inputs `(("pkg-config" ,pkg-config)
                      ("gobject-introspection" ,gobject-introspection)))
     (inputs `(("wayland" ,wayland)
@@ -2233,7 +2247,7 @@ popovers.")
      `(("gettext" ,gettext-minimal)
        ("glib-bin" ,glib "bin")
        ("gobject-introspection" ,gobject-introspection)
-       ("gtk-doc" ,gtk-doc)
+       ("gtk-doc" ,gtk-doc/stable)
        ("pkg-config" ,pkg-config)
        ("python" ,python)))
     (inputs

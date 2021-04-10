@@ -132,8 +132,8 @@
   ;; Note: the 'update-guix-package.scm' script expects this definition to
   ;; start precisely like this.
   (let ((version "1.2.0")
-        (commit "ec7fb669945bfb47c5e1fdf7de3a5d07f7002ccf")
-        (revision 17))
+        (commit "2d73086262e1fb33cd0f0f16f74a495fe06b38aa")
+        (revision 20))
     (package
       (name "guix")
 
@@ -149,7 +149,7 @@
                       (commit commit)))
                 (sha256
                  (base32
-                  "1v9pwsqx8n4l6f7aj9vxv6m7vb4lyw8j5qg6mxf5zksia0qlcv2z"))
+                  "070frsjcbrdqh68rhrck6w3cprbq1hjpd24z44qd017zaicix1f0"))
                 (file-name (string-append "guix-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
@@ -212,7 +212,7 @@ $(prefix)/etc/init.d\n")))
                         (substitute* "nix/local.mk"
                           (("^openrcservicedir = .*$")
                            (string-append "openrcservicedir = \
-$(prefix)/etc/init.d\n")))
+$(prefix)/etc/openrc\n")))
 
                         (invoke "sh" "bootstrap")))
                     (add-before 'build 'use-host-compressors
@@ -705,7 +705,7 @@ features of Stow with some extensions.")
 (define-public rpm
   (package
     (name "rpm")
-    (version "4.16.1.2")
+    (version "4.16.1.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://ftp.rpm.org/releases/rpm-"
@@ -713,7 +713,7 @@ features of Stow with some extensions.")
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1k6ank2aad7r503w12m6m494mxr6iccj52wqhwbc94pwxsf34mw3"))))
+                "07g2g0adgjm29wqy94iqhpp5dk0hacfw1yf7kzycrrxnfbwwfgai"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--with-external-db"   ;use the system's bdb
@@ -1049,8 +1049,8 @@ environments.")
     (license (list license:gpl3+ license:agpl3+ license:silofl1.1))))
 
 (define-public guix-build-coordinator
-  (let ((commit "1f79fc38a17ceda30f378efd4e7f80f252c99b4d")
-        (revision "20"))
+  (let ((commit "6fb5eafc33efa109b220efe71594cfcdb2efe133")
+        (revision "24"))
     (package
       (name "guix-build-coordinator")
       (version (git-version "0" revision commit))
@@ -1061,7 +1061,7 @@ environments.")
                       (commit commit)))
                 (sha256
                  (base32
-                  "0d5zr5mv07pi195vva2fhclfgyzrgbk9vlnwrmy7z1jcw2p1d2zp"))
+                  "1lf7jry18kwglvyakfkmi8bif8ppsdinl0xjgmkgkp4mvmymh2gj"))
                 (file-name (string-append name "-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
@@ -1088,14 +1088,18 @@ environments.")
                  (for-each
                   (lambda (file)
                     (simple-format (current-error-port) "wrapping: ~A\n" file)
-                    (let ((guile-inputs `("guile-json"
-                                          "guile-gcrypt"
-                                          "guix"
-                                          "guile-prometheus"
-                                          "guile-lib"
-                                          "guile-lzlib"
-                                          "guile-zlib"
-                                          "gnutls")))
+                    (let ((guile-inputs (list
+                                         "guile-json"
+                                         "guile-gcrypt"
+                                         "guix"
+                                         "guile-prometheus"
+                                         "guile-lib"
+                                         "guile-lzlib"
+                                         "guile-zlib"
+                                         "gnutls"
+                                         ,@(if (hurd-target?)
+                                               '()
+                                               '("guile-fibers")))))
                       (wrap-program file
                         `("PATH" ":" prefix
                           (,bin

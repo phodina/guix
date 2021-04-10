@@ -7,7 +7,7 @@
 ;;; Copyright © 2015, 2016, 2017, 2018, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015, 2017, 2018 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2015 Jeff Mickey <j@codemac.net>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2016–2021 Tobias Geerinckx-Rice <me@tobias.gr>
@@ -1409,7 +1409,7 @@ or junctions, and always follows hard links.")
                            "v" version "/zstd-" version ".tar.gz"))
        (sha256
         (base32 "05ckxap00qvc0j51d3ci38150cxsw82w7s9zgd5fgzspnzmp1vsr"))))
-    (replacement zstd-1.4.9)
+    (replacement zstd/fixed)
     (build-system gnu-build-system)
     (outputs '("out"                    ;1.2MiB executables and documentation
                "lib"                    ;1.2MiB shared library and headers
@@ -1469,21 +1469,16 @@ speed.")
                    license:public-domain ; zlibWrapper/examples/fitblk*
                    license:zlib))))      ; zlibWrapper/{gz*.c,gzguts.h}
 
-(define-public zstd-1.4.9
+(define zstd/fixed
   (package
     (inherit zstd)
-    (name "zstd")
-    (version "1.4.9")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://github.com/facebook/zstd/releases/download/"
-                           "v" version "/zstd-" version ".tar.gz"))
-       (sha256
-        (base32 "14yj7309gsvg39rki4xqnd6w5idmqi0655v1fc0mk1m2kvhp9b19"))))
-    (arguments
-     (substitute-keyword-arguments (package-arguments zstd)
-       ((#:tests? _ #t) #f)))))
+       (inherit (package-source zstd))
+       (patches
+        (search-patches
+         ;; From Ubuntu focal-security
+         "zstd-CVE-2021-24031_CVE-2021-24032.patch"))))))
 
 (define-public pzstd
   (package/inherit zstd
@@ -1791,7 +1786,20 @@ timestamps in the file header with a fixed time (1 January 2008).
               (sha256
                (base32
                 "0i6bpa2b13z19alm6ig80364dnin1w28cvif18k6wkkb0w3dzp8y"))))
-    (arguments `())
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-compatibility-symlinks
+           (lambda* (#:key outputs #:allow-other-keys)
+             (with-directory-excursion
+               (string-append (assoc-ref outputs "out") "/lib")
+               (map (lambda (lib new-symlink)
+                      (symlink lib new-symlink))
+                    (list "libzzip.so.13" "libzzipfseeko.so.13"
+                          "libzzipmmapped.so.13" "libzzipwrap.so.13")
+                    (list "libzzip-0.so.13" "libzzipfseeko-0.so.13"
+                          "libzzipmmapped-0.so.13" "libzzipwrap-0.so.13")))
+             #t)))))
     (native-inputs
      `(("python" ,python)
        ,@(alist-delete "python"
@@ -2100,7 +2108,8 @@ decompression is a little bit slower.")
                                  version "/upx-" version "-src.tar.xz"))
              (sha256
               (base32
-               "051pk5jk8fcfg5mpgzj43z5p4cn7jy5jbyshyn78dwjqr7slsxs7"))))
+               "051pk5jk8fcfg5mpgzj43z5p4cn7jy5jbyshyn78dwjqr7slsxs7"))
+             (patches (search-patches "upx-CVE-2021-20285.patch"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("perl" ,perl)))

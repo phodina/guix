@@ -26,7 +26,7 @@
 ;;; Copyright © 2018, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2018, 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018 Pierre Neidhardt <mail@ambrevar.xyz>
-;;; Copyright © 2019, 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2019, 2020, 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2019 Vasile Dumitrascu <va511e@yahoo.com>
 ;;; Copyright © 2019 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2019 Timotej Lazar <timotej.lazar@araneo.si>
@@ -302,7 +302,7 @@ Android, and ChromeOS.")
     (native-inputs
      `(("glib:bin" ,glib "bin")
        ("gobject-introspection" ,gobject-introspection)
-       ("gtk-doc" ,gtk-doc)
+       ("gtk-doc" ,gtk-doc/stable)
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("gstreamer" ,gstreamer)
@@ -1895,7 +1895,7 @@ loop.")
 (define-public perl-data-validate-ip
   (package
     (name "perl-data-validate-ip")
-    (version "0.27")
+    (version "0.30")
     (source
      (origin
        (method url-fetch)
@@ -1903,7 +1903,7 @@ loop.")
              "mirror://cpan/authors/id/D/DR/DROLSKY/Data-Validate-IP-"
              version ".tar.gz"))
        (sha256
-        (base32 "1mmppyzsh1w2z2h86kvzqxy56wxgs62a3kf8nvcnz76bblir5ap1"))))
+        (base32 "074adrlvkiahj1fdc9nvb95dpfyjzm2jzhi90m8xaw4bw5ipcbzy"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-test-requires" ,perl-test-requires)))
@@ -1922,7 +1922,7 @@ private (reserved).")
 (define-public perl-net-dns
  (package
   (name "perl-net-dns")
-  (version "1.28")
+  (version "1.30")
   (source
     (origin
       (method url-fetch)
@@ -1933,7 +1933,7 @@ private (reserved).")
         (string-append "mirror://cpan/authors/id/N/NL/NLNETLABS/Net-DNS-"
                        version ".tar.gz")))
       (sha256
-       (base32 "0kh2qbhxv005pqb35mdk2bld7cg7xnxl12qvdwv30sgd91aqica7"))))
+       (base32 "1nm560xjg173wvv736ai3ib1gwssyy41gi0yv4j5fqamfav70ph5"))))
   (build-system perl-build-system)
   (inputs
     `(("perl-digest-hmac" ,perl-digest-hmac)))
@@ -2098,22 +2098,19 @@ It is intended primarily for use in testing.")
 (define-public perl-net-cidr-lite
  (package
   (name "perl-net-cidr-lite")
-  (version "0.21")
+  (version "0.22")
   (source
     (origin
       (method url-fetch)
       (uri (string-append
-             "mirror://cpan/authors/id/D/DO/DOUGW/Net-CIDR-Lite-"
+             "mirror://cpan/authors/id/S/ST/STIGTSP/Net-CIDR-Lite-"
              version
              ".tar.gz"))
       (sha256
-        (base32
-          "14shj73zbqmfjbp0qz1fs9j4p2dpvz5hfkm4qfdjbydflbl2b8fg"))))
+        (base32 "05w57db2lx4djb4vixzdr6qgrzyzkk047nl812g7nq8s6k5xh5s3"))))
   (build-system perl-build-system)
-  (home-page
-    "https://metacpan.org/release/Net-CIDR-Lite")
-  (synopsis
-    "Perl extension for merging IPv4 or IPv6 CIDR addresses")
+  (home-page "https://metacpan.org/release/Net-CIDR-Lite")
+  (synopsis "Perl extension for merging IPv4 or IPv6 CIDR addresses")
   (description "Net::CIDR::Lite merges IPv4 or IPv6 CIDR addresses.")
   (license license:gpl1+)))
 
@@ -2497,7 +2494,7 @@ networks.")
 (define-public speedtest-cli
   (package
     (name "speedtest-cli")
-    (version "2.1.2")
+    (version "2.1.3")
     (source
      (origin
        (method git-fetch)
@@ -2506,7 +2503,7 @@ networks.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1456yly6iym2c9bl6pi4sz8xbw34bm2dxm1vzpydsd6jazwpmy26"))))
+        (base32 "10fazl4kwf41mk7pnwpfms16n0ii0kg9pf8r3mz9xwnl9y04mv9x"))))
     (build-system python-build-system)
     (home-page "https://github.com/sivel/speedtest-cli")
     (synopsis "Internet bandwidth tester")
@@ -3027,7 +3024,8 @@ eight bytes) tools
     ;; Either BSD-3 or GPL-2 can be used.
     (license (list license:bsd-3 license:gpl2))))
 
-(define-public asio
+;;; This is an old version required by rested.
+(define-public asio-1.12
   (package
     (name "asio")
     (version "1.12.2")
@@ -3053,6 +3051,18 @@ eight bytes) tools
 low-level I/O programming that provides developers with a consistent
 asynchronous model using a modern C++ approach.")
     (license license:boost1.0)))
+
+(define-public asio
+  (package
+    (inherit asio-1.12)
+    (version "1.18.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://sourceforge/asio/asio/"
+                           version " (Stable)/asio-" version ".tar.bz2"))
+       (sha256
+        (base32 "04wi69d72l1p5c7d63z1dz06zn8pdqsbgx1if98dszs9ymfqgyaa"))))))
 
 (define-public shadowsocks
   ;; There are some security fixes after the last release.
@@ -3319,62 +3329,61 @@ never see any machines other than the one Dante is running on.")
     (license (license:non-copyleft "file://LICENSE"))))
 
 (define-public restbed
-  (let ((commit "6eb385fa9051203f28bf96cc1844bbb5a9a6481f"))
-    (package
-      (name "restbed")
-      (version (git-version "4.6" "1" commit))
-      (source
-       (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url "https://github.com/Corvusoft/restbed/")
-               (commit commit)))
-         (file-name (string-append name "-" version ".tar.gz"))
-         (sha256
-          (base32 "0k60i5drklqqrb4khb25fzkgz9y0sncxf1sp6lh2bm1m0gh0661n"))))
-      (build-system cmake-build-system)
-      (inputs
-       `(("asio" ,asio)
-         ("catch" ,catch-framework)
-         ("openssl" ,openssl)))
-      (arguments
-       `(#:tests? #f
-         #:configure-flags
-         '("-DBUILD_TESTS=NO"
-           "-DBUILD_EXAMPLES=NO"
-           "-DBUILD_SSL=NO"
-           "-DBUILD_SHARED=NO")
-         #:phases
-         (modify-phases %standard-phases
-           (add-after 'unpack 'apply-patches-and-fix-paths
-             (lambda* (#:key inputs #:allow-other-keys)
-               (let ((asio (assoc-ref inputs "asio"))
-                     (catch (assoc-ref inputs "catch"))
-                     (openssl (assoc-ref inputs "openssl")))
-                 (substitute* "cmake/Findasio.cmake"
-                   (("(find_path\\( asio_INCLUDE asio\\.hpp HINTS ).*$" all begin)
-                    (string-append begin " \"" asio "/include\" )")))
-                 (substitute* "cmake/Findcatch.cmake"
-                   (("(find_path\\( catch_INCLUDE catch\\.hpp HINTS ).*$" all begin)
-                    (string-append begin " \"" catch "/include\" )")))
-                 (substitute* "cmake/Findopenssl.cmake"
-                   (("(find_library\\( ssl_LIBRARY ssl ssleay32 HINTS ).*$" all begin)
-                    (string-append begin " \"" openssl "/lib\" )"))
-                   (("(find_library\\( crypto_LIBRARY crypto libeay32 HINTS ).*$" all begin)
-                    (string-append begin " \"" openssl "/lib\" )"))
-                   (("(find_path\\( ssl_INCLUDE openssl/ssl\\.h HINTS ).*$" all begin)
-                    (string-append begin " \"" openssl "/include\" )")))))))))
-      (synopsis "Asynchronous RESTful functionality to C++11 applications")
-      (description "Restbed is a comprehensive and consistent programming
+  (package
+    (name "restbed")
+    (version "4.7")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Corvusoft/restbed/")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "055qicb773a599dsqbcz5xf0xj1wpk33mdrkyi0fsmyjmn8d2p9d"))))
+    (build-system cmake-build-system)
+    (inputs
+     `(("asio" ,asio-1.12)
+       ("catch" ,catch-framework)
+       ("openssl" ,openssl)))
+    (arguments
+     `(#:tests? #f
+       #:configure-flags
+       '("-DBUILD_TESTS=NO"
+         "-DBUILD_EXAMPLES=NO"
+         "-DBUILD_SSL=NO"
+         "-DBUILD_SHARED=NO")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'apply-patches-and-fix-paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((asio (assoc-ref inputs "asio"))
+                   (catch (assoc-ref inputs "catch"))
+                   (openssl (assoc-ref inputs "openssl")))
+               (substitute* "cmake/Findasio.cmake"
+                 (("(find_path\\( asio_INCLUDE asio\\.hpp HINTS ).*$" all begin)
+                  (string-append begin " \"" asio "/include\" )")))
+               (substitute* "cmake/Findcatch.cmake"
+                 (("(find_path\\( catch_INCLUDE catch\\.hpp HINTS ).*$" all begin)
+                  (string-append begin " \"" catch "/include\" )")))
+               (substitute* "cmake/Findopenssl.cmake"
+                 (("(find_library\\( ssl_LIBRARY ssl ssleay32 HINTS ).*$" all begin)
+                  (string-append begin " \"" openssl "/lib\" )"))
+                 (("(find_library\\( crypto_LIBRARY crypto libeay32 HINTS ).*$" all begin)
+                  (string-append begin " \"" openssl "/lib\" )"))
+                 (("(find_path\\( ssl_INCLUDE openssl/ssl\\.h HINTS ).*$" all begin)
+                  (string-append begin " \"" openssl "/include\" )")))))))))
+    (synopsis "Asynchronous RESTful functionality to C++11 applications")
+    (description "Restbed is a comprehensive and consistent programming
 model for building applications that require seamless and secure
 communication over HTTP.")
-      (home-page "https://github.com/Corvusoft/restbed")
-      (license license:agpl3+))))
+    (home-page "https://github.com/Corvusoft/restbed")
+    (license license:agpl3+)))
 
 (define-public restinio
   (package
     (name "restinio")
-    (version "0.6.1.1")
+    (version "0.6.13")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -3383,7 +3392,7 @@ communication over HTTP.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "141a96hx8zhcdv121g6cs91n46kb47y040v25pnvz5f54964z7f5"))))
+                "0gb0yc88hdzwm08zdiviay6s08q427za33kfbygib7bdzp2wr2dm"))))
     (build-system cmake-build-system)
     (inputs                             ; TODO: Need to force-keep references on some inputs, e.g. boost.
      `(("zlib" ,zlib)
@@ -3416,40 +3425,39 @@ and targeted primarily for asynchronous processing of HTTP-requests.")
 (define-public opendht
   (package
     (name "opendht")
-    (version "2.1.4")
+    (version "2.2.0rc4")                ;jami requires >= 2.2.0
     (source (origin
               (method git-fetch)
               (uri (git-reference
                     (url "https://github.com/savoirfairelinux/opendht")
                     (commit version)))
               (file-name (git-file-name name version))
-              (patches (search-patches "opendht-fix-jami.patch"))
               (sha256
                (base32
-                "1ax26ri1ifb6s8ppd28jmanka9yf8mw3np65q2h4djhhik0phhal"))))
+                "1wc0f6cnvnlmhxnx64nxqgsx93k4g7ljdaqjl40ml74jg3nqrzcl"))))
     ;; Since 2.0, the gnu-build-system does not seem to work anymore, upstream bug?
     (build-system cmake-build-system)
     (inputs
      `(("argon2" ,argon2)
-       ("nettle" ,nettle)
+       ("nettle" ,nettle-3.7)
        ("readline" ,readline)
        ("jsoncpp" ,jsoncpp)
        ("openssl" ,openssl)             ;required for the DHT proxy
        ("fmt" ,fmt)))
     (propagated-inputs
      `(("gnutls" ,gnutls)               ;included in opendht/crypto.h
-       ("msgpack" ,msgpack)))           ;included in several installed headers
+       ("msgpack" ,msgpack)             ;included in several installed headers
+       ("restinio" ,restinio)))         ;included in opendht/http.h
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
        ("pkg-config" ,pkg-config)
-       ("restinio" ,restinio)           ;headers only library
        ("libtool" ,libtool)
        ("cppunit" ,cppunit)))
     (arguments
      `(#:tests? #f                      ; Tests require network connection.
        #:configure-flags
-       '(;; "-DOPENDHT_TESTS=on"
+       '(;;"-DOPENDHT_TESTS=on"
          "-DOPENDHT_TOOLS=off"
          "-DOPENDHT_PYTHON=off"
          "-DOPENDHT_PROXY_SERVER=on"
@@ -3826,14 +3834,14 @@ thousands of connections is clearly realistic with today's hardware.")
 (define-public lldpd
   (package
     (name "lldpd")
-    (version "1.0.8")
+    (version "1.0.9")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://media.luffy.cx/files/lldpd/lldpd-"
                            version ".tar.gz"))
        (sha256
-        (base32 "1vrxr8lgkw7q6ixaaili6ac7i0j0326194s498n2dxihdvkh1llq"))
+        (base32 "1xa9953hl2c94zi4ngaxyi2yw3dax1ab16118wriwawm4lqynr3b"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -3943,7 +3951,7 @@ network.")
 (define-public yggdrasil
   (package
     (name "yggdrasil")
-    (version "0.3.15")
+    (version "0.3.16")
     (source
      (origin
        (method git-fetch)
@@ -3954,8 +3962,7 @@ network.")
          (recursive? #t)))
        (file-name (git-file-name name version))
        (sha256
-        (base32
-         "0gk7gy8yq5nrnblv4imxzzm2hac4ri0hlw19ajfbc1zll5kj32gf"))
+        (base32 "0vyd7a333hwn6j1lv1g9sicw74a4qk982bsi3cfdhjlv6hsjwmil"))
        (patches (search-patches "yggdrasil-extra-config.patch"))))
     (build-system go-build-system)
     (arguments

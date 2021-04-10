@@ -22,19 +22,20 @@
 ;;; Copyright © 2018 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2019 swedebugia <swedebugia@riseup.net>
 ;;; Copyright © 2019, 2020 Amar Singh <nly@disroot.org>
-;;; Copyright © 2019 Timothy Sample <samplet@ngyro.com>
+;;; Copyright © 2019, 2021 Timothy Sample <samplet@ngyro.com>
 ;;; Copyright © 2019, 2020 Martin Becze <mjbecze@riseup.net>
 ;;; Copyright © 2020 Evan Straw <evan.straw99@gmail.com>
 ;;; Copyright © 2020 Jack Hill <jackhill@jackhill.us>
 ;;; Copyright © 2020 Julien Lepiler <julien@lepiller.eu>
 ;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
-;;; Copyright © 2020 Masaya Tojo <masaya@tojo.tokyo>
+;;; Copyright © 2020, 2021 Masaya Tojo <masaya@tojo.tokyo>
 ;;; Copyright © 2020 Jesse Gibbons <jgibbons2357@gmail.com>
 ;;; Copyright © 2020 Mike Rosset <mike.rosset@gmail.com>
 ;;; Copyright © 2020 Leo Prikler <leo.prikler@student.tugraz.at>
 ;;; Copyright © 2020, 2021 pukkamustard <pukkamustard@posteo.net>
 ;;; Copyright © 2021 Bonface Munyoki Kilyungi <me@bonfacemunyoki.com>
 ;;; Copyright © 2021 Xinglu Chen <public@yoctocell.xyz>
+;;; Copyright © 2021 Leo Le Bouter <lle-bout@zaclys.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -90,6 +91,7 @@
   #:use-module (gnu packages networking)
   #:use-module (gnu packages noweb)
   #:use-module (gnu packages nss)
+  #:use-module (gnu packages package-management)
   #:use-module (gnu packages password-utils)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
@@ -1312,44 +1314,37 @@ Scheme by using Guile’s foreign function interface.")
   (deprecated-package "guile3.0-newt" guile-newt))
 
 (define-public guile-mastodon
-  (package
-    (name "guile-mastodon")
-    (version "0.0.1")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://framagit.org/prouby/guile-mastodon.git")
-                    (commit (string-append "v" version))))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "1vblf3d1bbwna3l09p2ap5y8ycvl549bz6whgk78imyfmn28ygry"))
-              (modules '((guix build utils)))
-              (snippet
-               '(begin
-                  ;; Allow builds with Guile 3.0.
-                  (substitute* "configure.ac"
-                    (("^PKG_CHECK.*") "")
-                    (("^GUILE_PKG.*")
-                     "GUILE_PKG([3.0 2.2])\n"))
-                  #t))))
-    (build-system gnu-build-system)
-    (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("emacs" ,emacs-minimal)
-       ("pkg-config" ,pkg-config)
-       ("texinfo" ,texinfo)))
-    (inputs
-     `(("guile" ,guile-3.0)
-       ("gnutls" ,gnutls)
-       ("guile-json" ,guile-json-4)))
-    (home-page "https://framagit.org/prouby/guile-mastodon")
-    (synopsis "Guile Mastodon REST API module")
-    (description "This package provides Guile modules to access the
+  (let ((commit "74b75bcf547df92acee1e0466ecd7ec07f775392")
+        (revision "1"))
+    (package
+      (name "guile-mastodon")
+      (version (git-version "0.0.1" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://framagit.org/prouby/guile-mastodon.git")
+                      (commit commit)))
+                (file-name (string-append name "-" version "-checkout"))
+                (sha256
+                 (base32
+                  "1wx5h6wa9c0na8mrnr2nv1nzjvq68zyrly8yyp11dsskhaw4y33h"))))
+      (build-system gnu-build-system)
+      (native-inputs
+       `(("autoconf" ,autoconf)
+         ("automake" ,automake)
+         ("emacs" ,emacs-minimal)
+         ("pkg-config" ,pkg-config)
+         ("texinfo" ,texinfo)))
+      (inputs
+       `(("guile" ,guile-3.0)
+         ("gnutls" ,gnutls)
+         ("guile-json" ,guile-json-4)))
+      (home-page "https://framagit.org/prouby/guile-mastodon")
+      (synopsis "Guile Mastodon REST API module")
+      (description "This package provides Guile modules to access the
 @uref{https://docs.joinmastodon.org/api/, REST API of Mastodon}, a federated
 microblogging service.")
-    (license license:gpl3+)))
+      (license license:gpl3+))))
 
 (define-public guile-parted
   (package
@@ -1750,6 +1745,35 @@ The library is shipped with documentation in Info format and usage examples.")
 
 (define-public guile3.0-ics
   (deprecated-package "guile3.0-ics" guile-ics))
+
+(define-public guile-imanifest
+  (let ((commit "ccd5a2111b008d778106f5595a3a585954d95d0")
+        (revision "0"))
+    (package
+      (name "guile-imanifest")
+      (version (git-version "0.0.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://git.sr.ht/~brown121407/guile-imanifest")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0i5qllcrhdjhspyj7j9h4dc9y37d3cfbpackmybm3030qgfxqirf"))))
+      (build-system guile-build-system)
+      (native-inputs
+       `(("guile" ,guile-3.0)))
+      (propagated-inputs
+       `(("guile-readline" ,guile-readline)
+         ("guile-colorized" ,guile-colorized)
+         ("guix" ,guix)))
+      (home-page "https://sr.ht/~brown121407/guile-imanifest")
+      (synopsis "Interactive Guix manifests")
+      (description "This package provides functions to generate Guix manifests
+interactively.  It works by scanning an alist of package categories, to ask the
+user which package sets would they like to install from it.")
+      (license license:gpl3+))))
 
 (define-public guile-wisp
   (package
@@ -3495,7 +3519,7 @@ feature-set, fully programmable in Guile Scheme.")
                                         texlive-fonts-iwona)))
        ("pkg-config" ,pkg-config)))
     (propagated-inputs
-     `(("guile-lib" ,guile-lib)))
+     `(("guile-lib" ,guile2.2-lib)))
     (home-page "https://www.gnu.org/software/guile-cv/")
     (synopsis "Computer vision library for Guile")
     (description "Guile-CV is a Computer Vision functional programming library
@@ -4262,6 +4286,9 @@ errors.")
                              ,@%gnu-build-system-modules)
          #:make-flags
          '("GUILE_AUTO_COMPILE=0")    ;to prevent guild warnings
+         ;; Parallel builds fail on powerpc64le-linux.
+         ;; See https://lists.nongnu.org/archive/html/guile-avahi-bugs/2021-01/msg00000.html
+         #:parallel-build? #f
          #:phases
          (modify-phases %standard-phases
            (add-before 'check 'fix-guile-avahi-file-name
@@ -4422,7 +4449,7 @@ tools.")
     (synopsis "Guile implementation of the Encoding for Robust Immutable Storage (ERIS)")
     (description
      "Guile-ERIS is the reference implementation of the Encoding for Robust
-Immutable Storage (ERIS).  ERIS allows arbirtary content to be encoded into
+Immutable Storage (ERIS).  ERIS allows arbitrary content to be encoded into
 uniformly sized, encrypted blocks that can be reassembled using a short
 read-capability.")
     (home-page "https://inqlab.net/git/eris.git")
@@ -4618,4 +4645,29 @@ a binary data serialization format.  CBOR is similar to JSON but serializes to
 binary which is smaller and faster to generate and parse.  This package provides
 a Guile implementation of CBOR.")
     (home-page "https://inqlab.net/git/guile-cbor.git")
+    (license license:gpl3+)))
+
+(define-public guile-quickcheck
+  (package
+    (name "guile-quickcheck")
+    (version "0.1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://files.ngyro.com/"
+                                  "guile-quickcheck/guile-quickcheck-"
+                                  version ".tar.gz"))
+              (sha256
+               (base32
+                "03mwi1l3354x52nar0zwhcm0x29yai9xjln4p4gbchwvx5dsr6fb"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("guile" ,guile-3.0)))
+    (home-page "https://ngyro.com/software/guile-quickcheck.html")
+    (synopsis "Randomized property-based testing for Guile")
+    (description "Guile-Quickcheck is a library for random testing of program
+properties inspired by ghc-quickcheck.  You can use it to express properties,
+which functions should satisfy, as Scheme code and then check whether they hold
+in a large number of randomly generated test cases.")
     (license license:gpl3+)))

@@ -5,7 +5,7 @@
 ;;; Copyright © 2014, 2015, 2016, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2014, 2015 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
-;;; Copyright © 2016, 2017, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2016, 2018 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
@@ -15,6 +15,8 @@
 ;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018, 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2020 Vitaliy Shatrov <D0dyBo0D0dyBo0@protonmail.com>
+;;; Copyright © 2020 Chris Marusich <cmmarusich@gmail.com>
+;;; Copyright © 2021 Leo Le Bouter <lle-bout@zaclys.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -146,6 +148,22 @@ including, for example, recursive directory searching.")
              (base32
               "0alqagh0nliymz23kfjg6g9w3cr086k0sfni56gi8fhzqwa3xksk"))))
    (build-system gnu-build-system)
+   (arguments
+    ;; TODO: When merging this into core-updates, keep the version of
+    ;; this code (with comment!) applied as a snippet.
+    `(,@(if (string-prefix? "powerpc64le" (or (%current-target-system)
+                                              (%current-system)))
+          `(#:phases
+            (modify-phases %standard-phases
+              (add-after 'unpack 'allow-building-on-selinux-systems
+                (lambda _
+                  (substitute* "Makefile.in"
+                    (("^  abs_srcdir='\\$\\(abs_srcdir\\)'.*" previous-line)
+                     (string-append
+                      previous-line
+                      "  CONFIG_HEADER='$(CONFIG_HEADER)'\t\t\\\n")))
+                  #t))))
+          '())))
    (synopsis "Stream editor")
    (native-inputs
     `(("perl" ,perl)))                            ;for tests
@@ -890,6 +908,14 @@ the store.")
                                               files)))
                        #t)))
 
+                 ,@(if (target-powerpc?)
+                     '((add-after 'unpack 'apply-patch
+                         (lambda* (#:key inputs #:allow-other-keys)
+                           (let ((patch (assoc-ref inputs
+                                                   "powerpc64le-patch")))
+                             (invoke "patch" "--force" "-p1"
+                                     "-i" patch)))))
+                     '())
                  ,@(if (hurd-target?)
                        '((add-after 'install 'augment-libc.so
                            (lambda* (#:key outputs #:allow-other-keys)
@@ -911,6 +937,10 @@ the store.")
                     ("gettext" ,gettext-minimal)
                     ("python" ,python-minimal)
 
+                    ,@(if (target-powerpc?)
+                        `(("powerpc64le-patch" ,@(search-patches
+                                                   "glibc-ldd-powerpc.patch")))
+                        '())
                     ,@(if (hurd-target?)
                           `(("mig" ,mig)
                             ("perl" ,perl))
@@ -1244,7 +1274,9 @@ command.")
 (define-public tzdata
   (package
     (name "tzdata")
-    (version "2020f")
+    ;; This package should be kept in sync with python-pytz in (gnu packages
+    ;; time).
+    (version "2021a")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -1252,7 +1284,7 @@ command.")
                    version ".tar.gz"))
              (sha256
               (base32
-               "10b8cr55x6ji14n3kqkn3avj1s9b79b8gszh81fxrrisij8k248j"))))
+               "022fn6gkmp7pamlgab04x0dm5hnyn2m2fcnyr3pvm36612xd5rrr"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f
@@ -1312,7 +1344,7 @@ command.")
                                 version ".tar.gz"))
                           (sha256
                            (base32
-                            "1i998crd9fxdfhv4jd241j1arx0ng7j7cvczpmj4y5j5fwmfmvng"))))))
+                            "1l02b0jiwp3fl0xd6227i69d26rmx3yrnq0ssq9vvdmm4jhvyipb"))))))
     (home-page "https://www.iana.org/time-zones")
     (synopsis "Database of current and historical time zones")
     (description "The Time Zone Database (often called tz or zoneinfo)

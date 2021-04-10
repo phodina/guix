@@ -10,6 +10,7 @@
 ;;; Copyright © 2020 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
 ;;; Copyright © 2021 Sharlatan Hellseher <sharlatanus@gmail.com>
+;;; Copyright © 2021 Brendan Tildesley <mail@brendan.scot>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -627,14 +628,14 @@ friendly library for concurrency and async I/O in Python.")
 (define-public python-pytest-flake8
   (package
     (name "python-pytest-flake8")
-    (version "1.0.6")
+    (version "1.0.7")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pytest-flake8" version))
        (sha256
         (base32
-         "09vhn7r77s1yiqnlwfvh5585f904zpyd6620a90dpccfr1cbp0hv"))))
+         "0syx68xk5ss3hgp3nr2y122w0fgkzr5936ghsqrkymh3m5hrf9gh"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-flake8" ,python-flake8)))
@@ -1182,6 +1183,28 @@ any Python VM with basically no runtime overhead.")
     ;; Foundation License version 2: stdlib-samples/*, mypyc/lib-rt/pythonsupport.h and
     ;; mypyc/lib-rt/getargs.c
     (license (list license:expat license:psfl))))
+
+(define-public python-pyannotate
+  (package
+    (name "python-pyannotate")
+    (version "1.2.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pyannotate" version))
+       (sha256
+        (base32
+         "16bm0mf7wxvy0lgmcs1p8n1ji8pnvj1jvj8zk3am70dkp825iv84"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-mypy-extensions" ,python-mypy-extensions)
+       ("python-six" ,python-six)))
+    (home-page
+     "https://github.com/dropbox/pyannotate")
+    (synopsis "Auto-generate PEP-484 annotations")
+    (description "This package, PyAnnotate, is used to auto-generate PEP-484
+annotations.")
+    (license license:asl2.0)))
 
 (define-public python-eradicate
   (package

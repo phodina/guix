@@ -18,7 +18,7 @@
 ;;; Copyright © 2018 Thorsten Wilms <t_w_@freenet.de>
 ;;; Copyright © 2018 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2018 Brendan Tildesley <mail@brendan.scot>
-;;; Copyright © 2019 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2019, 2021 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2019, 2021 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2019 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2019 Arun Isaac <arunisaac@systemreboot.net>
@@ -78,6 +78,7 @@
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gnunet) ; libmicrohttpd
   #:use-module (gnu packages gperf)
+  #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages icu4c)
@@ -197,7 +198,7 @@ promoting the market for advanced audio.")
 (define-public wildmidi
   (package
     (name "wildmidi")
-    (version "0.4.3")
+    (version "0.4.4")
     (source
      (origin
        (method git-fetch)
@@ -207,7 +208,7 @@ promoting the market for advanced audio.")
          (commit (string-append name "-" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "01f4a9c5xlap5a4pkfnlgkzk5pjlk43zkq6fnw615ghya04g6hrl"))))
+        (base32 "08fbbsvw6pkwwqarjwcvdp8mq4zn5sgahf025hynwc6rvf4sp167"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f ; No target
@@ -567,11 +568,11 @@ streams from live audio.")
 (define-public ardour
   (package
     (name "ardour")
-    (version "5.12")
+    (version "6.6")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    (url "https://git.ardour.org/ardour/ardour.git")
+                    (url "git://git.ardour.org/ardour/ardour.git")
                     (commit version)))
               (snippet
                ;; Ardour expects this file to exist at build time.  The revision
@@ -581,15 +582,16 @@ streams from live audio.")
                     "libs/ardour/revision.cc"
                   (lambda (port)
                     (format port ,(string-append "#include \"ardour/revision.h\"
-namespace ARDOUR { const char* revision = \"" version "\" ; }"))
+namespace ARDOUR { const char* revision = \"" version "\" ; const char* date = \"\"; }"))
                     #t)))
               (sha256
                (base32
-                "0mla5lm51ryikc2rrk53max2m7a5ds6i1ai921l2h95wrha45nkr"))
+                "0k5rxh8b3d8si3lj01gfqj0pmd448d8sj4asnb205mwhwbfgn0cp"))
               (file-name (string-append name "-" version))))
     (build-system waf-build-system)
     (arguments
      `(#:configure-flags '("--cxx11"          ; required by gtkmm
+                           "--optimize"
                            "--no-phone-home"  ; don't contact ardour.org
                            "--freedesktop"    ; build .desktop file
                            "--test")          ; build unit tests
@@ -619,8 +621,7 @@ namespace ARDOUR { const char* revision = \"" version "\" ; }"))
                                             ver ".appdata.xml")
                              (string-append share "/appdata/")))
              #t)))
-       #:test-target "test"
-       #:python ,python-2))
+       #:test-target "test"))
     (inputs
      `(("alsa-lib" ,alsa-lib)
        ("atkmm" ,atkmm)
@@ -628,6 +629,7 @@ namespace ARDOUR { const char* revision = \"" version "\" ; }"))
        ("boost" ,boost)
        ("cairomm" ,cairomm)
        ("curl" ,curl)
+       ("dbus" ,dbus)
        ("eudev" ,eudev)
        ("fftw" ,fftw)
        ("fftwf" ,fftwf)
@@ -644,17 +646,21 @@ namespace ARDOUR { const char* revision = \"" version "\" ; }"))
        ("libsndfile" ,libsndfile)
        ("libusb" ,libusb)
        ("libvorbis" ,libvorbis)
+       ("libwebsockets" ,libwebsockets)
        ("libxml2" ,libxml2)
        ("lilv" ,lilv)
        ("lrdf" ,lrdf)
        ("lv2" ,lv2)
+       ("openssl" ,openssl)  ; Required by libwebsockets.
        ("pangomm" ,pangomm)
        ("python-rdflib" ,python-rdflib)
+       ("pulseaudio" ,pulseaudio)
        ("readline" ,readline)
        ("redland" ,redland)
        ("rubberband" ,rubberband)
        ("serd" ,serd)
        ("sord" ,sord)
+       ("soundtouch" ,soundtouch)
        ("sratom" ,sratom)
        ("suil" ,suil)
        ("taglib" ,taglib)
@@ -1051,6 +1057,40 @@ generators of mostly elementary and occasionally exotic nature.")
 performances.  The plugins include a cellular automaton synthesizer, an
 envelope follower, distortion effects, tape effects and more.")
     (license license:gpl2+)))
+
+(define-public snapcast
+  (package
+    (name "snapcast")
+    (version "0.24.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/badaix/snapcast")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "13yz8alplnqwkcns3mcli01qbyy6l3h62xx0v71ygcrz371l4g9g"))))
+    (build-system cmake-build-system)
+    (arguments
+     '(#:tests? #f))                    ; no included tests
+    (inputs
+     `(("boost" ,boost)
+       ("libvorbis" ,libvorbis)
+       ("soxr" ,soxr)
+       ("alsa-lib" ,alsa-lib)
+       ("avahi" ,avahi)
+       ("pulseaudio" ,pulseaudio)
+       ("flac" ,flac)
+       ("opus" ,opus)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (home-page "https://github.com/badaix/snapcast")
+    (synopsis "Synchronous multiroom audio player")
+    (description
+     "Snapcast is a multi-room client-server audio player.  Clients are time
+synchronized with the server to play synced audio.")
+    (license license:gpl3+)))
 
 (define-public swh-plugins
   (package
@@ -1622,7 +1662,7 @@ follower.")
 (define-public fluidsynth
   (package
     (name "fluidsynth")
-    (version "2.1.5")
+    (version "2.1.8")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1631,7 +1671,7 @@ follower.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0ccpq4p1h1g53ng3961g3lh590qnwvpzwdzpl6ai4j6iazq0bh73"))))
+                "0r944ndn138ak9s3ivgd1wgkwkh6zp7jjnxd30hryczc6kbhkpmr"))))
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f                      ; no check target
@@ -3225,31 +3265,26 @@ stretching and pitch scaling of audio.  This package contains the library.")
 (define-public wavpack
   (package
     (name "wavpack")
-    (version "5.3.2")
+    (version "5.4.0")
     (source
      (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/dbry/WavPack")
-             (commit "e4e8d191e8dd74cbdbeaef3232c16a7ef517e68d")))
+       (method url-fetch)
+       (uri (string-append "https://github.com/dbry/WavPack/releases/download/"
+                           version "/wavpack-" version ".tar.xz"))
        (sha256
-        (base32 "1zj8svk6giy1abq3940sz32ygz7zldppxl47852zgn5wfm3l2spx"))
-       (file-name (git-file-name name version))))
+        (base32 "0ycbqarw25x7208jilh86vwwiqklr7f617jps9mllqc659mnmpjb"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags
-       (list "--disable-static")
+       (list "--disable-static"
+             "--enable-tests")
        #:phases
        (modify-phases %standard-phases
-         (replace 'bootstrap
-           ;; Running ./autogen.sh would cause premature configuration.
-           (lambda _
-             (invoke "autoreconf" "-vif")
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (invoke "./cli/wvtest" "--default" "--short"))
              #t)))))
-    (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("libtool" ,libtool)))
     (home-page "https://www.wavpack.com/")
     (synopsis "Hybrid lossless audio codec")
     (description
@@ -4059,7 +4094,7 @@ kbps at 24 bit/96 kHz.")
     (home-page "https://github.com/Arkq/bluez-alsa")
     (synopsis "Bluetooth ALSA backend")
     (description "This project is a rebirth of a direct integration between
-Bluez and ALSA.  Since Bluez >= 5, the build-in integration has been removed
+Bluez and ALSA.  Since Bluez >= 5, the built-in integration has been removed
 in favor of 3rd party audio applications.  From now on, Bluez acts as a
 middleware between an audio application, which implements Bluetooth audio
 profile, and a Bluetooth audio device.  BlueALSA registers all known Bluetooth
@@ -4226,7 +4261,7 @@ the following features:
       (home-page "https://github.com/werman/noise-suppression-for-voice")
       (synopsis "Speech denoise LV2 plugin based on Xiph's RNNoise library")
       (description "RNNoise is a library that uses deep learning to apply
-noise supression to audio sources with voice presence.  This package provides
+noise suppression to audio sources with voice presence.  This package provides
 an LV2 audio plugin.")
       (license license:lgpl3+))))
 
@@ -4431,7 +4466,7 @@ library.")
 (define-public faudio
   (package
     (name "faudio")
-    (version "19.11")
+    (version "21.04")
     (source
      (origin
        (method git-fetch)
@@ -4440,19 +4475,24 @@ library.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0ckpr6ffz8ssfh1y850dhip5s5jv0j6n90qz5yx1v9d6gpwf08rp"))))
+        (base32 "1g3zp7igh4ns31sqnxddxqhgibijngkbcqqsj23i9d1lah6k4747"))))
     (arguments
      '(#:tests? #f                      ; No tests.
-       #:configure-flags '("-DFFMPEG=ON")))
+       #:configure-flags '("-DGSTREAMER=ON")))
     (build-system cmake-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
-    (inputs `(("ffmpeg" ,ffmpeg)
+    (inputs `(("gstreamer" ,gstreamer)
+              ("gst-plugins-base" ,gst-plugins-base)
               ("sdl2" ,sdl2)))
     (home-page "https://github.com/FNA-XNA/FAudio")
     (synopsis "XAudio reimplementation")
     (description "FAudio is an XAudio reimplementation that focuses solely on
 developing fully accurate DirectX Audio runtime libraries.")
-    (license license:zlib)))
+    (license
+     (list license:zlib
+           ;; stb & utils/{ui,wav}common are dual-licenced under either of:
+           license:expat
+           license:public-domain))))
 
 (define-public gnaural
   (package
@@ -4888,7 +4928,7 @@ minimum.")
 (define-public libinstpatch
   (package
     (name "libinstpatch")
-    (version "1.1.5")
+    (version "1.1.6")
     (source
      (origin
        (method git-fetch)
@@ -4897,7 +4937,7 @@ minimum.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0psx4hc5yksfd3k2xqsc7c8lbz2d4yybikyddyd9hlkhq979cmjb"))))
+        (base32 "1w3nk0vvd1cxic70n45zjip0bdsrja969myvyvkhq3ngbarbykir"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f)) ;there are no tests
@@ -5100,14 +5140,14 @@ while still staying in time.")
 (define-public butt
   (package
     (name "butt")
-    (version "0.1.28")
+    (version "0.1.29")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/butt/butt/butt-"
                                   version "/butt-" version ".tar.gz"))
               (sha256
                (base32
-                "1rbp4v6dlyapld6y4aqbpfmcaiafa06f2zqd1rhk4r3ld3bndafm"))))
+                "0nbz0z4d7krvhmnwn10594gwc61gn2dlb5fazmynjfisrfdswqlg"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -5144,7 +5184,7 @@ while still staying in time.")
                                         version "_manual.pdf"))
                     (sha256
                      (base32
-                      "04wz2sqhk22h9gymwh5r6kp6sxc994mia8rg9lwpmy1r18w4pvsl"))))))
+                      "1hhgdhdg5s86hjcbwh856gcd3kcch0i5xgi3i3v02zz3xmzl7gg3"))))))
     (home-page "https://danielnoethen.de/butt/")
     (synopsis "Audio streaming tool")
     (description "Butt is a tool to stream audio to a ShoutCast or

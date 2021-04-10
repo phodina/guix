@@ -43,7 +43,7 @@
 ;;; Copyright © 2017, 2018, 2019 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2017 Muriithi Frederick Muriuki <fredmanglis@gmail.com>
-;;; Copyright © 2017, 2019 Brendan Tildesley <mail@brendan.scot>
+;;; Copyright © 2017, 2019, 2021 Brendan Tildesley <mail@brendan.scot>
 ;;; Copyright © 2018 Ethan R. Jones <ethanrjones97@gmail.com
 ;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
 ;;; Copyright © 2018 Vijayalakshmi Vedantham <vijimay12@gmail.com>
@@ -991,9 +991,6 @@ concepts.")
     (description "This package provides a replacement for Python's
 @code{subprocess} feature.")
     (license license:expat)))
-
-(define-public python2-sh
-  (package-with-python2 python-sh))
 
 (define-public python-cftime
   (package
@@ -1988,7 +1985,7 @@ human-friendly syntax.")
     (build-system python-build-system)
     (home-page "https://github.com/scour-project/scour")
     (synopsis "Scour is an SVG optimizer/cleaner written in Python")
-    (description "The goal of Scour is to output a file that renderes
+    (description "The goal of Scour is to output a file that renders
 identically at a fraction of the size by removing a lot of redundant
 information created by most SVG editors.  Optimization options are typically
 lossless but can be tweaked for more aggressive cleaning.")
@@ -3815,7 +3812,7 @@ to deprecate classes, functions or methods.")
 (define-public python-pygithub
   (package
     (name "python-pygithub")
-    (version "1.43.8")
+    (version "1.54.1")
     (source
      ;; We fetch from the Git repo because there are no tests in the PyPI
      ;; archive.
@@ -3826,30 +3823,24 @@ to deprecate classes, functions or methods.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1625v558xga5mwhl9jqmibywy5qafmg1vqrirqz6zfq1la1d22mw"))))
+        (base32 "1nl74bp5ikdnrc8xq0qr25ryl1mvarf0xi43k8w5jzlrllhq0nkq"))))
     (build-system python-build-system)
     (arguments
-     `(#:phases (modify-phases %standard-phases
-                  ;; Some tests rely on the network.
-                  (add-after 'unpack 'disable-failing-tests
-                    (lambda _
-                      (substitute* "tests/Issue142.py"
-                        (("testDecodeJson") "disabled_testDecodeJson"))
-                      #t))
-                  (add-before 'check 'prepare-for-tests
-                    (lambda _
-                      (for-each (lambda (f)
-                                  (chmod f #o666))
-                                (find-files "./tests"))
-                      (system* "python" "-m" "lib2to3" "-w" "-n" "tests")
-                      (setenv "PYTHONPATH"
-                              (string-append "./tests:" (getenv "PYTHONPATH")))
-                      #t)))))
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (invoke "pytest"))
+             #t)))))
     (propagated-inputs
-     `(("python-deprecated" ,python-deprecated)
+     `(("python-cryptography" ,python-cryptography)
+       ("python-deprecated" ,python-deprecated)
        ("python-pyjwt" ,python-pyjwt)
        ("python-requests" ,python-requests)))
-    (native-inputs `(("python-httpretty" ,python-httpretty)))
+    (native-inputs
+     `(("python-httpretty" ,python-httpretty)
+       ("python-pytest" ,python-pytest)))
     (home-page "https://pygithub.readthedocs.io/en/latest/")
     (synopsis "Python library for the GitHub API")
     (description "This library allows managing GitHub resources such as
@@ -5604,14 +5595,14 @@ a simple netcat replacement with chaining support.")
 (define-public python-pycodestyle
   (package
     (name "python-pycodestyle")
-    (version "2.6.0")
+    (version "2.7.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pycodestyle" version))
        (sha256
         (base32
-         "0bhr6ia0hmgx3nhgibc9pmkzhlh1zcqk707i5fbxgs702ll7v2n5"))))
+         "1vqwmzmjdv331kmfq3q9j3as2x7r2r49lf83r9w4147pdg8c32f3"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -5865,13 +5856,13 @@ the OleFileIO module from PIL, the Python Image Library.")
 (define-public python-pikepdf
   (package
     (name "python-pikepdf")
-    (version "2.9.0")
+    (version "2.10.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pikepdf" version))
        (sha256
-        (base32 "1dx84gvxf8js5988b20dwpg0xd7by2bczjlrdh3cpppwaaxx5nx9"))))
+        (base32 "09wfj1hjvj3r9gv7ywrqd7h3d0bz64bvils8sm3ghj90jhalb03s"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #false))                ;require python-xmp-toolkit
@@ -6430,9 +6421,6 @@ Python bindings and object-oriented API for cairo.  Cairo is a 2D vector
 graphics library with support for multiple backends including image buffers,
 PNG, PostScript, PDF, and SVG file output.")
     (license license:bsd-3)))
-
-(define-public python2-cairocffi
-  (package-with-python2 python-cairocffi))
 
 (define-public python-decorator
   (package
@@ -7392,14 +7380,14 @@ installing @code{kernelspec}s for use with Jupyter frontends.")
 (define-public python-backcall
   (package
     (name "python-backcall")
-    (version "0.1.0")
+    (version "0.2.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "backcall" version))
        (sha256
         (base32
-         "1r01dqch3f8fdj3n6fviw8hxqrs6w5v0qw4izmvqzry1w9dxiv1q"))))
+         "07jy4562lvnhkk6kfr3cphmizy88anlhmbwb8kdzlz2ypqkvzgaw"))))
     (build-system python-build-system)
     (home-page "https://github.com/takluyver/backcall/")
     (synopsis "Specifications for callback functions passed in to an API")
@@ -7643,24 +7631,69 @@ computing.")
 (define-public python-urwid
   (package
     (name "python-urwid")
-    (version "2.1.0")
+    (version "2.1.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "urwid" version))
        (sha256
         (base32
-         "11ndnhxd41m13darf5s0c6bafdpkzq1l6mfb04wbzdmyc1hg75h8"))))
+         "1bky2bra6673xx8jy0826znw6cmxs89wcwwzda8d025j3jffx2sq"))))
     (build-system python-build-system)
     (home-page "http://urwid.org")
     (synopsis "Console user interface library for Python")
     (description
      "Urwid is a curses-based UI/widget library for Python.  It includes many
 features useful for text console applications.")
+    (properties `((python2-variant . ,(delay python2-urwid))))
     (license license:lgpl2.1+)))
 
 (define-public python2-urwid
-  (package-with-python2 python-urwid))
+  (let ((base (package-with-python2
+               (strip-python2-variant python-urwid))))
+    (package/inherit base
+      (version "2.1.0")
+      (source
+       (origin
+         (method url-fetch)
+         (uri (pypi-uri "urwid" version))
+         (sha256
+          (base32
+           "11ndnhxd41m13darf5s0c6bafdpkzq1l6mfb04wbzdmyc1hg75h8")))))))
+
+(define-public python-urwid-readline
+  (package
+    (name "python-urwid-readline")
+    (version "0.12")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+              (url "https://github.com/rr-/urwid_readline")
+              (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0sq5qgxj7gcfww3ww7idr87isnmp0hi36n241b3q395x1zafdv22"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (invoke "python" "-m" "pytest"))
+             #t)))))
+    (propagated-inputs
+     `(("python-urwid" ,python-urwid)))
+    (native-inputs
+     `(("python-pytest" ,python-pytest)))
+    (home-page "https://github.com/rr-/urwid_readline")
+    (synopsis "Text input widget for urwid that supports readline shortcuts")
+    (description
+     "This package provides a textbox edit widget for @code{python-urwid} that
+supports @code{readline} shortcuts.")
+    (license license:expat)))
 
 (define-public python-urwidtrees
   (package
@@ -7806,14 +7839,14 @@ the GObject Introspection bindings to libnotify for non-GTK applications.")
 (define-public python-beautifulsoup4
   (package
     (name "python-beautifulsoup4")
-    (version "4.9.1")
+    (version "4.9.3")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "beautifulsoup4" version))
        (sha256
         (base32
-         "1mvzlw3pzbhsvl3z8784s5h7iiflm2hggiy1fxyrrxwnbc8lvk3k"))))
+         "09gbd49mwz86k572r1231x2rdp82p42zlnw0bz9b9mfi58r9wwl4"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -7849,14 +7882,14 @@ converts incoming documents to Unicode and outgoing documents to UTF-8.")
 (define-public python-soupsieve
   (package
     (name "python-soupsieve")
-    (version "2.0.1")
+    (version "2.2.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "soupsieve" version))
        (sha256
         (base32
-         "0ch2rhvsbwfpvzm4kzy81rclbzr533yv83hzg1gx55byfa0w37d5"))))
+         "1k70gpn2d3vgdyxbdy536dgm4kchcraxz6lmgsfg3324iy2789q5"))))
     (build-system python-build-system)
     (arguments `(#:tests? #f))
     ;;XXX: 2 tests fail currently despite claming they were to be
@@ -8487,13 +8520,13 @@ applications.")
 (define-public python-pyzmq
   (package
     (name "python-pyzmq")
-    (version "17.1.2")
+    (version "22.0.3")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pyzmq" version))
        (sha256
-        (base32 "1pyxxrz60f88ffm0y6vpbx3q8jcr9ybz8fcilihwzwhh36n84ax7"))))
+        (base32 "0bgrn65cxfz1c1sjrgyq5dy1mkhppxxbizd5wvrl03cq4zhkrxpp"))))
     (build-system python-build-system)
     (arguments
      `(#:configure-flags
@@ -8576,14 +8609,14 @@ PEP 8.")
 (define-public python-pyflakes
   (package
     (name "python-pyflakes")
-    (version "2.2.0")
+    (version "2.3.1")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "pyflakes" version))
         (sha256
           (base32
-            "1j3zqbiwkyicvww499bblq33x0bjpzdrxajhaysr7sk7x5gdgcim"))))
+            "1ny10364ciqh4ripasj4zzv4145l21l3s85m3qlrvfq5pk58xg7m"))))
     (build-system python-build-system)
     (home-page
       "https://github.com/pyflakes/pyflakes")
@@ -8623,13 +8656,13 @@ complexity of Python source code.")
 (define-public python-flake8
   (package
     (name "python-flake8")
-    (version "3.8.4")
+    (version "3.9.0")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "flake8" version))
               (sha256
                (base32
-                "0fvcrsbyzjpcli8ldbpsdbpmf238nkvwc1dy4hy82lf63rvfinma"))))
+                "1w65iyjnrwipv4dbcqxh725ri7mdx01d6pjyggd97c0j5cvkx1vq"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -8701,6 +8734,34 @@ complexity of Python source code.")
 design problems in your program.  It contains warnings that don't belong
 in pyflakes and pycodestyle.")
     (license license:expat)))
+
+(define-public python-flake8-continuation
+  (package
+    (name "python-flake8-continuation")
+    (version "1.0.5")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "flake8-continuation" version))
+       (sha256
+        (base32
+         "0dzaw8jr7yhlabxhrblnrizxx17xa9ngjnbr1kidg5lapq6b9q1y"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-flake8" ,python-flake8)
+       ("python-pycodestyle" ,python-pycodestyle)
+       ("python-six" ,python-six)))
+    (home-page "https://github.com/planetlabs/flake8-continuation")
+    (synopsis "Flake8 Line Continuation Plugin")
+    (description "A Flake8 plugin that checks for the line continuation
+style to be in the preferred method according to PEP-8, specifically:
+@quotation
+The preferred way of wrapping long lines is by using Python's implied
+line continuation inside parentheses, brackets and braces.  Long lines
+can be broken over multiple lines by wrapping expressions in parentheses.
+These should be used in preference to using a backslash for line continuation.
+@end quotation")
+    (license license:asl2.0)))
 
 (define-public python-flake8-implicit-str-concat
   (package
@@ -8840,6 +8901,25 @@ first-class forward references that stub files use.")
 lints.")
     (license license:bsd-2)))
 
+(define-public python-flake8-quotes
+  (package
+    (name "python-flake8-quotes")
+    (version "3.2.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "flake8-quotes" version))
+       (sha256
+        (base32
+         "0ph5s6lxgpzz4an0ax6s5xjqypqmngwr5b1i0h9pqhzghplic49z"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-flake8" ,python-flake8)))
+    (home-page "https://github.com/zheller/flake8-quotes/")
+    (synopsis "Flake8 lint for quotes")
+    (description "This package provides a Flake8 lint for quotes.")
+    (license license:expat)))
+
 (define-public python-autoflake
   (package
     (name "python-autoflake")
@@ -8891,14 +8971,14 @@ Python.")
 (define-public python-markdown
   (package
     (name "python-markdown")
-    (version "3.2.1")
+    (version "3.3.4")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "Markdown" version))
        (sha256
         (base32
-         "00k91gwhxnm8jdnm2v5xjz9irj6dbi7afywz2hpakqdbxs1ydzlh"))))
+         "0jbs73nincha8fkfxx267sfxac6pl0ckszjbqbb8gk4dhs8v9d9i"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-nose" ,python-nose)
@@ -9540,9 +9620,6 @@ tasks, sockets, files, locks, and queues.")
 designed to efficiently cope with extremely large amounts of data.")
     (license license:bsd-3)))
 
-(define-public python2-tables
-  (package-with-python2 python-tables))
-
 (define-public python-sniffio
   (package
     (name "python-sniffio")
@@ -9699,13 +9776,13 @@ implementations of ASN.1-based codecs and protocols.")
 (define-public python-ipaddress
   (package
     (name "python-ipaddress")
-    (version "1.0.22")
+    (version "1.0.23")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "ipaddress" version))
               (sha256
                (base32
-                "0b570bm6xqpjwqis15pvdy6lyvvzfndjvkynilcddjj5x98wfimi"))))
+                "1qp743h30s04m3cg3yk3fycad930jv17q7dsslj4mfw0jlvf1y5p"))))
     (build-system python-build-system)
     (home-page "https://github.com/phihag/ipaddress")
     (synopsis "IP address manipulation library")
@@ -10423,9 +10500,6 @@ interactive computing.")
 notebooks.")
     (license license:bsd-3)))
 
-(define-public python2-widgetsnbextension
-  (package-with-python2 python-widgetsnbextension))
-
 (define-public python-ipywidgets
   (package
     (name "python-ipywidgets")
@@ -10452,9 +10526,6 @@ notebooks and the IPython kernel.  Notebooks come alive when interactive
 widgets are used.  Users gain control of their data and can visualize changes
 in the data.")
     (license license:bsd-3)))
-
-(define-public python2-ipywidgets
-  (package-with-python2 python-ipywidgets))
 
 (define-public python-jupyter-console
   (package
@@ -11081,13 +11152,13 @@ minimal and fast API targeting the following uses:
 (define-public python-icalendar
   (package
     (name "python-icalendar")
-    (version "4.0.5")
+    (version "4.0.7")
     (source (origin
              (method url-fetch)
              (uri (pypi-uri "icalendar" version))
              (sha256
               (base32
-               "14ynjj65kfmlcvpb7k097w789wvxncd3cr3xz5m1jz9yl9v6vv5q"))))
+               "19574j3jwssm2dkqykih4568xqfgjsa3hcd79yl5s2vfys3qvh8g"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-dateutil" ,python-dateutil)
@@ -13290,13 +13361,13 @@ It uses LR parsing and does extensive error checking.")
 (define-public python-tabulate
   (package
     (name "python-tabulate")
-    (version "0.8.7")
+    (version "0.8.9")
     (source (origin
              (method url-fetch)
              (uri (pypi-uri "tabulate" version))
              (sha256
               (base32
-               "01shi7bmj09f0bcm5s0c9skys063lzp76p0n4a2xmg041ni269yv"))))
+               "19qkdz8xwk5jxa5xn53mnk76qnh4ysm81vzj664jw1b0azr167gb"))))
     (build-system python-build-system)
     (arguments
      ;; FIXME: The pypi release tarball is missing a 'test/common.py'
@@ -14247,20 +14318,17 @@ control protocol to script against the Tor process and read descriptor data
 relays publish about themselves.")
     (license license:lgpl3)))
 
-(define-public python2-stem
-  (package-with-python2 python-stem))
-
 (define-public python-pyserial
   (package
     (name "python-pyserial")
-    (version "3.4")
+    (version "3.5")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "pyserial" version))
         (sha256
           (base32
-            "09y68bczw324a4jb9a1cfwrbjhq179vnfkkkrybbksp0vqgl0bbf"))))
+            "1nyd4m4mnrz8scbfqn4zpq8gnbl4x42w5zz62vcgpzqd2waf0xrw"))))
     (build-system python-build-system)
     (arguments
      '(#:tests? #f)) ; FIXME: 3/49 tests are failing.
@@ -14673,9 +14741,6 @@ runtime designed and used to request and deliver data to mobile and web apps.
 This library is a port of @url{https://github.com/graphql/graphql-js,graphql-js}
 to Python.")
     (license license:expat)))
-
-(define-public python2-graphql-core
-  (package-with-python2 python-graphql-core))
 
 (define-public python-graphql-relay
   (package
@@ -15319,9 +15384,6 @@ protocols written in pure Python.")
     ;; Can be used with either license.
     (license (list license:asl2.0 license:gpl2+))))
 
-(define-public python2-dulwich
-  (package-with-python2 python-dulwich))
-
 (define-public python-pbkdf2
   (package
     (name "python-pbkdf2")
@@ -15573,7 +15635,7 @@ specified to apply on the key before comparison (e.g. @code{string.lower})).")
      ;;https://bitbucket.org/fdik/pypeg/issues/36/test-failures-on-py35
      '(#:tests? #f))
     (home-page "https://fdik.org/pyPEG/")
-    (synopsis "Parsering Expression Grammars in Python")
+    (synopsis "Parsing Expression Grammars in Python")
     (description "PyPEG is an intrinsic parser interpreter framework for
 Python.  It is based on Parsing Expression Grammars, PEG.  With pyPEG you can
 parse many formal languages.")
@@ -16290,9 +16352,6 @@ exception message with a traceback that points to the culprit.")
       "Python Utils is a collection of small Python functions and classes which
 make common patterns shorter and easier.")
     (license license:bsd-2)))
-
-(define-public python2-utils
-  (package-with-python2 python-utils))
 
 (define-public python-diff-match-patch
   (package
@@ -18322,13 +18381,13 @@ user's @file{~/Trash} directory.")
 (define-public python-yamllint
   (package
     (name "python-yamllint")
-    (version "1.26.0")
+    (version "1.26.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "yamllint" version))
        (sha256
-        (base32 "11qhs1jk9pwvyk5k3q5blh9sq42dh1ywdf1f3i2zixf7hncwir5h"))))
+        (base32 "090krlxj7az0d9yl8i20vjrqi66dfxx7y5xakjhxzsfp7qmldnc7"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-pathspec" ,python-pathspec)
@@ -20505,14 +20564,14 @@ of Python libraries for building Python applications.")
 (define-public python-astor
   (package
     (name "python-astor")
-    (version "0.7.1")
+    (version "0.8.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "astor" version))
        (sha256
         (base32
-         "13gv6f2xz9i564byp21gcpc0l3w4cs23k1wbcam8kky2ls3hvhwm"))))
+         "0ppscdzzvxpznclkmhhj53iz314x3pfv4yc7c6gwxqgljgdgyvka"))))
     (build-system python-build-system)
     ;; FIXME: There are two errors and two test failures.
     (arguments `(#:tests? #f))
@@ -20928,6 +20987,64 @@ by Igor Pavlov.")
 
 (define-public python2-pylzma
   (package-with-python2 python-pylzma))
+
+(define-public python-ifaddr
+  (package
+    (name "python-ifaddr")
+    (version "0.1.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "ifaddr" version))
+       (sha256
+        (base32
+         "150sxdlicwrphmhnv03ykxplyd2jdrxz0mikgnivavgilrn8m7hz"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _ (invoke "nosetests"))))))
+    (native-inputs
+     `(("python-nose" ,python-nose)))
+    (home-page "https://github.com/pydron/ifaddr")
+    (synopsis "Network interface and IP address enumeration library")
+    (description "This package provides a network interface and IP address
+enumeration library in Python.")
+    (license license:expat)))
+
+(define-public python-zeroconf
+  (package
+    (name "python-zeroconf")
+    (version "0.28.8")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "zeroconf" version))
+       (sha256
+        (base32
+         "0narq8haa3b375vfblbyil77n8bw0wxqnanl91pl0wwwm884mqjb"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-nose" ,python-nose)))
+    (propagated-inputs
+     `(("python-ifaddr" ,python-ifaddr)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _ ;; Networking isn't available for these tests.
+             (invoke "nosetests" "-v"
+                     "--exclude" "test_integration_with_listener_ipv6"
+                     "--exclude" "test_launch_and_close_v6_only"
+                     "--exclude" "test_launch_and_close_v4_v6"
+                     "--exclude" "test_launch_and_close"))))))
+    (home-page "https://github.com/jstasiak/python-zeroconf")
+    (synopsis "Pure Python mDNS service discovery")
+    (description
+     "Pure Python multicast DNS (mDNS) service discovery library (Bonjour/Avahi
+compatible).")
+    (license license:lgpl2.1+)))
 
 (define-public python2-zeroconf
   (package
@@ -23465,12 +23582,12 @@ dates in almost any string formats commonly found on web pages.")
              ;; This invokation is taken from tox.ini.
              (invoke "nosetests" "-d" "-v" "tests/"))))))
     (home-page "https://github.com/akesterson/dpath-python")
-    (synopsis "Filesystem-like pathing and searching for dictionaries")
+    (synopsis "File-system-like pathing and searching for dictionaries")
     (description
      "@code{python-dpath} is a library for accessing and searching
 dictionaries via /slashed/paths ala xpath.
 
-Basically it lets you glob over a dictionary as if it were a filesystem.  It
+Basically it lets you glob over a dictionary as if it were a file system.  It
 allows you to specify globs (ala the bash eglob syntax, through some advanced
 fnmatch.fnmatch magic) to access dictionary elements, and provides some
 facility for filtering those results.")
@@ -23688,7 +23805,7 @@ cleanly print different types of messages.")
       "NestedText is a file format for holding data that is to be entered, edited, or
 viewed by people.  It allows data to be organized into a nested collection of
 dictionaries, lists, and strings.  In this way it is similar to JSON and YAML, but
-without the complexity and risk of YAML and without the syntatic clutter of JSON.
+without the complexity and risk of YAML and without the syntactic clutter of JSON.
 NestedText is both simple and natural.  Only a small number of concepts and rules must
 be kept in mind when creating it.  It is easily created, modified, or viewed with
 a text editor and easily understood and used by both programmers and non-programmers.")
@@ -24272,3 +24389,75 @@ number of words, syllables, and sentences.")
      "This package provides a Python library that can parse OPML, FOAF, and
 iGoogle subscription lists.")
     (license license:expat)))
+
+(define-public python-smartypants
+  (package
+    (name "python-smartypants")
+    (version "2.0.1")
+    (source
+     (origin
+       ;; There's no source tarball for 2.0.1 on PyPI.
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/leohemsted/smartypants.py")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "00p1gnb9pzb3svdq3c5b9b332gsp50wrqqa39gj00m133zadanjp"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           ;; Its `setup.py test` doesn't report failure with exit status, so
+           ;; we use `nose` instead.
+           (lambda _
+             (invoke "nosetests" "-v" "--exclude=^load_tests$"))))))
+    (native-inputs
+     ;; For tests.
+     `(("python-docutils" ,python-docutils)
+       ("python-nose" ,python-nose)
+       ("python-pygments" ,python-pygments)))
+    (home-page "https://github.com/leohemsted/smartypants.py")
+    (synopsis "Translate punctuation characters into smart quotes")
+    (description
+     "@command{smartpants} can perform the following transformations:
+@enumerate
+@item Straight quotes ( \" and ' ) into \"curly\" quote HTML entities
+@item Backticks-style quotes (``like this'') into \"curly\" quote HTML
+entities
+@item Dashes (-- and ---) into en- and em-dash entities
+@item Three consecutive dots (... or . . .) into an ellipsis entity
+@end enumerate")
+    (license license:bsd-3)))
+
+(define-public python-typogrify
+  (package
+    (name "python-typogrify")
+    (version "2.0.7")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "typogrify" version))
+              (sha256
+               (base32
+                "0f6b2gnnxjbx1fbmkcscc6qjr4hi78kwm1wx4b766ha3va66dr4b"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             (invoke "nosetests" "-v"))))))
+    (propagated-inputs
+     `(("python-smartypants" ,python-smartypants)))
+    (native-inputs
+     ;; For tests.
+     `(("python-nose" ,python-nose)))
+    (home-page "https://github.com/mintchaos/typogrify")
+    (synopsis "Filters to transform text into typographically-improved HTML")
+    (description
+     "@code{typogrify} provides a set of custom filters that automatically
+apply various transformations to plain text in order to yield
+typographically-improved HTML.  While often used in conjunction with Jinja and
+Django template systems, the filters can be used in any environment.")
+    (license license:bsd-3)))

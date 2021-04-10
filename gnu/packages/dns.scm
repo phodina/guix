@@ -18,6 +18,7 @@
 ;;; Copyright © 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Simon South <simon@simonsouth.net>
+;;; Copyright © 2021 Zheng Junjie <873216071@qq.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -277,7 +278,7 @@ prompt the user with the option to go with insecure DNS only.")
 (define-public dnsmasq
   (package
     (name "dnsmasq")
-    (version "2.84")
+    (version "2.85")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -285,7 +286,7 @@ prompt the user with the option to go with insecure DNS only.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "0305a0c3snwqcv77sipyynr55xip1fp2843yn04pc4vk9g39acb0"))))
+                "1yhjwgz8g5qrqvxh6bbmg3443zi8qqjks3q872wyb1zn7n0d765d"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -538,14 +539,14 @@ asynchronous fashion.")
 (define-public nsd
   (package
     (name "nsd")
-    (version "4.3.5")
+    (version "4.3.6")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.nlnetlabs.nl/downloads/nsd/nsd-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0wj490rxqs86z8s4lxjwk06ry5pvkdqqyq1cf83z7mxk60zb98kx"))))
+        (base32 "062zwx4k5rgpg2c0b4721ldj36aj8clrxv79mlfw9b15ap7w1rmy"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -812,7 +813,7 @@ Extensions} (DNSSEC).")
 (define-public knot
   (package
     (name "knot")
-    (version "3.0.4")
+    (version "3.0.5")
     (source
      (origin
        (method git-fetch)
@@ -821,7 +822,7 @@ Extensions} (DNSSEC).")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1mbjl18zi8yxs7pa3395lqjwdw0agjbfpl32x42i6d9zb8fsblzs"))
+        (base32 "16rgcmgj21w2niyz45d3zjlci9i22gxcvfzqw7g5zwsjdy9610nx"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -942,14 +943,14 @@ synthesis, and on-the-fly re-configuration.")
 (define-public knot-resolver
   (package
     (name "knot-resolver")
-    (version "5.3.0")
+    (version "5.3.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://secure.nic.cz/files/knot-resolver/"
                                   "knot-resolver-" version ".tar.xz"))
               (sha256
                (base32
-                "0gp3ivv3zccz4b6s1wxbsvvlrc837lw2g089l3cbvzsg7z0b4v7v"))))
+                "1j99sz6r1hdvvd8rffx1917r9cyb7z46ivp5934sq57irmxnnkcx"))))
     (build-system meson-build-system)
     (outputs '("out" "doc"))
     (arguments
@@ -1049,9 +1050,7 @@ LuaJIT, both a resolver library and a daemon.")
        ("perl-digest-sha1" ,perl-digest-sha1)
        ("perl-io-socket-ssl" ,perl-io-socket-ssl)))
     (arguments
-     `(#:modules ((guix build utils)
-                  (ice-9 match)
-                  (srfi srfi-26))
+     `(#:modules ((guix build utils))
        #:builder
        (begin
          (use-modules (guix build utils)
@@ -1111,20 +1110,17 @@ attempts the update when it has changed.")
     (license license:gpl2+)))
 
 (define-public hnsd
-  ;; There have been no releases yet, hence this commit.
-  (let ((revision "0")
-        (commit "895d89c25d316d18df9d374fe78aae3902bc89fb"))
    (package
      (name "hnsd")
-     (version (git-version "0.0" revision commit))
+     (version "1.0.0")
      (source (origin
                (method git-fetch)
                (uri (git-reference
                      (url "https://github.com/handshake-org/hnsd")
-                     (commit commit)))
+                     (commit (string-append "v" version))))
                (sha256
                 (base32
-                 "0704y73sddn24jga9csw4gxyfb3pnrfnk0vdcph84n1h38490l16"))
+                 "1kdgff8rf8gmvwz2p758ilbjxpvz4xm6z41pa5353asg6xb853bb"))
                (file-name (git-file-name name version))
                (modules '((guix build utils)))
                (snippet
@@ -1161,7 +1157,7 @@ attempts the update when it has changed.")
      (description
       "@command{hnsd} is a @dfn{host name resolver} for the Handshake Naming
 System (HNS) peer-to-peer network.")
-     (license license:expat))))
+     (license license:expat)))
 
 (define-public libmicrodns
   (package
@@ -1287,14 +1283,14 @@ and TCP-capable recursive DNS server for finding domains on the internet.")
 (define-public openresolv
   (package
     (name "openresolv")
-    (version "3.10.0")
+    (version "3.12.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://roy.marples.name/downloads/openresolv/"
                                   "openresolv-" version ".tar.xz"))
               (sha256
                (base32
-                "01ms6c087la4hk0f0w6n2vpsb7dg4kklah2rqyhz88p0vr9bqy20"))
+                "15qvp5va2yrqpz0ba54clvn8cbc66v4sl7k3bi9ji8jpx040bcs2"))
               (patches
                (search-patches "openresolv-restartcmd-guix.patch"))))
     (build-system gnu-build-system)

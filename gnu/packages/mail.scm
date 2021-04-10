@@ -8,7 +8,7 @@
 ;;; Copyright © 2015 Paul van der Walt <paul@denknerd.org>
 ;;; Copyright © 2015, 2016, 2018 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
-;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018, 2019, 2020, 2021 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2016 Al McElrath <hello@yrns.org>
 ;;; Copyright © 2016, 2017, 2018, 2019, 2020, 2021 Leo Famulari <leo@famulari.name>
@@ -27,20 +27,21 @@
 ;;; Copyright © 2018, 2019, 2020, 2021 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2018 Gábor Boskovits <boskovits@gmail.com>
-;;; Copyright © 2018, 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2018, 2019, 2020, 2021 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019, 2020 Tanguy Le Carrour <tanguy@bioneland.org>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Justus Winter <justus@sequoia-pgp.org>
 ;;; Copyright © 2020 Eric Brown <ecbrown@ericcbrown.com>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
-;;; Copyright © 2020 Alexey Abramov <levenson@mmer.org>
+;;; Copyright © 2020, 2021 Alexey Abramov <levenson@mmer.org>
 ;;; Copyright © 2020 Tim Gesthuizen <tim.gesthuizen@yahoo.de>
 ;;; Copyright © 2020 Alexandru-Sergiu Marton <brown121407@posteo.ro>
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2020 B. Wilson <elaexuotee@wilsonb.com>
 ;;; Copyright © 2020 divoplade <d@divoplade.fr>
 ;;; Copyright © 2021 Xinglu Chen <public@yoctocell.xyz>
+;;; Copyright © 2021 Benoit Joly <benoit@benoitj.ca>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -88,6 +89,7 @@
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages glib)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages groff)
@@ -155,7 +157,9 @@
   #:use-module (guix utils)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system glib-or-gtk)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system guile)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
@@ -317,6 +321,37 @@ software.")
      ;; Libraries are under LGPLv3+, and programs under GPLv3+.
      (list license:gpl3+ license:lgpl3+))))
 
+(define-public go-gitlab.com-shackra-goimapnotify
+  (let ((commit "832bc7112db9b28e28d69e90b91ea6c005244c9b")
+        (revision "0"))
+    (package
+      (name "go-gitlab.com-shackra-goimapnotify")
+      (version (git-version "0.0.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://gitlab.com/shackra/goimapnotify")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "1h27kshx4vwl5k6vc2szsq3d701fzs4gczjypz907f8hj0lrnjmy"))))
+      (build-system go-build-system)
+      (arguments
+       `(#:import-path "gitlab.com/shackra/goimapnotify"))
+      (propagated-inputs
+       `(("go-github-com-emersion-go-imap" ,go-github-com-emersion-go-imap)
+         ("go-github-com-emersion-go-imap-idle" ,go-github-com-emersion-go-imap-idle)
+         ("go-github-com-emersion-go-sasl" ,go-github-com-emersion-go-sasl)
+         ("go-github-com-sirupsen-logrus" ,go-github-com-sirupsen-logrus)
+         ("go-golang-org-x-text" ,go-golang-org-x-text)))
+      (synopsis "Execute scripts on IMAP mailbox changes.")
+      (description
+       "Script to execute scripts on IMAP mailbox changes (new/deleted/updated
+messages) using IDLE.  Implemented in Go.")
+      (home-page "https://gitlab.com/shackra/goimapnotify")
+      (license license:gpl3+))))
+
 (define-public guile2.2-mailutils
   (package
     (inherit mailutils)
@@ -412,7 +447,7 @@ to run without any changes.")
 (define-public fetchmail
   (package
     (name "fetchmail")
-    (version "6.4.17")
+    (version "6.4.18")
     (source
      (origin
        (method url-fetch)
@@ -420,7 +455,7 @@ to run without any changes.")
                            (version-major+minor version) "/"
                            "fetchmail-" version ".tar.xz"))
        (sha256
-        (base32 "1ijh9l7pg2yk5s5h1yj3vpd1az31giqy9bjrna10daj13gqws6x4"))))
+        (base32 "17r5zfk9yh7jhgdb360dlzx5fx9lsbmalasx6zgxw9v9vjycjb9h"))))
     (build-system gnu-build-system)
     (inputs
      `(("openssl" ,openssl)))
@@ -494,7 +529,7 @@ operating systems.")
 (define-public neomutt
   (package
     (name "neomutt")
-    (version "20201127")
+    (version "20210205")
     (source
      (origin
        (method git-fetch)
@@ -503,7 +538,7 @@ operating systems.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1yhpz591jhcjpwllgppwf7vl7z2rnaqfphsvqd1sihd9k4lwch06"))))
+        (base32 "15kr9nvb4j8lx5rl2yapv231rbp4sbn709vv82pfhx5717x3yf00"))))
     (build-system gnu-build-system)
     (inputs
      `(("cyrus-sasl" ,cyrus-sasl)
@@ -1593,14 +1628,14 @@ addons which can add many functionalities to the base client.")
 (define-public msmtp
   (package
     (name "msmtp")
-    (version "1.8.14")
+    (version "1.8.15")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://marlam.de/msmtp/releases/"
                            "/msmtp-" version ".tar.xz"))
        (sha256
-        (base32 "1d3knxpwpglg20z4zcsi82mqv9285ah1b1b16k1fk1hlf5fhcvym"))))
+        (base32 "1klrj2a77671xb6xa0a0iyszhjb7swxhmzpzd4qdybmzkrixqr92"))))
     (build-system gnu-build-system)
     (inputs
      `(("libsecret" ,libsecret)
@@ -2684,14 +2719,14 @@ easily (one at a time).")
 (define-public mpop
   (package
     (name "mpop")
-    (version "1.4.12")
+    (version "1.4.13")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://marlam.de/mpop/releases/"
                            "mpop-" version ".tar.xz"))
        (sha256
-        (base32 "02j8qfd44dfyq1sq7r9znj9y6wam39ncch1sc8chcdlw5nsmaqsz"))))
+        (base32 "1hbx69d6ivbvjajrcp54fdb3g1ms4ydj0ybf3bfhlravqrk88jdk"))))
     (build-system gnu-build-system)
     (inputs
      `(("gnutls" ,gnutls)))
@@ -3134,6 +3169,39 @@ writing OpenSMTPd filters.")
      "The @command{filter-dkimsign} OpenSMTPd filter signs outgoing e-mail
 messages with @acronym{DKIM, DomainKeys Identified Mail} (RFC 4871).")
     (license license:expat)))
+
+(define-public opensmtpd-filter-rspamd
+  (package
+    (name "opensmtpd-filter-rspamd")
+    (version "0.1.7")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/poolpOrg/filter-rspamd")
+                    (commit (string-append "v" version))))
+              (sha256
+               (base32 "1qhrw20q9y44ffgx5k14nvqc9dh47ihywgzza84g0zv9xgif7hd5"))
+              (file-name (git-file-name name version))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/poolpOrg/filter-rspamd"
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'set-bootstrap-variables
+           (lambda* (#:key outputs inputs #:allow-other-keys)
+             ;; Tell the build system where to install binaries
+             (let* ((out (assoc-ref outputs "out"))
+                    (libexec (string-append out "/libexec/opensmtpd")))
+               (setenv "GOBIN" libexec)))))))
+    (native-inputs
+     `(("opensmtpd" ,opensmtpd)))
+    (home-page "https://github.com/poolpOrg/filter-rspamd")
+    (synopsis "OpenSMTPd filter to request an Rspamd analysis")
+    (description
+     "The @command{filter-rspamd} OpenSMTPd filter implements the
+Rspamd protocol and allows OpenSMTPd to request an Rspamd analysis of
+an SMTP transaction before a message is committed to queue.")
+    (license license:isc)))
 
 (define-public mailman
   (package
@@ -3624,14 +3692,14 @@ tools and applications:
 (define-public balsa
   (package
     (name "balsa")
-    (version "2.6.1")
+    (version "2.6.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://pawsa.fedorapeople.org/balsa/"
                            "balsa-" version ".tar.bz2"))
        (sha256
-        (base32 "1xkxx801p7sbfkn0bh3cz85wra4xf1z1zhjqqc80z1z1nln7fhb4"))))
+        (base32 "1w0239i01mw4wwwy7xh8gz7zgl5khwvfm5wy35x0swvvax021mai"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -3653,8 +3721,9 @@ tools and applications:
        ("gnutls" ,gnutls)
        ("gpgme" ,gpgme)
        ("gtk+" ,gtk+)
-       ("gtksourceview" ,gtksourceview-3)
+       ("gtksourceview" ,gtksourceview)
        ("gtkspell3" ,gtkspell3)
+       ("libassuan" ,libassuan)         ; in gpgme.pc Requires
        ("libcanberra" ,libcanberra)
        ("libesmtp" ,libesmtp)
        ("libical" ,libical)
@@ -3790,13 +3859,13 @@ servers.  The 4rev1 and 4 versions of IMAP are supported.")
 (define-public urlscan
   (package
     (name "urlscan")
-    (version "0.9.5")
+    (version "0.9.6")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "urlscan" version))
         (sha256
-         (base32 "07vcwirap0p4dkqrqblfn1q017slgd8m6qyijvbi3gxnr09pbyx2"))))
+         (base32 "09lxi7dhn49fpb3ij4cgrhj3qqqqs9rcxbjb7p9smw5wblrqpzga"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-urwid" ,python-urwid)))
@@ -3838,8 +3907,8 @@ It is a replacement for the @command{urlview} program.")
     (license license:gpl2+)))
 
 (define-public mumi
-  (let ((commit "8c82c8f104ff0013e2bfb3d6b4277280f32446a6")
-        (revision "3"))
+  (let ((commit "9f070bd90adc67064cd8aff4e40f303d5957ef4a")
+        (revision "5"))
     (package
       (name "mumi")
       (version (git-version "0.0.1" revision commit))
@@ -3851,7 +3920,7 @@ It is a replacement for the @command{urlview} program.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "1gkwagy7qplzq2x2zqsbrwhlilxviqb0dqhrvnnhxd7z8wvyzcsi"))))
+                  "1ym1j3nzy8qhd1ydadccbgm0nckkmnq3vnz9qh9x8rasx7zg1ldp"))))
       (build-system gnu-build-system)
       (arguments
        `(#:modules ((guix build gnu-build-system)

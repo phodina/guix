@@ -66,9 +66,11 @@
   cuirass-remote-server-configuration make-cuirass-remote-server-configuration
   cuirass-remote-server-configuration?
   (backend-port     cuirass-remote-server-configuration-backend-port ;int
-                    (default #f))
+                    (default 5555))
+  (log-port         cuirass-remote-server-configuration-log-port ;int
+                    (default 5556))
   (publish-port     cuirass-remote-server-configuration-publish-port ;int
-                    (default #f))
+                    (default 5557))
   (log-file         cuirass-remote-server-log-file ;string
                     (default "/var/log/cuirass-remote-server.log"))
   (cache            cuirass-remote-server-configuration-cache ;string
@@ -143,6 +145,7 @@
         (requirement '(guix-daemon postgres postgres-roles networking))
         (start #~(make-forkexec-constructor
                   (list (string-append #$cuirass "/bin/cuirass")
+                        "register"
                         "--cache-directory" #$cache-directory
                         "--specifications"
                         #$(scheme-file "cuirass-specs.scm" specs)
@@ -174,19 +177,15 @@
         (requirement '(cuirass))
         (start #~(make-forkexec-constructor
                   (list (string-append #$cuirass "/bin/cuirass")
-                        "--cache-directory" #$cache-directory
+                        "web"
                         "--database" #$database
-                        "--web"
-                        "--port" #$(number->string port)
                         "--listen" #$host
-                        "--interval" #$(number->string interval)
+                        "--port" #$(number->string port)
                         #$@(if parameters
                                (list (string-append
                                       "--parameters="
                                       parameters))
                                '())
-                        #$@(if use-substitutes? '("--use-substitutes") '())
-                        #$@(if fallback? '("--fallback") '())
                         #$@extra-options)
 
                   #:user #$user
@@ -203,7 +202,8 @@
                 (provision '(cuirass-remote-server))
                 (requirement '(avahi-daemon cuirass))
                 (start #~(make-forkexec-constructor
-                          (list (string-append #$cuirass "/bin/remote-server")
+                          (list (string-append #$cuirass "/bin/cuirass")
+                                "remote-server"
                                 (string-append "--database=" #$database)
                                 (string-append "--cache=" #$cache)
                                 (string-append "--user=" #$user)
@@ -330,7 +330,7 @@
   (log-file         cuirass-remote-worker-log-file ;string
                     (default "/var/log/cuirass-remote-worker.log"))
   (publish-port     cuirass-remote-worker-configuration-publish-port ;int
-                    (default #f))
+                    (default 5558))
   (public-key       cuirass-remote-worker-configuration-public-key ;string
                     (default #f))
   (private-key      cuirass-remote-worker-configuration-private-key ;string
@@ -347,7 +347,8 @@ CONFIG."
            (provision '(cuirass-remote-worker))
            (requirement '(avahi-daemon guix-daemon networking))
            (start #~(make-forkexec-constructor
-                     (list (string-append #$cuirass "/bin/remote-worker")
+                     (list (string-append #$cuirass "/bin/cuirass")
+                           "remote-worker"
                            (string-append "--workers="
                                           #$(number->string workers))
                            #$@(if server

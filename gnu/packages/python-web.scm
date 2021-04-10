@@ -623,9 +623,6 @@ over a different origin than that of the web application.")
 @code{urllib} and @code{urlparse} modules for manipulating URLs.")
     (license license:unlicense)))
 
-(define-public python2-furl
-  (package-with-python2 python-furl))
-
 (define-public python-httplib2
   (package
     (name "python-httplib2")
@@ -1017,9 +1014,6 @@ support for Flask.  This is based on the Python babel module as well as pytz -
 both of which are installed automatically if you install this library.")
     (license license:bsd-3)))
 
-(define-public python2-flask-babel
-  (package-with-python2 python-flask-babel))
-
 (define-public python-flask-cors
   (package
     (name "python-flask-cors")
@@ -1108,7 +1102,9 @@ storage.")
     (build-system python-build-system)
     (propagated-inputs
      `(("python-six" ,python-six)
-       ("python-webencodings" ,python-webencodings)))
+       ("python-webencodings" ,python-webencodings)
+       ;; Required by Calibre 5.
+       ("python-chardet" ,python-chardet)))
     (arguments
      `(#:test-target "check"))
     (home-page
@@ -1694,14 +1690,14 @@ connection to each user.")
 (define-public python-tornado-6
   (package
     (name "python-tornado")
-    (version "6.0.4")
+    (version "6.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "tornado" version))
        (sha256
         (base32
-         "1p5n7sw4580pkybywg93p8ddqdj9lhhy72rzswfa801vlidx9qhg"))))
+         "14cpzdv6p6qvk6vn02krdh5rcfdi174ifdbr5s6lcnymgcfyiiik"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -2935,9 +2931,6 @@ and Jinja2 template engine.  It is called a micro framework because it does not
 presume or force a developer to use a particular tool or library.")
     (license license:bsd-3)))
 
-(define-public python2-flask
-  (package-with-python2 python-flask))
-
 (define-public python-flask-wtf
   (package
     (name "python-flask-wtf")
@@ -2970,9 +2963,6 @@ presume or force a developer to use a particular tool or library.")
 upload, and reCAPTCHA.")
     (license license:bsd-3)))
 
-(define-public python2-flask-wtf
-  (package-with-python2 python-flask-wtf))
-
 (define-public python-flask-multistatic
   (package
     (name "python-flask-multistatic")
@@ -2992,9 +2982,6 @@ upload, and reCAPTCHA.")
     (description "@code{flask-multistatic} is a flask plugin that adds support
 for overriding static files.")
     (license license:gpl3+)))
-
-(define-public python2-flask-multistatic
-  (package-with-python2 python-flask-multistatic))
 
 (define-public python-cookies
   (package
@@ -3610,9 +3597,6 @@ It comes with safe defaults and easily configurable options.")
      "Minify @code{text/html} MIME type responses when using @code{Flask}.")
     (license license:bsd-3)))
 
-(define-public python2-flask-htmlmin
-  (package-with-python2 python-flask-htmlmin))
-
 (define-public python-jsmin
   (package
     (name "python-jsmin")
@@ -3665,9 +3649,6 @@ on the command line.")
 handles the common tasks of logging in, logging out, and remembering your
 users' sessions over extended periods of time.")
     (license license:expat)))
-
-(define-public python2-flask-login
-  (package-with-python2 python-flask-login))
 
 (define-public python-oauth2client
   (package

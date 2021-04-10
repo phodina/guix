@@ -1473,7 +1473,7 @@ less if you are working in front of the screen at night.")
 (define-public xscreensaver
   (package
     (name "xscreensaver")
-    (version "5.44")
+    (version "5.45")
     (source
      (origin
        (method url-fetch)
@@ -1481,7 +1481,7 @@ less if you are working in front of the screen at night.")
         (string-append "https://www.jwz.org/xscreensaver/xscreensaver-"
                        version ".tar.gz"))
        (sha256
-        (base32 "15bv05vpfjwsrqbazrjmm382jd7vvw0mp6y9vasn6wvxzjf0in3k"))))
+        (base32 "03fmyjlwjinzv7mih6n07glmys8s877snd8zijk2c0ds6rkxy5kh"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                      ; no check target
@@ -2249,7 +2249,7 @@ Wayland.")
 (define-public autocutsel
   (package
     (name "autocutsel")
-    (version "0.10.0")
+    (version "0.10.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/sigmike/autocutsel"
@@ -2257,7 +2257,7 @@ Wayland.")
                                   "autocutsel-" version ".tar.gz"))
               (sha256
                (base32
-                "0gsys2dzh4az51ndcsabhlbbrjn2nm75lnjr45kg6r8sm8q66dx2"))))
+                "05zb85imp42birvrc320q20r98qddc5vxx169dnl753l5za0czpi"))))
     (build-system gnu-build-system)
     (arguments
      '(#:tests? #f)) ; no "check" target
