@@ -670,7 +670,7 @@ For PDF support, install the @emph{mupdf} package.")
     (native-inputs
      (list qttools))
     (inputs
-     (list qtbase-5 qtimageformats qtsvg-5))
+     (list qtbase-5 qtimageformats-5 qtsvg-5))
     (home-page "https://interversehq.com/qview/")
     (synopsis "Convenient and minimal image viewer")
     (description "qView is a Qt image viewer designed with visually
