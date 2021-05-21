@@ -227,7 +227,7 @@ common build settings used in software produced by the KDE community.")
      (list qtbase-5
            phonon
            qtbase-5
-           qtx11extras
+           qtx11extras-5
            gstreamer
            gst-plugins-base
            libxml2))
@@ -643,7 +643,7 @@ many more.")
     (native-inputs
      (list extra-cmake-modules dbus qttools))
     (inputs
-     (list qtbase-5 qtx11extras kinit-bootstrap)) ;; kinit-bootstrap: kinit package which does not depend on kdbusaddons.
+     (list qtbase-5 qtx11extras-5 kinit-bootstrap)) ;; kinit-bootstrap: kinit package which does not depend on kdbusaddons.
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -742,7 +742,7 @@ replace the other outdated Graphviz tools.")
     (native-inputs
      (list extra-cmake-modules pkg-config))
     (inputs
-     (list qtbase-5 qtx11extras))
+     (list qtbase-5 qtx11extras-5))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Utilities for graphical user interfaces")
     (description "The KDE GUI addons provide utilities for graphical user
@@ -841,7 +841,7 @@ translation scripting.")
      (list extra-cmake-modules pkg-config))
     (inputs
      (list libxscrnsaver ; X-Screensaver based poller, fallback mode
-           qtbase-5 qtx11extras))
+           qtbase-5 qtx11extras-5))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Reporting of idle time of user and system")
     (description "KIdleTime is a singleton reporting information on idle time.
@@ -1132,7 +1132,7 @@ configuration pages, message boxes, and password requests.")
     (inputs
      `(("libxrender" ,libxrender)
        ("qtbase" ,qtbase-5)
-       ("qtx11extras" ,qtx11extras)
+       ("qtx11extras" ,qtx11extras-5)
        ("xcb-utils-keysyms" ,xcb-util-keysyms)
        ("xcb-util-wm" ,xcb-util-wm)))
     (arguments
@@ -1614,7 +1614,7 @@ localized country name to ISO 3166-1 alpha 2 code mapping and vice verca.
     (native-inputs
      (list extra-cmake-modules))
     (inputs
-     (list kcoreaddons kwindowsystem qtbase-5 qtx11extras))
+     (list kcoreaddons kwindowsystem qtbase-5 qtx11extras-5))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Graceful handling of application crashes")
     (description "KCrash provides support for intercepting and handling
@@ -1802,7 +1802,7 @@ formats.")
     (native-inputs
      (list extra-cmake-modules qttools))
     (inputs
-     (list kcoreaddons kwidgetsaddons qtbase-5 qtx11extras))
+     (list kcoreaddons kwidgetsaddons qtbase-5 qtx11extras-5))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Widgets for showing progress of asynchronous jobs")
     (description "KJobWIdgets provides widgets for showing progress of
@@ -1835,7 +1835,7 @@ asynchronous jobs.")
            qtspeech
            ;; TODO: Think about adding dbusmenu-qt5 from
            ;; https://launchpad.net/libdbusmenu-qt
-           qtx11extras))
+           qtx11extras-5))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -2510,7 +2510,7 @@ emoticons coming from different providers.")
            kwindowsystem
            libxcb
            qtbase-5
-           qtx11extras
+           qtx11extras-5
            xcb-util-keysyms))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Global desktop keyboard shortcuts")
@@ -2682,7 +2682,7 @@ consumption.")
        ("libxslt" ,libxslt)
        ("qtbase" ,qtbase-5)
        ("qtscript" ,qtscript)
-       ("qtx11extras" ,qtx11extras)
+       ("qtx11extras" ,qtx11extras-5)
        ("sonnet" ,sonnet)))
     (arguments
      `(#:tests? #f ; FIXME: 41/50 tests fail.
@@ -3340,7 +3340,7 @@ setUrl, setUserAgent and call.")
        ("qtdeclarative" ,qtdeclarative)
        ("qtquickcontrols2" ,qtquickcontrols2)
        ("qtsvg" ,qtsvg-5)
-       ("qtx11extras" ,qtx11extras)
+       ("qtx11extras" ,qtx11extras-5)
        ("solid" ,solid)))
     (arguments
      `(#:tests? #f ; FIXME: 9/15 tests fail.
@@ -3461,7 +3461,7 @@ need.")
        ("kpackage" ,kpackage)
        ("kwidgetsaddons" ,kwidgetsaddons)
        ("qtbase" ,qtbase-5)
-       ("qtx11extras" ,qtx11extras)))
+       ("qtx11extras" ,qtx11extras-5)))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -3550,7 +3550,7 @@ workspace.")
            openssl
            qtsvg-5
            qttools
-           qtx11extras))
+           qtx11extras-5))
     ;; FIXME: Use Guix ca-bundle.crt in etc/xdg/ksslcalist and
     ;; share/kf5/kssl/ca-bundle.crt
     ;; TODO: NixOS has nix-kde-include-dir.patch to change std-dir "include"
@@ -3642,7 +3642,7 @@ http://community.kde.org/Frameworks/Porting_Notes should help with this.")
            openssl
            phonon
            qtbase-5
-           qtx11extras
+           qtx11extras-5
            sonnet))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "KDE Frameworks 5 HTML widget and component")

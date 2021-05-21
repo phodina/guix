@@ -6553,7 +6553,7 @@ and embedded platforms.")
     (name "uim-qt")
     (inputs
      `(("qt" ,qtbase-5)
-       ("qtx11extras" ,qtx11extras)
+       ("qtx11extras" ,qtx11extras-5)
        ,@(package-inputs uim)))
     (arguments
      (substitute-keyword-arguments (package-arguments uim)

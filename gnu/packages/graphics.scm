@@ -1967,7 +1967,7 @@ Automated palette selection is supported.")
              qtkeychain
              qtmultimedia
              qtsvg-5
-             qtx11extras))
+             qtx11extras-5))
       (home-page "https://drawpile.net")
       (synopsis "Collaborative drawing program")
       (description "Drawpile is a drawing program that allows share the canvas

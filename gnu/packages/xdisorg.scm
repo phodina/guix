@@ -328,7 +328,7 @@ with X11 or Wayland, or in a text terminal with ncurses.")
    `(#:configure-flags '("-DCMAKE_BUILD_TYPE=Release")
      #:tests? #f)) ; Test suite is a rather manual process.
   (inputs
-   (list qtbase-5 qtscript qtsvg-5 qtx11extras))
+   (list qtbase-5 qtscript qtsvg-5 qtx11extras-5))
   (synopsis "Clipboard manager with advanced features")
   (description "CopyQ is clipboard manager with editing and scripting
 features.  CopyQ monitors system clipboard and saves its content in customized

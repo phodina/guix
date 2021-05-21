@@ -675,7 +675,7 @@ language and very flexible regarding to new or unknown keyboard layouts.")
            qtdeclarative
            qtgraphicaleffects
            qtquickcontrols2
-           qtx11extras
+           qtx11extras-5
            qtxmlpatterns))
     (home-page "https://edu.kde.org/ktouch/")
     (synopsis "Touch typing tutor")

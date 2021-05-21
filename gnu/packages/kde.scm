@@ -541,7 +541,7 @@ expression library, that is used in Krita.")
            qtdeclarative
            qtmultimedia
            qtsvg-5
-           qtx11extras
+           qtx11extras-5
            quazip-0
            zlib))
     (home-page "https://krita.org")
@@ -749,7 +749,7 @@ different notification systems.")
            qtmultimedia
            qtquickcontrols
            qtquickcontrols2
-           qtx11extras))
+           qtx11extras-5))
     (home-page "https://community.kde.org/KDEConnect")
     (synopsis "Enable your devices to communicate with each other")
     (description "KDE Connect is a project that enables all your devices to

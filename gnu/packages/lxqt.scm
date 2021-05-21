@@ -232,7 +232,7 @@ in Qt.")
            libxscrnsaver
            polkit-qt
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list lxqt-build-tools qttools))
     (home-page "https://lxqt-project.org")
@@ -285,7 +285,7 @@ and memory usage or network traffic.")
            libqtxdg
            qtbase-5
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list lxqt-build-tools qttools))
     (arguments
@@ -327,7 +327,7 @@ LXQt and the system it's running on.")
            libqtxdg
            polkit-qt
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list lxqt-build-tools qttools))
     (arguments
@@ -376,7 +376,7 @@ the operating system LXQt is running on.")
            libxi
            qtbase-5
            qtsvg-5
-           qtx11extras
+           qtx11extras-5
            solid
            xf86-input-libinput
            xkeyboard-config
@@ -444,7 +444,7 @@ configuration of both LXQt and the underlying operating system.")
            libqtxdg
            qtbase-5
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list pkg-config qttools lxqt-build-tools))
     (arguments
@@ -490,7 +490,7 @@ as a whole and are not limited to distinct applications.")
            libqtxdg
            qtbase-5
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list lxqt-build-tools qttools))
     (arguments
@@ -535,7 +535,7 @@ according to the Desktop Notifications Specification.")
            libqtxdg
            qtbase-5
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list lxqt-build-tools qttools))
     (arguments
@@ -585,7 +585,7 @@ of other programs.")
            pulseaudio
            qtbase-5
            qtsvg-5
-           qtx11extras
+           qtx11extras-5
            solid
            xcb-util
            xkeyboard-config))
@@ -647,7 +647,7 @@ of other programs.")
            polkit-qt
            qtbase-5
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list pkg-config polkit lxqt-build-tools qttools))
     (arguments
@@ -693,7 +693,7 @@ LXQt.")
            lxqt-globalkeys
            qtbase-5
            qtsvg-5
-           qtx11extras
+           qtx11extras-5
            solid))
     (native-inputs
      (list lxqt-build-tools qttools))
@@ -740,7 +740,7 @@ when laptop batteries are low on power.")
            libqtxdg
            qtbase-5
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list lxqt-build-tools qttools))
     (arguments
@@ -780,7 +780,7 @@ Qt with LXQt.")
            pcre
            qtbase-5
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list pkg-config qttools lxqt-build-tools))
     (arguments
@@ -826,7 +826,7 @@ allows for launching applications or shutting down the system.")
            procps
            qtbase-5
            qtsvg-5
-           qtx11extras
+           qtx11extras-5
            xdg-user-dirs))
     (native-inputs
      (list pkg-config lxqt-build-tools qttools))
@@ -896,6 +896,15 @@ for the LXQt desktop environment.")
            qtsvg-5
            qtx11extras
            sudo))
+=======
+     `(("kwindowsystem" ,kwindowsystem)
+       ("liblxqt" ,liblxqt)
+       ("libqtxdg" ,libqtxdg)
+       ("qtbase" ,qtbase-5)
+       ("qtsvg" ,qtsvg-5)
+       ("qtx11extras" ,qtx11extras-5)
+       ("sudo" ,sudo)))
+>>>>>>> dcc84737d6 (gnu: qtx11extras: Remove variable.)
     (native-inputs
      (list pkg-config qttools lxqt-build-tools))
     (arguments
@@ -976,7 +985,7 @@ for LXQt.")
            menu-cache
            pcre
            qtbase-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list pkg-config lxqt-build-tools qttools))
     (home-page "https://lxqt-project.org")
@@ -998,7 +1007,7 @@ components to build desktop file managers which belongs to LXDE.")
         (base32 "1axs7dnh2z08ygy28iipfbgfck15k2i2pwlf0v8d8axjrmavzb3l"))))
     (build-system cmake-build-system)
     (inputs
-     (list libfm-qt qtbase-5 qtx11extras))
+     (list libfm-qt qtbase-5 qtx11extras-5))
     (native-inputs
      (list pkg-config qttools lxqt-build-tools))
     (arguments
@@ -1068,7 +1077,7 @@ manager Compton.")
         (base32 "0g6hs41xfw2ghhwpj0rqr2ciri0x9v984689yrnmnvah88zlya1f"))))
     (build-system cmake-build-system)
     (inputs
-     (list libexif libfm-qt qtbase-5 qtsvg-5 qtx11extras))
+     (list libexif libfm-qt qtbase-5 qtsvg-5 qtx11extras-5))
     (native-inputs
      (list pkg-config lxqt-build-tools qttools))
     (arguments
@@ -1101,7 +1110,7 @@ image viewer.")
            pango
            pcre
            qtbase-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list lxqt-build-tools pkg-config qttools))
     (arguments
@@ -1125,7 +1134,7 @@ window manager OpenBox.")
         (base32 "0w51dpjayav78lmhw966fz3gvypkmv64xgsd7x5rqs8am39lq9vc"))))
     (build-system cmake-build-system)
     (inputs
-     (list glib pcre pulseaudio qtbase-5 qtx11extras))
+     (list glib pcre pulseaudio qtbase-5 qtx11extras-5))
     (native-inputs
      (list pkg-config lxqt-build-tools qttools))
     (arguments
@@ -1154,7 +1163,7 @@ window manager OpenBox.")
            liblxqt
            libqtxdg
            qtbase-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs
      (list lxqt-build-tools qttools))
     (arguments
@@ -1201,7 +1210,7 @@ processes currently in existence, much like code{top} or code{ps}.")
         (base32 "0rfv7a6ncm8fs8aicinh9l29w4636gxzcqz735jmch2r41v9i1d9"))))
     (build-system cmake-build-system)
     (inputs
-     (list qtbase-5 qtx11extras qtermwidget))
+     (list qtbase-5 qtx11extras-5 qtermwidget))
     (native-inputs
      (list lxqt-build-tools qttools))
     (arguments
@@ -1225,7 +1234,7 @@ QTermWidget.")
         (base32 "0cilzw7rz5m2klzpax7rrs5rr6whfda2svwzsn2jvmrirmh5by7r"))))
     (build-system cmake-build-system)
     (inputs
-     (list kwindowsystem libqtxdg qtbase-5 qtsvg-5 qtx11extras))
+     (list kwindowsystem libqtxdg qtbase-5 qtsvg-5 qtx11extras-5))
     (native-inputs
      (list pkg-config perl qttools))
     (arguments
@@ -1250,7 +1259,7 @@ easily publishing them on internet image hosting services.")
           (base32 "0fzgq7cyr7hx8qmq84xfgbsdx04mc1r7vzq5mz79j7bp2ysh134z"))))
     (build-system cmake-build-system)
     (inputs
-      (list glib json-glib libfm-qt qtbase-5 qtx11extras))
+      (list glib json-glib libfm-qt qtbase-5 qtx11extras-5))
     (native-inputs
       (list pkg-config lxqt-build-tools qttools))
     (arguments
@@ -1285,7 +1294,7 @@ like @command{tar} and @command{zip}.")
               qtbase-5
               qtsvg-5
               liblxqt
-              qtx11extras
+              qtx11extras-5
               libqtxdg))
       (native-inputs
         `(("lxqt-build-tools" ,lxqt-build-tools)

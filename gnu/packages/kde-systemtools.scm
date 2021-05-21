@@ -256,7 +256,7 @@ This package is part of the KDE base applications module.")
            oxygen-icons ;; default icon set
            pipewire-0.3
            qtbase-5
-           qtx11extras
+           qtx11extras-5
            xcb-util-image
            zlib))
     (home-page "https://kde.org/applications/internet/org.kde.krfb")
@@ -347,7 +347,7 @@ This package is part of the KDE administration module.")
            kwindowsystem
            qtbase-5
            qtsvg-5
-           qtx11extras))
+           qtx11extras-5))
     (home-page "https://www.kde.org/applications/system/yakuake/")
     (synopsis "Quad-style terminal emulator for KDE")
     (description "Yakuake is a drop-down terminal emulator based on KDE Konsole

@@ -180,7 +180,7 @@ human.")
            qrencode
            qtbase-5
            qtsvg-5
-           qtx11extras
+           qtx11extras-5
            quazip-0                     ; XC_KEESHARE
            readline
            yubikey-personalization      ; XC_YUBIKEY

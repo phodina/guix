@@ -865,13 +865,13 @@ support for MNG, TGA, TIFF and WBMP image formats.")))
     (description "The QtImageFormats module contains plugins for adding
 support for MNG, TGA, TIFF and WBMP image formats.")))
 
-(define-public qtx11extras
+(define-public qtx11extras-5
   (package (inherit qtsvg-5)
-    (name "qtx11extras")
+    (name "qtx11extras-5")
     (version "5.15.2")
     (source (origin
              (method url-fetch)
-             (uri (qt5-urls name version))
+             (uri (qt5-urls "qtx11extras" version))
              (sha256
               (base32
                "0gkfzj195v9flwljnqpdz3a532618yn4h2577nlsai56x4p7053h"))))
@@ -2135,7 +2135,7 @@ module provides support functions to the automatically generated code.")
        ("qtwebchannel" ,qtwebchannel)
        ("qtwebkit" ,qtwebkit)
        ("qtwebsockets" ,qtwebsockets)
-       ("qtx11extras" ,qtx11extras)
+       ("qtx11extras" ,qtx11extras-5)
        ("qtxmlpatterns" ,qtxmlpatterns)))
     (arguments
      `(#:modules ((srfi srfi-1)
@@ -2950,7 +2950,7 @@ color-related widgets.")
            qtwebchannel
            qtwebengine
            qtwebsockets
-           qtx11extras
+           qtx11extras-5
            qtxmlpatterns))
     (propagated-inputs
      (list python-shiboken-2))

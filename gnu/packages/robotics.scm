@@ -121,7 +121,7 @@ hundred times faster than real-time.")
              qtsvg-5
              qttools ;for libQt5Help, needed by "studio"
              qtwebkit
-             qtx11extras
+             qtx11extras-5
              eudev
              libxml2
              sdl2

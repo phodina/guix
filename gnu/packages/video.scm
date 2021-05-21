@@ -1964,7 +1964,7 @@ videoformats depend on the configuration flags of ffmpeg.")
        ("python" ,python-wrapper)
        ("qtbase" ,qtbase-5)
        ("qtsvg" ,qtsvg-5)
-       ("qtx11extras" ,qtx11extras)
+       ("qtx11extras" ,qtx11extras-5)
        ("samba" ,samba)
        ("sdl" ,sdl)
        ("sdl-image" ,sdl-image)
@@ -3356,7 +3356,7 @@ be used for realtime video capture via Linux-specific APIs.")
       pulseaudio
       qtbase-5
       qtsvg-5
-      qtx11extras
+      qtx11extras-5
       qtwayland
       speexdsp
       v4l-utils
@@ -3615,7 +3615,7 @@ making @dfn{screencasts}.")
            libxinerama
            pulseaudio
            qtbase-5
-           qtx11extras))
+           qtx11extras-5))
     (native-inputs (list pkg-config))
     (arguments
      `(#:configure-flags

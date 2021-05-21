@@ -453,7 +453,7 @@ score, keyboard, guitar, drum and controller views.")
            protobuf
            pulseaudio
            qtbase-5
-           qtx11extras
+           qtx11extras-5
            sqlite
            sparsehash
            taglib))
@@ -546,7 +546,7 @@ playing your music.")
            protobuf
            pulseaudio
            qtbase-5
-           qtx11extras
+           qtx11extras-5
            sqlite
            taglib))
     (home-page "https://www.strawberrymusicplayer.org/")
@@ -2971,7 +2971,7 @@ backends, including ALSA, OSS, Network and FluidSynth.")
                                "/manpages/docbook.xsl")))
              #t)))))
     (inputs
-     (list drumstick qtbase-5 qtsvg-5 qtx11extras))
+     (list drumstick qtbase-5 qtsvg-5 qtx11extras-5))
     (native-inputs
      (list libxslt ;for xsltproc
            docbook-xsl qttools pkg-config))
@@ -3299,7 +3299,7 @@ from the command line.")
      `(#:tests? #f))                    ; no "check" target
     (inputs
      `(("qt" ,qtbase-5)
-       ("qtx11extras" ,qtx11extras)
+       ("qtx11extras" ,qtx11extras-5)
        ("alsa-lib" ,alsa-lib)
        ("jack" ,jack-1)
        ("libsndfile" ,libsndfile)
@@ -4608,7 +4608,7 @@ are a C compiler and glib.  Full API documentation and examples are included.")
     (inputs
      `(("sdl" ,sdl)
        ("qtbase" ,qtbase-5)
-       ("qtx11extras" ,qtx11extras)
+       ("qtx11extras" ,qtx11extras-5)
        ("fltk" ,fltk)
        ("libogg" ,libogg)
        ("libsamplerate" ,libsamplerate)

@@ -177,7 +177,7 @@ This package is part of the KDE multimedia module.")
            qtquickcontrols
            qtquickcontrols2
            qtsvg-5
-           qtx11extras
+           qtx11extras-5
            ;; TODO: upnpqt https://gitlab.com/homeautomationqt/upnp-player-qt
            vlc))
     (arguments
@@ -462,7 +462,7 @@ available CD drives.")
            libxscrnsaver
            oxygen-icons ; default icon set
            qtbase-5
-           qtx11extras
+           qtx11extras-5
            solid
            v4l-utils ; libdvbv5
            vlc))
@@ -520,7 +520,7 @@ autoloading of subtitle files for use while playing video.")
            qtgraphicaleffects
            qtquickcontrols
            qtquickcontrols2 ; not listed as dependency
-           qtx11extras))
+           qtx11extras-5))
     (arguments
      (list #:tests? #f ; test program gets built, but is not found
            #:configure-flags

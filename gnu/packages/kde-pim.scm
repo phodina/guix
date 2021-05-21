@@ -1439,7 +1439,7 @@ information in non-ASCII character sets.")
            libkdepim
            oxygen-icons ; default icon set, required for tests
            qtbase-5
-           qtx11extras))
+           qtx11extras-5))
     (home-page "https://kontact.kde.org/components/knotes.html")
     (synopsis "Note-taking utility")
     (description "KNotes lets you write the computer equivalent of sticky

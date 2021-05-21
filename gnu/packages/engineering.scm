@@ -2490,7 +2490,7 @@ comments.")))
            qtsvg-5
            qtwebchannel
            qtwebengine
-           qtx11extras
+           qtx11extras-5
            qtxmlpatterns
            sqlite
            tbb-2020                     ; Same version as opencascade-occt

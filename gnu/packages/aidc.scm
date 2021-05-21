@@ -208,7 +208,7 @@ C/C++ programs to use its capabilities without restrictions or overhead.")
        ("libjpeg" ,libjpeg-turbo)
        ("perl" ,perl)
        ("python" ,python)
-       ("qtx11extras" ,qtx11extras)
+       ("qtx11extras" ,qtx11extras-5)
        ("v4l-utils" ,v4l-utils)))
     (propagated-inputs
      ;; These are in 'requires' field of .pc files.

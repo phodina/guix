@@ -2970,7 +2970,7 @@ different audio devices such as ALSA or PulseAudio.")
     (arguments
      '(#:tests? #f))                    ; no check target
     (inputs
-     (list jack-1 alsa-lib portaudio qtbase-5 qtx11extras))
+     (list jack-1 alsa-lib portaudio qtbase-5 qtx11extras-5))
     (native-inputs
      (list pkg-config qttools))
     (home-page "https://qjackctl.sourceforge.io/")
@@ -3780,7 +3780,7 @@ interface.")
     (native-inputs
      (list qttools pkg-config))
     (inputs
-     (list fluidsynth qtbase-5 qtx11extras))
+     (list fluidsynth qtbase-5 qtx11extras-5))
     (home-page "https://qsynth.sourceforge.io")
     (synopsis "Graphical user interface for FluidSynth")
     (description
