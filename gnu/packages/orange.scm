@@ -172,7 +172,7 @@ GUI based workflow.  It is primarily used in the Orange framework.")
            python-xlrd
            python-xlsxwriter
            qtbase-5
-           qtsvg
+           qtsvg-5
            xdg-utils))
     (home-page "https://orangedatamining.com/")
     (synopsis "Component-based data mining framework")

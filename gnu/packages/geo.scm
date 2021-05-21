@@ -2604,7 +2604,7 @@ growing set of geoscientific methods.")
            qtkeychain
            qtlocation
            qtserialport
-           qtsvg
+           qtsvg-5
            qwt
            ;;("saga" ,saga)
            sqlite))

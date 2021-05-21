@@ -2927,7 +2927,7 @@ browser.")
                                "/manpages/docbook.xsl")))
              #t)))))
     (inputs
-     (list qtbase-5 qtsvg qttools alsa-lib))
+     (list qtbase-5 qtsvg-5 qttools alsa-lib))
     (native-inputs
      (list pkg-config
            libxslt ; for xsltproc
@@ -2971,7 +2971,7 @@ backends, including ALSA, OSS, Network and FluidSynth.")
                                "/manpages/docbook.xsl")))
              #t)))))
     (inputs
-     (list drumstick qtbase-5 qtsvg qtx11extras))
+     (list drumstick qtbase-5 qtsvg-5 qtx11extras))
     (native-inputs
      (list libxslt ;for xsltproc
            docbook-xsl qttools pkg-config))
@@ -4759,7 +4759,7 @@ includes LV2 plugins and a JACK standalone client.")
            qtgraphicaleffects
            qtquickcontrols2
            qtscript
-           qtsvg
+           qtsvg-5
            qtxmlpatterns))
     (native-inputs
      (list pkg-config qttools))
@@ -4826,7 +4826,7 @@ sample library.")
            pcre
            pulseaudio                   ; required by rtaudio
            qtbase-5
-           qtsvg
+           qtsvg-5
            rtaudio
            rubberband
            sord))
@@ -5497,7 +5497,7 @@ discard bad quality ones.
            portaudio
            qtbase-5
            qtmultimedia
-           qtsvg))
+           qtsvg-5))
     (native-inputs
      `(("gettext" ,gettext-minimal)
        ("hicolor-icon-theme" ,hicolor-icon-theme)

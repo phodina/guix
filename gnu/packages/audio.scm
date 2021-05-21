@@ -3108,7 +3108,7 @@ link REQUIRED)"))))))
                   yaml-cpp
                   qtbase-5
                   qtdeclarative
-                  qtsvg
+                  qtsvg-5
                   qtwebchannel
                   qtwebsockets))
     (propagated-inputs                  ;to get native-search-path

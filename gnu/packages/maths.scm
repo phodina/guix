@@ -3052,7 +3052,7 @@ ASCII text files using Gmsh's own scripting language.")
            python-h5py ;optional, for HDF5 data
            python-pyqt
            qtbase-5
-           qtsvg))
+           qtsvg-5))
     (propagated-inputs
      (list python-numpy))
     (home-page "https://veusz.github.io/")

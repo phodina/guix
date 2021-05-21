@@ -649,7 +649,7 @@ other machines/servers.  Electrum does not download the Bitcoin blockchain.")
            python-requests
            python-stem
            python-trezor
-           qtsvg
+           qtsvg-5
            zlib))
     (home-page "https://electroncash.org/")
     (synopsis "Bitcoin Cash wallet")
@@ -805,7 +805,7 @@ the Monero command line client and daemon.")
        ("qtgraphicaleffects" ,qtgraphicaleffects)
        ("qtquickcontrols" ,qtquickcontrols)
        ("qtquickcontrols2",qtquickcontrols2)
-       ("qtsvg" ,qtsvg)
+       ("qtsvg" ,qtsvg-5)
        ("qtxmlpatterns" ,qtxmlpatterns)))
     (arguments
      `(#:tests? #f ; No tests

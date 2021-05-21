@@ -232,7 +232,7 @@ XMPP-based sessions.")
        ("qca" ,qca)
        ("qtbase" ,qtbase-5)
        ("qtmultimedia" ,qtmultimedia)
-       ("qtsvg" ,qtsvg)
+       ("qtsvg" ,qtsvg-5)
        ("qtwebkit" ,qtwebkit)
        ("qtx11extras" ,qtx11extras)
        ("x11" ,libx11)
@@ -1759,7 +1759,7 @@ instant messenger with audio and video chat capabilities.")
            openal
            qrencode
            qtbase-5
-           qtsvg
+           qtsvg-5
            sqlcipher))
     (home-page "https://qtox.github.io/")
     (synopsis "Tox chat client using Qt")
@@ -2396,7 +2396,7 @@ for the Matrix protocol.  It is built on to of @code{Boost.Asio}.")
            qtgraphicaleffects
            qtmultimedia
            qtquickcontrols2
-           qtsvg
+           qtsvg-5
            spdlog
            single-application-qt5
            xcb-util-wm
@@ -2435,7 +2435,7 @@ notification, emojis, E2E encryption, and voip calls.")
            qtmultimedia
            qtquickcontrols
            qtquickcontrols2
-           qtsvg
+           qtsvg-5
            qttools
            xdg-utils))
     (arguments
@@ -2974,7 +2974,7 @@ social and chat platform.")
        ("qtbase" ,qtbase-5)
        ("qtkeychain" ,qtkeychain)
        ("qtmultimedia" ,qtmultimedia)
-       ("qtsvg" ,qtsvg)
+       ("qtsvg" ,qtsvg-5)
        ("qtx11extras" ,qtx11extras)
        ("usrsctp" ,usrsctp)
        ("x11" ,libx11)

@@ -211,7 +211,7 @@
                (copy-recursively "unix/resources" share))
              #t)))))
     (inputs
-     (list boost muparser freetype qtbase-5 qtsvg))
+     (list boost muparser freetype qtbase-5 qtsvg-5))
     (native-inputs
      (list pkg-config which))
     (home-page "https://librecad.org/")
@@ -708,7 +708,7 @@ multipole-accelerated algorithm.")
     (inputs
      `(("qtbase" ,qtbase-5)
        ("qtserialport" ,qtserialport)
-       ("qtsvg" ,qtsvg)
+       ("qtsvg" ,qtsvg-5)
        ("libgit2" ,libgit2)
        ("boost" ,boost)
        ("zlib" ,zlib)
@@ -2114,7 +2114,7 @@ parallel computing platforms.  It also supports serial execution.")
         (base32 "0smp1p7wnrj0vh4rmz1cr2krfawc2lzx0pbzmgyay7xdp6jxympr"))))
     (build-system gnu-build-system)
     (inputs
-     (list qtbase-5 qtsvg zlib))
+     (list qtbase-5 qtsvg-5 zlib))
     (native-inputs
      (list qttools ; for lrelease
            unzip))
@@ -2274,7 +2274,7 @@ simulation.")
      (list pkg-config))
     (inputs
      (list qtbase-5
-           qtsvg
+           qtsvg-5
            openssl
            ;; Depends on radare2 4.5.1 officially, builds and works fine with
            ;; radare2 5.0.0 but fails to build with radare2 5.1.1.
@@ -2487,7 +2487,7 @@ comments.")))
            python-wrapper
            qtbase-5
            qtdeclarative
-           qtsvg
+           qtsvg-5
            qtwebchannel
            qtwebengine
            qtx11extras

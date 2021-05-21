@@ -675,7 +675,7 @@ scripts/input/X11/C/Shell/HTML/Dired): 49KB.
            qtdeclarative
            qtmultimedia
            qtquickcontrols
-           qtsvg
+           qtsvg-5
            qtwebchannel))
     (propagated-inputs                  ; To get native-search-path
      (list qtwebengine))
@@ -775,7 +775,7 @@ environment with Markdown markup.")
                    #:categories "Office;WordProcessor;"))
                #t))))))
     (inputs
-     (list pandoc python-lxml python-markdown python-pyqt qtsvg))
+     (list pandoc python-lxml python-markdown python-pyqt qtsvg-5))
     (home-page "http://www.theologeek.ch/manuskript/")
     (synopsis "Tool for writers")
     (description "Manuskript provides a rich environment to help
@@ -875,7 +875,7 @@ editors.")
            perl
            python-wrapper
            qtbase-5
-           qtsvg
+           qtsvg-5
            sqlite))
     (arguments
      `(#:tests? #f                      ; no check target

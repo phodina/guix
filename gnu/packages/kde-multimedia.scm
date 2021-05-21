@@ -176,7 +176,7 @@ This package is part of the KDE multimedia module.")
            qtmultimedia
            qtquickcontrols
            qtquickcontrols2
-           qtsvg
+           qtsvg-5
            qtx11extras
            ;; TODO: upnpqt https://gitlab.com/homeautomationqt/upnp-player-qt
            vlc))
@@ -268,7 +268,7 @@ This package is part of the KDE multimedia module.")
            phonon
            phonon-backend-gstreamer
            qtbase-5
-           qtsvg
+           qtsvg-5
            taglib))
     (home-page "https://kde.org/applications/multimedia/org.kde.juk")
     (synopsis "Music jukebox / music player")
@@ -612,7 +612,7 @@ This package is part of the KDE multimedia module.")
            phonon
            qtbase-5
            cairo
-           qtsvg
+           qtsvg-5
            qtx11extras
            xcb-util
            xcb-util-cursor

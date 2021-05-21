@@ -920,7 +920,7 @@ satellites.")
            portaudio
            pulseaudio
            qtbase-5
-           qtsvg
+           qtsvg-5
            volk))
     (arguments
      `(#:tests? #f))                    ; no tests
@@ -1854,7 +1854,7 @@ Compatible hardware/software:
            opus
            pulseaudio
            qtbase-5
-           qtsvg
+           qtsvg-5
            qtwebkit
            qwt
            speexdsp
