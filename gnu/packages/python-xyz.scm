@@ -1817,6 +1817,33 @@ helpers.")
       displaying tabular data in a visually appealing ASCII table format.")
     (license license:bsd-3)))
 
+(define-public python-pirate-get
+  (package
+    (name "python-pirate-get")
+    (version "0.4.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pirate-get" version))
+       (sha256
+        (base32
+         "07s5ss9dxccx1mip7pyga1fagywkqchxmzz55ng47ac9053ffxkq"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-colorama" ,python-colorama)
+       ("python-pyperclip" ,python-pyperclip)
+       ("python-veryprettytable"
+        ,python-veryprettytable)))
+    (home-page
+     "https://github.com/vikstrous/pirate-get")
+    (synopsis
+     "Command line interface for The Pirate Bay")
+    (description
+     "@code{pirate-get} is a convenient command line tool (inspired by APT)
+to speed up your trip to the Pirate Bay and get your completely legal
+torrents more quickly.")
+    (license license:gpl3)))
+
 (define-public python2-humanfriendly
   (let ((base (package-with-python2
                 (strip-python2-variant python-humanfriendly))))
