@@ -4558,6 +4558,32 @@ when provided with a valid relative path / alias path, it will return you with
 a string of its real absolute path in the system.")
       (license license:expat))))
 
+(define-public go-gitlab-runner
+  (package
+    (name "gitlab-runner")
+    (version "v14.1.0-rc1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://gitlab.com/gitlab-org/gitlab-runner")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0id5wv3v2s15b6jpp0svs5dzfvbcc1h16hvlc60j2gnr6b568jaq"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "gitlab.com/gitlab-org/gitlab-runner"
+       #:tests? #f))
+(synopsis "GitLab Runner is the open source project that is used to run
+your CI/CD jobs and send the results back to GitLab")
+  (description "The official GitLab Runner written in Go. It runs tests
+and sends the results to GitLab. GitLab CI is the open-source continuous
+integration service included with GitLab that coordinates the testing.")
+  (home-page "https://gitlab.com/gitlab-org/gitlab-runner")
+  (license license:expat)))
+
 (define-public go-gitlab-com-ambrevar-damerau
   (let ((commit "883829e1f25fad54015772ea663e69017cf22352")
         (revision "0"))
