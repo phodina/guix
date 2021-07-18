@@ -1793,6 +1793,30 @@ helpers.")
     (properties `((python2-variant . ,(delay python2-humanfriendly))))
     (license license:expat)))
 
+(define-public python-very-pretty-table
+  (package
+    (name "python-very-pretty-table")
+    (version "0.8.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "veryprettytable" version))
+       (sha256
+        (base32
+         "1k1rifz8x6qcicmx2is9vgxcj0qb2f5pvzrp7zhmvbmci3yack3f"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-colorama" ,python-colorama)
+       ("python-termcolor" ,python-termcolor)))
+    (home-page
+     "https://github.com/smeggingsmegger/VeryPrettyTable")
+    (synopsis
+     "Visually appealing ASCII table output format")
+    (description
+     "Functions and classes in @code{very-pretty-table} allow for easily
+      displaying tabular data in a visually appealing ASCII table format.")
+    (license license:bsd-3)))
+
 (define-public python2-humanfriendly
   (let ((base (package-with-python2
                 (strip-python2-variant python-humanfriendly))))
