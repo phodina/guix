@@ -41,6 +41,7 @@
 ;;; Copyright © 2021 François J. <francois-oss@avalenn.eu>
 ;;; Copyright © 2021 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2021 jgart <jgart@dismail.de>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -96,6 +97,7 @@
   #:use-module (gnu packages groff)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages guile-xyz)
+  #:use-module (gnu packages haskell-apps)
   #:use-module (gnu packages image)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages mail)
@@ -1276,6 +1278,75 @@ and releases in bigger software projects.  The git-flow library of git
 subcommands helps automate some parts of the flow to make working with it a
 lot easier.")
     (license license:bsd-2)))
+
+(define-public git-issue
+  (let ((commit "67aacad35888b4c51e2d7be35c86fef137874f12")
+        (revision "1"))
+    (package
+      (name "git-issue")
+      (version (git-version "0.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri
+                 (git-reference
+                  (url "https://github.com/dspinellis/git-issue")
+                  (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "1z6dpwbikmiq5acpbji4kvmxqc2jw995rfk5703k5mvp5ps9a29q"))))
+      (build-system gnu-build-system)
+      (arguments
+       '(#:make-flags (list (string-append "PREFIX=" (assoc-ref %outputs "out")))
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'configure)
+           (delete 'build)
+           (add-before 'check 'setup-env
+             (lambda _
+               (setenv "HOME" (getenv "TMPDIR"))
+               (invoke "git" "config" "--global" "user.email" "test")
+               (invoke "git" "config" "--global" "user.name" "Test")
+               (substitute* "test.sh"
+                 (("! git diff") "git diff")
+                 (("#!/bin/sh") (string-append "#!" (which "bash")))
+                 (("gi=.*") (string-append "gi=" (getcwd) "/git-issue.sh\n")))
+               (substitute* "Makefile"
+                 (("shellcheck -x") "shellcheck --exclude=SC2001,SC3043,SC3003 -x"))))
+           (replace 'check
+             (lambda* (#:key tests? #:allow-other-keys)
+               (when tests?
+                 (invoke "make" "test"))))
+           (add-before 'install 'patch-paths
+             (lambda* (#:key build-inputs #:allow-other-keys)
+               (let ((out (assoc-ref %outputs "out"))
+                     (paths (map
+                             (lambda (input)
+                               (string-append (assoc-ref build-inputs input) "/bin"))
+                             '("coreutils" "curl" "findutils"
+                               "git-minimal" "grep" "jq" "sed"))))
+                 (for-each
+                  (lambda (program)
+                    (wrap-program
+                        (string-append out "/" program)
+                      `("PATH" prefix ,paths)))
+                  '("bin/git-issue" "lib/git-issue/import-export.sh"))))))))
+      (native-inputs `(("shellcheck" ,shellcheck)))
+      (inputs `(("bash-minimal" ,bash-minimal)
+                ("git" ,git)
+                ("coreutils" ,coreutils)
+                ("grep" ,grep)
+                ("curl" ,curl)
+                ("findutils" ,findutils)
+                ("sed" ,sed)
+                ("util-linux" ,util-linux)
+                ("jq" ,jq)))
+      (synopsis "Git-based decentralized issue management")
+      (description "Git-issue provide a minimalist decentralized issue
+management system based on Git, offering (optional) bidirectional
+integration with GitHub and GitLab issue management.")
+      (home-page "https://github.com/dspinellis/git-issue")
+      (license license:gpl3+))))
 
 (define-public stgit
   (package
