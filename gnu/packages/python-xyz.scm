@@ -152,6 +152,7 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages adns)
+  #:use-module (gnu packages admin)
   #:use-module (gnu packages aidc)
   #:use-module (gnu packages attr)
   #:use-module (gnu packages backup)
@@ -1455,6 +1456,76 @@ planar geometric objects.  It is based on the @code{GEOS} library.")
 and URL-safe UUIDs.  UUIDs are generated using the built-in Python @code{uuid}
 module and then similar looking characters are removed.")
     (license license:bsd-3)))
+
+; https://github.com/NixOS/nixpkgs/pull/118444/files
+(define-public pmbootstrap
+  (package
+    (name "pmbootstrap")
+    (version "1.47.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pmbootstrap" version))
+       (sha256
+        (base32
+         "0g4wsnw4ydp6rws3pa5kwy7qrivjwha3sbqqyf1vqk40lzljgzxn"))))
+    (build-system python-build-system)
+    (arguments
+     (list #:tests? #f
+       #:phases
+       #~(modify-phases %standard-phases
+;         (add-after 'unpack 'replace-programs
+;           (lambda* (#:key inputs #:allow-other-keys)
+;             (substitute* "pmb/chroot/apk_static.py"
+;               (("\"openssl\"") (string-append "\"" #$openssl
+;                                               "/bin/openssl\"")))
+;			 (substitute* "pmb/config/sudo.py"
+;			 (("'sudo'") (string-append "'/run/setuid-programs/sudo'"))
+;			 (("'doas'") (string-append "'/run/setuid-programs/doas'")))
+;             (substitute* "pmb/config/__init__.py"
+;               (("\"git\"") (string-append "\"" #$git "/bin/git\""))
+;               (("\"openssl\"") (string-append "\""  #$openssl
+;                                               "/bin/openssl\""))
+;               (("\"ps\"") (string-append "\"" #$procps
+;                                          "/bin/ps\"")))))
+		 (add-after 'install 'fix-paths
+		 (lambda* _
+		 (let ((git (string-append #$git "/bin/"))
+		       (procps (string-append #$procps "/bin"))
+			   (openssl (string-append #$openssl "/bin"))
+			   (sudo "/run/setuid-programs"))
+                     (wrap-program (string-append #$output "/bin/pmbootstrap")
+                       `("PATH" ":" suffix
+                         ,(list git procps openssl sudo))))))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               ;; To import pmb_test module
+               (setenv "PYTHONPATH"
+                       (string-append #$output "/test/pmb_test:"
+                                      (getenv "PYTHONPATH")))
+               (invoke "pytest" "-vv"))))
+         ;; Circular dependency with pmbootstrap
+         (delete 'sanity-check))))
+    (native-inputs (list python-pytest python-pyopenssl))
+    (inputs (list git procps openssl sudo))
+    (home-page "https://postmarketos.org")
+    (synopsis "Build and flash tool for postmarketOS")
+    (description
+     "Bootstrap program that abstracts everything in chroots and therefore
+basically runs on top of any Linux distribution. Features:
+@enumerate
+@item chroot setup (distro-independent QEMU user emulation
+@item clean chroot shutdown (umount) and zapping
+@item build software as packages
+@item cross-compile all armhf-packages
+@item effective caching out of the box (survives chroot zaps)
+@item installation targets
+@item flasher abstractions
+@item logging
+@item security
+@end enumerate")
+    (license license:gpl3+)))
 
 (define-public python-logwrap
   (package
