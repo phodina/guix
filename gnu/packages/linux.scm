@@ -129,6 +129,7 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages polkit)
   #:use-module (gnu packages popt)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
@@ -2679,6 +2680,56 @@ This package also includes @command{ip6tables}, which is used to configure the
 IPv6 packet filter.
 
 Both commands are targeted at system administrators.")
+    (license license:gpl2+)))
+
+(define-public bolt
+  (package
+    (name "bolt")
+    (version "0.9.1")
+    (source (origin
+              (method git-fetch)
+              (uri
+               (git-reference
+                (url "https://gitlab.freedesktop.org/bolt/bolt")
+                (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1phgp8fs0dlj74kbkqlvfniwc32daz47b3pvsxlfxqzyrp77xrfm"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:configure-flags (list "--localstatedir=/var")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'replace-directories
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* "meson.build"
+               (("udev.get_pkgconfig_variable..udevdir..")
+                (string-append "'" (assoc-ref %outputs "out") "/lib/udev'")))
+             (substitute* "meson.build"
+               ((".*scripts/meson-install.sh.*") ""))))
+         (add-before 'install 'no-polkit-magic
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; Meson ‘magically’ invokes pkexec, which fails (not setuid).
+             (setenv "PKEXEC_UID" "something"))))))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("glib:bin" ,glib "bin")
+       ("asciidoc" ,asciidoc)
+       ("umockdev" ,umockdev)))
+    (inputs
+     `(("eudev" ,eudev)
+       ("dbus" ,dbus)
+       ("polkit" ,polkit)))
+    (synopsis "Userspace system daemon for Thunderbolt")
+    (description "Userspace daemon @code{boltd} exposes devices via D-Bus to clients.
+It stores database of previously authorized devices and depending
+on the policy set for the individual devices, automatically authorize newly
+connected devices without user interaction.  It also adapts its behaivour when
+iommu support is detected.
+Command line utility 'boltctl' can be used to manage thundebolt devices.
+It can list devices, monitor changes and initiate authorization of device.")
+    (home-page "https://gitlab.freedesktop.org/bolt/bolt")
     (license license:gpl2+)))
 
 (define-public jitterentropy-rngd
