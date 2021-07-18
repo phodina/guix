@@ -47,6 +47,7 @@
 ;;; Copyright © 2022 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2022 Dhruvin Gandhi <contact@dhruvin.dev>
 ;;; Copyright © 2015, 2022 David Thompson <davet@gnu.org>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -1353,6 +1354,36 @@ and releases in bigger software projects.  The git-flow library of git
 subcommands helps automate some parts of the flow to make working with it a
 lot easier.")
     (license license:bsd-2)))
+
+(define-public git-issues
+  (let ((commit "67aacad35888b4c51e2d7be35c86fef137874f12")
+        (revision "1"))
+    (package
+      (name "git-issues")
+      (version commit)
+      (source (origin
+                (method git-fetch)
+                (uri
+                 (git-reference
+                  (url "https://github.com/dspinellis/git-issue")
+                  (commit version)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "1z6dpwbikmiq5acpbji4kvmxqc2jw995rfk5703k5mvp5ps9a29q"))))
+      (build-system gnu-build-system)
+      (arguments
+       '(#:tests? #f
+         #:make-flags (list (string-append "PREFIX="(assoc-ref %outputs "out")))
+         #:phases (modify-phases %standard-phases
+                    (delete 'configure)
+                    (delete 'build))))
+      (synopsis "Git-based decentralized issue management")
+      (description "Git-issues provide a minimalist decentralized issue
+management system based on Git, offering (optional) bidirectional integration
+with GitHub and GitLab issue management.")
+      (home-page "https://github.com/dspinellis/git-issue")
+      (license license:gpl3+))))
 
 (define-public stgit
   (package
