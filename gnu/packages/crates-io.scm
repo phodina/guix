@@ -18,6 +18,7 @@
 ;;; Copyright © 2021 Antero Mejr <antero@kodmin.com>
 ;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021 Vinicius Monego <monego@posteo.net>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37523,6 +37524,35 @@ network services using futures.")
      "Ropey is a UTF-8 text rope for Rust, designed to be the backing
 text-buffer for applications such as text editors.  Ropey is fast, robust, and
 can handle huge texts and memory-incoherent edits with ease.")
+    (license license:expat)))
+
+(define-public rust-rot8-0.1
+  (package
+    (name "rust-rot8")
+    (version "0.1.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "rot8" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "15mhszk9qy2q49dpab4p0d9d4aph61yshaxjf02mhdx07n9qpnmh"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-clap" ,rust-clap-2)
+         ("rust-glob" ,rust-glob-0.3)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-json" ,rust-serde-json-1))))
+    (home-page "https://github.com/efernau/rot8")
+    (synopsis
+      "Screen rotation daemon")
+    (description
+      "Automatic rotation for modern Linux screen and input device.  Compatible
+with wayland and X11.  Uses built-in accelerometer with configurable threshold.")
     (license license:expat)))
 
 (define-public rust-route-recognizer-0.2
