@@ -46450,6 +46450,35 @@ text-buffer for applications such as text editors.  Ropey is fast, robust, and
 can handle huge texts and memory-incoherent edits with ease.")
     (license license:expat)))
 
+(define-public rust-rot8-0.1
+  (package
+    (name "rust-rot8")
+    (version "0.1.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "rot8" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "15mhszk9qy2q49dpab4p0d9d4aph61yshaxjf02mhdx07n9qpnmh"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-clap" ,rust-clap-2)
+         ("rust-glob" ,rust-glob-0.3)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-json" ,rust-serde-json-1))))
+    (home-page "https://github.com/efernau/rot8")
+    (synopsis
+      "Screen rotation daemon")
+    (description
+      "Automatic rotation for modern Linux screen and input device.  Compatible
+with wayland and X11.  Uses built-in accelerometer with configurable threshold.")
+    (license license:expat)))
+
 (define-public rust-rowan-0.15
   (package
     (name "rust-rowan")
