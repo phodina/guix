@@ -32,6 +32,7 @@
 ;;; Copyright © 2021 Xinglu Chen <public@yoctocell.xyz>
 ;;; Copyright © 2021 Raghav Gururajan <rg@raghavgururajan.name>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -4227,6 +4228,27 @@ command, which can be used as a minimal Perl read-eval-print loop (REPL).")
     (synopsis "Allows you to declare real exception classes in Perl")
     (description "Exception::Class allows you to declare exception hierarchies
 in your modules in a \"Java-esque\" manner.")
+    (license (package-license perl))))
+
+(define-public perl-expect
+  (package
+    (name "perl-expect")
+    (version "1.15")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+	     "mirror://cpan/authors/id/R/RG/RGIERSIG/Expect-"
+             version
+             ".tar.gz"))
+       (sha256
+        (base32
+         "048iqpnzqr0bzwr5y5xmj0h05pqyj5za5d0s4l5v9kxahlwwwjkp"))))
+    (build-system perl-build-system)
+    (home-page "https://metacpan.org/release/RGIERSIG/Expect-1.15")
+    (native-inputs `(("perl-io-tty" ,perl-io-tty)))
+    (synopsis "Interact with interactive tasks")
+    (description "Expect.pm is built to either spawn a process or take an existing filehandle and interact with it such that normally interactive tasks can be done without operator assistance. This concept makes more sense if you are already familiar with the versatile Tcl version of Expect.")
     (license (package-license perl))))
 
 (define-public perl-exporter
