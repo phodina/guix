@@ -12,6 +12,7 @@
 ;;; Copyright © 2022 Zhu Zihao <all_but_last@163.com>
 ;;; Copyright © 2022 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2022 Marius Bakke <marius@gnu.org>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,22 +33,30 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages backup)
   #:use-module (gnu packages bash)
+  #:use-module (gnu packages commencement)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages check)
   #:use-module (gnu packages cpp)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages documentation)
+  #:use-module (gnu packages efi)
+  #:use-module (gnu packages elf)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
+  #:use-module (gnu packages gnome)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages man)
+  #:use-module (gnu packages mingw)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages openldap)
+  #:use-module (gnu packages package-management)
   #:use-module (gnu packages pciutils)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
@@ -56,14 +65,17 @@
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages sqlite)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages virtualization)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system meson)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system python)
@@ -433,6 +445,127 @@ clock multipliers, core voltage, and time spent in different C-states.  This
 information can be viewed in real time and/or logged to a file.")
       (supported-systems (list "x86_64-linux"))
       (license license:gpl2))))
+
+(define-public fwupd
+ (package
+  (name "fwupd")
+  ;(version "1.5.11")
+  (version "master")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+                  (url "https://github.com/fwupd/fwupd")
+                  (commit version)))
+      ;            (patches '("patches/add-option-for-installation-sysconfdir.patch" "patches/fix-paths.patch" "patches/install-fwupdplugin-to-out.patch" "patches/installed-tests-path.patch"))
+            (sha256
+             (base32
+              ;"1ghx9l7qvycbhpgwhzj63asadsr2yp8bzzjz88gzvzx7jj6s971g"))))
+              "1fxx2s7896axqbaqjl0l593dslg13whbnd60nbyvk84wih38wvzr"))))
+  (build-system meson-build-system)
+  ;(outputs '("out" "lib" "dev" "devdoc" "man" "installedTests"))
+  (native-inputs
+    `(("help2man" ,help2man)
+      ("pkg-config" ,pkg-config)
+      ("git" ,git)
+      ("gcc-toolchain" ,gcc-toolchain)
+      ("glib:bin" ,glib "bin")
+      ("gobject-introspection" ,gobject-introspection)
+      ("umockdev" ,umockdev)
+      ("gtk-doc" ,gtk-doc)
+      ("gettext" ,gnu-gettext)))
+  (inputs
+    `(("fwupd-efi" ,fwupd-efi)
+      ("python-pygobject" ,python-pygobject)
+      ("python-pycairo" ,python-pycairo)
+      ("python-pillow" ,python-pillow)
+      ("pango" ,pango)
+      ("cairo" ,cairo)
+      ("libelf" ,libelf)
+      ("mingw-w64-tools" ,mingw-w64-tools)
+      ("libsmbios" ,libsmbios)
+      ("efibootmgr" ,efibootmgr)
+      ("tpm2-tss" ,tpm2-tss)
+      ("polkit" ,polkit)
+      ("json-glib" ,json-glib)
+      ("gcab" ,gcab)
+      ("gnutls", gnutls)
+      ("libjcat" ,libjcat)
+      ("libgudev" ,libgudev)
+      ("libxmlb" ,libxmlb)
+      ("curl" ,curl)
+      ("gusb" ,gusb)
+      ("sqlite" ,sqlite)
+      ("libarchive" ,libarchive)
+      ("vala" ,vala)
+      ("gnu-efi" ,gnu-efi)))
+  (arguments
+    `(#:tests? #f
+      #:configure-flags (list
+;      #:configure-flags (list "-Dgtkdoc=true"
+;      "-Dplugin_dummy=true"
+;      ; We are building the official releases.
+;      "-Dsupported_build=true"
+;      ; Would dlopen libsoup to preserve compatibility with clients linking against older fwupd.
+;      ; https://github.com/fwupd/fwupd/commit/173d389fa59d8db152a5b9da7cc1171586639c97
+;      "-Dsoup_session_compat=false"
+;      (string-append "-Dudevdir=" (assoc-ref %outputs "out") "/lib/udev")
+      "-Dsystemd=false"
+;      ;; "-Dinstalled_test_prefix=${placeholder "installedTests"}"
+;      (string-append "-Defi-libdir=" (assoc-ref %build-inputs "efibootmgr") "/lib")
+;      (string-append "-Defi-ldsdir=" (assoc-ref %build-inputs "efibootmgr") "/lib")
+;      (string-append "-Defi-includedir=" (assoc-ref %build-inputs "efibootmgr") "/include/efi")
+      (string-append "-Defi-includedir=" (assoc-ref %build-inputs "gnu-efi") "/include/efi")
+;      "-Defi_sbat_distro_id=guix"
+;      "-Defi_sbat_distro_summary=GuixSD"
+;      "-Defi_sbat_distro_pkgname=fwupd"
+;      ; Replace with package version?
+      (string-append "-Defi_sbat_distro_version=1.5.11"))
+;      ;"-Defi_sbat_distro_url=https://search.nixos.org/packages?channel=unstable&show=fwupd&from=0&size=50&sort=relevance&query=fwupd"
+;      "--localstatedir=/var"
+;      "--sysconfdir=/etc"
+;      (string-append "-Dsysconfdir_install=" (assoc-ref %outputs "out") "/etc")
+;      ; We do not want to place the daemon into lib (cyclic reference)
+;      (string-append "--libexecdir=" (assoc-ref %outputs "out") "/libexec")
+;      ; Our builder only adds $lib/lib to rpath but some things link
+;      ; against libfwupdplugin which is in $out/lib.
+;      (string-append "-Dc_link_args=-Wl,-rpath," "/lib")) ;(assoc-ref %outputs "out") "/lib"))
+      #:phases (modify-phases %standard-phases
+                    (add-after 'unpack 'fix-libjcat
+           (lambda* (#:key inputs #:allow-other-keys)
+                     (substitute* "meson.build"
+;                        (("^libjcat.*")
+;                         (string-append "libjcat='" (assoc-ref inputs "libjcat") "'\n"))
+                         (("dependency\\('efiboot'\\)")
+                         (string-append "'" (assoc-ref inputs "efibootmgr") "'"))) #t)))))
+;                         ;(string-append "libjcat='" (assoc-ref inputs "libjcat") "'"))))))))
+  (synopsis "Daemon to allow session software to update firmware")
+  (description "This project aims to make updating firmware on Linux automatic,
+safe and reliable.")
+  (home-page "https://fwupd.org/")
+  (license license:lgpl2.1)))
+
+(define-public fwupd-efi
+ (package
+  (name "fwupd-efi")
+  (version "1.1")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+                   (url "https://github.com/fwupd/fwupd-efi")
+                   (commit version)))
+            (sha256
+             (base32
+              "1bxxhmc47vzjvhqlqr0f8hkghx82yb2ihy29y9g957rz9q12nwhb"))))
+  (build-system meson-build-system)
+;  (arguments
+;    `(#:configure-flags (list
+;      (string-append "-Defi-includedir=" (assoc-ref %build-inputs "gnu-efi") "/include/efi"))))
+  (native-inputs `(("mingw-w64-tools" ,mingw-w64-tools)))
+  (inputs `(("gnu-efi" ,gnu-efi)))
+  (synopsis "EFI Application used by uefi-capsule plugin in fwupd")
+  (description "")
+  (home-page "https://github.com/fwupd/fwupd-efi")
+  (license license:lgpl2.1)))
 
 (define-public libsmbios
   (package
