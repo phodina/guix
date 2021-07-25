@@ -25,6 +25,7 @@
 ;;; Copyright © 2021 pineapples <guixuser6392@protonmail.com>
 ;;; Copyright © 2021 Robby Zambito <contact@robbyzambito.me>
 ;;; Copyright © 2021 John Kehayias <john.kehayias@protonmail.com>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -951,6 +952,35 @@ Python.")
 
 (define-public python2-pyxdg
   (package-with-python2 python-pyxdg))
+
+(define-public oguri
+  (let ((commit "6937fee10a9b0ef3ad8f94f606c0e0d9e7dec564")
+        (revision "1"))
+  (package
+    (name "oguri")
+    (version (git-version "0.1-pre" revision commit))
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/vilhalmer/oguri")
+                    (commit commit)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "110dr5hncnisskl1cpw20kb7dsz29vs03l65v7fk6g6qiyj6ywxi"))))
+    (build-system meson-build-system)
+    (arguments
+     '(#:tests? #f))                    ; no tests
+    (native-inputs `(("cmake" ,cmake) ("pkg-config" ,pkg-config)))
+    (inputs `(("cairo" ,cairo)
+              ("gdk-pixbuf" ,gdk-pixbuf)
+              ("wayland" ,wayland)
+              ("wayland-protocols" ,wayland-protocols)))
+    (synopsis "Animated wallpaper daemon for Wayland compositors")
+    (description "This package provides animated wallpaper daemon for Wayland
+compositors")
+    (home-page "https://github.com/vilhalmer/oguri")
+    (license license:expat))))
 
 (define-public wayland
   (package
