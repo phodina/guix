@@ -31,6 +31,7 @@
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021 qblade <qblade@protonmail.com>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -78,6 +79,7 @@
   #:use-module (gnu packages inkscape)
   #:use-module (gnu packages image)
   #:use-module (gnu packages imagemagick)
+  #:use-module (gnu packages lesstif)
   #:use-module (gnu packages libbsd)
   #:use-module (gnu packages libedit)
   #:use-module (gnu packages linux)
@@ -2222,7 +2224,6 @@ screen as specified in section 7, Device Color Characterization, of the
 X11 Inter-Client Communication Conventions Manual (ICCCM).")
     (license license:x11)))
 
-
 (define-public xcursor-themes
   (package
     (name "xcursor-themes")
@@ -2255,6 +2256,42 @@ X11 Inter-Client Communication Conventions Manual (ICCCM).")
 X server: @code{handhelds}, @code{redglass} and @code{whiteglass}.")
     (license license:x11)))
 
+(define-public xlivebg
+  (let ((commit "69eed8566bde51f96165300289f00998a5509d62")
+        (revision "1"))
+    (package
+      (name "xlivebg")
+      (version (git-version "1.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/jtsiomb/xlivebg")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0w3ana1gd61x4cfwmy2rfipk77hqyzmffwxa1rvkz4w08wgbkar0"))))
+      (build-system gnu-build-system)
+      (inputs `(("libxrandr" ,libxrandr)
+                ("ffmpeg" ,ffmpeg)
+                ("libxt" ,libxt)
+                ("lesstif" ,lesstif)
+                ("glu" ,glu)
+                ("mesa" ,mesa)
+                ("libjpeg" ,libjpeg-turbo)
+                ("libpng" ,libpng)))
+      (arguments
+       `(#:tests? #f                    ; no tests
+         #:make-flags (list
+                       (string-append "PREFIX=" (assoc-ref %outputs "out"))
+                       (string-append "CC=" ,(cc-for-target)))))
+      (synopsis "Live wallpapers for the X window system")
+      (description "Live wallpaper framework, and collection of live wallpapers,
+for the X window system. xlivebg is independent of window managers and desktop
+environments, and should work with any of them, or even with no window manager
+at all.")
+      (home-page "http://nuclear.mutantstargoat.com/sw/xlivebg/")
+      (license license:gpl3))))
 
 (define-public hackneyed-x11-cursors
   ;; The current release 0.8 suffers from non-deterministic build problems.
