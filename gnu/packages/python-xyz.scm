@@ -2105,6 +2105,30 @@ a platform independent file lock in Python, which provides a simple way of
 inter-process communication.")
     (license license:unlicense)))
 
+(define-public python-filetype
+  (package
+    (name "python-filetype")
+    (version "1.0.7")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "filetype" version))
+        (sha256
+          (base32
+            "19vav4w8vvcnrps1mirjkrv4pr1khwn5ma6m5pgpxd4qip73wffs"))))
+    (build-system python-build-system)
+    ;; Tests fail, there is a PR https://github.com/h2non/filetype.py/pull/90
+    (arguments
+      `(#:tests? #f))
+    (home-page
+      "https://github.com/h2non/filetype.py")
+    (synopsis
+      "Infer file type and MIME type of any file/buffer")
+    (description
+      "Infer file type and MIME type of any file/buffer.  No external
+dependencies.")
+    (license license:expat)))
+
 (define-public python-semantic-version
   (package
     (name "python-semantic-version")
