@@ -16170,6 +16170,27 @@ standard library module.  This module (python-pathlib) isn't maintained
 anymore.")
     (license license:expat)))
 
+(define-public python-padaos
+  (package
+    (name "python-padaos")
+    (version "0.1.10")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "padaos" version))
+       (sha256
+        (base32
+         "0wkd6p3ggf3ffsg3j47fgfcfmmj5k7h5rak88mbkr1r6r35mzh1a"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/MycroftAI/padaos")
+    (synopsis "Rigid, lightweight, simple intent parser")
+    (description "To deploy an intent parser into production with an automated
+feedback loop, it's essential that the new data doesn't interfere with the old
+data.  It's also necessary that the parser can learn from sentences that
+closely match written English (or any other language).  That's what Padaos
+does.")
+    (license license:expat)))
+
 (define-public python-jellyfish
   (package
     (name "python-jellyfish")
