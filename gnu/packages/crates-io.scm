@@ -46450,6 +46450,51 @@ text-buffer for applications such as text editors.  Ropey is fast, robust, and
 can handle huge texts and memory-incoherent edits with ease.")
     (license license:expat)))
 
+(define-public rust-rouille-3
+  (package
+    (name "rust-rouille")
+    (version "3.2.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/tomaka/rouille")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0qivqn9gdddkk60nfywfka460h0ysphfiyinwmlz544ss7g9w7hq"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-libloading" ,rust-libloading-0.7)
+        ("rust-base64" ,rust-base64-0.13)
+        ("rust-brotli2" ,rust-brotli2-0.3)
+        ("rust-chrono" ,rust-chrono-0.4)
+        ("rust-filetime" ,rust-filetime-0.2)
+        ("rust-deflate" ,rust-deflate-0.9)
+        ("rust-multipart" ,rust-multipart-0.18)
+        ("rust-percent-encoding" ,rust-percent-encoding-2)
+        ("rust-rand" ,rust-rand-0.8)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-serde-derive" ,rust-serde-derive-1)
+        ("rust-serde-json" ,rust-serde-json-1)
+        ("rust-sha1" ,rust-sha1-0.6)
+        ("rust-term" ,rust-term-0.5)
+        ("rust-time" ,rust-time-0.2)
+        ("rust-tiny-http" ,rust-tiny-http-0.8)
+        ("rust-url" ,rust-url-2)
+        ("rust-threadpool" ,rust-threadpool-1)
+        ("rust-num-cpus" ,rust-num-cpus-1))
+       #:cargo-development-inputs
+       (("rust-log" ,rust-log-0.4) ("rust-postgres" ,rust-postgres-0.15))))
+    (synopsis "Web framework in Rust")
+    (description
+     "Rouille is a micro-web-framework library.  It creates
+a listening socket and parses incoming HTTP requests from clients, then gives
+you the hand to process the request.")
+    (home-page "https://github.com/tomaka/rouille")
+    (license license:asl2.0)))
+
 (define-public rust-rowan-0.15
   (package
     (name "rust-rowan")
