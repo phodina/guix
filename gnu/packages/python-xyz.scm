@@ -17096,6 +17096,28 @@ feels like an AST.")
 inspection of types defined in the Python standard typing module.")
     (license license:expat)))
 
+(define-public python-lazy
+  (package
+    (name "python-lazy")
+    (version "1.4")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference   ; pypi release link leads to project page
+             (url "https://github.com/stefanholek/lazy")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1y3y35jr0nnfh32zgdrb4r4sf9v8k36j07z2m0g6kz7bf3azsgc5"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/stefanholek/lazy")
+    (synopsis "Lazy attributes for Python objects")
+    (description "Provides lazy attributes that are evaluated only once,
+the first time they are used.  Subsequent uses return the results of the first
+call.")
+    (license license:bsd-2)))
+
 (define-public python-lazy-object-proxy
   (package
     (name "python-lazy-object-proxy")
