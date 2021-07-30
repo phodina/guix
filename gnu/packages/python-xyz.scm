@@ -22069,6 +22069,29 @@ and SML.  @code{more-itertools} includes additional building blocks for
 working with iterables.")
     (license license:expat)))
 
+(define-public python-mycroft-messagebus-client
+  (package
+    (name "python-mycroft-messagebus-client")
+    (version "0.9.5")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "mycroft-messagebus-client" version))
+       (sha256
+        (base32
+         "08vsamppk12a15yiv5ra6rr3x3psinsln7y06aw4abpj6cja8pgw"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-pyee" ,python-pyee)
+       ("python-websocket-client"
+        ,python-websocket-client)))
+    (home-page "https://github.com/MycroftAI/mycroft-messagebus-client")
+    (synopsis "Mycroft Messagebus Client")
+    (description "This module provides simple interface for the mycroft
+messagebus and can be used to connect to mycroft, send messages and react
+to messages sent by the Mycroft system.")
+    (license license:asl2.0)))
+
 (define-public python-latexcodec
   (package
     (name "python-latexcodec")
