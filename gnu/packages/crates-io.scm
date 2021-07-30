@@ -10563,7 +10563,7 @@ derive crate.")
         ("rust-strsim" ,rust-strsim-0.10)
         ("rust-termcolor" ,rust-termcolor-1)
         ("rust-terminal-size" ,rust-terminal-size-0.1)
-        ("rust-textwrap" ,rust-textwrap-0.12)
+        ("rust-textwrap" ,rust-textwrap-0.14)
         ("rust-unicode-width" ,rust-unicode-width-0.1)
         ("rust-vec-map" ,rust-vec-map-0.8)
         ("rust-yaml-rust" ,rust-yaml-rust-0.4))
@@ -58175,10 +58175,10 @@ unstable language features.")
     (description "This package provides a newtypes for text offsets")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-textwrap-0.12
+(define-public rust-textwrap-0.14
   (package
     (name "rust-textwrap")
-    (version "0.12.1")
+    (version "0.14.2")
     (source
      (origin
        (method url-fetch)
@@ -58187,7 +58187,7 @@ unstable language features.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "12978qmkl5gcp94lxndpvp9qxq8mxp7hm9xbrw3422dgikchhc10"))))
+         "106xjfzfpk3nj51fx9slf9kyir7xjwvpqm003v9ardgq5b8whrh0"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
@@ -58207,7 +58207,7 @@ handle Unicode characters correctly.")
 
 (define-public rust-textwrap-0.11
   (package
-    (inherit rust-textwrap-0.12)
+    (inherit rust-textwrap-0.14)
     (name "rust-textwrap")
     (version "0.11.0")
     (source
