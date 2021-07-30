@@ -150,6 +150,7 @@
   #:use-module (gnu packages adns)
   #:use-module (gnu packages aidc)
   #:use-module (gnu packages attr)
+  #:use-module (gnu packages audio)
   #:use-module (gnu packages backup)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages check)
@@ -23472,6 +23473,26 @@ multi-language pre-commit hooks.")
      "This module implements the PRECIS Framework as described in RFC 8264,
 RFC 8265 and RFC 8266.")
     (license license:expat)))
+
+(define-public python-precise-runner
+  (package
+    (name "python-precise-runner")
+    (version "0.3.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "precise-runner" version))
+       (sha256
+        (base32
+         "03dqjvw0mafxs5hakhvb3ah8f157n8632a54spss7w2bzc4l4ihs"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-pyaudio" ,python-pyaudio)))
+    (home-page "https://github.com/MycroftAI/mycroft-precise")
+    (synopsis "Wrapper to use Mycroft Precise Wake Word Listener")
+    (description "Audio stream monitoring wrapper which triggers an event when
+it recognizes a specific phrase.")
+    (license license:asl2.0)))
 
 (define-public python-absl-py
   (package
