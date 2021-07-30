@@ -37116,6 +37116,29 @@ contents.")
 the system.")
     (license license:expat)))
 
+(define-public rust-openblas-src-0.9
+  (package
+    (name "rust-openblas-src")
+    (version "0.9.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "openblas-src" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0syy38a5bgv5mj6mb1n1zk1d6l5gqqrswvbmwkwx6h4z9wfrsql4"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page
+      "https://github.com/blas-lapack-rs/openblas-src")
+    (synopsis
+      "The package provides a source of BLAS and LAPACK via OpenBLAS.")
+    (description
+      "The package provides a source of BLAS and LAPACK via OpenBLAS.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-open-1
   (package
     (inherit rust-open-2)
