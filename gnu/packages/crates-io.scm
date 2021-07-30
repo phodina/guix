@@ -56016,6 +56016,44 @@ interface.")
 executed by swayipc.")
     (license license:expat)))
 
+(define-public rust-symbolic-common-8
+  (package
+    (name "rust-symbolic-common")
+    (version "8.3.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "symbolic-common" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0rx4gs343i568z0bzlxwbr518r4434xv2i0qcr6pil776b1qb21l"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-debugid" ,rust-debugid-0.7)
+         ("rust-memmap" ,rust-memmap-0.7)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-stable-deref-trait"
+          ,rust-stable-deref-trait-1)
+         ("rust-uuid" ,rust-uuid-0.8))))
+    (home-page
+      "https://github.com/getsentry/symbolic")
+    (synopsis
+      "Common types and utilities for symbolic, a library to symbolicate and process
+stack traces from native applications, minidumps, minified JavaScripts or
+ProGuard optimized Android apps.
+")
+    (description
+      "Common types and utilities for symbolic, a library to symbolicate and process
+stack traces from native applications, minidumps, minified JavaScripts or
+ProGuard optimized Android apps.
+")
+    (license license:expat)))
+
 (define-public rust-syn-1
   (package
     (name "rust-syn")
