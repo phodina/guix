@@ -8,7 +8,7 @@
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2021 qblade <qblade@protonmail.com>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -30,30 +30,45 @@
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
+  #:use-module (guix gexp)
   #:use-module (guix utils)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system python)
   #:use-module (gnu packages)
   #:use-module (gnu packages audio)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)            ;for 'which'
   #:use-module (gnu packages bison)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages curl)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages emacs)
+  #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gstreamer)
+  #:use-module (gnu packages icu4c)
+  #:use-module (gnu packages image)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages libffi)
   #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages machine-learning)
+  #:use-module (gnu packages mp3)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages python-web)
+  #:use-module (gnu packages screen)
+  #:use-module (gnu packages sphinx)
   #:use-module (gnu packages swig)
   #:use-module (gnu packages texinfo)
-  #:use-module (gnu packages textutils))
+  #:use-module (gnu packages textutils)
+  #:use-module (gnu packages time)
+  #:use-module (gnu packages xiph))
 
 (define-public flite
   (package
@@ -650,6 +665,175 @@ the CMU Sphinx trainer and all the Sphinx decoders (Sphinx-II,
 Sphinx-III, and PocketSphinx), as well as some common utilities for
 manipulating acoustic feature and audio files.")
     (license license:bsd-4)))
+
+(define-public mycroft-core
+  (package
+    (name "mycroft-core")
+    (version "21.2.2")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/MycroftAI/mycroft-core")
+                    (commit (string-append "release/v" version))))
+              (file-name (git-file-name name version))
+              (patches (search-patches "mycroft-core-venv-and-msm.patch"))
+              (sha256
+               (base32
+                "02r0vxw0hsihnvviwn4fyspwky3kwq42f9z455q1s70k0snzhb28"))))
+    (build-system python-build-system)
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (add-after 'unpack 'patch-requirements
+                          (lambda* (#:key inputs outputs #:allow-other-keys)
+                            (let ((mycroft-home (string-append #$output
+                                                               "/opt/mycroft")))
+                              (mkdir-p mycroft-home)
+                              (substitute* "scripts/mycroft-use.sh"
+                                (("/opt/mycroft")
+                                 mycroft-home))
+                              (substitute* "scripts/my-info.sh"
+                                (("/opt/mycroft")
+                                 mycroft-home))
+                              (substitute* "mycroft/skills/mycroft_skill/mycroft_skill.py"
+                                (("/opt/mycroft")
+                                 mycroft-home))
+                              (substitute* "mycroft/configuration/mycroft.conf"
+                                (("/opt/mycroft")
+                                 mycroft-home))
+                              (substitute* "mycroft/util/file_utils.py"
+                                (("/opt/mycroft")
+                                 mycroft-home))
+                              (substitute* "test/unittests/tts/test_mimic_tts.py"
+                                (("/opt/mycroft")
+                                 mycroft-home))
+                              (substitute* "test/unittests/api/test_api.py"
+                                (("/opt/mycroft")
+                                 mycroft-home))
+                              (substitute* "test/integrationtests/skills/test_all_skills.py"
+                                (("/opt/mycroft")
+                                 mycroft-home))
+                              (substitute* "README.md"
+                                (("/opt/mycroft")
+                                 mycroft-home))
+                              (substitute* "mycroft/tts/mimic_tts.py"
+                                (("bin_ = config.*")
+                                 (string-append "bin_ = \""
+                                                #$mycroft-mimic "/bin/mimic\"
+"))
+                                (("os.path.join\\(MYCROFT_ROOT_PATH.*")
+                                 ""))
+                              (substitute* "setup.py"
+                                (("client\\.ws")
+                                 "client.client"))
+                              (substitute* "mycroft/client/text/text_client.py"
+                                (("\\.gui_server")
+                                 "mycroft.client.text.gui_server"))
+                              (substitute* "mycroft/client/text/__main__.py"
+                                (("\\.text_client")
+                                 "mycroft.client.text.text_client"))
+                              (substitute* "requirements/requirements.txt"
+                                (("mycroft-messagebus-client==")
+                                 "mycroft-messagebus-client>=")
+                                (("tornado==")
+                                 "tornado>=")
+                                (("pyserial==")
+                                 "pyserial>=")
+                                (("psutil==")
+                                 "psutil>=")
+                                (("padaos==")
+                                 "padaos>=")
+                                (("precise-runner==")
+                                 "precise-runner>=")
+                                (("pocketsphinx==")
+                                 "pocketsphinx>=")
+                                (("python-dateutil==")
+                                 "python-dateutil>=")
+                                (("fasteners==")
+                                 "fasteners>=")
+                                (("requests-futures==")
+                                 "requests-futures>=")
+                                (("pillow==")
+                                 "pillow>=")
+                                (("PyYAML==5.4")
+                                 "PyYAML>=5.3.1")
+                                (("pyxdg==")
+                                 "pyxdg>=")
+                                (("requests>=2.20.0,<2.26.0")
+                                 "requests>=2.20.0")))))
+                        (add-after 'install 'install-scripts
+                          (lambda* (#:key inputs outputs #:allow-other-keys)
+                            (install-file "start-mycroft.sh"
+                                          (string-append #$output "/bin"))
+                            (install-file "stop-mycroft.sh"
+                                          (string-append #$output "/bin"))
+                            (for-each (lambda (file)
+                                        (wrap-program (string-append #$output
+                                                                     "/bin/"
+                                                                     file)
+                                                      `("PATH" ":" prefix
+                                                        (,(string-append #$procps
+                                                           "/bin")))))
+                                      (list "start-mycroft.sh"
+                                            "stop-mycroft.sh"))))
+                        (replace 'check
+                          (lambda* (#:key tests? #:allow-other-keys)
+                            (when tests?
+                              (setenv "GUIX_PYTHONPATH"
+                                      (string-append "./build/lib:"
+                                                     (or (getenv
+                                                          "GUIX_PYTHONPATH")
+                                                         "")))))))))
+    (native-inputs (list swig))
+    (inputs (list curl
+                  fann
+                  flac
+                  icu4c
+                  libffi
+                  libjpeg-turbo
+                  mpg123
+                  mycroft-mimic
+                  portaudio
+                  pocketsphinx
+                  pulseaudio
+                  screen))
+    (propagated-inputs (list procps
+                             python-fasteners
+                             python-inflection
+                             python-pyxdg
+                             python-mycroft-messagebus-client
+                             python-psutil
+                             python-tornado-6
+                             python-petact
+                             python-inflection
+                             python-dateutil
+                             python-precise-runner
+                             python-padaos
+                             python-serial
+                             python-pyaudio
+                             python-speech-recognition
+                             python-padatious
+                             python-msm
+                             python-xdg
+                             python-msk
+                             python-pillow
+                             python-gtts
+                             python-requests-futures
+                             python-pyserial
+                             python-pocketsphinx
+                             python-adapt-parser
+                             python-lingua-franca
+                             python-pyyaml
+                             python-pyee
+                             python-psutil
+                             python-fann2
+                             python-pyxdg
+                             python-websocket-client
+                             python-requests
+                             python-requests-futures))
+    (home-page "https://github.com/HelloChatterbox/HolmesIV")
+    (synopsis "Mycroft Core, the Mycroft Artificial Intelligence platform")
+    (description "This module provides a hackable voice assistant - Mycroft")
+    (license license:asl2.0)))
 
 (define-public pocketsphinx
   (package
