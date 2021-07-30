@@ -33413,6 +33413,33 @@ checking.")
     (description "mp4 is a Rust library to read and write ISO-MP4 files.")
     (license license:expat)))
 
+(define-public rust-msvc-demangler-0.9
+  (package
+    (name "rust-msvc-demangler")
+    (version "0.9.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "msvc-demangler" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1j7kkmbd9yvhk7dmvd29pqcg9mcjdw5p1ia1kihh16zss1nprdmz"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-bitflags" ,rust-bitflags-1))))
+    (home-page
+      "https://github.com/mstange/msvc-demangler-rust")
+    (synopsis
+      "A rust library that demangles / undecorates C++ symbols mangled by MSVC")
+    (description
+      "This package provides a rust library that demangles / undecorates C++ symbols mangled by MSVC")
+    (license (list license:expat license:ncsa))))
+
 (define-public rust-multimap-0.8
   (package
     (name "rust-multimap")
