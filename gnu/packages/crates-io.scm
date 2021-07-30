@@ -12137,6 +12137,34 @@ It is inspired by the Linux kernel's @code{crypto_memneq}.")
 to guess the type of content.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-contour-0.4
+  (package
+    (name "rust-contour")
+    (version "0.4.0")
+    (source (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/mthh/contour-rs")
+		(commit "84d2133ec6e4476e81b38c14b9ad961bd6f7625c")))
+            (sha256
+             (base32
+              "1md1ikb2ms60li0z25d10d0v2c38ihbjz66wlym2b3n0pfaqhyr7"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-geojson" ,rust-geojson-0.22)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-rustc-hash" ,rust-rustc-hash-1)
+         ("rust-serde-json" ,rust-serde-json-1)
+         ("rust-slab" ,rust-slab-0.4))))
+    (home-page "https://github.com/mthh/contour-rs")
+    (synopsis
+      "Compute isorings and contour polygons (using marching squares algorithm).")
+    (description
+      "Compute isorings and contour polygons (using marching squares algorithm).")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-conv-0.3
   (package
     (name "rust-conv")
