@@ -16231,6 +16231,26 @@ does.")
 parser.  It is a core component of Mycroft AI.")
     (license license:asl2.0)))
 
+(define-public python-pako
+  (package
+    (name "python-pako")
+    (version "0.3.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pako" version))
+       (sha256
+        (base32
+         "07r3f86idlxb2x2mvy24fzkxyq5xalkbmk0zmqva7341pdrs0cy0"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     (list python-appdirs))
+    (home-page "https://github.com/MycroftAI/pako")
+    (synopsis "Universal package manager library")
+    (description
+     "Pako provides a unified way to handle native package managers.")
+    (license license:asl2.0)))
+
 (define-public python-jellyfish
   (package
     (name "python-jellyfish")
