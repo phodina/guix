@@ -11493,6 +11493,32 @@ reading and writing MessagePack data.")
                  ((".fromstring\\(") ".frombytes("))
                #t))))))))
 
+(define-public python-msm
+  (package
+    (name "python-msm")
+    (version "0.8.9")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "msm" version))
+       (sha256
+        (base32
+         "00z588imq7q33iv3hn83mf2cyqrbs5f6zzyfa6445ainxvskkzz2"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-fasteners" ,python-fasteners)
+       ("python-gitpython" ,python-gitpython)
+       ("python-lazy" ,python-lazy)
+       ("python-pako" ,python-pako)
+       ("python-pyxdg" ,python-pyxdg)
+       ("python-pyyaml" ,python-pyyaml)
+       ("python-requests" ,python-requests)))
+    (home-page "https://github.com/MycroftAI/mycroft-skills-manager")
+    (synopsis "Mycroft Skills Manager")
+    (description "Command line tool for interacting with the mycroft-skills
+repository.")
+    (license license:asl2.0)))
+
 (define-public python-netaddr
   (package
     (name "python-netaddr")
