@@ -159,6 +159,7 @@
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages dbm)
+  #:use-module (gnu packages digest)
   #:use-module (gnu packages django)
   #:use-module (gnu packages djvu)
   #:use-module (gnu packages docker)
@@ -15751,6 +15752,27 @@ anymore.")
     (description "Converts sentences into one big chunk of regex.  Each intent
 is a single compiled regex matcher.")
     (license license:expat)))
+
+(define-public python-padatious
+  (package
+    (name "python-padatious")
+    (version "0.4.8")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "padatious" version))
+       (sha256
+        (base32
+         "0xbgf75kxclacgairid8m948hrrngcxhykr1wkvav32fp58z4wg4"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-fann2" ,python-fann2)
+       ("python-padaos" ,python-padaos)
+       ("python-xxhash" ,python-xxhash)))
+    (home-page "https://github.com/MycroftAI/padatious")
+    (synopsis "Neural network intent parser")
+    (description "A neural network intent parser")
+    (license license:asl2.0)))
 
 (define-public python-jellyfish
   (package
