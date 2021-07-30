@@ -568,6 +568,28 @@ data arrays produced during tests, in particular in cases where the arrays
 are too large to conveniently hard-code them in the tests.")
     (license license:bsd-3)))
 
+(define-public python-pytest-doctest-custom
+  (package
+    (name "python-pytest-doctest-custom")
+    (version "1.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "pytest-doctest-custom" version))
+        (sha256
+          (base32
+            "0kxkdd6q9c3h31kc88lbyfll4c45b0zjd24cbr4c083fcvcy7lip"))))
+    (build-system python-build-system)
+    (native-inputs
+      `(("python-pytest" ,python-pytest)))
+    (home-page
+      "https://github.com/danilobellini/pytest-doctest-custom")
+    (synopsis
+      "Plugin for customizing string representations of doctest results")
+    (description
+      "Plugin for customizing string representations of doctest results.")
+    (license license:expat)))
+
 (define-public python-pytest-doctestplus
   (package
     (name "python-pytest-doctestplus")
