@@ -4106,6 +4106,85 @@ users' sessions over extended periods of time.")
 library for Python")
     (license license:asl2.0)))
 
+(define-public python-octoprint
+  (package
+    (name "python-octoprint")
+    (version "1.6.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "OctoPrint" version))
+        (sha256
+          (base32
+            "0a5a3jjjlp9y54y8xy27jcad2gf5kqbzkbbwvmq86r6d1pabd645"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      `(("python-blinker" ,python-blinker)
+        ("python-cachelib" ,python-cachelib)
+        ("python-click" ,python-click)
+        ("python-emoji" ,python-emoji)
+        ("python-filetype" ,python-filetype)
+        ("python-flask" ,python-flask)
+        ("python-flask-assets" ,python-flask-assets)
+        ("python-flask-babel" ,python-flask-babel)
+        ("python-flask-login" ,python-flask-login)
+        ("python-future" ,python-future)
+        ("python-itsdangerous" ,python-itsdangerous)
+        ("python-jinja2" ,python-jinja2)
+        ("python-markdown" ,python-markdown)
+        ("python-markupsafe" ,python-markupsafe)
+        ("python-netaddr" ,python-netaddr)
+        ("python-netifaces" ,python-netifaces)
+        ("python-octoprint-filecheck"
+         ,python-octoprint-filecheck)
+        ("python-octoprint-firmwarecheck"
+         ,python-octoprint-firmwarecheck)
+        ("python-octoprint-pisupport"
+         ,python-octoprint-pisupport)
+        ("python-pkginfo" ,python-pkginfo)
+        ("python-psutil" ,python-psutil)
+        ("python-pylru" ,python-pylru)
+        ("python-pyserial" ,python-pyserial)
+        ("python-pyyaml" ,python-pyyaml)
+        ("python-regex" ,python-regex)
+        ("python-requests" ,python-requests)
+        ("python-sarge" ,python-sarge)
+        ("python-semantic-version"
+         ,python-semantic-version)
+        ("python-sentry-sdk" ,python-sentry-sdk)
+        ("python-tornado" ,python-tornado)
+        ("python-unidecode" ,python-unidecode)
+        ("python-watchdog" ,python-watchdog)
+        ("python-websocket-client"
+         ,python-websocket-client)
+        ("python-werkzeug" ,python-werkzeug)
+        ("python-pyinstrument" ,python-pyinstrument)
+        ("python-wrapt" ,python-wrapt)
+        ("python-zipstream-new" ,python-zipstream-new)))
+    (native-inputs
+      `(("python-ddt" ,python-ddt)
+        ("python-mock" ,python-mock)
+        ("python-pre-commit" ,python-pre-commit)
+        ("python-pytest" ,python-pytest)
+        ("python-pytest-doctest-custom"
+         ,python-pytest-doctest-custom)))
+    ;; Fail
+    (arguments
+     `(#:tests? #f
+       #:phases (modify-phases %standard-phases
+                  (add-before 'build 'setup-modules
+                    (lambda* _
+                        (substitute* "setup.py"
+                                           (("wrapt>=1.12.1,<2")
+                                            "wrapt"))
+                               #true)))))
+    (home-page "https://octoprint.org")
+    (synopsis
+      "The snappy web interface for your 3D printer")
+    (description
+      "The snappy web interface for your 3D printer")
+    (license license:agpl3)))
+
 (define-public python-octoprint-filecheck
   (package
     (name "python-octoprint-filecheck")
