@@ -20908,6 +20908,35 @@ attempting to optimize internally, using a cache, the common case where many
 lines are read from a single file.")
     (license license:psfl)))
 
+(define-public python-lingua-franca
+  (package
+    (name "python-lingua-franca")
+    (version "0.4.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/MycroftAI/lingua-franca")
+         (commit (string-append "release/v" version))))
+       (file-name (git-file-name name version))
+       (modules '((guix build utils)))
+       (snippet '(begin
+                   ;; Use newer version of pkg
+                   (substitute* "requirements.txt"
+                     (("python-dateutil==") "python-dateutil>="))
+                   #t))
+       (sha256
+        (base32
+         "1wx1c8a2k9155z74113yn1xcs6y0zljbgan2pbbmzsvki8m0z6jn"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-dateutil" ,python-dateutil)))
+    (home-page "https://github.com/MycroftAI/lingua-franca")
+    (synopsis "Mycroft's multilingual text parsing and formatting library")
+    (description "Converts data into spoken equivalents.")
+    (license license:asl2.0)))
+
 (define-public python-traceback2
   (package
     (name "python-traceback2")
