@@ -34516,6 +34516,33 @@ types as proposed in RFC 1158.")
     (license (list license:asl2.0
                    license:expat))))
 
+(define-public rust-netlib-src-0.8
+  (package
+    (name "rust-netlib-src")
+    (version "0.8.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "netlib-src" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "04l2ggdaq0bjc64prsw2f8ddxn84m1rmpnkjb9nr0ijdpcv1zx1r"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-cmake" ,rust-cmake-0.1))))
+    (home-page
+      "https://github.com/blas-lapack-rs/netlib-src")
+    (synopsis
+      "The package provides a source of BLAS and LAPACK via Netlib.")
+    (description
+      "The package provides a source of BLAS and LAPACK via Netlib.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-nettle-7
   (package
     (name "rust-nettle")
