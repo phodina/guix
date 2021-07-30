@@ -49594,6 +49594,30 @@ with one of the implemented strategies.")
          (base32
           "09sy9wbqp409pkwmqni40qmwa99ldqpl48pp95m1xw8sc19qy9cl"))))))
 
+(define-public rust-scopetime-0.1
+  (package
+    (name "rust-scopetime")
+    (version "0.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "scopetime" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0s4fg704zlc1xmwx2y5zifhndpb2ahfh4kg966gyr1kbwcd2hz0q"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-log" ,rust-log-0.4))))
+    (home-page "https://gitui.org")
+    (synopsis "log runtime of arbitrary scope")
+    (description "log runtime of arbitrary scope")
+    (license license:expat)))
+
 (define-public rust-scraper-0.12
   (package
     (name "rust-scraper")
