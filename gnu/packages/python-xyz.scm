@@ -199,6 +199,7 @@
   #:use-module (gnu packages maths)
   #:use-module (gnu packages monitoring)
   #:use-module (gnu packages multiprecision)
+  #:use-module (gnu packages machine-learning)
   #:use-module (gnu packages networking)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages node)
@@ -19675,6 +19676,25 @@ of building an exhaustive test setup with every possible combination of corner
 cases, factory_boy allows you to use objects customized for the current test,
 while only declaring the test-specific fields.")
     (license license:expat)))
+
+(define-public python-fann2
+  (package
+    (name "python-fann2")
+    (version "1.0.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "fann2" version))
+       (sha256
+        (base32
+         "17zv6hbq26qg9jmsshx3xnnnv203fr4cyjg4v3rgq38a5i5agv2k"))))
+    (build-system python-build-system)
+    (native-inputs `(("swig" ,swig)))
+    (propagated-inputs `(("fann" ,fann)))
+    (home-page "https://github.com/FutureLinkCorporation/fann2")
+    (synopsis "Fast Artificial Neural Network Library (FANN) Python bindings")
+    (description "Provides bindings for Fast Artificial Neural Networks 2.2.0.")
+    (license license:lgpl2.1)))
 
 (define-public python-translate-toolkit
   (package
