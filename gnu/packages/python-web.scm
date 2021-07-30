@@ -5868,6 +5868,37 @@ Selenium specifically provides infrastructure for the W3C WebDriver specificatio
 major web browsers.")
     (license license:asl2.0)))
 
+(define-public python-sentry-sdk
+  (package
+    (name "python-sentry-sdk")
+    (version "0.20.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "sentry-sdk" version))
+        (sha256
+          (base32
+            "0dxj6h1sbf02qbrcjxk8ny4w8rn145ks30hxln71qzy6sv7d3s2a"))))
+    (build-system python-build-system)
+    ;; Tests fail, nose module not found
+    (arguments
+      `(#:tests? #f))
+    (native-inputs `(("python-aiohttp" ,python-aiohttp)
+                     ("python-botocore" ,python-botocore)
+                     ("python-bottle" ,python-bottle)
+                     ("python-celery" ,python-celery)
+                     ("python-nose" ,python-nose)))
+    (propagated-inputs
+      `(("python-certifi" ,python-certifi)
+        ("python-urllib3" ,python-urllib3)))
+    (home-page
+      "https://sentry.io")
+    (synopsis
+      "Python client for Sentry")
+    (description
+      "Python client for Sentry")
+    (license license:bsd-3)))
+
 (define-public python-rapidjson
   (package
     (name "python-rapidjson")
