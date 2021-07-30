@@ -14746,6 +14746,30 @@ ISO 8859, etc.).")
 (define-public python2-translitcodec
   (package-with-python2 python-translitcodec))
 
+(define-public python-adapt-parser
+  (package
+    (name "python-adapt-parser")
+    (version "0.5.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/MycroftAI/adapt")
+             (commit (string-append "release/v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "08ma098saysspm7bbja8ic26lqg2bibz51bzfnifdch89r30i23n"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-pyee" ,python-pyee)
+       ("python-six" ,python-six)))
+    (home-page "https://github.com/MycroftAI/adapt")
+    (synopsis "Text-to-intent parsing framework")
+    (description "Flexible and extensible way to parse natural language text
+into a structured intent.")
+    (license license:asl2.0)))
+
 (define-public python-anyqt
   (package
     (name "python-anyqt")
