@@ -27208,6 +27208,50 @@ package.  It is obsolete for indoc versions > 1.")))
 signature.")
     (license license:expat)))
 
+(define-public rust-inferno-0.10
+  (package
+    (name "rust-inferno")
+    (version "0.10.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "inferno" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1hs8akrajb738277g7x2lry3iv40iprijawc6acjxbfj531bqg1w"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-ahash" ,rust-ahash-0.6)
+         ("rust-atty" ,rust-atty-0.2)
+         ("rust-crossbeam-channel"
+          ,rust-crossbeam-channel-0.5)
+         ("rust-crossbeam-utils"
+          ,rust-crossbeam-utils-0.8)
+         ("rust-dashmap" ,rust-dashmap-3)
+         ("rust-env-logger" ,rust-env-logger-0.8)
+         ("rust-indexmap" ,rust-indexmap-1)
+         ("rust-itoa" ,rust-itoa-0.4)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-num-format" ,rust-num-format-0.4)
+         ("rust-num-cpus" ,rust-num-cpus-1)
+         ("rust-quick-xml" ,rust-quick-xml-0.20)
+         ("rust-rgb" ,rust-rgb-0.8)
+         ("rust-str-stack" ,rust-str-stack-0.1)
+         ("rust-structopt" ,rust-structopt-0.3))))
+    (home-page
+      "https://github.com/jonhoo/inferno.git")
+    (synopsis
+      "Rust port of the FlameGraph performance profiling tool suite")
+    (description
+      "Rust port of the FlameGraph performance profiling tool suite")
+    (license license:cddl1.0)))
+
 (define-public rust-inflate-0.4
   (package
     (name "rust-inflate")
