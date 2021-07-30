@@ -24772,6 +24772,25 @@ time-or-computationally-expensive properties quick and easy and works in Python
 2 or 3.")
     (license license:bsd-3)))
 
+(define-public python-cachelib
+  (package
+    (name "python-cachelib")
+    (version "0.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "cachelib" version))
+        (sha256
+          (base32
+            "0vs7nimlbhqy9kjcc90nswkhs3kgl28ag19jssx9qwlcsrkmmsa7"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/pallets/cachelib")
+    (synopsis
+      "Collection of cache libraries in the same API interface")
+    (description
+      "Collection of cache libraries in the same API interface.")
+    (license license:bsd-3)))
+
 (define-public python-folium
   (package
     (name "python-folium")
