@@ -7250,6 +7250,36 @@ BLAKE2bp hash functions.")
 based on Blake2s.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-blas-src-0.6
+  (package
+    (name "rust-blas-src")
+    (version "0.6.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "blas-src" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0a134wadi4rslfqk4mafi6y7bbvacjh12x87621w4vyc3dni6px2"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-accelerate-src" ,rust-accelerate-src-0.3)
+         ("rust-intel-mkl-src" ,rust-intel-mkl-src-0.5)
+         ("rust-netlib-src" ,rust-netlib-src-0.8)
+         ("rust-openblas-src" ,rust-openblas-src-0.9))))
+    (home-page
+      "https://github.com/blas-lapack-rs/blas-src")
+    (synopsis
+      "The package provides a BLAS source of choice.")
+    (description
+      "The package provides a BLAS source of choice.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-blobby-0.3
   (package
     (name "rust-blobby")
