@@ -22223,6 +22223,28 @@ library to allow local file system access via @code{file://} URLs.")
 (define-public python2-requests-file
   (package-with-python2 python-requests-file))
 
+(define-public python-requests-futures
+  (package
+    (name "python-requests-futures")
+    (version "1.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "requests-futures" version))
+       (sha256
+        (base32
+         "0j611g1wkn98qp2b16kqz7lfz29a153jyfm02r3h8n0rpw17am1m"))))
+    (build-system python-build-system)
+    (arguments
+     ;; The test tries to open a connection to a remote server.
+     `(#:tests? #f))
+    (propagated-inputs
+     `(("python-requests" ,python-requests)))
+    (home-page "https://github.com/ross/requests-futures")
+    (synopsis "Asynchronous Python HTTP for Humans")
+    (description "Asynchronous Python HTTP for Humans.")
+    (license license:asl2.0)))
+
 (define-public python-identify
   (package
     (name "python-identify")
