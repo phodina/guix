@@ -15652,6 +15652,33 @@ sizes.  Big-endian order is used.  WARNING: Block must be aligned!")
 type.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-debugid-0.7
+  (package
+    (name "rust-debugid")
+    (version "0.7.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "debugid" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1fh2nl4dzbcm3bn9knb30phprm1mhr826wb268m7w2gjqalga77r"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-serde" ,rust-serde-1)
+         ("rust-uuid" ,rust-uuid-0.8))))
+    (home-page "https://sentry.io/")
+    (synopsis
+      "Common reusable types for implementing the sentry.io protocol.")
+    (description
+      "Common reusable types for implementing the sentry.io protocol.")
+    (license license:asl2.0)))
+
 (define-public rust-debug-helper-0.3
   (package
     (name "rust-debug-helper")
