@@ -17193,6 +17193,25 @@ Wikipedia code samples at
 @url{http://en.wikipedia.org/wiki/Levenshtein_distance}.")
     (license license:bsd-3)))
 
+(define-public python-pylru
+  (package
+    (name "python-pylru")
+    (version "1.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "pylru" version))
+        (sha256
+          (base32
+            "15yj46307sw703vjfkgnr04dqvaicmfcj0hc6yrciildp55r6bs9"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/jlhutch/pylru")
+    (synopsis
+      "Least recently used (LRU) cache implementation")
+    (description
+      "Least recently used (LRU) cache implementation")
+    (license license:gpl2)))
+
 (define-public python-cleo
   (package
     (name "python-cleo")
