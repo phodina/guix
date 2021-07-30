@@ -15893,6 +15893,31 @@ best-effort representations using smaller coded character sets (ASCII,
 ISO 8859, etc.).")
     (license license:expat)))
 
+(define-public python-adapt-parser
+  (package
+    (name "python-adapt-parser")
+    (version "0.5.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/MycroftAI/adapt")
+             (commit (string-append "release/v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "08ma098saysspm7bbja8ic26lqg2bibz51bzfnifdch89r30i23n"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     (list python-pyee python-six))
+    (home-page "https://github.com/MycroftAI/adapt")
+    (synopsis "Text-to-intent parsing framework")
+    (description "The Adapt intent parser is a flexible and extensible intent
+definition and determination framework.  It is intended to parse natural
+language text into a structured intent that can then be invoked
+programatically.")
+    (license license:asl2.0)))
+
 (define-public python-anyqt
   (package
     (name "python-anyqt")
