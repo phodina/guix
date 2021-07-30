@@ -27503,6 +27503,33 @@ bytestring representations.")
         ("rust-futures-util" ,rust-futures-util-0.3)
         ("rust-tokio" ,rust-tokio-0.2))))))
 
+(define-public rust-intel-mkl-src-0.5
+  (package
+    (name "rust-intel-mkl-src")
+    (version "0.5.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "intel-mkl-src" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "155q49a7nfbq1lllchsyx8jv2q2pijrjh1w08awvrbjyfcxb6q3j"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-intel-mkl-tool" ,rust-intel-mkl-tool-0.1))))
+    (home-page
+      "https://github.com/rust-math/intel-mkl-src")
+    (synopsis
+      "Redistribution of Intel(R) MKL as a crate")
+    (description
+      "Redistribution of Intel(R) MKL as a crate")
+    (license #f)))
+
 (define-public rust-intel-mkl-tool-0.1
   (package
     (name "rust-intel-mkl-tool")
