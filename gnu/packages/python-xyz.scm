@@ -163,6 +163,7 @@
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages dbm)
+  #:use-module (gnu packages digest)
   #:use-module (gnu packages django)
   #:use-module (gnu packages djvu)
   #:use-module (gnu packages docker)
@@ -16209,6 +16210,26 @@ data.  It's also necessary that the parser can learn from sentences that
 closely match written English (or any other language).  That's what Padaos
 does.")
     (license license:expat)))
+
+(define-public python-padatious
+  (package
+    (name "python-padatious")
+    (version "0.4.8")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "padatious" version))
+       (sha256
+        (base32
+         "0xbgf75kxclacgairid8m948hrrngcxhykr1wkvav32fp58z4wg4"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     (list python-fann2 python-padaos python-xxhash))
+    (home-page "https://github.com/MycroftAI/padatious")
+    (synopsis "Neural network intent parser")
+    (description "Padatious is an efficient and agile neural network intent
+parser.  It is a core component of Mycroft AI.")
+    (license license:asl2.0)))
 
 (define-public python-jellyfish
   (package
