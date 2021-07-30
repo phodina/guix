@@ -229,6 +229,7 @@
   #:use-module (gnu packages search)
   #:use-module (gnu packages serialization)
   #:use-module (gnu packages shells)
+  #:use-module (gnu packages speech)
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages ssh)
   #:use-module (gnu packages swig)
@@ -22093,6 +22094,86 @@ number of iterator building blocks inspired by constructs from APL, Haskell,
 and SML.  @code{more-itertools} includes additional building blocks for
 working with iterables.")
     (license license:expat)))
+
+(define-public python-mycroft-core
+  (package
+    (name "python-mycroft-core")
+    (version "21.2.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/MycroftAI/mycroft-core")
+         (commit (string-append "release/v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1v5yb48y3zr4s0cgkid8y1zsi6x1wrhy1jfb9axzi090ammgy700"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-requirements
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; Use newer version of pkg
+             (substitute* "requirements/requirements.txt"
+               (("mycroft-messagebus-client==") "mycroft-messagebus-client>=")
+               (("tornado==") "tornado>=")
+               (("pyserial==") "pyserial>=")
+               (("psutil==") "psutil>=")
+               (("padaos==") "padaos>=")
+               (("precise-runner==") "precise-runner>=")
+               (("pocketsphinx==") "pocketsphinx>=")
+               (("python-dateutil==") "python-dateutil>=")
+               (("fasteners==") "fasteners>=")
+               (("requests-futures==") "requests-futures>=")
+               (("pillow==") "pillow>=")
+               (("PyYAML==5.4") "PyYAML>=5.3.1")
+               (("pyxdg==") "pyxdg>="))))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (setenv "PYTHONPATH"
+                       (string-append "./build/lib:" (getenv
+                                                      "PYTHONPATH")))))))))
+    (inputs `(("mycroft-mimic" ,mycroft-mimic)
+              ("pocketsphinx" ,pocketsphinx)))
+    (propagated-inputs
+     `(("python-fasteners" ,python-fasteners)
+       ("python-inflection" ,python-inflection)
+       ("python-pyxdg" ,python-pyxdg)
+       ("python-mycroft-messagebus-client"
+        ,python-mycroft-messagebus-client)
+       ("python-psutil" ,python-psutil)
+       ("python-tornado" ,python-tornado-6)
+       ("python-petact" ,python-petact)
+       ("python-precise-runner" ,python-precise-runner)
+       ("python-padaos" ,python-padaos)
+       ("python-speech-recoginition" ,python-speech-recognition)
+       ("python-padatious" ,python-padatious)
+       ("python-msk" ,python-msk)
+       ("python-pillow" ,python-pillow)
+       ("python-gtts" ,python-gtts)
+       ("python-requests-futures" ,python-requests-futures)
+       ("python-pyserial" ,python-pyserial)
+       ("python-pocketsphinx" ,python-pocketsphinx)
+       ("python-adapt-parser" ,python-adapt-parser)
+       ("python-lingua-franca" ,python-lingua-franca)
+       ("python-pyyaml" ,python-pyyaml)
+       ("python-fasteners" ,python-fasteners)
+       ("python-pyee" ,python-pyee)
+       ("python-psutil" ,python-psutil)
+       ("python-fann2" ,python-fann2)
+       ("python-pyxdg" ,python-pyxdg)
+       ("python-websocket-client" ,python-websocket-client)
+       ("python-requests" ,python-requests)
+       ("python-requests-futures"
+        ,python-requests-futures)))
+    (home-page "https://github.com/HelloChatterbox/HolmesIV")
+    (synopsis "Mycroft Core, the Mycroft Artificial Intelligence platform")
+    (description "This module provides a hackable open source voice assistant - Mycroft")
+    (license license:asl2.0)))
 
 (define-public python-mycroft-messagebus-client
   (package
