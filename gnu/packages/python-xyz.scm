@@ -11493,6 +11493,30 @@ reading and writing MessagePack data.")
                  ((".fromstring\\(") ".frombytes("))
                #t))))))))
 
+(define-public python-msk
+  (package
+    (name "python-msk")
+    (version "0.3.16")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "msk" version))
+       (sha256
+        (base32
+         "11zf2s5wdglzki2r05plx6j9gykwvbpdn8fbr3fnjz4g0vy1g9y6"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-colorama" ,python-colorama)
+       ("python-gitpython" ,python-gitpython)
+       ("python-msm" ,python-msm)
+       ("python-pygithub" ,python-pygithub)
+       ("python-requests" ,python-requests)))
+    (home-page "https://github.com/MycroftAI/mycroft-skills-kit")
+    (synopsis "Mycroft Skills Kit")
+    (description "Tool to help with creating, uploading, and upgrading Mycroft
+skills.")
+    (license license:asl2.0)))
+
 (define-public python-msm
   (package
     (name "python-msm")
