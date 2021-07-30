@@ -8,6 +8,7 @@
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2021 qblade <qblade@protonmail.com>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -45,6 +46,7 @@
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pulseaudio)
@@ -230,6 +232,36 @@ models involving iterative parameter estimation.  It achieves much of its
 efficiency through the use of a compact vector representation of n-grams.")
     (home-page "https://github.com/mitlm/mitlm")
     (license license:expat)))
+
+(define-public mycroft-mimic
+  (package
+    (name "mycroft-mimic")
+    (version "1.3.0.1")
+    (source (origin
+              (method git-fetch)
+              (uri
+               (git-reference
+                (url "https://github.com/MycroftAI/mimic1")
+                (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1agwgby9ql8r3x5rd1rgx3xp9y4cdg4pi3kqlz3vanv9na8nf3id"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("libtool" ,libtool)
+       ("automake" ,automake)
+       ("autoconf" ,autoconf)))
+    (inputs `(("alsa-lib" ,alsa-lib)
+              ("pcre2" ,pcre2)))
+    (synopsis "Mycroft's TTS engine, based on CMU's Flite (Festival Lite)")
+    (description "Mimic is a fast, lightweight Text-to-speech engine developed
+by Mycroft A.I. and VocaliD, based on Carnegie Mellon University’s Flite
+(Festival-Lite) software.  Mimic takes in text and reads it out loud to create
+a high quality voice.")
+    (home-page "https://github.com/MycroftAI/mimic1")
+    (license license:asl2.0)))
 
 (define-public speech-dispatcher
   (package
