@@ -20608,6 +20608,33 @@ representation.")
     (license (list license:asl2.0
                    license:expat))))
 
+(define-public rust-filetreelist-0.2
+  (package
+    (name "rust-filetreelist")
+    (version "0.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "filetreelist" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "03ay6grxjr7a9hz6d021kxbldzch13wvrsgp8fhv6al9j8kkbpwm"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-scopetime" ,rust-scopetime-0.1)
+         ("rust-thiserror" ,rust-thiserror-1))))
+    (home-page "https://github.com/extrawurst/gitui")
+    (synopsis
+      "filetree abstraction based on a sorted path list, supports key based navigation events, folding, scrolling and more")
+    (description
+      "filetree abstraction based on a sorted path list, supports key based navigation events, folding, scrolling and more")
+    (license #f)))
+
 (define-public rust-field-offset-0.3
   (package
     (name "rust-field-offset")
