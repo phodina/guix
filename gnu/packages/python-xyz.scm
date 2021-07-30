@@ -28414,6 +28414,25 @@ fundamentally just glue between the @code{setuptools} Python module and
 CMake.")
     (license license:expat)))
 
+(define-public python-sarge
+  (package
+    (name "python-sarge")
+    (version "0.1.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "sarge" version))
+        (sha256
+          (base32
+            "0r9jnpdsjdr6h92blr5b2fdzvb1n8ypjwhk2xxmss42gwq2bk3zl"))))
+    (build-system python-build-system)
+    (home-page "http://sarge.readthedocs.io")
+    (synopsis
+      "Wrapper for subprocess which provides command pipeline functionality")
+    (description
+      "Wrapper for subprocess which provides command pipeline functionality.")
+    (license license:bsd-3)))
+
 (define-public python-screenkey
   (package
     (name "python-screenkey")
