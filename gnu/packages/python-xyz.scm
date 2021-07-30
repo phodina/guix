@@ -18472,6 +18472,33 @@ from the header, as well as section details and data available.")
     (description "Pyev provides a Python interface to libev.")
     (license license:gpl3)))
 
+(define-public python-pyee
+  (package
+    (name "python-pyee")
+    (version "8.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pyee" version))
+       (sha256
+        (base32
+         "0cgxbdr4zmil03wwr5fv58789i51gka8a9fxm1dgkf5xs9dwrnlj"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-pytest-trio" ,python-pytest-trio)
+       ("python-pytest-asyncio" ,python-pytest-asyncio)
+       ("python-pytest-runner" ,python-pytest-runner)
+       ("python-pytest" ,python-pytest)
+       ("python-mock" ,python-mock)))
+    (propagated-inputs
+     `(("python-vcversioner" ,python-vcversioner)
+       ("python-twisted" ,python-twisted)
+       ("python-trio" ,python-trio)))
+    (home-page "https://github.com/jfhbrook/pyee")
+    (synopsis "Port of node.js's EventEmitter to python")
+    (description "Provides a port of node.js's EventEmitter to python.")
+    (license license:expat)))
+
 (define-public python-imagesize
   (package
     (name "python-imagesize")
