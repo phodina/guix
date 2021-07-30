@@ -19010,6 +19010,31 @@ from the header, as well as section details and data available.")
     (description "Pyev provides a Python interface to libev.")
     (license license:gpl3)))
 
+(define-public python-pyee
+  (package
+    (name "python-pyee")
+    (version "8.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pyee" version))
+       (sha256
+        (base32
+         "0cgxbdr4zmil03wwr5fv58789i51gka8a9fxm1dgkf5xs9dwrnlj"))))
+    (build-system python-build-system)
+    (native-inputs
+     (list python-pytest-trio python-pytest-asyncio python-pytest-runner
+           python-pytest python-mock))
+    (propagated-inputs
+     (list python-vcversioner python-twisted python-trio))
+    (home-page "https://github.com/jfhbrook/pyee")
+    (synopsis "Port of Node.js's EventEmitter to Python")
+    (description "Pyee supplies a @code{EventEmitter} object that is similar
+to the @code{EventEmitter} class from Node.js.  It also supplies a number of
+subclasses with added support for async and threaded programming in Python,
+such as async/await.")
+    (license license:expat)))
+
 (define-public python-imagesize
   (package
     (name "python-imagesize")
