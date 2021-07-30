@@ -10235,6 +10235,24 @@ plugin for flake8 to check PEP-8 naming conventions.")
          ,@(package-arguments base)))
     (native-inputs `()))))
 
+(define-public python-petact
+  (package
+    (name "python-petact")
+    (version "0.1.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "petact" version))
+       (sha256
+        (base32
+         "1rjh0fjimmixbvrv6znkfrfa83ndjc4pgyfyl90iwq3az120vjsx"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/matthewscholefield/petact")
+    (synopsis "Package extraction tool")
+    (description "Library used for installing and updating compressed tar
+files.")
+    (license license:expat))) ; MIT
+
 (define-public python-pyflakes
   (package
     (name "python-pyflakes")
