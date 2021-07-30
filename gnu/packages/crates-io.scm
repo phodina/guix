@@ -27503,6 +27503,42 @@ bytestring representations.")
         ("rust-futures-util" ,rust-futures-util-0.3)
         ("rust-tokio" ,rust-tokio-0.2))))))
 
+(define-public rust-intel-mkl-tool-0.1
+  (package
+    (name "rust-intel-mkl-tool")
+    (version "0.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "intel-mkl-tool" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1myyrxvmyij4c60w9x15npwzhlbjm8y8c94lvfsnrl5pbyakz8md"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-curl" ,rust-curl-0.4)
+         ("rust-dirs" ,rust-dirs-2)
+         ("rust-env-logger" ,rust-env-logger-0.7)
+         ("rust-failure" ,rust-failure-0.1)
+         ("rust-glob" ,rust-glob-0.3)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-pkg-config" ,rust-pkg-config-0.3)
+         ("rust-structopt" ,rust-structopt-0.3)
+         ("rust-tar" ,rust-tar-0.4)
+         ("rust-zstd" ,rust-zstd-0.5))))
+    (home-page
+      "https://github.com/rust-math/intel-mkl-src")
+    (synopsis
+      "CLI utility for redistributiing Intel(R) MKL")
+    (description
+      "CLI utility for redistributiing Intel(R) MKL")
+    (license license:expat)))
+
 (define-public rust-interpolate-name-0.2
   (package
     (name "rust-interpolate-name")
