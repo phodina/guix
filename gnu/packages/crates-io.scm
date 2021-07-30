@@ -27771,6 +27771,26 @@ There does not need to be a central list of all the plugins.")
     ;; Either license can be chosen at the users option.
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-invalidstring-0.1
+  (package
+    (name "rust-invalidstring")
+    (version "0.1.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "invalidstring" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1k7061smkxgjmix16wim2c4qb8gkdggaxilkd9yxhmza5lgpsmi2"))))
+    (build-system cargo-build-system)
+    (home-page "https://github.com/extrawurst/gitui")
+    (synopsis "just for testing invalid string data")
+    (description
+      "just for testing invalid string data")
+    (license license:expat)))
+
 (define-public rust-inventory-0.1
   (package
     (inherit rust-inventory-0.2)
