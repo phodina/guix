@@ -951,6 +951,63 @@ by modifying your @file{Cargo.toml} file from the command line.")
 
 (define-deprecated rust-cargo-edit-0.8 rust-cargo-edit)
 
+(define-public gitui
+  (package
+    (name "gitui")
+    (version "0.16.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "gitui" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "00dzi5yb3l967w5c0crmgkmaz24bnndsgfyqickx7swz7b5qczs6"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-anyhow" ,rust-anyhow-1)
+         ("rust-asyncgit" ,rust-asyncgit-0.16)
+         ("rust-backtrace" ,rust-backtrace-0.3)
+         ("rust-bitflags" ,rust-bitflags-1)
+         ("rust-bugreport" ,rust-bugreport-0.4)
+         ("rust-bytesize" ,rust-bytesize-1)
+         ("rust-chrono" ,rust-chrono-0.4)
+         ("rust-clap" ,rust-clap-2)
+         ("rust-crossbeam-channel"
+          ,rust-crossbeam-channel-0.5)
+         ("rust-crossterm" ,rust-crossterm-0.19)
+         ("rust-dirs-next" ,rust-dirs-next-2)
+         ("rust-easy-cast" ,rust-easy-cast-0.4)
+         ("rust-filetreelist" ,rust-filetreelist-0.2)
+         ("rust-itertools" ,rust-itertools-0.10)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-pprof" ,rust-pprof-0.4)
+         ("rust-rayon-core" ,rust-rayon-core-1)
+         ("rust-ron" ,rust-ron-0.6)
+         ("rust-scopeguard" ,rust-scopeguard-1)
+         ("rust-scopetime" ,rust-scopetime-0.1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-simplelog" ,rust-simplelog-0.10)
+         ("rust-syntect" ,rust-syntect-4)
+         ("rust-textwrap" ,rust-textwrap-0.14)
+         ("rust-tui" ,rust-tui-0.15)
+         ("rust-unicode-segmentation"
+          ,rust-unicode-segmentation-1)
+         ("rust-unicode-truncate"
+          ,rust-unicode-truncate-0.2)
+         ("rust-unicode-width" ,rust-unicode-width-0.1)
+         ("rust-which" ,rust-which-4))
+        #:cargo-development-inputs
+        (("rust-pretty-assertions"
+          ,rust-pretty-assertions-0.7))))
+    (home-page "https://github.com/extrawurst/gitui")
+    (synopsis "blazing fast terminal-ui for git")
+    (description "blazing fast terminal-ui for git")
+    (license license:expat)))
+
 (define-public git-interactive-rebase-tool
   (package
     (name "git-interactive-rebase-tool")
