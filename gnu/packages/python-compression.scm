@@ -426,6 +426,29 @@ wrapper.  It provides a backport of the @code{Path} object.")
 @code{ZlibCompress} method of the the @code{zopfli} library.")
     (license license:asl2.0)))
 
+
+(define-public python-zipstream-new
+  (package
+    (name "python-zipstream-new")
+    (version "1.1.8")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "zipstream-new" version))
+        (sha256
+          (base32
+            "0xhw24zhibmyypcdbmvql02jcf3npisb29lx71w1drcl3ccgwcdh"))))
+    (build-system python-build-system)
+    (native-inputs `(("python-nose" ,python-nose)
+                     ("python-markdown" ,python-markdown)))
+    (home-page
+      "https://github.com/arjan-s/python-zipstream")
+    (synopsis
+      "Zipfile generator")
+    (description
+      "Zipfile generator that takes input files as well as streams")
+    (license license:gpl3)))
+
 (define-public python-zstandard
   (package
     (name "python-zstandard")
