@@ -41666,6 +41666,46 @@ overloading without macros in Rust.")
 and Postgres values.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-pprof-0.4
+  (package
+    (name "rust-pprof")
+    (version "0.4.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "pprof" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1vkd2ngdvvcs00wbcfw3j3hbqapypqrz7yfahd98akb99l900xic"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-backtrace" ,rust-backtrace-0.3)
+         ("rust-criterion" ,rust-criterion-0.3)
+         ("rust-inferno" ,rust-inferno-0.10)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-nix" ,rust-nix-0.20)
+         ("rust-parking-lot" ,rust-parking-lot-0.11)
+         ("rust-prost" ,rust-prost-0.7)
+         ("rust-prost-build" ,rust-prost-build-0.7)
+         ("rust-prost-derive" ,rust-prost-derive-0.7)
+         ("rust-symbolic-demangle"
+          ,rust-symbolic-demangle-8)
+         ("rust-tempfile" ,rust-tempfile-3)
+         ("rust-thiserror" ,rust-thiserror-1))))
+    (home-page "https://github.com/tikv/pprof-rs")
+    (synopsis
+      "An internal perf tools for rust programs.")
+    (description
+      "An internal perf tools for rust programs.")
+    (license license:asl2.0)))
+
 (define-public rust-ppv-lite86-0.2
   (package
     (name "rust-ppv-lite86")
