@@ -4890,6 +4890,46 @@ crate.")
 methods.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-asyncgit-0.16
+  (package
+    (name "rust-asyncgit")
+    (version "0.16.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "asyncgit" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1cpw8fysbpqfkdvx9a821r5yp09plgjvi7ddh4lzlhrm2f282p8b"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-crossbeam-channel"
+          ,rust-crossbeam-channel-0.5)
+         ("rust-easy-cast" ,rust-easy-cast-0.4)
+         ("rust-git2" ,rust-git2-0.13)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-openssl-sys" ,rust-openssl-sys-0.9)
+         ("rust-rayon-core" ,rust-rayon-core-1)
+         ("rust-scopetime" ,rust-scopetime-0.1)
+         ("rust-thiserror" ,rust-thiserror-1)
+         ("rust-unicode-truncate"
+          ,rust-unicode-truncate-0.2)
+         ("rust-url" ,rust-url-2))
+        #:cargo-development-inputs
+         (("rust-invalidstring" ,rust-invalidstring-0.1)
+          ("rust-pretty-assertions" ,rust-pretty-assertions-0.7)
+	  ("rust-serial-test" ,rust-serial-test-0.5)
+	  ("rust-tempfile" ,rust-tempfile-3))))
+    (home-page "https://github.com/extrawurst/gitui")
+    (synopsis
+      "allow using git2 in a asynchronous context")
+    (description
+      "allow using git2 in a asynchronous context")
+    (license license:expat)))
+
 (define-public rust-atom-0.3
   (package
     (name "rust-atom")
