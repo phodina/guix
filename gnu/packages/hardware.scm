@@ -4,6 +4,7 @@
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2021 Evgeny Pisemsky <evgeny@pisemsky.com>
 ;;; Copyright © 2021 Léo Le Bouter <lle-bout@zaclys.net>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -22,6 +23,7 @@
 
 (define-module (gnu packages hardware)
   #:use-module (gnu packages admin)
+  #:use-module (gnu packages assembly)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
@@ -45,6 +47,7 @@
   #:use-module (gnu packages python)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml)
@@ -255,6 +258,54 @@ specific SMBIOS tables.")
     (home-page "https://github.com/dell/libsmbios")
     (license
      (list license:osl2.1 license:gpl2+ license:bsd-3 license:boost1.0))))
+
+(define-public libx86emu
+(package
+  (name "libx86emu")
+  (version "3.1")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/wfeldt/libx86emu")
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "104xqc6nj9rpi7knl3dfqvasf087hlz2n5yndb1iycw35a6j509b"))))
+  (build-system gnu-build-system)
+  (arguments
+    `(#:make-flags (list
+                    (string-append "CC=" ,(cc-for-target))
+                    (string-append "DESTDIR=" %output)
+                    (string-append "LIBDIR=/lib"))
+      #:phases (modify-phases %standard-phases
+                (delete 'configure)
+                (add-after 'unpack 'fix-version-and-usr
+                 (lambda* (#:key inputs #:allow-other-keys)
+                  (delete-file "git2log")
+                  (let* ((file (open-file "VERSION" "a")))
+                   (display ,version file)
+                   (close-port file))
+                  (substitute* "Makefile"
+                           (("/usr") "/"))))
+                (replace 'check
+                 (lambda* _
+                  (invoke "make" "test"))))))
+  (native-inputs `(("git" ,git) ("perl" ,perl) ("nasm" ,nasm)))
+  (synopsis "Library for x86 emulation")
+  (description "Small library to emulate x86 instructions.  The focus here
+is not a complete emulation (go for qemu for this) but to cover enough for
+typical firmware blobs.
+@enumerate
+@item intercept any memory access or directly map real memory ranges
+@item intercept any i/o access, map real i/o ports, or block any real i/o
+@item intercept any interrupt
+@item provides hook to run after each instruction
+@item recognizes a special x86 instruction that can trigger logging
+@item has integrated logging
+@end enumerate")
+  (home-page "https://github.com/wfeldt/libx86emu")
+  (license license:bsd-1)))
 
 ;; Distinct from memtest86, which is obsolete.
 (define-public memtest86+
