@@ -173,6 +173,36 @@ through the Display Data Channel Command Interface (@dfn{DDC/CI}) protocol.")
 human-readable format and checks if it conforms to the standards.")
       (license license:expat))))
 
+(define-public hw-probe
+(package
+  (name "hw-probe")
+  (version "f450cad0cf686756c32689595e6d0092933e5959") ; no tags
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/linuxhw/hw-probe")
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "16qh5nzv42sg5r6bjg0a9vcmmva87vnw4d778b35zs5gm3gzw370"))))
+  (build-system gnu-build-system)
+  (arguments
+    '(#:tests? #f
+      #:make-flags (list (string-append "DESTDIR=" (assoc-ref %outputs "out")) "prefix=")
+      #:phases (modify-phases %standard-phases
+                (delete 'configure))))
+  (inputs `(("perl" ,perl)
+            ("hwinfo" ,hwinfo)))
+  (propagated-inputs `(("dmidecode" ,dmidecode)
+                       ("smartmontools" ,smartmontools)
+                       ("edid-decode" ,edid-decode)))
+  (synopsis "Probe for hardware, check operability and find drivers")
+  (description "Tool to probe for hardware, check operability and find drivers
+with the help of Linux hardware database: https://linux-hardware.org")
+  (home-page "https://github.com/linuxhw/hw-probe")
+  (license license:lgpl2.1)))
+
 (define-public hwinfo
 (package
   (name "hwinfo")
