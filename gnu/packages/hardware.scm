@@ -32,6 +32,7 @@
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages documentation)
+  #:use-module (gnu packages flex)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
@@ -171,6 +172,54 @@ through the Display Data Channel Command Interface (@dfn{DDC/CI}) protocol.")
       (description "edid-decode decodes @dfn{EDID} monitor description data in
 human-readable format and checks if it conforms to the standards.")
       (license license:expat))))
+
+(define-public hwinfo
+(package
+  (name "hwinfo")
+  (version "21.75")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/openSUSE/hwinfo")
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "139bgzwi8iy1dz0g8mqpq9iig8klsmnb5c2sp0v7qgbgh7xxnqn3"))))
+  (build-system gnu-build-system)
+  (arguments
+    `(#:tests? #f ; no tests
+      ;; disable as there is a bug where the src/hd is not build as dependency
+      #:parallel-build? #f
+      #:make-flags (list
+                    (string-append "DESTDIR=" %output)
+                    (string-append "LDFLAGS=-Lsrc -Wl,-rpath=" %output "/lib")
+                    (string-append "CC=" ,(cc-for-target))
+                    (string-append "HWINFO_VERSION=" ,version))
+      #:phases (modify-phases %standard-phases
+                (delete 'configure)
+                (add-after 'unpack 'fix-sbin-and-flex
+                 (lambda* (#:key inputs #:allow-other-keys)
+                  (delete-file "git2log")
+                  (let* ((file (open-file "VERSION" "a")))
+                   (display ,version file)
+                   (close-port file))
+                  (substitute* "Makefile"
+                           (("/sbin") "/bin")
+                           (("/usr/lib.*") "/lib\n")
+                           (("^TARGETS.*") "TARGETS = hwinfo hwinfo.pc\n")
+                           (("/usr") "/"))
+                  (substitute* "src/isdn/cdb/Makefile"
+                           (("lex isdn_cdb.lex") "flex isdn_cdb.lex"))
+                  (substitute* "hwinfo.pc.in"
+                           (("prefix=/usr") (string-append "prefix=" %output))))))))
+  (native-inputs `(("flex" ,flex) ("perl" ,perl) ("pkg-config" ,pkg-config)))
+  (inputs `(("libx86emu" ,libx86emu) ("util-linux:lib" ,util-linux "lib")))
+  (synopsis "Hardware information tool")
+  (description "Probe for the hardware present in the system.  It can be used
+to generate a system overview log which can be later used for support.")
+  (home-page "https://github.com/openSUSE/hwinfo")
+  (license license:gpl2)))
 
 (define-public i7z
   (let ((revision "0")
