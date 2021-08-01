@@ -19985,6 +19985,34 @@ multitouch applications.")
      It includes optional utilities to integrate with Flask.")
     (license license:expat)))
 
+(define-public python-mdit-py-plugins
+  (package
+    (name "python-mdit-py-plugins")
+    (version "0.2.8")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "mdit-py-plugins" version))
+        (sha256
+          (base32
+            "0pq11jn19pm21hr8x2qyhza168sxi0hgri4f72jq0bjh8pvcx4ar"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      `(("python-markdown-it-py" ,python-markdown-it-py)))
+    (native-inputs
+      `(("python-coverage" ,python-coverage)
+        ("python-pytest" ,python-pytest)
+        ("python-pytest-cov" ,python-pytest-cov)
+        ("python-pytest-regressions"
+         ,python-pytest-regressions)))
+    (home-page
+      "https://github.com/executablebooks/mdit-py-plugins")
+    (synopsis
+      "Collection of plugins for markdown-it-py")
+    (description
+      "Collection of plugins for markdown-it-py")
+    (license license:expat)))
+
 (define-public python-apispec
   (package
     (name "python-apispec")
