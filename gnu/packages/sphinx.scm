@@ -751,6 +751,33 @@ and several other projects.")
 to be able to read and render the Doxygen xml output.")
     (license license:bsd-3)))
 
+(define-public python-sphinx-inline-tabs
+  (package
+    (name "python-sphinx-inline-tabs")
+    (version "2021.4.11b9")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "sphinx-inline-tabs" version))
+        (sha256
+          (base32
+            "1rcg7yhv3skzva60c5g0w0qlffcsfq99jgz687dbl1dlh2cpn9h9"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      `(("python-furo" ,python-furo)
+        ("python-myst-parser" ,python-myst-parser)
+        ("python-pytest" ,python-pytest)
+        ("python-pytest-cov" ,python-pytest-cov)
+        ("python-pytest-xdist" ,python-pytest-xdist)
+        ("python-sphinx" ,python-sphinx)))
+    (home-page
+      "https://github.com/pradyunsg/sphinx-inline-tabs")
+    (synopsis
+      "Add inline tabbed content to your Sphinx documentation.")
+    (description
+      "Add inline tabbed content to your Sphinx documentation.")
+    (license #f)))
+
 (define-public python-sphinx-intl
   (package
     (name "python-sphinx-intl")
