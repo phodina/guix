@@ -2852,6 +2852,25 @@ supports url redirection and retries, and also gzip and deflate decoding.")
       `(("python-ipaddress" ,python2-ipaddress)
         ,@(package-propagated-inputs base))))))
 
+(define-public python-url-normalize
+  (package
+    (name "python-url-normalize")
+    (version "1.4.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "url-normalize" version))
+        (sha256
+          (base32
+            "1clrr7xc1qlxph0v90w7ag6x2246izka0n8w7aw6fan5183klgfj"))))
+    (build-system python-build-system)
+    (propagated-inputs `(("python-six" ,python-six)))
+    (home-page
+      "https://github.com/niksite/url-normalize")
+    (synopsis "URL normalization for Python")
+    (description "URL normalization for Python")
+    (license license:expat)))
+
 (define-public awscli
   (package
     ;; Note: updating awscli typically requires updating botocore as well.
