@@ -20514,6 +20514,36 @@ lines are read from a single file.")
 (define-public python2-linecache2
   (package-with-python2 python-linecache2))
 
+(define-public python-linkify-it-py
+  (package
+    (name "python-linkify-it-py")
+    (version "1.0.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "linkify-it-py" version))
+        (sha256
+          (base32
+            "11yhsqi6kmk6yc6hpa3l835f3vy7zwaam5pf0z027xbba7p35dlh"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      `(("python-uc-micro-py" ,python-uc-micro-py)))
+    (native-inputs
+      `(("python-black" ,python-black)
+        ("python-coverage" ,python-coverage)
+        ("python-flake8" ,python-flake8)
+        ("python-isort" ,python-isort)
+        ("python-pre-commit" ,python-pre-commit)
+        ("python-pytest" ,python-pytest)
+        ("python-pytest-cov" ,python-pytest-cov)))
+    (home-page
+      "https://github.com/tsutsu3/linkify-it-py")
+    (synopsis
+      "Links recognition library with FULL unicode support.")
+    (description
+      "Links recognition library with FULL unicode support.")
+    (license license:expat)))
+
 (define-public python-traceback2
   (package
     (name "python-traceback2")
