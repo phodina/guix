@@ -931,6 +931,29 @@ support for rich output such as images, LaTeX math and even JavaScript
 widgets, and supports thebelab for live code execution with minimal effort.")
     (license license:bsd-3)))
 
+(define-public python-sphinxcontrib-apidoc
+  (package
+    (name "python-sphinxcontrib-apidoc")
+    (version "0.3.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "sphinxcontrib-apidoc" version))
+        (sha256
+          (base32
+            "1f9zfzggs8a596jw51fpfmr149n05mrlyy859iydazbvry9gb6vj"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      `(("python-pbr" ,python-pbr)
+        ("python-sphinx" ,python-sphinx)))
+    (home-page
+      "https://github.com/sphinx-contrib/apidoc")
+    (synopsis
+      "A Sphinx extension for running 'sphinx-apidoc' on each build")
+    (description
+      "A Sphinx extension for running 'sphinx-apidoc' on each build")
+    (license #f)))
+
 (define-public python-sphinxcontrib-autoprogram
   (package
     (name "python-sphinxcontrib-autoprogram")
