@@ -25516,6 +25516,30 @@ implements the complete mapping interface.  It can be used as a drop-in
 replacement for dictionaries where immutability is desired.")
     (license license:expat)))
 
+(define-public python-uc-micro-py
+  (package
+    (name "python-uc-micro-py")
+    (version "1.0.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "uc-micro-py" version))
+        (sha256
+          (base32
+            "15mmznkpks2yn2n3pgngq1i7jvzj101230iczvfl6c23g7mg9kdp"))))
+    (build-system python-build-system)
+    (native-inputs
+      `(("python-coverage" ,python-coverage)
+        ("python-pytest" ,python-pytest)
+        ("python-pytest-cov" ,python-pytest-cov)))
+    (home-page
+      "https://github.com/tsutsu3/uc.micro-py")
+    (synopsis
+      "Micro subset of unicode data files for linkify-it-py projects.")
+    (description
+      "Micro subset of unicode data files for linkify-it-py projects.")
+    (license license:expat)))
+
 (define-public python-unpaddedbase64
   (package
     (name "python-unpaddedbase64")
