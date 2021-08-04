@@ -10973,7 +10973,8 @@ chrono-tz Rust crate.")
      (origin
        (method url-fetch)
        (uri (crate-uri "chunked_transfer" version))
-       (file-name (string-append name "-" version ".tar.gz"))
+       (file-name
+        (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
          "0bkdlsrszfcscw3j6yhs7kj6jbp8id47jjk6h9k58px47na5gy7z"))))
