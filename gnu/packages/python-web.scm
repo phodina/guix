@@ -4146,6 +4146,7 @@ library for Python")
         ("python-pylru" ,python-pylru)
         ("python-pyserial" ,python-pyserial)
         ("python-pyyaml" ,python-pyyaml)
+        ("python-immutabledict" ,python-immutabledict)
         ("python-regex" ,python-regex)
         ("python-requests" ,python-requests)
         ("python-sarge" ,python-sarge)
@@ -4176,7 +4177,9 @@ library for Python")
                     (lambda* _
                         (substitute* "setup.py"
                                            (("wrapt>=1.12.1,<2")
-                                            "wrapt"))
+                                            "wrapt")
+                                           (("markdown>=3.1,<3.2")
+					    "markdown>=3.1"))
                                #true)))))
     (home-page "https://octoprint.org")
     (synopsis
