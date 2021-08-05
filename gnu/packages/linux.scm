@@ -147,6 +147,7 @@
   #:use-module (gnu packages video)
   #:use-module (gnu packages vulkan)
   #:use-module (gnu packages web)
+  #:use-module (gnu packages wget)
   #:use-module (gnu packages xiph)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xdisorg)
@@ -158,6 +159,7 @@
   #:use-module (guix build-system copy)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system go)
+  #:use-module (guix build-system copy)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
@@ -7578,6 +7580,81 @@ interfaces in parallel environments.")
     ;; Only Intel-compatable processors are supported.
     (supported-systems '("i686-linux" "x86_64-linux"))
     (license (list license:bsd-2 license:gpl2)))) ;dual
+
+(define-public spectre-meltdown-checker
+  (package
+    (name "spectre-meltdown-checker")
+    (version "0.44")
+    (source 
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/speed47/spectre-meltdown-checker")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1b47wlc52jnp2d5c7kbqnxmlm4g3cfbv25q30llv5mlmzs6d7bam"))))
+    (build-system copy-build-system)
+    (arguments
+     `(#:install-plan '(("spectre-meltdown-checker.sh"
+                         "bin/spectre-meltdown-checker.sh"))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'unzip-intelfw
+           (lambda* (#:key inputs #:allow-other-keys)
+             (invoke "unzip" (assoc-ref inputs "intelfw"))))
+         (add-after 'install 'patch-paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((out (assoc-ref %outputs "out"))
+                   (paths (map
+                           (lambda (input)
+                             (string-append (assoc-ref inputs input) "/bin"))
+                           '("coreutils" "grep" "util-linux" "iucode-tool"
+                             "util-linux-with-udev" "gawk" "gzip" "lzop"
+                             "lzop" "perl" "procps" "sqlite" "wget" "which" "xz" "zstd"))))
+               (for-each
+                (lambda (program)
+                  (wrap-program
+                      (string-append out "/" program)
+                    `("PATH" prefix ,paths)))
+                '("bin/spectre-meltdown-checker.sh"))))))))
+    (inputs `(("binutils" ,binutils)
+              ("coreutils",coreutils)
+              ("gawk" ,gawk)
+              ("grep" ,grep)
+              ("gzip" ,gzip)
+              ("intelfw", (origin
+                            (method url-fetch)
+                            (uri
+                             "https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files/archive/main.zip")
+                            (sha256
+                             (base32
+                              "1zpf1h864f9lqdjf867xg5cw3xpq4l335g7dqpyl2zhb13kk0dhy"))))
+              ("iucode-tool" ,iucode-tool)
+              ("lzop" ,lzop)
+              ("mcedb", (origin
+                          (method url-fetch)
+                          (uri "https://github.com/platomav/MCExtractor/raw/master/MCE.db")
+                          (sha256
+                           (base32
+                            "1lms4q6g17jz7pqvl8fcbpbsxxz84nax18zhn9b532svldxg7gh2"))))
+              ("perl" ,perl)
+              ("procps" ,procps)
+              ("sqlite" ,sqlite)
+              ("unzip" ,unzip)
+              ("util-linux" ,util-linux)
+              ("util-linux-with-udev" ,util-linux+udev)
+              ("wget" ,wget)
+              ("which" ,which)
+              ("xz" ,xz)
+              ("zstd" ,zstd)))
+    (synopsis "Spectre, Meltdown ... vulnerability/mitigation checker")
+    (description "A shell script to assess your system's resilience against
+the several transient execution CVEs that were published since early 2018,
+and give you guidance as to how to mitigate them.")
+    (home-page "https://github.com/speed47/spectre-meltdown-checker")
+    (license license:gpl3)))
 
 (define-public snapscreenshot
   (package
