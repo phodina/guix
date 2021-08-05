@@ -69277,6 +69277,32 @@ library.")
     (description "This package provides an implementation of zbase32.")
     (license license:lgpl3+)))
 
+(define-public rust-zbus-macros-1
+  (package
+    (name "rust-zbus-macros")
+    (version "1.9.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "zbus_macros" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "14sziniysx55501jq1fiimg93c3d8hydpdcjkfw831p455hcb0m4"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-proc-macro-crate"
+          ,rust-proc-macro-crate-0.1)
+         ("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://gitlab.freedesktop.org/dbus/zbus/")
+    (synopsis "Procedural macros for zbus")
+    (description "This crate provides procedural macros for zbus.")
+    (license license:expat)))
+
 (define-public rust-zerocopy-0.3
   (package
     (name "rust-zerocopy")
