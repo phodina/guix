@@ -5057,6 +5057,62 @@ they're not available.")
      "This package provides a synchronization primitive for task wakeup.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-attohttpc-0.17
+  (package
+    (name "rust-attohttpc")
+    (version "0.17.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "attohttpc" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0bg0d95smcd5nrp5d3h1c3w1vlizdrvnq412jcrjn9jpahqdm2ws"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?  #t
+        #:cargo-inputs
+        (("rust-encoding-rs" ,rust-encoding-rs-0.8)
+         ("rust-encoding-rs-io" ,rust-encoding-rs-io-0.1)
+         ("rust-flate2" ,rust-flate2-1)
+         ("rust-http" ,rust-http-0.2)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-mime" ,rust-mime-0.3)
+         ("rust-multipart" ,rust-multipart-0.17)
+         ("rust-native-tls" ,rust-native-tls-0.2)
+         ("rust-openssl" ,rust-openssl-0.10)
+         ("rust-rustls" ,rust-rustls-0.18)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-json" ,rust-serde-json-1)
+         ("rust-serde-urlencoded"
+          ,rust-serde-urlencoded-0.6)
+         ("rust-webpki" ,rust-webpki-0.21)
+         ("rust-webpki-roots" ,rust-webpki-roots-0.19)
+         ("rust-wildmatch" ,rust-wildmatch-1))
+        #:cargo-development-inputs
+        (("rust-url" ,rust-url-2)
+         ("rust-anyhow" ,rust-anyhow-1)
+         ("rust-env-logger" ,rust-env-logger-0.7)
+         ("rust-hyper" ,rust-hyper-0.13)
+         ("rust-futures" ,rust-futures-0.3)
+         ("rust-futures-util" ,rust-futures-util-0.3)
+         ("rust-tokio" ,rust-tokio-0.2)
+         ("rust-tokio-rustls" ,rust-tokio-rustls-0.22)
+         ("rust-wrap" ,rust-wrap-0.1))
+        #:phases
+        (modify-phases %standard-phases
+          (add-after 'unpack 'fix-version-requirements
+            (lambda _
+              (substitute* "Cargo.toml"
+                (("tokio]\nversion = \"0.2\"") (string-append "tokio]\nversion = \"" ,(package-version rust-tokio-0.2) "\""))
+                (("tokio-rustls]\nversion = \"0.14\"") (string-append "tokio-rustls]\nversion = \"" ,(package-version rust-tokio-rustls-0.22) "\"")))
+             #t)))))
+    (home-page "https://github.com/sbstp/attohttpc")
+    (synopsis "Small and lightweight HTTP client")
+    (description "This crate provides small and lightweight HTTP client.")
+    (license license:mpl2.0)))
+
 (define-public rust-atty-0.2
   (package
     (name "rust-atty")
