@@ -69363,6 +69363,54 @@ library.")
     (description "This package provides an implementation of zbase32.")
     (license license:lgpl3+)))
 
+(define-public rust-zbus-1
+  (package
+    (name "rust-zbus")
+    (version "1.9.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "zbus" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1bcx5vf75iscgfdn3pszkbr6n20pvddry24lnws4xb53g71sq9i3"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?  #t
+        #:rust ,rust-1.52                ;requires the "resolver" feature
+        #:cargo-inputs
+        (("rust-async-io" ,rust-async-io-1)
+         ("rust-byteorder" ,rust-byteorder-1)
+         ("rust-derivative" ,rust-derivative-2)
+         ("rust-enumflags2" ,rust-enumflags2-0.6)
+         ("rust-fastrand" ,rust-fastrand-1)
+         ("rust-futures" ,rust-futures-0.3)
+         ("rust-nb-connect" ,rust-nb-connect-1)
+         ("rust-nix" ,rust-nix-0.17)
+         ("rust-once-cell" ,rust-once-cell-1)
+         ("rust-polling" ,rust-polling-2)
+         ("rust-scoped-tls" ,rust-scoped-tls-1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-xml-rs" ,rust-serde-xml-rs-0.4)
+         ("rust-serde-repr" ,rust-serde-repr-0.1)
+         ("rust-zbus-macros" ,rust-zbus-macros-1)
+         ("rust-zvariant" ,rust-zvariant-2))
+       #:cargo-development-inputs
+       (("rust-ntest" ,rust-ntest-0.7)
+        ("rust-doc-comment" ,rust-doc-comment-0.3))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-version-requirements
+           (lambda _
+             (substitute* "Cargo.toml"
+               (("0.3.3") ,(package-version rust-doc-comment-0.3)))
+            #t)))))
+    (home-page "https://gitlab.freedesktop.org/dbus/zbus/")
+    (synopsis "API for D-Bus communication")
+    (description "This crate provides API for D-Bus communication.")
+    (license license:expat)))
+
 (define-public rust-zbus-macros-1
   (package
     (name "rust-zbus-macros")
