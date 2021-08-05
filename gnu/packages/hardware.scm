@@ -12,6 +12,7 @@
 ;;; Copyright © 2022 Zhu Zihao <all_but_last@163.com>
 ;;; Copyright © 2022 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2022 Marius Bakke <marius@gnu.org>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,6 +33,7 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages check)
@@ -57,6 +59,7 @@
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
+  #:use-module (gnu packages ssh)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages virtualization)
   #:use-module (gnu packages web)
@@ -630,6 +633,48 @@ such as the Turbo Boost ratio and Thermal Design Power (@dfn{TDP}) limits.
 MSR addresses differ (greatly) between processors, and any such modification can
 be dangerous and may void your CPU or system board's warranty.")
     (license license:gpl2)))     ; cpuid.c is gpl2, {rd,wr}msr.c are gpl2+
+
+(define-public novaboot
+(package
+  (name "novaboot")
+  (version "20210126a")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+                  (url "https://github.com/wentasah/novaboot")
+                  (commit version)))
+            (file-name (git-file-name name version))
+            (patches (search-patches "novatool-wvtool.patch"))
+            (sha256
+             (base32
+              "1xwgxpngjp345fg4xmacyxm21wqvx4h6n6b51wnvivvzjj9vga4z"))))
+  (build-system gnu-build-system)
+  (arguments
+    `(#:tests? #f ; requires flock lslocks, also failing tests 
+      #:make-flags (list (string-append "DESTDIR=" (assoc-ref %outputs "out")))
+      #:phases
+        (modify-phases %standard-phases
+          (delete 'configure)
+          (add-before 'build 'set-prefix-in-makefile
+            (lambda* _
+              (substitute* "Makefile"
+                (("^test") "check"))
+              (substitute* "tests/uboot.wv"
+                (("/usr/bin/env bash") (which "bash"))))))))
+  (native-inputs `(("python" ,python)
+		   ("sudo" ,sudo)
+                   ("diffutils" ,diffutils)
+                   ("openssh" ,openssh)))
+  (inputs `(("perl" ,perl)
+            ("perl-io-tty" ,perl-io-tty)
+            ("perl-expect" ,perl-expect)))
+  (synopsis "Automates booting of operating systems on target hardware or in qemu")
+  (description "Novaboot is a tool that automates booting of operating systems")
+;on target hardware (typically embedded boards) or in Qemu.  Initially, it was
+;developed to boot NOVA Microhypervisor (hence the name), but nowadays is well
+;suited for booting Linux (and perhaps other OSes) too.")
+  (home-page "https://github.com/wentasah/novaboot")
+  (license license:gpl2+)))
 
 (define-public openhmd
   (package
