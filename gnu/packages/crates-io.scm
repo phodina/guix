@@ -36573,8 +36573,7 @@ varying noise for textural use and graphical display.")
      (origin
        (method url-fetch)
        (uri (crate-uri "notify" version))
-       (file-name
-        (string-append name "-" version ".tar.gz"))
+       (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
          "1gadf8jf1vz7sip37rlwa66vw85ripy6977ibcfbiynii1v4mbl0"))))
@@ -36593,6 +36592,41 @@ varying noise for textural use and graphical display.")
        #:cargo-development-inputs
        (("rust-tempfile" ,rust-tempfile-3))))
     (license license:cc0)))
+
+(define-public rust-notify-rust-4
+  (package
+    (name "rust-notify-rust")
+    (version "4.5.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "notify-rust" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (patches (search-patches "rust-notify-rust-remove-macos-win.patch"))
+        (sha256
+          (base32
+            "0iq2wwyfn4rhrxy1b3h8hadvpcghay1k33c26l6bcs3jrm1afb1a"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:rust ,rust-1.52                ;requires the "resolver" feature
+        #:cargo-inputs
+        (("rust-chrono" ,rust-chrono-0.4)
+         ("rust-dbus" ,rust-dbus-0.9)
+         ("rust-image" ,rust-image-0.23)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-zbus" ,rust-zbus-1)
+         ("rust-zvariant" ,rust-zvariant-2)
+         ("rust-zvariant-derive" ,rust-zvariant-derive-2))
+        #:cargo-development-inputs
+        (("rust-maplit" ,rust-maplit-1)
+         ("rust-color-backtrace" ,rust-color-backtrace-0.5))))
+    (home-page "https://github.com/hoodie/notify-rust")
+    (synopsis "Show desktop notifications")
+    (description "This crate provides dbus client and server to show desktop
+notifications.")
+    (license (list license:expat license:asl2.0))))
 
 (define-public rust-notmuch-0.6
   (package
