@@ -68768,6 +68768,27 @@ is designed to be a very thin layer around Windows API to provide a safe Rusty
 API but without hiding any functionality.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-wrap-0.1
+  (package
+    (name "rust-wrap")
+    (version "0.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "wrap" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1ax1fzbs1a8k5jr1x8yahw3yz41hmkqir5xz19063bz85i8lh57y"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-development-inputs
+        (("rust-lazy-static" ,rust-lazy-static-0.2))))
+    (home-page "https://github.com/jaemk/wrap")
+    (synopsis "Generic function wrapping")
+    (description "This crate provides generic function wrapping.")
+    (license license:expat)))
+
 (define-public rust-write-json-0.1
   (package
     (name "rust-write-json")
