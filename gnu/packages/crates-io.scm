@@ -69603,6 +69603,33 @@ library.")
 compression library.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-zvariant-derive-2
+  (package
+    (name "rust-zvariant-derive")
+    (version "2.7.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "zvariant_derive" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1sbhic5pdv03qx6ci4zwpn1llk92pmwpr2l7c6ninbch7naxgwac"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:rust ,rust-1.52                ;requires the "resolver" feature
+        #:cargo-inputs
+        (("rust-proc-macro-crate"
+          ,rust-proc-macro-crate-1)
+         ("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://gitlab.freedesktop.org/dbus/zbus/")
+    (synopsis "D-Bus & GVariant encoding & decoding")
+    (description "This crate provides D-Bus & GVariant encoding & decoding.")
+    (license license:expat)))
+
 (define-public rust-packed-struct
   (package
     (name "rust-packed-struct")
