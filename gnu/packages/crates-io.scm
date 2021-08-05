@@ -56209,6 +56209,79 @@ deeply recursive algorithms that may accidentally blow the stack.")
     (description "New standard library, old compiler.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-starship-0.56
+  (package
+    (name "rust-starship")
+    (version "0.56.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "starship" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0ggqdrmb2jg58pg5ysbm4gv5v359js8kqxsd1vmnzgdxj1v0kkjn"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-ansi-term" ,rust-ansi-term-0.12)
+         ("rust-attohttpc" ,rust-attohttpc-0.17)
+         ("rust-battery" ,rust-battery-0.7)
+         ("rust-byte-unit" ,rust-byte-unit-4)
+         ("rust-chrono" ,rust-chrono-0.4)
+         ("rust-clap" ,rust-clap-2)
+         ("rust-directories-next"
+          ,rust-directories-next-2)
+         ("rust-gethostname" ,rust-gethostname-0.2)
+         ("rust-git2" ,rust-git2-0.13)
+         ("rust-indexmap" ,rust-indexmap-1)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-native-tls" ,rust-native-tls-0.2)
+         ("rust-nix" ,rust-nix-0.21)
+         ("rust-notify-rust" ,rust-notify-rust-4)
+         ("rust-once-cell" ,rust-once-cell-1)
+         ("rust-open" ,rust-open-1)
+         ("rust-os-info" ,rust-os-info-3)
+         ("rust-path-slash" ,rust-path-slash-0.1)
+         ("rust-pest" ,rust-pest-2)
+         ("rust-pest-derive" ,rust-pest-derive-2)
+         ("rust-process-control" ,rust-process-control-3)
+         ("rust-quick-xml" ,rust-quick-xml-0.22)
+         ("rust-rand" ,rust-rand-0.8)
+         ("rust-rayon" ,rust-rayon-1)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-rust-ini" ,rust-rust-ini-0.17)
+         ("rust-semver" ,rust-semver-1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-json" ,rust-serde-json-1)
+         ("rust-shadow-rs" ,rust-shadow-rs-0.6)
+         ("rust-shadow-rs" ,rust-shadow-rs-0.6)
+         ("rust-shell-words" ,rust-shell-words-1)
+         ("rust-starship-module-config-derive"
+          ,rust-starship-module-config-derive-0.2)
+         ("rust-strsim" ,rust-strsim-0.10)
+         ("rust-sys-info" ,rust-sys-info-0.9)
+         ("rust-term-size" ,rust-term-size-0.3)
+         ("rust-toml" ,rust-toml-0.5)
+         ("rust-unicode-segmentation"
+          ,rust-unicode-segmentation-1)
+         ("rust-unicode-width" ,rust-unicode-width-0.1)
+         ("rust-urlencoding" ,rust-urlencoding-1)
+         ("rust-versions" ,rust-versions-3)
+         ("rust-which" ,rust-which-4)
+         ("rust-winapi" ,rust-winapi-0.3)
+         ("rust-yaml-rust" ,rust-yaml-rust-0.4))
+        #:cargo-development-inputs
+        (("rust-mockall" ,rust-mockall-0.10)
+         ("rust-tempfile" ,rust-tempfile-3))))
+    (home-page "https://starship.rs")
+    (synopsis "Minimal, blazing-fast, and infinitely customizable prompt for any
+shell!")
+    (description
+      "This crate provides minimal, blazing-fast, and infinitely customizable
+prompt for any shell!")
+    (license license:isc)))
+
 (define-public rust-starship-module-config-derive-0.2
   (package
     (name "rust-starship-module-config-derive")
