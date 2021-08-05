@@ -157,6 +157,7 @@
   #:use-module (gnu packages video)
   #:use-module (gnu packages vulkan)
   #:use-module (gnu packages web)
+  #:use-module (gnu packages wget)
   #:use-module (gnu packages xiph)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xdisorg)
@@ -170,6 +171,7 @@
   #:use-module (guix build-system copy)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system go)
+  #:use-module (guix build-system copy)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
@@ -8158,6 +8160,84 @@ including errata.")
     (description "This package provides a tool MC Extractor which parses Intel,
 AMD, VIA and Freescale processor microcode binaries")
     (license license:bsd-2)))
+
+(define-public spectre-meltdown-checker
+  (package
+    (name "spectre-meltdown-checker")
+    (version "0.45")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/speed47/spectre-meltdown-checker")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1xx8h5791lhc2xw0dcbzjkklzvlxwxkjzh8di4g8divfy24fqsn8"))))
+    (build-system copy-build-system)
+    (arguments
+     (list #:install-plan #~`(("spectre-meltdown-checker.sh"
+                             "bin/spectre-meltdown-checker.sh"))
+           #:phases #~(modify-phases %standard-phases
+                        (add-after 'unpack 'replace-paths
+                          (lambda* (#:key inputs #:allow-other-keys)
+                            (substitute* "spectre-meltdown-checker.sh"
+							(("mcedb_cache=") (string-append "mcedb_cache="
+							#$mcextractor "/share/MCE.db"))
+							(("intel_tmp=") (string-append "intel_tmp="
+                                    #$intelfw)))))
+                        (add-after 'install 'patch-paths
+                          (lambda* (#:key inputs #:allow-other-keys)
+                            (let ((paths (map (lambda (input)
+                                                (string-append (assoc-ref
+                                                                inputs input)
+                                                               "/bin"))
+                                              '("coreutils" "grep"
+                                                "util-linux"
+                                                "iucode-tool"
+                                                "util-linux-with-udev"
+                                                "gawk"
+                                                "gzip"
+                                                "lzop"
+                                                "lzop"
+                                                "perl"
+                                                "procps"
+                                                "sqlite"
+                                                "wget"
+                                                "which"
+                                                "xz"
+                                                "zstd"))))
+                                          (wrap-program (string-append #$output
+										  "/bin/spectre-meltdown-checker.sh")
+                                                        `("PATH" prefix
+                                                          ,paths))))))))
+    (inputs (list bash-minimal
+                  binutils
+                  coreutils
+                  gawk
+                  grep
+                  gzip
+                  iucode-tool
+                  intelfw
+                  lzop
+                  mcextractor
+                  perl
+                  procps
+                  sqlite
+                  unzip
+                  util-linux
+                  util-linux+udev
+                  wget
+                  which
+                  xz
+                  zstd))
+    (synopsis "Spectre, Meltdown ... vulnerability/mitigation checker")
+    (description
+     "A shell script to assess your system's resilience against
+the several transient execution CVEs that were published since early 2018,
+and give you guidance as to how to mitigate them.")
+    (home-page "https://github.com/speed47/spectre-meltdown-checker")
+    (license license:gpl3)))
 
 (define-public snapscreenshot
   (package
