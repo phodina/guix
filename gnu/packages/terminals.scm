@@ -27,6 +27,7 @@
 ;;; Copyright © 2021 Raphaël Mélotte <raphael.melotte@mind.be>
 ;;; Copyright © 2021 ikasero <ahmed@ikasero.com>
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -47,6 +48,7 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix build-system cargo)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system copy)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system go)
@@ -58,6 +60,7 @@
   #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages build-tools)   ;for meson-0.55
   #:use-module (gnu packages check)
   #:use-module (gnu packages cmake)
@@ -69,6 +72,7 @@
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages fribidi)
+  #:use-module (gnu packages gawk)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages gl)
@@ -809,6 +813,57 @@ a server/client mode.")
 It's a terminal emulator with few dependencies, so you don't need a full GNOME
 desktop installed to have a decent terminal emulator.")
     (license license:gpl2)))
+
+(define-public shell-color-scripts
+  (let ((commit "3dbdfac24bb629238fdc3e1c8909e2c8577f8735")
+        (revision "1"))
+    (package
+      (name "colorscript")
+      (version commit)
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://gitlab.com/dwt1/shell-color-scripts")
+                      (commit version)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0lkiz6fkrqryr1vh0lh067q7hp8ba8887pkk8caipqphjswp2z16"))))
+      (build-system copy-build-system)
+      (arguments
+       `(#:install-plan '(("colorscript.sh" "bin/colorscript.sh")
+                          ("colorscripts" "colorscripts"))
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'fix-colorscipts-location
+             (lambda* (#:key outputs #:allow-other-keys)
+               (substitute* "colorscript.sh"
+                 (("/opt/shell-color-scripts/colorscripts")
+                  (string-append (assoc-ref outputs "out") "/colorscripts"))
+                 (("sed") (string-append
+                            (assoc-ref %build-inputs "sed") "/bin/sed"))
+                 (("awk") (string-append
+                            (assoc-ref %build-inputs "gawk") "/bin/awk"))
+                 (("wc") (string-append
+                           (assoc-ref %build-inputs "coreutils") "/bin/wc"))
+                 (("nl") (string-append
+                           (assoc-ref %build-inputs "coreutils") "/bin/nl"))
+                 (("cut") (string-append
+                            (assoc-ref %build-inputs "coreutils") "/bin/cut"))
+                 (("echo") (string-append
+                            (assoc-ref %build-inputs "coreutils") "/bin/echo"))
+                 (("printf") (string-append
+                    (assoc-ref %build-inputs "coreutils") "/bin/printf"))
+                 (("tr") (string-append
+                    (assoc-ref %build-inputs "coreutils") "/bin/tr"))))))))
+      (inputs `(("ncurses" ,ncurses)
+                ("gawk" ,gawk)
+                ("sed" ,sed)
+                ("coreutils" ,coreutils)))
+      (synopsis "Collection of terminal color scripts")
+      (description "Collection of terminal color scripts")
+      (home-page "https://gitlab.com/dwt1/shell-color-scripts")
+      (license license:expat))))
 
 (define-public go-github.com-nsf-termbox-go
   (let ((commit "288510b9734e30e7966ec2f22b87c5f8e67345e3")
