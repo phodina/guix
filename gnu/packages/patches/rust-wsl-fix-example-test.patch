@@ -1,0 +1,13 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index 424f61f..2b35967 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -2,7 +2,7 @@
+ //!
+ //! # Usage
+ //! ```
+-//! wsl::is_wsl()
++//! wsl::is_wsl();
+ //! ```
+ //!
+ #![deny(clippy::all)]

@@ -70044,6 +70044,28 @@ serialization.")
      "Contains function definitions for the Windows API library ws2_32.")
     (license license:expat)))
 
+(define-public rust-wsl-0.1
+  (package
+    (name "rust-wsl")
+    (version "0.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "wsl" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+	(patches (search-patches "rust-wsl-fix-example-test.patch"))
+        (sha256
+          (base32
+            "1m2hg4sfnrwm67fb1vsgycy36l2hbgmcpgllcpmbs427hsnbgnpq"))))
+    (build-system cargo-build-system)
+    (home-page "https://github.com/Dentosal/wsl-rs")
+    (synopsis
+      "Detect if the program is running under Windows Subsystem for Linux")
+    (description
+      "Detect if the program is running under Windows Subsystem for Linux")
+    (license license:expat)))
+
 (define-public rust-wyhash-0.5
   (package
     (name "rust-wyhash")
