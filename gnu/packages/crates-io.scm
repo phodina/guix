@@ -11011,6 +11011,34 @@ traits.")
 derive crate.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-clap-generate-3
+  (package
+    (name "rust-clap-generate")
+    (version "3.0.0-beta.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "clap_generate" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "13ynl0bqfkllcv5zpqrj0hbplhqccqxd9kswj792idl7nvw21x5d"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-clap" ,rust-clap-3))))
+    (home-page "https://clap.rs/")
+    (synopsis
+      "Generator library used with clap for shell completion scripts, manpage,
+etc")
+    (description
+      "This package provides a generator library used with clap for shell
+completion scripts, manpage, etc.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-clap-3
   (package
     (name "rust-clap")
