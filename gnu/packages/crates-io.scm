@@ -23523,6 +23523,39 @@ timeouts and delays with futures.")
 for the @code{futures-rs} library.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-fuse-0.3
+  (package
+    (name "rust-fuse")
+    (version "0.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "fuse" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0q46kr5z0d0ljallydb417dwgcd2ib5q2ak6jgpvyrh9a5q71rc0"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-libc" ,rust-libc-0.2)
+         ("rust-log" ,rust-log-0.3)
+         ("rust-pkg-config" ,rust-pkg-config-0.3)
+         ("rust-thread-scoped" ,rust-thread-scoped-1)
+         ("rust-time" ,rust-time-0.1))
+        #:cargo-development-inputs
+        (("rust-env-logger" ,rust-env-logger-0.3))))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (inputs `(("fuse", fuse)))
+    (home-page
+      "https://github.com/zargony/fuse-rs")
+    (synopsis
+      "Rust library for filesystems in userspace (FUSE)")
+    (description
+      "Rust library for filesystems in userspace (FUSE)")
+    (license license:expat)))
+
 (define-public rust-futures-util-preview-0.3
   (package
     (name "rust-futures-util-preview")
