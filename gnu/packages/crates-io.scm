@@ -61626,7 +61626,6 @@ different for every thread.")
      `(#:cargo-inputs
        (("rust-thread-id" ,rust-thread-id-2))))))
 
-<<<<<<< HEAD
 (define-public rust-thread-priority-0.4
   (package
     (name "rust-thread-priority")
@@ -61650,7 +61649,7 @@ different for every thread.")
     (description
      "Library for managing threads priority and schedule policies.")
     (license license:expat)))
-=======
+
 (define-public rust-thread-scoped-1
   (package
     (name "rust-thread-scoped")
@@ -61672,7 +61671,6 @@ different for every thread.")
     (description
       "Unsafe and deprecated std::thread::scoped")
     (license (list license:expat license:asl2.0))))
->>>>>>> 7b85753fed (gnu: Add rust-thread-scoped.)
 
 (define-public rust-thread-tree-0.3
   (package
@@ -71197,6 +71195,7 @@ configuration file and/or environment variables.")
     (description "Rust for Windows")
     (license (list license:expat license:asl2.0))))
 
+<<<<<<< HEAD
 (define-public rust-windows-x86-64-msvc-0.28
   (package
     (name "rust-windows-x86-64-msvc")
@@ -71381,6 +71380,39 @@ if they were just another Rust module.")
     (description "This package provides a small library for parsing an XML
 file into an in-memory tree structure.")
     (license license:expat)))
+=======
+(define-public rust-x25519-dalek-1
+  (package
+    (name "rust-x25519-dalek")
+    (version "1.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "x25519-dalek" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0kqzyy7sbv2054qc9q9ha899nbg8dkl6a2m0ysb3nzhha98i032s"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-curve25519-dalek"
+          ,rust-curve25519-dalek-3)
+         ("rust-rand-core" ,rust-rand-core-0.5)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-zeroize" ,rust-zeroize-1))
+        #:cargo-development-inputs
+        (("rust-bincode" ,rust-bincode-1)
+         ("rust-criterion" ,rust-criterion-0.3))))
+    (home-page "https://dalek.rs/")
+    (synopsis
+      "X25519 elliptic curve Diffie-Hellman key exchange")
+    (description
+      "X25519 elliptic curve Diffie-Hellman key exchange in pure-Rust, using
+curve25519-dalek.")
+    (license license:bsd-3)))
+>>>>>>> d50629f478 (gnu: Add rust-x25519-dalek.)
 
 (define-public rust-xmltree-0.8
   (package
