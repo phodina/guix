@@ -40818,6 +40818,38 @@ in pure Rust.")
         ("rust-sha-1" ,rust-sha-1-0.9)
         ("rust-sha2" ,rust-sha2-0.9))))))
 
+(define-public rust-pbkdf2-0.8
+  (package
+    (name "rust-pbkdf2")
+    (version "0.8.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "pbkdf2" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1ykgicvyjm41701mzqhrfmiz5sm5y0zwfg6csaapaqaf49a54pyr"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-base64ct" ,rust-base64ct-1)
+         ("rust-crypto-mac" ,rust-crypto-mac-0.11)
+         ("rust-hmac" ,rust-hmac-0.11)
+         ("rust-password-hash" ,rust-password-hash-0.2)
+         ("rust-rayon" ,rust-rayon-1)
+         ("rust-sha-1" ,rust-sha-1-0.9)
+         ("rust-sha2" ,rust-sha2-0.9))))
+    (home-page "https://github.com/RustCrypto/password-hashes")
+    (synopsis "Generic implementation of PBKDF2")
+    (description "This package contains a collection of password hashing
+algorithms, otherwise known as password-based key derivation functions, written
+in pure Rust.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-pbkdf2-0.4
   (package
     (inherit rust-pbkdf2-0.10)
