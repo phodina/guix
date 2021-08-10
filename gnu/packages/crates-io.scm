@@ -40540,14 +40540,29 @@ Format (MCF).")
       (origin
         (method url-fetch)
         (uri (crate-uri "password-hash" version))
-        (file-name (string-append name "-" version ".tar.gz"))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
         (sha256
-          (base32 "1ymh3np2bamjy8rszimksxcp264dclil4620bxm8rff9pyj6m62l"))))
+          (base32
+            "10i2jp5d3cng482baqrfwz01i0p981ianjmqffpc3lh5qblx99f1"))))
+    (build-system cargo-build-system)
     (arguments
-     `(#:skip-build? #t
-       #:cargo-inputs
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
         (("rust-base64ct" ,rust-base64ct-1)
-         ("rust-rand-core" ,rust-rand-core-0.6))))))
+         ("rust-rand-core" ,rust-rand-core-0.6)
+         ("rust-subtle" ,rust-subtle-2))))
+    (home-page
+      "https://github.com/RustCrypto/traits/tree/master/password-hash")
+    (synopsis
+      "Traits describing the functionality of password hashing algorithms")
+    (description
+      "Traits which describe the functionality of password hashing algorithms,
+as well as a `no_std`-friendly implementation of the PHC string format
+(a well-defined subset of the Modular Crypt Format a.k.a.  MCF)
+")
+    (license (list license:expat license:asl2.0))))
 
 (define-public rust-paste-1
   (package
