@@ -51572,6 +51572,32 @@ quickly convert floating point numbers to decimal strings.")
         ("rust-sha2" ,rust-sha2-0.6)
         ("rust-url" ,rust-url-2))))))
 
+(define-public rust-salsa20-0.8
+  (package
+    (name "rust-salsa20")
+    (version "0.8.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "salsa20" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0ykqc3zyh4qp8zx4kr9a3j6wb33cyhz3zd51w53skssbhq85yz0w"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-cipher" ,rust-cipher-0.3)
+         ("rust-zeroize" ,rust-zeroize-1))
+        #:cargo-development-inputs
+        (("rust-cipher" ,rust-cipher-0.3))))
+    (home-page
+      "https://github.com/RustCrypto/stream-ciphers")
+    (synopsis "Salsa20 Stream Cipher")
+    (description "Salsa20 Stream Cipher")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-salsa-macros-0.17
   (package
     (name "rust-salsa-macros")
