@@ -14511,6 +14511,7 @@ abstractions around common WinAPI calls.")
 number ``crunching``.")
     (license license:expat)))
 
+<<<<<<< HEAD
 (define-public rust-crunchy-0.1
   (package
     (inherit rust-crunchy-0.2)
@@ -14523,6 +14524,30 @@ number ``crunching``.")
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
           (base32 "1nnbh2k3pv1diyd0i0p3a08kd4afqc17yz0b43hn5xn9qlqs9x52"))))))
+=======
+(define-public rust-roff-0.1
+  (package
+    (name "rust-roff")
+    (version "0.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "roff" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0pk76fw9hqnvr8qbd5r8yq08zpgymk14wgkn5h2qhs54gfrlygp3"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page
+      "https://github.com/rust-cli/roff-rs")
+    (synopsis
+      "ROFF (man page format) generation library")
+    (description
+      "ROFF (man page format) generation library")
+    (license (list license:expat license:asl2.0))))
+>>>>>>> e6cb7c4fa5 (gnu: Add rust-roff.)
 
 (define-public rust-roxmltree-0.14
   (package
