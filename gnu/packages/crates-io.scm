@@ -23556,6 +23556,37 @@ for the @code{futures-rs} library.")
       "Rust library for filesystems in userspace (FUSE)")
     (license license:expat)))
 
+(define-public rust-fuse-mt-0.5
+  (package
+    (name "rust-fuse-mt")
+    (version "0.5.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "fuse_mt" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1yksh6j3j8695yliab6vkzib0b1kc9wmnsqs60rkkwjwfvxr2ijr"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-fuse" ,rust-fuse-0.3)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-threadpool" ,rust-threadpool-1)
+         ("rust-time" ,rust-time-0.1))))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (inputs `(("fuse", fuse)))
+    (home-page "https://github.com/wfraser/fuse-mt")
+    (synopsis
+      "Higher-level FUSE filesystem library")
+    (description
+      "This package provides a higher-level FUSE filesystem library with
+multi-threading and inode->path translation.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-futures-util-preview-0.3
   (package
     (name "rust-futures-util-preview")
