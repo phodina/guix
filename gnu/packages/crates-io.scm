@@ -32738,6 +32738,30 @@ platform-independently.")
     "This package provides structs for handling malloc'd memory passed to Rust.")
    (license license:expat)))
 
+(define-public rust-man-0.3
+  (package
+    (name "rust-man")
+    (version "0.3.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "man" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1jd103brl70sh1hxm2w3n6z3pzazrznsl45cn53h3a47a5wzmxgb"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-roff" ,rust-roff-0.1))))
+    (home-page "https://github.com/rust-cli/man")
+    (synopsis "Generate structured man pages")
+    (description "Generate structured man pages")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-maplit-1
   (package
     (name "rust-maplit")
