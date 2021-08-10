@@ -55793,6 +55793,28 @@ variants in pure Rust.")
 designed for @code{immutable.rs}.")
     (license license:mpl2.0)))
 
+(define-public rust-subtle-2
+  (package
+    (name "rust-subtle")
+    (version "2.4.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "subtle" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "00b6jzh9gzb0h9n25g06nqr90z3xzqppfhhb260s1hjhh4pg7pkb"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://dalek.rs/")
+    (synopsis
+      "Traits and utilities for constant-time cryptographic implementations.")
+    (description
+      "Traits and utilities for constant-time cryptographic implementations.")
+    (license license:bsd-3)))
+
 (define-public rust-skeptic-0.9
   (package
     (name "rust-skeptic")
