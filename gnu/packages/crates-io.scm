@@ -14539,7 +14539,6 @@ abstractions around common WinAPI calls.")
 number ``crunching``.")
     (license license:expat)))
 
-<<<<<<< HEAD
 (define-public rust-crunchy-0.1
   (package
     (inherit rust-crunchy-0.2)
@@ -14552,7 +14551,7 @@ number ``crunching``.")
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
           (base32 "1nnbh2k3pv1diyd0i0p3a08kd4afqc17yz0b43hn5xn9qlqs9x52"))))))
-=======
+
 (define-public rust-roff-0.1
   (package
     (name "rust-roff")
@@ -14575,7 +14574,6 @@ number ``crunching``.")
     (description
       "ROFF (man page format) generation library")
     (license (list license:expat license:asl2.0))))
->>>>>>> e6cb7c4fa5 (gnu: Add rust-roff.)
 
 (define-public rust-roxmltree-0.14
   (package
@@ -61564,6 +61562,7 @@ different for every thread.")
      `(#:cargo-inputs
        (("rust-thread-id" ,rust-thread-id-2))))))
 
+<<<<<<< HEAD
 (define-public rust-thread-priority-0.4
   (package
     (name "rust-thread-priority")
@@ -61587,6 +61586,29 @@ different for every thread.")
     (description
      "Library for managing threads priority and schedule policies.")
     (license license:expat)))
+=======
+(define-public rust-thread-scoped-1
+  (package
+    (name "rust-thread-scoped")
+    (version "1.0.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "thread-scoped" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "16dxl8grpii4vh20qikv2x7r871ggsf9m733xysv1lz506inmfxw"))))
+    (build-system cargo-build-system)
+    (home-page
+      "https://github.com/arcnmx/thread-scoped-rs")
+    (synopsis
+      "Unsafe and deprecated std::thread::scoped")
+    (description
+      "Unsafe and deprecated std::thread::scoped")
+    (license (list license:expat license:asl2.0))))
+>>>>>>> 7b85753fed (gnu: Add rust-thread-scoped.)
 
 (define-public rust-thread-tree-0.3
   (package
