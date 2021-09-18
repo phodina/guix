@@ -18,6 +18,7 @@
 ;;; Copyright © 2021 Domagoj Stolfa <ds815@gmx.com>
 ;;; Copyright © 2021 Raghav Gururajan <rg@raghavgururajan.name>
 ;;; Copyright © 2021 jgart <jgart@dismail.de>
+;;; Copyright © 2021 Petr Hodina  <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -431,6 +432,29 @@ file for more details.")
            ;; src/libstrongswan/plugins/blowfish/blowfish_crypter.c
            ;; src/libstrongswan/plugins/des/des_crypter.c
            license:bsd-4))))
+
+(define-public vpn-slice
+  (package
+    (name "vpn-slice")
+    (version "0.15")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "vpn-slice" version))
+        (sha256
+          (base32
+            "0lv3g1bq6ssz6fn6zlzn12dahc4d7nf7kjwxsnb5d7gdrfp36lbx"))))
+    (build-system python-build-system)
+    (native-inputs `(("python-pytest" ,python-pytest)))
+    (propagated-inputs
+      `(("python-dnspython" ,python-dnspython)
+        ("python-setproctitle" ,python-setproctitle)))
+    (home-page "https://github.com/dlenski/vpn-slice")
+    (synopsis "Easy and secure split-tunnel VPN setup")
+    (description "This package allows you to minimize your contact with
+an intrusive VPN --- split your traffic between the VPN tunnel and your normal
+network interfaces")
+    (license license:gpl3)))
 
 (define-public vpnc
   (package
