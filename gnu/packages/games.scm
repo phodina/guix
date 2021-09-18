@@ -1766,6 +1766,41 @@ destroying an ancient book using a special wand.")
     ;; license.  The whole package is released under GPLv3+.
     (license license:gpl3+)))
 
+(define-public gemrb
+  (package
+    (name "gemrb")
+    (version "0.9.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/gemrb/gemrb")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0ysv58l1kvnijgg1fbr765krpghhr9xjwk8wajbhj0ip7jw2w01c"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f))
+    (native-inputs (list pkg-config))
+    (inputs (list ,(sdl-union (list sdl2
+                                       sdl2-image
+                                       sdl2-mixer))
+              python
+              openal
+              libpng
+              freetype
+              libiconv
+              libvorbis
+              mesa
+              glew))
+    (synopsis "Open-source implementation of Bioware’s 8 Infinity
+    (description "Game Engine Made with preRendered Background is
+open-source reimplementation of the Infinity Engine that underpin
+Baldur's Gate, Icewind Dale and Planescape: Torment.")
+    (home-page "https://gemrb.org/")
+    (license license:gpl2)))
+
 (define-public gnome-2048
   (package
     (name "gnome-2048")
