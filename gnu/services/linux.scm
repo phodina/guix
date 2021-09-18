@@ -4,6 +4,7 @@
 ;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2021 raid5atemyhomework <raid5atemyhomework@protonmail.com>
 ;;; Copyright © 2021 B. Wilson <elaexuotee@wilsonb.com>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -24,7 +25,9 @@
   #:use-module (guix gexp)
   #:use-module (guix records)
   #:use-module (guix modules)
+  #:use-module (gnu system shadow)
   #:use-module (gnu services)
+  #:use-module (gnu services dbus)
   #:use-module (gnu services base)
   #:use-module (gnu services shepherd)
   #:use-module (gnu packages linux)
@@ -33,7 +36,11 @@
   #:use-module (srfi srfi-34)
   #:use-module (srfi srfi-35)
   #:use-module (ice-9 match)
-  #:export (earlyoom-configuration
+  #:export (bolt-configuration
+            bolt-configuration?
+            bolt-service-type
+
+            earlyoom-configuration
             earlyoom-configuration?
             earlyoom-configuration-earlyoom
             earlyoom-configuration-minimum-available-memory
@@ -60,6 +67,76 @@
             zram-device-configuration-memory-limit
             zram-device-configuration-priority
             zram-device-service-type))
+
+
+;;;
+;;; Thunderbolt daemon.
+;;;
+
+(define-record-type* <bolt-configuration>
+  bolt-configuration make-bolt-configuration bolt-configuration?
+  (package bolt-configuration-package ; package
+           (default bolt)))
+
+(define bolt-shepherd-service
+  (match-lambda
+    (($ <bolt-configuration> package)
+     (with-imported-modules (source-module-closure
+                             '((gnu build shepherd)))
+       (shepherd-service
+        (documentation "Thunderbolt daemon")
+        (provision '(thunderbolt))
+        (requirement '(networking))
+        (modules '((gnu build shepherd)))
+        (start #~(make-forkexec-constructor/container
+                  (list #$(file-append package "/libexec/boltd"))
+		  ))
+        (stop #~(make-kill-destructor)))))))
+
+(define %bolt-activation
+  #~(begin
+      (use-modules (guix build utils))
+      (mkdir-p "/var/lib/boltd")))
+
+(define (bolt-dbus-service config)
+  (list (wrapped-dbus-service (bolt-configuration-bolt config)
+			      "libexec/boltd"
+			      `(("BOLT_CONF_FILE_NAME"
+				 '("share/dbus-1/interfaces/org.freedesktop.bolt.xml"))))))
+
+(define %bolt-accounts
+ (list (user-group (name "boltd") (system? #t))
+       (user-account
+	 (name "boltd")
+	 (group "boltd")
+	 (system? #t)
+	 (comment "Boltd daemon user")
+	 (home-directory "/var/empty")
+	 (shell "/run/current-system/profile/sbin/nologin"))))
+
+(define bolt-udev-rule
+  (match-lambda
+    (($ <bolt-configuration> package)
+  (file->udev-rule "90-bolt.rules" (file-append package "/lib/udev/rules.d/90-bolt.rules")))))
+
+(define bolt-service-type
+  (service-type
+   (name 'boltd)
+   (description
+    "Thunderbolt daemon")
+   (extensions
+    (list (service-extension udev-service-type
+			     (compose list bolt-udev-rule))
+	  (service-extension activation-service-type
+			     (const %bolt-activation))
+	  (service-extension dbus-root-service-type
+	  (compose list bolt-configuration-package))
+	;		     bolt-dbus-service)
+	  (service-extension account-service-type
+			     (const %bolt-accounts))
+          (service-extension shepherd-root-service-type
+                             (compose list bolt-shepherd-service))))
+   (default-value (bolt-configuration))))
 
 
 ;;;
