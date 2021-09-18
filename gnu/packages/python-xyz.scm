@@ -5875,6 +5875,31 @@ color scales, and color space conversion easy.  It has support for:
 @end enumerate\n")
     (license license:expat)))
 
+(define-public python-speech-recognition
+  (package
+    (name "python-speech-recognition")
+    (version "3.8.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Uberi/speech_recognition")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1lq6g4kl3y1b4ch3b6wik7xy743x6pp5iald0jb9zxqgyxy1zsz4"))))
+    (build-system python-build-system)
+    (arguments
+     ;; Attempts to aquire sound card
+     '(#:tests? #f))
+    (inputs `(("python-pyaudio" ,python-pyaudio)))
+    (home-page "https://github.com/Uberi/speech_recognition")
+    (synopsis "Speech recognition module for Python")
+    (description "Library for performing speech recognition, with support for
+several engines and APIs, online and offline.")
+    (license license:bsd-2)))
+
 (define-public python-pyspnego
   (package
     (name "python-pyspnego")
