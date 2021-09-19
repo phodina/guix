@@ -5106,7 +5106,7 @@ they're not available.")
             (lambda _
               (substitute* "Cargo.toml"
                 (("tokio]\nversion = \"0.2\"") (string-append "tokio]\nversion = \"" ,(package-version rust-tokio-0.2) "\""))
-                (("tokio-rustls]\nversion = \"0.14\"") (string-append "tokio-rustls]\nversion = \"" ,(package-version rust-tokio-rustls-0.22) "\"")))
+                (("tokio-rustls]\nversion = \"^0.14\"") (string-append "tokio-rustls]\nversion = \"" ,(package-version rust-tokio-rustls-0.22) "\"")))
              #t)))))
     (home-page "https://github.com/sbstp/attohttpc")
     (synopsis "Small and lightweight HTTP client")
@@ -56223,7 +56223,8 @@ deeply recursive algorithms that may accidentally blow the stack.")
             "0ggqdrmb2jg58pg5ysbm4gv5v359js8kqxsd1vmnzgdxj1v0kkjn"))))
     (build-system cargo-build-system)
     (arguments
-      `(#:cargo-inputs
+      `(#:rust ,rust-1.52                ;requires the "resolver" feature
+	#:cargo-inputs
         (("rust-ansi-term" ,rust-ansi-term-0.12)
          ("rust-attohttpc" ,rust-attohttpc-0.17)
          ("rust-battery" ,rust-battery-0.7)
@@ -56274,6 +56275,20 @@ deeply recursive algorithms that may accidentally blow the stack.")
         #:cargo-development-inputs
         (("rust-mockall" ,rust-mockall-0.10)
          ("rust-tempfile" ,rust-tempfile-3))))
+;       #:phases
+;       (modify-phases %standard-phases
+;         (add-after 'unpack 'fix-version-requirements
+;           (lambda _
+;             (substitute* "Cargo.toml"
+;               (("0.8.4") ,(package-version rust-rand-0.8))
+;               (("1.0.126") ,(package-version rust-serde-1))
+;               (("1.3.3") ,(package-version rust-urlencoding-1))
+;               (("1.5.1") ,(package-version rust-rayon-1))
+;               (("4.0.12") ,(package-version rust-byte-unit-4)))
+;            #t)))))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (inputs `(("openssl" ,openssl)
+              ("zlib" ,zlib)))
     (home-page "https://starship.rs")
     (synopsis "Minimal, blazing-fast, and infinitely customizable prompt for any
 shell!")
@@ -69689,6 +69704,38 @@ serialization.")
      "This package provides custom derive for traits from the zerocopy Rust
 crate.")
     (license license:bsd-3)))
+
+(define-public rust-zbus-polkit-2
+  (package
+    (name "rust-zbus-polkit")
+    (version "1.9.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "zbus_polkit" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "00zddcnrijnkl213mkz2bgpf8309fvb6ilvjqsmiqg2icc31g3z5"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-enumflags2" ,rust-enumflags2-0.6)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-repr" ,rust-serde-repr-0.1)
+         ("rust-static-assertions"
+          ,rust-static-assertions-1)
+         ("rust-zbus" ,rust-zbus-2)
+         ("rust-zvariant" ,rust-zvariant-2))
+        #:cargo-development-inputs
+        (("rust-byteorder" ,rust-byteorder-1)
+         ("rust-doc-comment" ,rust-doc-comment-0.3))))
+    (home-page
+      "https://gitlab.freedesktop.org/dbus/zbus/")
+    (synopsis "PolicyKit binding")
+    (description "PolicyKit binding")
+    (license license:expat)))
 
 (define-public rust-zeroize-1
   (package
