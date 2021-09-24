@@ -7231,15 +7231,15 @@ javascript engine and the GObject introspection framework.")
 (define-public gedit
   (package
     (name "gedit")
-    (version "3.34.1")
+    (version "40.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/" name "/"
-                                  (version-major+minor version) "/"
+                                  (version-major version) "/"
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "1inm50sdfw63by1lf4f1swb59mpyxlly0g5rdg99j5l3357fzygb"))))
+                "149ngl9qw6h59546lir1pa7hvw23ppsnqlj9mfqphmmn5jl99qsm"))))
     (build-system meson-build-system)
     (arguments
      `(#:glib-or-gtk? #t
@@ -7301,7 +7301,8 @@ javascript engine and the GObject introspection framework.")
             (base32 "16yld0ap7qj1n96h4f2sqkjmibg7xx5xwkqxdfzam2nmyfdlrrrs"))))
        ("pkg-config" ,pkg-config)))
     (inputs
-     `(("glib" ,glib)
+     `(("amtk" ,amtk)
+       ("glib" ,glib)
        ("gspell" ,gspell)
        ("gtk+" ,gtk+)
        ("gtksourceview" ,gtksourceview)
@@ -7310,6 +7311,7 @@ javascript engine and the GObject introspection framework.")
        ("iso-codes" ,iso-codes)
        ("python-pygobject" ,python-pygobject)
        ("python" ,python)
+       ("tepl" ,tepl)
        ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
        ("libx11" ,libx11)
        ("vala" ,vala)
