@@ -9270,15 +9270,12 @@ world.")
     (build-system trivial-build-system)
     (arguments '(#:builder (begin (mkdir %output) #t)))
     (propagated-inputs
-     ;; TODO: Add or remove packages according to:
-     ;;       <https://calc.disroot.org/2nu6mpf88ynq.html>.
-     `(
-     ;; GNOME-Core-OS-Services
+     `(;; GNOME-Core-OS-Services
        ("accountsservice" ,accountsservice)
        ("network-manager" ,network-manager)
        ("packagekit" ,packagekit)
        ("upower" ,upower)
-     ;; GNOME-Core-Shell
+       ;; GNOME-Core-Shell
        ("adwaita-icon-theme" ,adwaita-icon-theme)
        ("gdm" ,gdm)
        ("glib-networking" ,glib-networking)
@@ -9304,7 +9301,7 @@ world.")
        ("orca" ,orca)
        ("rygel" ,rygel)
        ("sushi" ,sushi)
-     ;; GNOME-Core-Utilities
+       ;; GNOME-Core-Utilities
        ("baobab" ,baobab)
        ("cheese" ,cheese)
        ;; XXX: EoG requires librsvg-next, which depends on Rust, which currently
@@ -9325,8 +9322,8 @@ world.")
        ("gnome-disk-utility" ,gnome-disk-utility)
        ("gnome-font-viewer" ,gnome-font-viewer)
        ("gnome-maps" ,gnome-maps)
-       ; TODO: ("gnome-music" ,gnome-music)
-       ; TODO: ("gnome-photos" ,gnome-photos)
+       ("gnome-music" ,gnome-music)
+       ("gnome-photos" ,gnome-photos)
        ("gnome-screenshot" ,gnome-screenshot)
        ("gnome-system-monitor" ,gnome-system-monitor)
        ("gnome-terminal" ,gnome-terminal)
@@ -9335,7 +9332,7 @@ world.")
        ("simple-scan" ,simple-scan)
        ("totem" ,totem)
        ("yelp" ,yelp)
-     ;; Others
+       ;; Others
        ("hicolor-icon-theme" ,hicolor-icon-theme)
        ("gnome-online-accounts" ,gnome-online-accounts)
 
