@@ -16904,6 +16904,58 @@ common subsequence.  The diff algorithms include Myer's diff and Patience
 diff.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-difftastic-0.9
+  (package
+    (name "rust-difftastic")
+    (version "0.10.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "difftastic" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1gvq4m61ih40ddzbjmcbs1apgx3i3im4mmsgx3w95f5vxm1j307l"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-atty" ,rust-atty-0.2)
+         ("rust-cc" ,rust-cc-1)
+         ("rust-clap" ,rust-clap-2)
+         ("rust-colored" ,rust-colored-2)
+         ("rust-criterion" ,rust-criterion-0.3)
+         ("rust-diff" ,rust-diff-0.1)
+         ("rust-itertools" ,rust-itertools-0.8)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-mimalloc" ,rust-mimalloc-0.1)
+         ("rust-pretty-env-logger"
+          ,rust-pretty-env-logger-0.4)
+         ("rust-radix-heap" ,rust-radix-heap-0.3)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-rustc-hash" ,rust-rustc-hash-1)
+         ("rust-strsim" ,rust-strsim-0.10)
+         ("rust-term-size" ,rust-term-size-0.3)
+         ("rust-tree-sitter" ,rust-tree-sitter-0.19)
+         ("rust-typed-arena" ,rust-typed-arena-2))
+        #:cargo-development-inputs
+        (("rust-pretty-assertions"
+          ,rust-pretty-assertions-0.6))
+        #:phases
+          (modify-phases %standard-phases
+            (add-after 'unpack 'enable-unstable-features
+              (lambda _
+               (substitute* "src/lib.rs"
+                (("//! Difftastic is a syntactic diff tool.")
+                 "#![feature(split_inclusive)]
+//! Difftastic is a syntactic diff tool."))
+                (setenv "RUSTC_BOOTSTRAP" "1"))))))
+    (home-page "https://github.com/wilfred/difftastic")
+    (synopsis "Syntactic diffing tool")
+    (description "This package provides a syntactic diffing tool.")
+    (license license:expat)))
+
 (define-public rust-digest-0.10
   (package
     (name "rust-digest")
