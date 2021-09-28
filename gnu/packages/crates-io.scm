@@ -37474,6 +37474,26 @@ PartialOrd types, like floats.")
         (base32
          "0625x96987kspdxbikry5mb7hsf5pdc5bbanxd8wjwqlx0ar71hq"))))))
 
+(define-public rust-ordered-float-0.5
+  (package
+    (inherit rust-ordered-float-1)
+    (name "rust-ordered-float")
+    (version "0.5.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "ordered-float" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "17b6ck0kvdwfch742ndixbbj9fivylnnn53s5hlkyp948fb2bdby"))))
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-num-traits" ,rust-num-traits-0.1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-unreachable" ,rust-unreachable-1))))))
+
 (define-public rust-ordered-multimap-0.3
   (package
     (name "rust-ordered-multimap")
