@@ -668,6 +668,29 @@ conversion.")
     (description "Minimal 2D graphics library for GUI work")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-epi-0.14
+  (package
+    (name "rust-epi")
+    (version "0.14.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "epi" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "12m249ng763ni4mx4qpsgyns18jvmxiip0xqk1m5c8frnk4k7h73"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:rust ,rust-1.52                ;requires the "resolver" feature
+        #:cargo-inputs
+        (("rust-egui" ,rust-egui-0.14)
+         ("rust-ron" ,rust-ron-0.6)
+         ("rust-serde" ,rust-serde-1))))
+    (home-page "https://github.com/emilk/egui")
+    (synopsis "Backend-agnostic interface for writing apps using egui")
+    (description "Backend-agnostic interface for writing apps using egui")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-euclid-0.22
   (package
     (name "rust-euclid")
