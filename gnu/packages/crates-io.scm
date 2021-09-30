@@ -10961,6 +10961,27 @@ transfer coding.")
      "This package provides current CI environment information.")
     (license license:asl2.0)))
 
+(define-public rust-cint-0.2
+  (package
+    (name "rust-cint")
+    (version "0.2.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cint" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0yyp8y2nsxhs2z768hmqypfj4x0m8s2h3yar6vrp6kc552pgx0sx"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs (("rust-bytemuck" ,rust-bytemuck-1))))
+    (home-page "https://github.com/termhn/cint")
+    (synopsis "Color types interoperable between crates in Rust")
+    (description "This package provides a lean, minimal, and stable set
+of types for color interoperation between crates in Rust.")
+    (license (list license:expat license:asl2.0 license:zlib))))
+
 (define-public rust-clang-ast-0.1
   (package
     (name "rust-clang-ast")
