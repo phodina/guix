@@ -64843,6 +64843,27 @@ stream-based WebSocket implementation.")
         ("rust-tokio" ,rust-tokio-0.2)
         ("rust-tokio-test" ,rust-tokio-test-0.2))))))
 
+(define-public rust-tolk-sys-0.2
+  (package
+    (name "rust-tolk-sys")
+    (version "0.2.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "tolk-sys" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0xjc9r0588jbjl1raxp8f4mp18b5898f7yrgv621zfibwxdd6285"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?  #t
+        #:cargo-inputs
+        (("rust-cc" ,rust-cc-1) ("rust-libc" ,rust-libc-0.2))))
+    (home-page "https://github.com/darbaga/tolk-sys")
+    (synopsis "Raw ffi bindings to Tolk.dll")
+    (description "Raw ffi bindings to Tolk.dll")
+    (license license:expat)))
+
 (define-public rust-toml-0.5
   (package
     (name "rust-toml")
