@@ -38269,7 +38269,7 @@ Rust.")
        #:cargo-inputs
        (("rust-derivative" ,rust-derivative-2)
         ("rust-num-enum" ,rust-num-enum-0.4)
-        ("rust-num-enum-derive" ,rust-num-enum-derive-0.4))))
+        ("rust-num-enum-derive" ,rust-num-enum-derive-0.5))))
     (home-page "https://github.com/illicitonion/num_enum")
     (synopsis "Macros easing inter-operation between primitives and enums")
     (description
@@ -38277,17 +38277,17 @@ Rust.")
 primitives and enums easier.")
     (license license:bsd-3)))
 
-(define-public rust-num-enum-derive-0.4
+(define-public rust-num-enum-derive-0.5
   (package
     (name "rust-num-enum-derive")
-    (version "0.4.3")
+    (version "0.5.4")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "num_enum_derive" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "17fvb7xpxq2dsqp5nsz98w1qhkk3gnc56xis53009vnzvlys79gz"))))
+        (base32 "1nfdz1c7cmcq3hdjkiba2hrr0vdj82vshyg6dl4iia64c4cs0vj8"))))
     (build-system cargo-build-system)
     (arguments
      `(#:tests? #f                      ;FIXME: some doc tests fail
