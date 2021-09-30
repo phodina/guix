@@ -2768,17 +2768,17 @@ applications.")
     (description "This package provides the glue for the Android JNI.")
     (license license:expat)))
 
-(define-public rust-android-log-sys-0.1
+(define-public rust-android-log-sys-0.2
   (package
     (name "rust-android-log-sys")
-    (version "0.1.2")
+    (version "0.2.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "android_log-sys" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0klq7cp4lm74gjf9p12zdjcr159blbicrfvadmaqvfxbi8njw1dq"))))
+        (base32 "0bhhs1cgzp9vzjvkn2q31ppc7w4am5s273hkvl5iac5475kmp5l5"))))
     (arguments `(#:skip-build? #true))  ;XXX: Android only
     (build-system cargo-build-system)
     (home-page "https://github.com/nercury/android_log-sys-rs")
@@ -2800,7 +2800,7 @@ applications.")
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-android-log-sys" ,rust-android-log-sys-0.1)
+       (("rust-android-log-sys" ,rust-android-log-sys-0.2)
         ("rust-env-logger" ,rust-env-logger-0.7)
         ("rust-lazy-static" ,rust-lazy-static-1)
         ("rust-log" ,rust-log-0.4))))
