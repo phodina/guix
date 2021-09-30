@@ -34958,6 +34958,30 @@ possible over the OS abstractions.")
     (description "Extra components for use with Mio.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-mio-misc-1
+  (package
+    (name "rust-mio-misc")
+    (version "1.2.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "mio-misc" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1hlxwq64cqz32m1h8mp65dbv8v5nmw101c8vh2swsndi3d0hbpqd"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-crossbeam" ,rust-crossbeam-0.8)
+         ("rust-crossbeam-queue" ,rust-crossbeam-queue-0.3)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-mio" ,rust-mio-0.7))))
+    (home-page "https://github.com/onurzdg/mio-misc")
+    (synopsis "Miscellaneous components for use with Mio")
+    (description "Miscellaneous components for use with Mio")
+    (license license:expat)))
+
 (define-public rust-mio-named-pipes-0.1
   (package
     (name "rust-mio-named-pipes")
