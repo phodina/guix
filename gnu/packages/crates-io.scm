@@ -25374,7 +25374,7 @@ graphics.")
         ("rust-glutin" ,rust-glutin-0.21)
         ("rust-lazy-static" ,rust-lazy-static-1)
         ("rust-smallvec" ,rust-smallvec-0.6)
-        ("rust-takeable-option" ,rust-takeable-option-0.4))
+        ("rust-takeable-option" ,rust-takeable-option-0.5))
        #:cargo-development-inputs
        (("rust-cgmath" ,rust-cgmath-0.17)
         ("rust-genmesh" ,rust-genmesh-0.6)
@@ -60563,10 +60563,10 @@ without a mutable reference.")
     (description "This package lets you temporarily take a T from a &mut T.")
     (license license:expat)))
 
-(define-public rust-takeable-option-0.4
+(define-public rust-takeable-option-0.5
   (package
     (name "rust-takeable-option")
-    (version "0.4.0")
+    (version "0.5.0")
     (source
      (origin
        (method url-fetch)
@@ -60575,7 +60575,7 @@ without a mutable reference.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0hvd6vk4ksgg2y99498jw52ric4lxm0i6ygpzqm95gdrhvsxyynp"))))
+         "182axkm8pq7cynsfn65ar817mmdhayrjmbl371yqp8zyzhr8kbin"))))
     (build-system cargo-build-system)
     (home-page "https://docs.rs/takeable-option/")
     (synopsis "Small wrapper around option")
