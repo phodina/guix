@@ -5131,6 +5131,24 @@ they're not available.")
      "This package provides a synchronization primitive for task wakeup.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-atomic-refcell-0.1
+  (package
+    (name "rust-atomic-refcell")
+    (version "0.1.8")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "atomic_refcell" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "03cpdszm2vj3fhf9gv35pyh6anlr64pr7p6yablh8zwjigsfbdbk"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://github.com/bholley/atomic_refcell")
+    (synopsis "Threadsafe RefCell")
+    (description "This package provide threadsafe RefCell implementation.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-atty-0.2
   (package
     (name "rust-atty")
