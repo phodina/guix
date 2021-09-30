@@ -699,6 +699,36 @@ conversion.")
     (description "Bindings for compiling egui code to WASM for a web page")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-egui-glium-0.14
+  (package
+    (name "rust-egui-glium")
+    (version "0.14.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "egui-glium" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0kxf3yp3w1xqqdn0va3biy51b3246pmyzxfbblpxvxwqms11hawp"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-chrono" ,rust-chrono-0.4)
+         ("rust-copypasta" ,rust-copypasta-0.7)
+         ("rust-directories-next" ,rust-directories-next-2)
+         ("rust-egui" ,rust-egui-0.14)
+         ("rust-epi" ,rust-epi-0.14)
+         ("rust-glium" ,rust-glium-0.30)
+         ("rust-ron" ,rust-ron-0.6)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-tts" ,rust-tts-0.17)
+         ("rust-ureq" ,rust-ureq-2)
+         ("rust-webbrowser" ,rust-webbrowser-0.5))))
+    (home-page "https://github.com/emilk/egui")
+    (synopsis "Bindings for using egui natively using the glium library")
+    (description "Bindings for using egui natively using the glium library")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-emath-0.14
   (package
     (name "rust-emath")
