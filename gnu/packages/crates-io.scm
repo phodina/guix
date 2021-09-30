@@ -70617,6 +70617,33 @@ Therefore, if you are using Microsoft Windows, you already accepted to
 trust these primitives.")
     (license license:bsd-3)))
 
+(define-public rust-windows-0.9
+  (package
+    (name "rust-windows")
+    (version "0.9.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "windows" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0zy9jmhkhmsng7l9qiznxpdh5ns303s875p5kf6a5q9ym0rka7rn"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-const-sha1" ,rust-const-sha1-0.2)
+         ("rust-windows-gen" ,rust-windows-gen-0.9)
+         ("rust-windows-macros" ,rust-windows-macros-0.9))))
+    (home-page
+      "https://github.com/microsoft/windows-rs")
+    (synopsis "Rust for Windows")
+    (description "Rust for Windows")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-windows-gen-0.9
   (package
     (name "rust-windows-gen")
