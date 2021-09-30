@@ -39720,22 +39720,22 @@ platform-native strings.")
      "This package provides a macro to simplify operator overloading.")
     (license license:expat)))
 
-(define-public rust-owned-ttf-parser-0.6
+(define-public rust-owned-ttf-parser-0.12
   (package
     (name "rust-owned-ttf-parser")
-    (version "0.6.0")
+    (version "0.12.1")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "owned_ttf_parser" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1qydjksjcllf0pnm0jkjvbg4n52wfcwv59dl5b06cqn40sw3z4lz"))))
+        (base32 "1c6yxx8rqhls6vljm4hcf58v4gbqz7pkyfqf93v9ph2w5vd8vb30"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-ttf-parser" ,rust-ttf-parser-0.6))))
+       (("rust-ttf-parser" ,rust-ttf-parser-0.12))))
     (home-page "https://github.com/alexheretic/owned-ttf-parser")
     (synopsis "TTF-parser plus support for owned data")
     (description
@@ -51416,7 +51416,7 @@ PEM-encodings commonly used to store keys and certificates at rest.")
         ("rust-libm" ,rust-libm-0.2)
         ("rust-linked-hash-map" ,rust-linked-hash-map-0.5)
         ("rust-num-cpus" ,rust-num-cpus-1)
-        ("rust-owned-ttf-parser" ,rust-owned-ttf-parser-0.6)
+        ("rust-owned-ttf-parser" ,rust-owned-ttf-parser-0.12)
         ("rust-rustc-hash" ,rust-rustc-hash-1))))
     (home-page "https://gitlab.redox-os.org/redox-os/rusttype")
     (synopsis "Pure Rust alternative to libraries like FreeType")
