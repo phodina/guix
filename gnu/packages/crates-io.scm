@@ -36353,7 +36353,7 @@ general elements and for numerics.")
         ("rust-jni-glue" ,rust-jni-glue-0.0)
         ("rust-jni-sys" ,rust-jni-sys-0.3)
         ("rust-ndk-sys" ,rust-ndk-sys-0.2)
-        ("rust-num-enum" ,rust-num-enum-0.4)
+        ("rust-num-enum" ,rust-num-enum-0.5)
         ("rust-thiserror" ,rust-thiserror-1))))
     (home-page "https://github.com/rust-windowing/android-ndk-rs")
     (synopsis "Safe Rust bindings to the Android NDK")
@@ -38252,24 +38252,29 @@ Rust.")
     (description "Numeric syntax extensions in Rust.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-num-enum-0.4
+(define-public rust-num-enum-0.5
   (package
     (name "rust-num-enum")
-    (version "0.4.3")
+    (version "0.5.4")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "num_enum" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1r1nisdzm9m7xm0389nwyi85jhx1bnh5pwllai44ngbgy1ymlmna"))))
+        (base32 "0vzdcrmfx70izz3ns1avaf00jgvbrlsmvm2p9y7ly33kzdax16rz"))))
     (build-system cargo-build-system)
     (arguments
      `(#:tests? #false                  ;missing files
        #:cargo-inputs
        (("rust-derivative" ,rust-derivative-2)
-        ("rust-num-enum" ,rust-num-enum-0.4)
-        ("rust-num-enum-derive" ,rust-num-enum-derive-0.5))))
+        ("rust-num-enum" ,rust-num-enum-0.5)
+        ("rust-num-enum-derive" ,rust-num-enum-derive-0.5))
+       #:cargo-development-inputs
+       (("rust-anyhow" ,rust-anyhow-1)
+	("rust-rustversion" ,rust-rustversion-1)
+	("rust-trybuild" ,rust-trybuild-1)
+	("rust-walkdir" ,rust-walkdir-2))))
     (home-page "https://github.com/illicitonion/num_enum")
     (synopsis "Macros easing inter-operation between primitives and enums")
     (description
