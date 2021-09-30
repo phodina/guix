@@ -39720,10 +39720,10 @@ under its new name.")
         ("rust-nix" ,rust-nix-0.8)
         ("rust-winapi" ,rust-winapi-0.2))))))
 
-(define-public rust-os-str-bytes-2
+(define-public rust-os-str-bytes-3
   (package
     (name "rust-os-str-bytes")
-    (version "2.4.0")
+    (version "3.1.0")
     (source
      (origin
        (method url-fetch)
@@ -39732,7 +39732,7 @@ under its new name.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "11agh8n3x2l4sr3sxvx6byc1j3ryb1g6flb1ywn0qhq7xv1y3cmg"))))
+         "0bfgm53jgdacylwd6ynjhciczmnlrp45p98h0nsrmrhglrcfzjva"))))
     (build-system cargo-build-system)
     (arguments `(#:skip-build? #t))
     (home-page
@@ -39743,6 +39743,21 @@ under its new name.")
      "This package provides a traits for converting between byte sequences and
 platform-native strings.")
     (license (list license:expat license:asl2.0))))
+
+(define-public rust-os-str-bytes-2
+  (package
+    (inherit rust-os-str-bytes-3)
+    (name "rust-os-str-bytes")
+    (version "2.4.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "os_str_bytes" version))
+       (file-name
+        (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "11agh8n3x2l4sr3sxvx6byc1j3ryb1g6flb1ywn0qhq7xv1y3cmg"))))))
 
 (define-public rust-ouroboros-macro-0.14
   (package
