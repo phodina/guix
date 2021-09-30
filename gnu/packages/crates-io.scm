@@ -59375,6 +59375,35 @@ values without proliferating generics.")
         ("rust-syn" ,rust-syn-1)
         ("rust-quote" ,rust-quote-1))))))
 
+(define-public rust-svgtypes-0.5
+  (package
+    (name "rust-svgtypes")
+    (version "0.5.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "svgtypes" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1zv0yb4nfyz78y8k7fmyjqgdh9vf7xc44c9pzry8640szym6ylww"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:tests? #f ; stream::Stream::advance test does not panic
+        #:cargo-inputs
+        (("rust-float-cmp" ,rust-float-cmp-0.5)
+         ("rust-siphasher" ,rust-siphasher-0.3))
+        #:phases
+        (modify-phases %standard-phases
+          (add-after 'unpack 'fix-version-requirements
+            (lambda _
+              (substitute* "Cargo.toml"
+               (("0.2.3") ,(package-version rust-siphasher-0.3)))
+             #t)))))
+    (home-page "https://github.com/RazrFalcon/svgtypes")
+    (synopsis "SVG types parser")
+    (description "This package provides SVG types parser.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-swayipc-2
   (package
     (name "rust-swayipc")
