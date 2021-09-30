@@ -36334,17 +36334,17 @@ general elements and for numerics.")
         ("rust-quickcheck" ,rust-quickcheck-0.7)
         ("rust-rawpointer" ,rust-rawpointer-0.1))))))
 
-(define-public rust-ndk-0.2
+(define-public rust-ndk-0.3
   (package
     (name "rust-ndk")
-    (version "0.2.1")
+    (version "0.3.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "ndk" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0wvf4hy18lpfkr4bap846qv2cx1vdg3x0d4hcfba9l5yzv0ngcay"))))
+        (base32 "1avk39s8w21inkzq09x83yghgq3v8rmhrycba8prg6rif8hk5547"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #true              ;XXX: Android only
@@ -36380,7 +36380,7 @@ general elements and for numerics.")
         ("rust-lazy-static" ,rust-lazy-static-1)
         ("rust-libc" ,rust-libc-0.2)
         ("rust-log" ,rust-log-0.4)
-        ("rust-ndk" ,rust-ndk-0.2)
+        ("rust-ndk" ,rust-ndk-0.3)
         ("rust-ndk-macro" ,rust-ndk-macro-0.2)
         ("rust-ndk-sys" ,rust-ndk-sys-0.2))))
     (home-page "https://github.com/rust-windowing/android-ndk-rs")
