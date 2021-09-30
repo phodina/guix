@@ -35897,6 +35897,40 @@ IO of Windows's named pipes.")
     (description "This package provides a NodeJS N-API raw binding.")
     (license license:expat)))
 
+(define-public rust-native-dialog-0.5
+  (package
+    (name "rust-native-dialog")
+    (version "0.5.5")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "native-dialog" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "12mxgppbj1pcandjph7723w3pbd9rhrx564p1q73agnv2w8b12fn"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-cocoa" ,rust-cocoa-0.24)
+         ("rust-dirs-next" ,rust-dirs-next-2)
+         ("rust-objc" ,rust-objc-0.2)
+         ("rust-objc-foundation"
+          ,rust-objc-foundation-0.1)
+         ("rust-objc-id" ,rust-objc-id-0.1)
+         ("rust-once-cell" ,rust-once-cell-1)
+         ("rust-raw-window-handle"
+          ,rust-raw-window-handle-0.3)
+         ("rust-thiserror" ,rust-thiserror-1)
+         ("rust-wfd" ,rust-wfd-0.1)
+         ("rust-which" ,rust-which-4)
+         ("rust-winapi" ,rust-winapi-0.3))))
+    (home-page "https://github.com/balthild/native-dialog-rs")
+    (synopsis "Library to display dialogs")
+    (description "This package provides a library to display dialogs.")
+    (license license:expat)))
+
 (define-public rust-native-tls-0.2
   (package
     (name "rust-native-tls")
