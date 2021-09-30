@@ -57467,6 +57467,28 @@ track of where each new file and line starts.")
      "An RSpec inspired minimal testing framework for Rust.")
     (license license:expat)))
 
+(define-public rust-speech-dispatcher-sys-0.5
+  (package
+    (name "rust-speech-dispatcher-sys")
+    (version "0.5.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "speech-dispatcher-sys" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1d9d5d5h6fx8mgwmsi66ls1mdh582z3rf0ngxl8kv7g3wwgsjqmn"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?  #t
+        #:cargo-inputs
+        (("rust-bindgen" ,rust-bindgen-0.58)
+         ("rust-gcc" ,rust-gcc-0.3))))
+    (home-page "https://gitlab.com/ndarilek/speech-dispatcher-rs")
+    (synopsis "Speech-dispatcher system bindings")
+    (description "Speech-dispatcher system bindings")
+    (license license:lgpl2.1)))
+
 (define-public rust-spin-0.9
   (package
     (name "rust-spin")
