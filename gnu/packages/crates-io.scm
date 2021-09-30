@@ -93,6 +93,29 @@
 ;;;
 ;;; Please: Try to add new module packages in alphabetic order.
 ;;;
+(define-public rust-ab-glyph-0.2
+  (package
+    (name "rust-ab-glyph")
+    (version "0.2.11")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "ab_glyph" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "103xbs1ka3j4z4k3c4hrz0yq1gr0z6pdr93gdh7z51jzch3c02mg"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-ab-glyph-rasterizer" ,rust-ab-glyph-rasterizer-0.1)
+         ("rust-libm" ,rust-libm-0.2)
+         ("rust-owned-ttf-parser" ,rust-owned-ttf-parser-0.12))))
+    (home-page "https://github.com/alexheretic/ab-glyph")
+    (synopsis "API for OpenType font glyphs")
+    (description "This package provides API for loading, scaling, positioning
+and rasterizing OpenType font glyphs.")
+    (license license:asl2.0)))
 
 (define-public rust-ab-glyph-rasterizer-0.1
   (package
