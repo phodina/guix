@@ -40,6 +40,7 @@
   #:use-module (gnu packages llvm)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages rust)
   #:use-module (gnu packages video))
 
 ;;;
@@ -593,6 +594,7 @@ and iOS.")
     (description "This package provides FFI bindings to dav1d.")
     (license license:expat)))
 
+<<<<<<< HEAD
 (define-public rust-dcv-color-primitives-0.1
   (package
     (name "rust-dcv-color-primitives")
@@ -614,6 +616,28 @@ and iOS.")
     (description "This package is a Rust library to perform image color model
 conversion.")
     (license license:expat)))
+
+(define-public rust-emath-0.14
+  (package
+    (name "rust-emath")
+    (version "0.14.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "emath" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0p71cnrm8blrkbqny182nikcqy9slzfmdfvrpg72hlfim6d1g9fc"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:rust ,rust-1.52                ;requires the "resolver" feature
+        #:skip-build?  #t
+        #:cargo-inputs
+        (("rust-mint" ,rust-mint-0.5) ("rust-serde" ,rust-serde-1))))
+    (home-page "https://github.com/emilk/egui")
+    (synopsis "Minimal 2D math library for GUI work")
+    (description "Minimal 2D math library for GUI work")
+    (license (list license:expat license:asl2.0))))
 
 (define-public rust-euclid-0.22
   (package
