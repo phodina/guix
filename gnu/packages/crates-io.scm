@@ -79,6 +79,7 @@
   #:use-module (gnu packages rust-apps)
   #:use-module (gnu packages sequoia)
   #:use-module (gnu packages serialization)
+  #:use-module (gnu packages speech)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages ssh)
   #:use-module (gnu packages tls)
@@ -57466,6 +57467,29 @@ track of where each new file and line starts.")
     (description
      "An RSpec inspired minimal testing framework for Rust.")
     (license license:expat)))
+
+(define-public rust-speech-dispatcher-0.7
+  (package
+    (name "rust-speech-dispatcher")
+    (version "0.7.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "speech-dispatcher" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "04j42cpnl2cylzg9wxj4cm7h23hkf03w70ma3v25q71sq39glvh7"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-speech-dispatcher-sys" ,rust-speech-dispatcher-sys-0.5))))
+    (inputs `(("speech-dispatcher" ,speech-dispatcher)
+              ("clang" ,clang)))
+    (home-page "https://gitlab.com/ndarilek/speech-dispatcher-rs")
+    (synopsis "Rusty interface to the speech-dispatcher speech synthesis library")
+    (description "Rusty interface to the speech-dispatcher speech synthesis library")
+    (license license:lgpl2.1)))
 
 (define-public rust-speech-dispatcher-sys-0.5
   (package
