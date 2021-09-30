@@ -1532,6 +1532,37 @@ pixel buffers with width, height and stride.")
     (description "JPEG decoder written in Rust.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-klask-0.2
+  (package
+    (name "rust-klask")
+    (version "0.2.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "klask" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "185wpqxbishrn3nm1xcxxwdj6xml6a91ks4jg3l0iwmkzp2bb1dv"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-cansi" ,rust-cansi-2)
+         ("rust-clap" ,rust-clap-3)
+         ("rust-eframe" ,rust-eframe-0.14)
+         ("rust-inflector" ,rust-inflector-0.11)
+         ("rust-linkify" ,rust-linkify-0.7)
+         ("rust-native-dialog" ,rust-native-dialog-0.5)
+         ("rust-thiserror" ,rust-thiserror-1)
+         ("rust-uuid" ,rust-uuid-0.8))
+        #:cargo-development-inputs
+        (("rust-clap" ,rust-clap-3))))
+    (home-page "https://github.com/MichalGniadek/klask")
+    (synopsis "Automatically create GUI for clap apps")
+    (description "This package provides automatical GUI creation for clap apps.")
+    (license license:expat)))
+
 (define-public rust-line-drawing-0.7
   (package
     (name "rust-line-drawing")
