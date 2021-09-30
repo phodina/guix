@@ -64864,6 +64864,29 @@ stream-based WebSocket implementation.")
     (description "Raw ffi bindings to Tolk.dll")
     (license license:expat)))
 
+(define-public rust-tolk-0.5
+  (package
+    (name "rust-tolk")
+    (version "0.5.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "tolk" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1ih09v2jc15k6vlikz20b4sc6nzfs1d56fg7rs87irim8x632ndk"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-tolk-sys" ,rust-tolk-sys-0.2)
+         ("rust-widestring" ,rust-widestring-0.4))))
+    (home-page "https://github.com/darbaga/tolk-rs")
+    (synopsis "Bindings to tolk.dll, a library to talk to screen readers")
+    (description "This package provides bindings to tolk.dll, a library to talk
+to screen readers")
+    (license license:expat)))
+
 (define-public rust-toml-0.5
   (package
     (name "rust-toml")
