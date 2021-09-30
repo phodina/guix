@@ -36361,17 +36361,17 @@ general elements and for numerics.")
      "This package provides safe Rust bindings to the Android NDK.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-ndk-glue-0.2
+(define-public rust-ndk-glue-0.3
   (package
     (name "rust-ndk-glue")
-    (version "0.2.1")
+    (version "0.3.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "ndk-glue" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0hajn6nsg6i3khi7yr2ayafpiznm5z3k5v64afqnz753nyw9kwxx"))))
+        (base32 "11cksaj1f2sy4dwqyssrvvhbnd86zajfvm17bj81rb2i9p1g1jn5"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #true              ;XXX: Android only
