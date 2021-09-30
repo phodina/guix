@@ -667,6 +667,38 @@ conversion.")
     (description "Simple, portable immediate mode GUI library for Rust")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-egui-web-0.14
+  (package
+    (name "rust-egui-web")
+    (version "0.14.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "egui_web" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1pnrzamq17yjdz27ah6r12q415wvaanabvxz1ik8j5d30gp7w2m7"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:rust ,rust-1.52                ;requires the "resolver" feature
+        #:cargo-inputs
+        (("rust-egui" ,rust-egui-0.14)
+         ("rust-epi" ,rust-epi-0.14)
+         ("rust-js-sys" ,rust-js-sys-0.3)
+         ("rust-ron" ,rust-ron-0.6)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-tts" ,rust-tts-0.17)
+         ("rust-wasm-bindgen" ,rust-wasm-bindgen-0.2)
+         ("rust-wasm-bindgen-futures"
+          ,rust-wasm-bindgen-futures-0.4)
+         ("rust-web-sys" ,rust-web-sys-0.3))))
+    (home-page "https://github.com/emilk/egui")
+    (synopsis "Bindings for compiling egui code to WASM for a web page")
+    (description "Bindings for compiling egui code to WASM for a web page")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-emath-0.14
   (package
     (name "rust-emath")
