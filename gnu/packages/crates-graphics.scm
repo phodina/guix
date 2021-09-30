@@ -639,6 +639,35 @@ conversion.")
     (description "Minimal 2D math library for GUI work")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-epaint-0.14
+  (package
+    (name "rust-epaint")
+    (version "0.14.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "epaint" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0jirhg7vxy1ypbm8i29vq1fzwz9lvlvp28dqzny84qcjva47svhk"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:rust ,rust-1.52                ;requires the "resolver" feature
+        #:skip-build? #t
+        #:cargo-inputs
+        (("rust-ab-glyph" ,rust-ab-glyph-0.2)
+         ("rust-ahash" ,rust-ahash-0.7)
+         ("rust-atomic-refcell" ,rust-atomic-refcell-0.1)
+         ("rust-cint" ,rust-cint-0.2)
+         ("rust-emath" ,rust-emath-0.14)
+         ("rust-ordered-float" ,rust-ordered-float-2)
+         ("rust-parking-lot" ,rust-parking-lot-0.11)
+         ("rust-serde" ,rust-serde-1))))
+    (home-page "https://github.com/emilk/egui")
+    (synopsis "Minimal 2D graphics library for GUI work")
+    (description "Minimal 2D graphics library for GUI work")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-euclid-0.22
   (package
     (name "rust-euclid")
