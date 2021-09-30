@@ -70617,6 +70617,29 @@ Therefore, if you are using Microsoft Windows, you already accepted to
 trust these primitives.")
     (license license:bsd-3)))
 
+(define-public rust-windows-gen-0.9
+  (package
+    (name "rust-windows-gen")
+    (version "0.9.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "windows_gen" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0lh492px26rrna0harikyy4p7nk520pw2lv0dczp4n2xa6y4s5al"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-syn" ,rust-syn-1))))
+    (home-page "https://docs.rs/windows_gen/0.21.1/windows_gen")
+    (synopsis "Code gen support for the windows crate")
+    (description "Code gen support for the windows crate")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-winpty-sys-0.4
   (package
     (name "rust-winpty-sys")
