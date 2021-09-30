@@ -1121,7 +1121,7 @@ EUI-64, also known as MAC-48 media access control addresses.")
         ("rust-parking-lot" ,rust-parking-lot-0.11)
         ("rust-wayland-egl" ,rust-wayland-egl-0.28)
         ("rust-winapi" ,rust-winapi-0.3)
-        ("rust-winit" ,rust-winit-0.24))))
+        ("rust-winit" ,rust-winit-0.25))))
     (inputs
      (list rust-wayland-client-0.28 rust-wayland-egl-0.28))
     (home-page "https://github.com/tomaka/glutin")
@@ -3035,17 +3035,17 @@ crate @code{rust-wayland-client} for usable bindings.")
         (base32
          "0a0ndgkg98pvmkv44yya4f7mxzjaxylknqh64bpa05w0azyv02jj"))))))
 
-(define-public rust-winit-0.24
+(define-public rust-winit-0.25
   (package
     (name "rust-winit")
-    (version "0.24.0")
+    (version "0.25.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "winit" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "15zmpx5ip6ziqhds7md1s0ri0blhxfa8fg1ylg84pf0frrpxlkns"))))
+        (base32 "1y62hqgb93yz02yxx54cmk5mj8agc0zpdxry8yz8cpjdb6a0fqbr"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
@@ -3093,7 +3093,7 @@ the platform-specific getters provided by winit, or another library.")
 
 (define-public rust-winit-0.20
   (package
-    (inherit rust-winit-0.24)
+    (inherit rust-winit-0.25)
     (name "rust-winit")
     (version "0.20.0-alpha6")
     (source
