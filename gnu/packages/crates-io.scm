@@ -56983,6 +56983,29 @@ control on the fields.")
     (description "This package provides compact inlined strings.")
     (license license:mpl2.0)))
 
+(define-public rust-smawk-0.3
+  (package
+    (name "rust-smawk")
+    (version "0.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "smawk" version))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0hv0q1mw1r1brk7v3g4a80j162p7g1dri4bdidykrakzfqjd4ypn"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-ndarray" ,rust-ndarray-0.14))))
+    (home-page "https://github.com/mgeisler/smawk")
+    (synopsis "Find row-minima in a totally monotone matrix.")
+    (description "This package provides functions for finding row-minima in a totally monotone matrix.")
+    (license license:expat)))
+
 (define-public rust-smol-1
   (package
     (name "rust-smol")
