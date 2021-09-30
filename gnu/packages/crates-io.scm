@@ -25353,10 +25353,10 @@ graphics.")
 graphics.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-glium-0.25
+(define-public rust-glium-0.30
   (package
     (name "rust-glium")
-    (version "0.25.1")
+    (version "0.30.2")
     (source
      (origin
        (method url-fetch)
@@ -25365,7 +25365,7 @@ graphics.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0mhjly07x10lxg802ppg16wbxddhh4fdnlg10i99qwpfamvqhzbd"))))
+         "01q0r4q098qsm0nrbrx33v8ddvx835ss66sxmr3x94a8ashjlsjh"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
@@ -51546,7 +51546,7 @@ font rendering.")
        #:cargo-development-inputs
        (("rust-arrayvec" ,rust-arrayvec-0.4)
         ("rust-blake2" ,rust-blake2-0.8)
-        ("rust-glium" ,rust-glium-0.25)
+        ("rust-glium" ,rust-glium-0.30)
         ("rust-image" ,rust-image-0.21)
         ("rust-lazy-static" ,rust-lazy-static-1)
         ("rust-unicode-normalization" ,rust-unicode-normalization-0.1))))))
