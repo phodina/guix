@@ -353,6 +353,9 @@
           (search-patch "ungoogled-chromium-RUNPATH.patch")))
         (local-file
          (assume-valid-file-name
+          (search-patch "ungoogled-chromium-enable-vaapi-on-linux.patch")))
+        (local-file
+         (assume-valid-file-name
           (search-patch "ungoogled-chromium-ffmpeg-compat.patch")))
         (local-file
          (assume-valid-file-name
