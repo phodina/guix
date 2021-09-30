@@ -2921,7 +2921,7 @@ type.")
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-jni" ,rust-jni-0.18)
+       (("rust-jni" ,rust-jni-0.19)
         ("rust-ndk-glue" ,rust-ndk-glue-0.2)
         ("rust-winapi" ,rust-winapi-0.3)
         ("rust-xdg" ,rust-xdg-2))
@@ -30037,6 +30037,7 @@ primitives to an @code{io::Write}.")
 strings and byte slices for sets of ASCII characters or bytes.")
     (license license:expat)))
 
+<<<<<<< HEAD
 (define-public rust-jetscii-0.3
   (package
     (inherit rust-jetscii-0.5)
@@ -30051,17 +30052,17 @@ strings and byte slices for sets of ASCII characters or bytes.")
         (base32 "1sq6d6c9vi44gkr566w2f1d4n6mmrjx8gjdwgnhkgcsg051j391j"))))
     (arguments `(#:skip-build? #t))))
 
-(define-public rust-jni-0.18
+(define-public rust-jni-0.19
   (package
     (name "rust-jni")
-    (version "0.18.0")
+    (version "0.19.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "jni" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1brglk3kfia9wkr6rkm6p297b8qk6rv3k8rf6jjiqc74l49735i4"))))
+        (base32 "1v0pn0i1wb8zp4wns4l8hz9689hqsplv7iba7hylaznvwg11ipy6"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
@@ -30084,7 +30085,7 @@ libraries.")
 
 (define-public rust-jni-0.14
   (package
-    (inherit rust-jni-0.18)
+    (inherit rust-jni-0.19)
     (name "rust-jni")
     (version "0.14.0")
     (source
