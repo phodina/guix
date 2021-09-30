@@ -643,6 +643,30 @@ conversion.")
     (description "egui framework - write GUI apps that compiles to web and/or natively")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-egui-0.14
+  (package
+    (name "rust-egui")
+    (version "0.14.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "egui" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1g96kn76wlzilq1k5l1qhxx0xfp37z6z5zcv4xkj4p1bb6fz40xl"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?  #t
+	#:rust ,rust-1.52                ;requires the "resolver" feature
+        #:cargo-inputs
+        (("rust-epaint" ,rust-epaint-0.14)
+         ("rust-ron" ,rust-ron-0.6)
+         ("rust-serde" ,rust-serde-1))))
+    (home-page "https://github.com/emilk/egui")
+    (synopsis "Simple, portable immediate mode GUI library for Rust")
+    (description "Simple, portable immediate mode GUI library for Rust")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-emath-0.14
   (package
     (name "rust-emath")
