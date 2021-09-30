@@ -66692,6 +66692,40 @@ the Trust-DNS client to use rustls for TLS.")
 parser.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-tts-0.17
+  (package
+    (name "rust-tts")
+    (version "0.17.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "tts" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0q60y5iv91fpqv9sq1kz8ff159y7gq48x18s31f9451sdr9yw09p"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-cocoa-foundation" ,rust-cocoa-foundation-0.1)
+         ("rust-dyn-clonable" ,rust-dyn-clonable-0.9)
+         ("rust-jni" ,rust-jni-0.19)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-ndk-glue" ,rust-ndk-glue-0.3)
+         ("rust-objc" ,rust-objc-0.2)
+         ("rust-speech-dispatcher" ,rust-speech-dispatcher-0.7)
+         ("rust-thiserror" ,rust-thiserror-1)
+         ("rust-tolk" ,rust-tolk-0.5)
+         ("rust-wasm-bindgen" ,rust-wasm-bindgen-0.2)
+         ("rust-web-sys" ,rust-web-sys-0.3)
+         ("rust-windows" ,rust-windows-0.9))))
+    (home-page "https://github.com/ndarilek/tts-rs")
+    (synopsis "High-level Text-To-Speech (TTS) interface")
+    (description "High-level Text-To-Speech (TTS) interface")
+
 (define-public rust-ttf-parser-0.6
   (package
     (inherit rust-ttf-parser-0.12)
