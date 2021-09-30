@@ -66431,7 +66431,13 @@ the Trust-DNS client to use rustls for TLS.")
        (sha256
         (base32 "1rkj90w4k21y88i69rlwb8pyfvv5lnb7x2b8yvdan21gha5gbqks"))))
     (build-system cargo-build-system)
-    (arguments `(#:skip-build? #t))
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-base64" ,rust-base64-0.12)
+         ("rust-pico-args" ,rust-pico-args-0.4)
+         ("rust-svgtypes" ,rust-svgtypes-0.5)
+         ("rust-xmlwriter" ,rust-xmlwriter-0.1))))
     (home-page "https://github.com/RazrFalcon/ttf-parser")
     (synopsis "High-level, safe, zero-allocation TrueType font parser")
     (description
