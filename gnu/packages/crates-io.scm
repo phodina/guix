@@ -32007,23 +32007,24 @@ pairs in insertion order.")
         ("rust-serde" ,rust-serde-0.8)
         ("rust-serde-test" ,rust-serde-test-0.8))))))
 
-(define-public rust-linkify-0.4
+(define-public rust-linkify-0.7
   (package
     (name "rust-linkify")
-    (version "0.4.0")
+    (version "0.7.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "linkify" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "15i0q81vrhm4asskacy2z83fyj09ivcff0km82gwbli4vlkib583"))))
+        (base32 "1y99xcmy6793m6x3z2qcyiw3dfrdvza3n659lmlv7kpzq7yjin04"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
        (("rust-memchr" ,rust-memchr-2))
        #:cargo-development-inputs
-       (("rust-version-sync" ,rust-version-sync-0.8))))
+       (("rust-doc-comment" ,rust-doc-comment-0.3)
+        ("rust-version-sync" ,rust-version-sync-0.8))))
     (home-page "https://github.com/robinst/linkify")
     (synopsis "Find URLs and email addresses in plain text")
     (description
