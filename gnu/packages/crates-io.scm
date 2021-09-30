@@ -2786,17 +2786,17 @@ applications.")
     (description "This package provides FFI bindings to Android log Library.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-android-logger-0.8
+(define-public rust-android-logger-0.9
   (package
     (name "rust-android-logger")
-    (version "0.8.6")
+    (version "0.9.2")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "android_logger" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0kj8i03fqqwxd803hrk27j2399v27ajjj9zxi2nnyml0s4nm9gcc"))))
+        (base32 "0wspwzkn3fakpyz3ka0lh6h4pa66zk9kkvic2q9n70jx30y37hif"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
@@ -36305,7 +36305,7 @@ general elements and for numerics.")
     (arguments
      `(#:skip-build? #true              ;XXX: Android only
        #:cargo-inputs
-       (("rust-android-logger" ,rust-android-logger-0.8)
+       (("rust-android-logger" ,rust-android-logger-0.9)
         ("rust-lazy-static" ,rust-lazy-static-1)
         ("rust-libc" ,rust-libc-0.2)
         ("rust-log" ,rust-log-0.4)
