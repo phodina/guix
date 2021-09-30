@@ -71071,6 +71071,23 @@ to XDG Base Directory specification.")
 parser.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-xmlwriter-0.1
+  (package
+    (name "rust-xmlwriter")
+    (version "0.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "xmlwriter" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1fg0ldmkgiis6hnxpi1c9gy7v23y0lpi824bp8yp12fi3r82lypc"))))
+    (build-system cargo-build-system)
+    (home-page "https://github.com/RazrFalcon/xmlwriter")
+    (synopsis "Simple, streaming XML writer")
+    (description "This package provides a simple, streaming XML writer.")
+    (license license:expat)))
+
 (define-public rust-xshell-macros-0.1
   (package
     (name "rust-xshell-macros")
