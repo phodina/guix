@@ -617,6 +617,32 @@ and iOS.")
 conversion.")
     (license license:expat)))
 
+(define-public rust-eframe-0.14
+  (package
+    (name "rust-eframe")
+    (version "0.14.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "eframe" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1rklcn47yikknc81c1mzlilsqylasng82hmyc5v778pi6vaypvjs"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:rust ,rust-1.52 ;requires the "resolver" feature
+        #:cargo-inputs
+        (("rust-egui" ,rust-egui-0.14)
+         ("rust-egui-glium" ,rust-egui-glium-0.14)
+         ("rust-egui-web" ,rust-egui-web-0.14)
+         ("rust-epi" ,rust-epi-0.14))))
+    (home-page "https://github.com/emilk/egui")
+    (synopsis "egui framework - write GUI apps that compiles to web and/or natively")
+    (description "egui framework - write GUI apps that compiles to web and/or natively")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-emath-0.14
   (package
     (name "rust-emath")
