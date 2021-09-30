@@ -19010,6 +19010,30 @@ they can possibly access, and doesn't break any paths for UNC-aware
 programs.")
     (license license:cc0)))
 
+(define-public rust-dyn-clonable-impl-0.9
+  (package
+    (name "rust-dyn-clonable-impl")
+    (version "0.9.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "dyn-clonable-impl" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1icrjdqiriiy6abxpsygyxylgxg2gq5j9z876pslqdrwazm413jm"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/kardeiz/objekt-clonable")
+    (synopsis "Attribute wrapper for dyn-clone")
+    (description "Attribute wrapper for dyn-clone")
+    (license license:expat)))
+
 (define-public rust-dyn-clone-1
   (package
     (name "rust-dyn-clone")
