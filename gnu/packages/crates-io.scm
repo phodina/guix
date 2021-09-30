@@ -69828,6 +69828,30 @@ GUIs as desktop applications.")
 using @code{bindgen}.")
     (license license:mpl2.0)))
 
+(define-public rust-wfd-0.1
+  (package
+    (name "rust-wfd")
+    (version "0.1.7")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "wfd" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1a6p8651l0q9dvzipam91nwv56n2ijxfpqg318dbzrdacw5h84z7"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-libc" ,rust-libc-0.2)
+         ("rust-winapi" ,rust-winapi-0.3))))
+    (home-page "https://github.com/ben-wallis/wfd")
+    (synopsis "Abstraction over the Open and Save dialogs in the Windows API")
+    (description "This package provides a simple to use abstraction over
+the Open and Save dialogs in the Windows API.")
+    (license license:expat)))
+
 (define-public rust-which-4
   (package
     (name "rust-which")
