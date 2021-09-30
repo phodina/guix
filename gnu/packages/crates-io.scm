@@ -9581,6 +9581,25 @@ spreadsheet file.")
 canonical filesystem paths.")
     (license license:asl2.0)))
 
+(define-public rust-cansi-2
+  (package
+    (name "rust-cansi")
+    (version "2.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cansi" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0kqbp1wk3nmbxmaamrd6j5srnkmcwnczjpn95mk39hjgv20r4nqq"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://github.com/kurtlawrence/cansi")
+    (synopsis "ANSI escape code parser and categoriser")
+    (description "This package provides ANSI escape code parser and categoriser.")
+    (license license:expat)))
+
 (define-public rust-capnp-0.13
   (package
     (name "rust-capnp")
