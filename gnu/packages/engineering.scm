@@ -2574,6 +2574,30 @@ an external document.")
     (home-page "https://github.com/Zolko-123/FreeCAD_Assembly4/")
     (license license:lgpl2.1)))
 
+(define-public freecad-bim
+  (let ((commit "9a8350ca36a6d7365cb230f6437f0ef11869b3eb")
+        (revision "1"))
+    (package
+    (name "freecad-bim")
+    (version commit)
+    (source (origin
+              (method git-fetch)
+              (uri
+                (git-reference
+                  (url "https://github.com/yorikvanhavre/BIM_Workbench")
+                  (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "1vzcs8skamw0sd3acgbaspdb3rv41m0jiakvgsxrklxxmw97y7nn"))))
+    (build-system copy-build-system)
+    (inputs `(("freecad" ,freecad) ("python" ,python)))
+    (synopsis "BIM Workbench for FreeCAD")
+    (description "Implements a complete set of Building Information Modeling
+(BIM) tools and allows a proper BIM workflow.")
+    (home-page "https://github.com/yorikvanhavre/BIM_Workbench")
+    (license #f))))
+
 (define-public libmedfile
   (package
     (name "libmedfile")
