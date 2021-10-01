@@ -2527,6 +2527,28 @@ customization.")
   (home-page "https://github.com/cadenasgmbh/3dfindit-freecad-integration")
   (license license:lgpl3)))
 
+(define-public freecad-airplain-design
+  (package
+    (name "freecad-airplane-design")
+    (version "0.3")
+    (source (origin
+              (method git-fetch)
+              (uri
+                (git-reference
+                  (url "https://github.com/FredsFactory/FreeCAD_AirPlaneDesign")
+                  (commit (string-append "V" version))))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "15jg3y9v7s3lyji1gbinm791ap7k4kk8q3hr15292vf1agzrmnhz"))))
+    (build-system copy-build-system)
+    (inputs `(("freecad" ,freecad)
+              ("python" ,python)))
+    (synopsis "FreeCAD workbench dedicated to Airplane Design")
+    (description "")
+    (home-page "https://github.com/FredsFactory/FreeCAD_AirPlaneDesign/")
+    (license license:lgpl2.1)))
+
 (define-public libmedfile
   (package
     (name "libmedfile")
