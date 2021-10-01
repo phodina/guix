@@ -2549,6 +2549,31 @@ customization.")
     (home-page "https://github.com/FredsFactory/FreeCAD_AirPlaneDesign/")
     (license license:lgpl2.1)))
 
+(define-public freecad-assembly4
+  (package
+    (name "freecad-assembly4")
+    (version "0.9.17")
+    (source (origin
+              (method git-fetch)
+              (uri
+                (git-reference
+                  (url "https://github.com/Zolko-123/FreeCAD_Assembly4/")
+                  (commit (string-append "v" version))))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0qgbm5njdb8l94ihgnxcqf8wyzx2nnl8fnk7ss1d75ssjlxg93yv"))))
+    (build-system copy-build-system)
+    (inputs `(("freecad" ,freecad) ("python" ,python)))
+    (synopsis "Assembly 4 workbench for FreeCAD")
+    (description "This assembly workbench allows to assemble into a single part
+container under a single coordinate system other FreeCAD objects using Links,
+and place them relative to the assembly and to each-other.  The parts in
+the assembly can invariably be in the same document as the assembly or in
+an external document.")
+    (home-page "https://github.com/Zolko-123/FreeCAD_Assembly4/")
+    (license license:lgpl2.1)))
+
 (define-public libmedfile
   (package
     (name "libmedfile")
