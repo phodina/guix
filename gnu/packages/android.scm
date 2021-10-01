@@ -11,7 +11,7 @@
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2020 Sergey Trofimov <sarg@sarg.org.ru>
 ;;; Copyright © 2021 Guillaume Le Vaillant <glv@posteo.net>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -1078,14 +1078,14 @@ backups.  It supports encrypted archives.")
 (define-public python-miio
   (package
     (name "python-miio")
-    (version "0.5.8")
+    (version "0.5.9.2")
     (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "python-miio" version))
-       (sha256
-        (base32
-         "0a4f5ybjvibawwxcjm3r9nnrzf1yff6wwgy05yzyk0bb3rmc99fp"))))
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "python-miio" version))
+        (sha256
+          (base32
+            "12ipmcd0iwdgb3kna3wlaazydvqk2rm0rlib9pq7g4j532nilp00"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -1103,20 +1103,21 @@ backups.  It supports encrypted archives.")
            python-sphinx-rtd-theme
            python-sphinxcontrib-apidoc))
     (propagated-inputs
-     (list python-android-backup
-           python-appdirs
-           python-attrs
-           python-click
-           python-construct
-           python-croniter
-           python-cryptography
-           python-defusedxml
-           python-importlib-metadata
-           python-netifaces
-           python-pytz
-           python-pyyaml
-           python-tqdm
-           python-zeroconf))
+      `(("python-android-backup" ,python-android-backup)
+        ("python-appdirs" ,python-appdirs)
+        ("python-attrs" ,python-attrs)
+        ("python-click" ,python-click)
+        ("python-construct" ,python-construct)
+        ("python-croniter" ,python-croniter-1)
+        ("python-cryptography" ,python-cryptography-next)
+        ("python-defusedxml" ,python-defusedxml)
+        ("python-importlib-metadata"
+         ,python-importlib-metadata)
+        ("python-netifaces" ,python-netifaces)
+        ("python-pytz" ,python-pytz)
+        ("python-pyyaml" ,python-pyyaml)
+        ("python-tqdm" ,python-tqdm)
+        ("python-zeroconf" ,python-zeroconf)))
     (home-page "https://github.com/rytilahti/python-miio")
     (synopsis "Control Xiaomi smart appliances")
     (description "This package provides library and command line interface
