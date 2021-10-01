@@ -57,6 +57,7 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix build-system ant)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system copy)
   #:use-module (guix build-system emacs)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
@@ -2502,6 +2503,29 @@ customization.")
         license:lgpl2.0+
         license:gpl3+
         license:bsd-3)))))
+
+(define-public freecad-3dfindit
+  (package
+    (name "freecad-3dfindit")
+    (version "1.1")
+    (source (origin
+              (method git-fetch)
+              (uri
+                (git-reference
+                (url "https://github.com/cadenasgmbh/3dfindit-freecad-integration")
+                (commit (string-append "v" version))))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0k2yhvbfyw1rzqk85xd0m6bg8ily0lz5jzh2ysyhm3hr0m9v62s0"))))
+  (build-system copy-build-system)
+  (inputs `(("freecad" ,freecad)
+            ("python" ,python)))
+  (synopsis "Find 3D components online")
+  (description "This package provides the engineering search engine for
+3D components from CADENAS.")
+  (home-page "https://github.com/cadenasgmbh/3dfindit-freecad-integration")
+  (license license:lgpl3)))
 
 (define-public libmedfile
   (package
