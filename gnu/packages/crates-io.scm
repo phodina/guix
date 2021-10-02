@@ -9304,6 +9304,35 @@ NULL-terminated C linked lists.")
      "The ChaCha family of stream ciphers.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-c2rust-ast-exporter-0.15
+  (package
+    (name "rust-c2rust-ast-exporter")
+    (version "0.15.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust-ast-exporter" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0q821dvhdbl2jvald96sg31y6cl5b36kajjr4ynw727si21jfrx8"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-bindgen" ,rust-bindgen-0.52)
+         ("rust-clang-sys" ,rust-clang-sys-0.28)
+         ("rust-cmake" ,rust-cmake-0.1)
+         ("rust-env-logger" ,rust-env-logger-0.7)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-bytes" ,rust-serde-bytes-0.11)
+         ("rust-serde-cbor" ,rust-serde-cbor-0.10))))
+    (home-page "https://c2rust.com/")
+    (synopsis "Clang AST API for C2Rust project")
+    (description "This package provides Clang AST extraction API for use
+in the C2Rust project.")
+    (license license:bsd-3)))
+
 (define-public rust-cache-padded-1
   (package
     (name "rust-cache-padded")
