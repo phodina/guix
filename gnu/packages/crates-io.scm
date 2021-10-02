@@ -9352,6 +9352,30 @@ in the C2Rust project.")
 for the C2Rust project")
     (license license:bsd-3)))
 
+(define-public rust-c2rust-macros-0.15
+  (package
+    (name "rust-c2rust-macros")
+    (version "0.15.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust-macros" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0hznb6c10hq9jnd2l14jkyyvsj138m7ip15zlv0jl6vdaglig6vc"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://c2rust.com/")
+    (synopsis "Procedural macro support crate for C2Rust")
+    (description "This package provides procedural macro support crate for
+C2Rust.")
+    (license license:bsd-3)))
+
 (define-public rust-cache-padded-1
   (package
     (name "rust-cache-padded")
