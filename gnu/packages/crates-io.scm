@@ -5915,7 +5915,7 @@ portable \"best effort\" constant-time operation and embedded-friendly
      `(#:skip-build? #t
        #:cargo-development-inputs
        (("rust-bencher" ,rust-bencher-0.1)
-        ("rust-json" ,rust-json-0.11)
+        ("rust-json" ,rust-json-0.12)
         ("rust-rand" ,rust-rand-0.3))))
     (home-page "https://github.com/OrKoN/base-x-rs")
     (synopsis "Encode/decode any base")
@@ -30285,10 +30285,10 @@ like Node.js and browsers, built on @code{#[wasm_bindgen]} using the
 wasm-bindgen crate.")
     (license (list license:asl2.0 license:expat))))
 
-(define-public rust-json-0.11
+(define-public rust-json-0.12
   (package
     (name "rust-json")
-    (version "0.11.15")
+    (version "0.12.4")
     (source
       (origin
         (method url-fetch)
@@ -30296,7 +30296,7 @@ wasm-bindgen crate.")
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
-          "1rg9jxf6bpbwis3ixd5ak8rp37him7n4z8awz4ssrxl6hyplbhlj"))))
+          "1z9vybaaz3xq95bwmyln2ijmn4dmzj61xlz06jsc9dnzmxg2i3h7"))))
     (build-system cargo-build-system)
     (arguments '(#:skip-build? #t))
     (home-page "https://github.com/maciejhirsz/json-rust")
