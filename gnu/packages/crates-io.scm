@@ -9396,6 +9396,44 @@ C2Rust.")
 pretty-printer.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-c2rust-refactor-0.15
+  (package
+    (name "rust-c2rust-refactor")
+    (version "0.15.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust-refactor" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1hkhih3hspvi9mggbvw8nd4y9qiri8fysmah4ncad17ijacjn05i"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-c2rust-ast-builder" ,rust-c2rust-ast-builder-0.15)
+         ("rust-c2rust-ast-printer" ,rust-c2rust-ast-printer-0.15)
+         ("rust-c2rust-macros" ,rust-c2rust-macros-0.15)
+         ("rust-cargo" ,rust-cargo-0.53)
+         ("rust-clap" ,rust-clap-2)
+         ("rust-derive-more" ,rust-derive-more-0.99)
+         ("rust-diff" ,rust-diff-0.1)
+         ("rust-ena" ,rust-ena-0.13)
+         ("rust-env-logger" ,rust-env-logger-0.7)
+         ("rust-flame" ,rust-flame-0.2)
+         ("rust-flamer" ,rust-flamer-0.4)
+         ("rust-indexmap" ,rust-indexmap-1)
+         ("rust-json" ,rust-json-0.12)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-rlua" ,rust-rlua-0.17)
+         ("rust-slotmap" ,rust-slotmap-0.4))))
+    (home-page "https://c2rust.com/")
+    (synopsis "C2Rust refactoring tool implementation")
+    (description "This package provides C2Rust refactoring tool implementation.")
+    (license license:bsd-3)))
+
 (define-public rust-c2rust-transpile-0.15
   (package
     (name "rust-c2rust-transpile")
