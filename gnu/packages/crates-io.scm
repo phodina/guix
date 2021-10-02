@@ -9333,6 +9333,25 @@ NULL-terminated C linked lists.")
 in the C2Rust project.")
     (license license:bsd-3)))
 
+(define-public rust-c2rust-ast-builder-0.15
+  (package
+    (name "rust-c2rust-ast-builder")
+    (version "0.15.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust-ast-builder" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1r6j3c4kzl32l7ha96skh3gjjwlyfdmy9b07i1z4lp0zk8nklh45"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://c2rust.com/")
+    (synopsis "Rust AST builder for the C2Rust project")
+    (description "This package provides Rust AST builder support crate
+for the C2Rust project")
+    (license license:bsd-3)))
+
 (define-public rust-cache-padded-1
   (package
     (name "rust-cache-padded")
