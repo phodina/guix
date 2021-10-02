@@ -239,6 +239,35 @@ highlighting for a large number of languages, git integration, and automatic
 paging.")
     (license (list license:expat license:asl2.0))))
 
+(define-public c2rust
+  (package
+    (name "c2rust")
+    (version "0.15.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1lcls32jshvjm21qbszrlxfiy5nacwj5lcxid2y5hb993hi61bwl"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-c2rust-refactor" ,rust-c2rust-refactor-0.15)
+         ("rust-c2rust-transpile" ,rust-c2rust-transpile-0.15)
+         ("rust-chrono" ,rust-chrono-0.4)
+         ("rust-clap" ,rust-clap-2)
+         ("rust-env-logger" ,rust-env-logger-0.7)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-rustc-version" ,rust-rustc-version-0.2)
+         ("rust-shlex" ,rust-shlex-0.1))))
+    (home-page "https://c2rust.com/")
+    (synopsis "C to Rust translation, refactoring, and cross-checking")
+    (description "This package provides tools to translate, refactor and
+cross-check C to Rust.")
+    (license license:bsd-3)))
+
 (define-public diffr
   (package
     (name "diffr")
