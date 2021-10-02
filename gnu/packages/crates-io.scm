@@ -9370,6 +9370,30 @@ in the C2Rust project.")
 for the C2Rust project")
     (license license:bsd-3)))
 
+(define-public rust-c2rust-bitfields-derive-0.2
+  (package
+    (name "rust-c2rust-bitfields-derive")
+    (version "0.2.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust-bitfields-derive" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0hbjadr8p30lkwsjlgfxbd4ava1wasasirchv1sbi2l2gcd61l9x"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://c2rust.com/")
+    (synopsis "Macros for C-compatible struct bitfield")
+    (description "This package provides C-compatible struct bitfield derive
+implementation used in the C2Rust project.")
+    (license license:bsd-3)))
+
 (define-public rust-c2rust-macros-0.15
   (package
     (name "rust-c2rust-macros")
