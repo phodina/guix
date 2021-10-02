@@ -11,6 +11,7 @@
 ;;; Copyright © 2020, 2021 Simon South <simon@simonsouth.net>
 ;;; Copyright © 2021 Morgan Smith <Morgan.J.Smith@outlook.com>
 ;;; Copyright © 2022 Mathieu Othacehe <othacehe@gnu.org>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -46,12 +47,16 @@
   #:use-module (gnu packages bison)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
+  #:use-module (gnu packages curl)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cross-base)
   #:use-module (gnu packages dejagnu)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gdb)
+  #:use-module (gnu packages glib)
+  #:use-module (gnu packages gnome)
+  #:use-module (gnu packages gtk)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages libftdi)
   #:use-module (gnu packages libusb)
@@ -65,6 +70,7 @@
   #:use-module (gnu packages swig)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages version-control)
+  #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1))
 
@@ -1207,6 +1213,74 @@ SPI, I2C, JTAG.")
     (description "This program programs Microchip's PIC microcontrollers.")
     (home-page "https://hyvatti.iki.fi/~jaakko/pic/picprog.html")
     (license license:gpl3+)))
+
+(define-public pinetime-flasher
+(package
+  (name "pinetime-flasher")
+  (version "0.1")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/arteeh/pinetime-flasher")
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "1n5isqi2s4y69w80ymfwndyqxzqgp5aycimm27dpmsxnx3rxsx48"))))
+  (build-system gnu-build-system)
+  (arguments
+    `(#:tests? #f ; no test suite
+      #:phases
+      (modify-phases %standard-phases
+        (delete 'configure)
+        (add-before 'build 'fix-icon-location-chdir
+          (lambda* (#:key outputs #:allow-other-keys)
+            (let* ((out (assoc-ref outputs "out"))
+                  (icons (string-append out
+                           "/share/icons/hicolor/scalable/apps")))
+                    (substitute* "src/pinetime-flasher.ui"
+                      (("../build") icons))
+                    (substitute* "src/pinetime-flasher.gresource.xml"
+                      (("../build") icons))
+                    (chdir "build") #t)))
+        (replace 'install
+          (lambda* (#:key outputs #:allow-other-keys)
+            (let* ((out (assoc-ref outputs "out"))
+                   (bin (string-append out "/bin"))
+                   (share (string-append out "/share"))
+                   (udev (string-append out "/lib/udev/rules.d"))
+                   (udev-rule (string-append
+                     (assoc-ref inputs "udev-rules") "/60-openocd.rules"))
+                   (icons (string-append share "/icons/hicolor/scalable/apps")))
+                     (mkdir-p bin)
+                     (mkdir-p icons)
+                     (mkdir-p share)
+                     (mkdir-p udev)
+                     (install-file "icon.png" icons)
+                     (install-file "icon.svg" icons)
+                     (install-file udev-rule udev)
+                     (install-file "com.arteeh.Flasher.desktop" share)
+                     (install-file "pinetime-flasher" bin)))))))
+  (native-inputs `(("glib" ,glib "bin")
+                   ("libxml2" ,libxml2)
+                   ("pkg-config" ,pkg-config)))
+  (inputs `(("curl" ,curl)
+            ("gtk+" ,gtk+)
+            ("libhandy" ,libhandy)
+            ("stlink" ,stlink)
+            ("udev-rule"
+               ,(origin
+                  (method url-fetch)
+                    (uri (string-append "https://sourceforge.net/p/openocd"
+                    "/code/ci/master/tree/contrib/60-openocd.rules?format=raw"))
+                      (sha256
+                        (base32
+                          "1xvgpk6nzd6kp86sh240iqk122yqbarhwi6s6js98zfj43190sn0"))))))
+  (synopsis "Flashing app for PineTime")
+  (description "Pinetime Flasher provides a GTK app for easily flashing
+the Pinetime smartwatch with an ST-Link.")
+  (home-page "https://github.com/arteeh/pinetime-flasher")
+  (license license:expat)))
 
 (define-public fc-host-tools
   (package
