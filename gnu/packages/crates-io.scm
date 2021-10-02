@@ -48766,6 +48766,36 @@ decoding, and compression.")
        #:cargo-development-inputs
        (("rust-hex-literal" ,rust-hex-literal-0.1))))))
 
+(define-public rust-rlua-0.17
+  (package
+    (name "rust-rlua")
+    (version "0.17.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "rlua" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1l0kac2qc8n9hbyjr295xk4mzamq510lraslfnmpq8ywjabpnfck"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-bitflags" ,rust-bitflags-1)
+         ("rust-bstr" ,rust-bstr-0.2)
+         ("rust-cc" ,rust-cc-1)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-num-traits" ,rust-num-traits-0.2)
+         ("rust-pkg-config" ,rust-pkg-config-0.3))
+        #:cargo-development-inputs
+         (("rust-compiletest-rs" ,rust-compiletest-rs-0.3)
+          ("rust-criterion" ,rust-criterion-0.3)
+          ("rust-rustyline" ,rust-rustyline-5))))
+    (home-page "https://github.com/amethyst/rlua")
+    (synopsis "High level bindings to Lua 5.3")
+    (description "This package provides high level bindings to Lua 5.3")
+    (license license:expat)))
+
 (define-public rust-rls-span-0.5
   (package
     (name "rust-rls-span")
