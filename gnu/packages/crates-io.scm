@@ -71272,6 +71272,32 @@ Read/Write streams as well as low-level in-memory encoding and decoding.")
 library.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-z3-sys-0.7
+  (package
+    (name "rust-z3-sys")
+    (version "0.7.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "z3-sys" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "19l63517glil9wj5gp0gxmmd7hyn5g5nc02j9jcz2jxyb2ydr0hw"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-bindgen" ,rust-bindgen-0.58)
+         ("rust-clang-sys", rust-clang-sys-1)
+         ("rust-cmake" ,rust-cmake-0.1))))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (inputs `(("clang" ,clang)))
+    (home-page "https://github.com/prove-rs/z3.rs")
+    (synopsis "Bindings for the Z3 SMT solver from Microsoft Research")
+    (description "This package provides low-level bindings for the Z3 SMT
+solver from Microsoft Research.")
+    (license license:expat)))
+
 (define-public rust-zbase32-0.1
   (package
     (name "rust-zbase32")
