@@ -66954,6 +66954,24 @@ for locating fonts.")
     (description "This package provides an implementation of zbase32.")
     (license license:lgpl3+)))
 
+(define-public rust-zero-0.1
+  (package
+    (name "rust-zero")
+    (version "0.1.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "zero" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1ic2vv2xs5m29hpk7ny9rs6zp31d012p0n4p4ab88n00nakch6sz"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://github.com/nrc/zero")
+    (synopsis "Zero-allocation parsing of binary data")
+    (description "Zero provides zero-allocation parsing of binary data.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-zerocopy-0.3
   (package
     (name "rust-zerocopy")
