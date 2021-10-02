@@ -67905,6 +67905,29 @@ if they were just another Rust module.")
 windows crate.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-xmas-elf-0.8
+  (package
+    (name "rust-xmas-elf")
+    (version "0.8.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "xmas-elf" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0nidhcaa5ghs8sh2vdcs678263b0lx0sjys4fx7fpb5ywzcb8acd"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-flate2" ,rust-flate2-1)
+         ("rust-zero" ,rust-zero-0.1))))
+    (home-page "https://github.com/nrc/xmas-elf")
+    (synopsis "Parsing and navigating ELF data")
+    (description "This packages provides library for parsing and navigating
+ELF data --- zero-allocation, type-safe.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-xmltree-0.10
   (package
     (name "rust-xmltree")
