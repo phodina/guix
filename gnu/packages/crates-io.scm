@@ -9304,6 +9304,24 @@ NULL-terminated C linked lists.")
      "The ChaCha family of stream ciphers.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-c2rust-asm-casts-0.1
+  (package
+    (name "rust-c2rust-asm-casts")
+    (version "0.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust-asm-casts" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1n7sycnp1njbwksgsii6ddmfml2gl4j68pc8d2k7iq5q53p1pnk1"))))
+    (build-system cargo-build-system)
+    (home-page "https://c2rust.com/")
+    (synopsis "Helpers for C2Rust's inline assembly")
+    (description "This package provides type cast helpers for use with C2Rust's
+inline assembly implementation.")
+    (license license:bsd-3)))
+
 (define-public rust-c2rust-ast-exporter-0.15
   (package
     (name "rust-c2rust-ast-exporter")
