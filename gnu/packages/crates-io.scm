@@ -9394,6 +9394,30 @@ for the C2Rust project")
 implementation used in the C2Rust project.")
     (license license:bsd-3)))
 
+(define-public rust-c2rust-bitfields-0.3
+  (package
+    (name "rust-c2rust-bitfields")
+    (version "0.3.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust-bitfields" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0r1pwx0wiy02jvifqld4i8aq4h0cxrlvq63zvyr30dg4mk0g0d7b"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:tests? #f ; requires to link library test
+	#:cargo-inputs
+        (("rust-c2rust-bitfields-derive" ,rust-c2rust-bitfields-derive-0.2))
+        #:cargo-development-inputs
+        (("rust-libc" ,rust-libc-0.2))))
+    (home-page "https://c2rust.com/")
+    (synopsis "C-compatible struct bitfield for C2Rust project")
+    (description "This project provides C-compatible struct bitfield
+implementation used in the C2Rust project.")
+    (license license:bsd-3)))
+
 (define-public rust-c2rust-macros-0.15
   (package
     (name "rust-c2rust-macros")
