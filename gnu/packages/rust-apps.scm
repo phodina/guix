@@ -985,6 +985,52 @@ rebase.")
          (base32
           "13jzbmjz1bmmfr0i80hw6ar484mgabx3hbpb2ynhk0ddqi0yr58m"))))))
 
+(define-public rustybox
+  (let ((commit "0d2201eece506e88f71d0e251346bb3e92bb7aef")
+        (revision "1"))
+  (package
+    (name "rustybox")
+    (version commit)
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/samuela/rustybox")
+               (commit version)))
+        (file-name (string-append name "-" version))
+        (sha256
+          (base32
+            "0f8wvkcksjc3mhkimflr9c5c0p6ar5awm8ysv78y8f94nn8vmahg"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:tests? #f ; fails do to symlinks not present
+        #:cargo-inputs
+        (("rust-c2rust-bitfields" ,rust-c2rust-bitfields-0.3)
+         ("rust-c2rust-asm-casts" ,rust-c2rust-asm-casts-0.1)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-lazy-static" ,rust-lazy-static-1))
+        #:cargo-development-inputs
+        (("rust-duct" ,rust-duct-0.13)
+         ("rust-tempfile" ,rust-tempfile-3))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-version-requirements
+           (lambda _
+             (substitute* "Cargo.toml"
+               (("0.13.3") ,(package-version rust-duct-0.13)))
+             #t))
+         (add-after 'unpack 'enable-unstable-features
+           (lambda _
+             (setenv "RUSTC_BOOTSTRAP" "1")
+             #t)))))
+    (home-page "https://github.com/samuela/rustybox")
+    (synopsis "Busybox fork in pure rust")
+    (description "This package includes all your favorite commands like
+@code{ls, mount, and top}, but without a single line of C code! Like BusyBox,
+rustybox weighs in at just under 1 megabyte and includes all the basic
+utilities you need to set up a small Linux OS.")
+    (license license:expat))))
+
 (define-public sniffglue
   (package
     (name "sniffglue")
