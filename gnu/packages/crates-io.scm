@@ -9376,6 +9376,26 @@ for the C2Rust project")
 C2Rust.")
     (license license:bsd-3)))
 
+(define-public rust-c2rust-ast-printer-0.15
+  (package
+    (name "rust-c2rust-ast-printer")
+    (version "0.15.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust-ast-printer" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0r8m80m48s30zaz2bcpqgb38w2j24cs6kmxm8b11dn6mq7v9i7dm"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t
+                 #:cargo-inputs (("rust-log" ,rust-log-0.4))))
+    (home-page "https://github.com/immunant/c2rust")
+    (synopsis "Customized version of libsyntax rust pretty-printer")
+    (description "This package provides customized version of libsyntax rust
+pretty-printer.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-cache-padded-1
   (package
     (name "rust-cache-padded")
