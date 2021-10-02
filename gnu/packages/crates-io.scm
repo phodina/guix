@@ -22079,10 +22079,10 @@ custom fixed-size hash types.")
     (description "A profiling and flamegraph library.")
     (license (list license:asl2.0 license:expat))))
 
-(define-public rust-flamer-0.3
+(define-public rust-flamer-0.4
   (package
     (name "rust-flamer")
-    (version "0.3.0")
+    (version "0.4.0")
     (source
      (origin
        (method url-fetch)
@@ -22091,14 +22091,13 @@ custom fixed-size hash types.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1b2d7jx80f3p7hqpgdi7wksaiq18k9w23p0cs2sxf7jbx2jx3bgj"))))
+         "1avszq3fn4ix7p6wjfdkli6fjyxccks1qhzja92a6kpxakd35drn"))))
     (build-system cargo-build-system)
     (arguments
-     `(#:tests? #f      ; Uses features not available in stable Rust release
-       #:cargo-inputs
+     `(#:cargo-inputs
        (("rust-flame" ,rust-flame-0.2)
-        ("rust-quote" ,rust-quote-0.6)
-        ("rust-syn" ,rust-syn-0.15))))
+        ("rust-quote" ,rust-quote-1)
+        ("rust-syn" ,rust-syn-1))))
     (home-page "https://github.com/llogiq/flamer")
     (synopsis "Macro to insert @code{flame::start_guard(_)}")
     (description
@@ -67358,7 +67357,7 @@ Unicode and Internationalization Crates (UNIC) project.")
      `(#:skip-build? #t
        #:cargo-inputs
        (("rust-flame" ,rust-flame-0.2)
-        ("rust-flamer" ,rust-flamer-0.3)
+        ("rust-flamer" ,rust-flamer-0.4)
         ("rust-matches" ,rust-matches-0.1)
         ("rust-serde" ,rust-serde-1))
        #:cargo-development-inputs
