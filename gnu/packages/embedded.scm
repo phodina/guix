@@ -9,6 +9,7 @@
 ;;; Copyright © 2020 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
 ;;; Copyright © 2021 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2021 Morgan Smith <Morgan.J.Smith@outlook.com>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -60,6 +61,7 @@
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages swig)
   #:use-module (gnu packages texinfo)
+  #:use-module (gnu packages tls)
   #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1))
 
@@ -565,6 +567,39 @@ SEGGER J-Link and compatible devices.")
     (description "Jim is a small footprint implementation of the Tcl programming
 language.")
     (license license:bsd-2)))
+
+(define-public mfgtools
+(package
+  (name "mfgtools")
+  (version "1.4.139")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/NXPmicro/mfgtools")
+             (commit (string-append "uuu_" version))))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "1n42phkv1jsz9y70w0x23chnw6454cvybshc0ziy1sz5nzasrwjc"))))
+  (build-system cmake-build-system)
+  (arguments
+    `(#:tests? #f ; no test suite
+      #:phases
+      (modify-phases %standard-phases
+       (add-after 'unpack 'fix-git-version
+        (lambda* _
+          (substitute* "libuuu/CMakeLists.txt"
+            (("sh -c.*") ,(string-append "echo '\\#define GIT_VERSION "
+             "\\\"libuuu_" version "\\\"' > ${gitversion_h}\n"))))))))
+  (native-inputs `(("pkg-config" ,pkg-config)))
+  (inputs `(("libzip" ,libzip)
+            ("zlib" ,zlib)
+            ("openssl" ,openssl)
+            ("libusb" ,libusb)))
+  (synopsis "NXP I.MX Universal Update Utility")
+  (description "Command line application that deploys image to NXP I.MX chip.")
+  (home-page "https://github.com/NXPmicro/mfgtools")
+  (license license:bsd-3)))
 
 (define-public openocd
   (let ((commit "9a877a83a1c8b1f105cdc0de46c5cbc4d9e8799e")
