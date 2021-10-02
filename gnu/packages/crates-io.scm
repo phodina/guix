@@ -71298,6 +71298,33 @@ library.")
 solver from Microsoft Research.")
     (license license:expat)))
 
+(define-public rust-z3-0.11
+  (package
+    (name "rust-z3")
+    (version "0.11.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "z3" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0j5zsl4gl4civmzs68q8yayj88h8y30sjvjr1rfsc5j5pys58myj"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-num" ,rust-num-0.2)
+         ("rust-z3-sys" ,rust-z3-sys-0.7))
+        #:cargo-development-inputs
+        (("rust-env-logger" ,rust-env-logger-0.6)
+         ("rust-semver" ,rust-semver-0.9))))
+    (home-page "https://github.com/prove-rs/z3.rs")
+    (synopsis "Bindings for the Z3 SMT solver from Microsoft Research")
+    (description "This package provide high-level Rust bindings for the Z3
+SMT solver from Microsoft Research.")
+    (license license:expat)))
+
 (define-public rust-zbase32-0.1
   (package
     (name "rust-zbase32")
