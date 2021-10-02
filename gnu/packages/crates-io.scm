@@ -9396,6 +9396,49 @@ C2Rust.")
 pretty-printer.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-c2rust-transpile-0.15
+  (package
+    (name "rust-c2rust-transpile")
+    (version "0.15.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "c2rust-transpile" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "05v1an4p4a4dbdgnp9y3kdw1n8ck12pj1j0lsm07k0nzlmc0qri0"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-c2rust-ast-builder" ,rust-c2rust-ast-builder-0.15)
+         ("rust-c2rust-ast-exporter" ,rust-c2rust-ast-exporter-0.15)
+         ("rust-c2rust-ast-printer" ,rust-c2rust-ast-printer-0.15)
+         ("rust-clap" ,rust-clap-2)
+         ("rust-colored" ,rust-colored-1)
+         ("rust-dtoa" ,rust-dtoa-0.4)
+         ("rust-failure" ,rust-failure-0.1)
+         ("rust-fern" ,rust-fern-0.5)
+         ("rust-handlebars" ,rust-handlebars-2)
+         ("rust-indexmap" ,rust-indexmap-1)
+         ("rust-itertools" ,rust-itertools-0.8)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-pathdiff" ,rust-pathdiff-0.1)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-bencode" ,rust-serde-bencode-0.2)
+         ("rust-serde-bytes" ,rust-serde-bytes-0.11)
+         ("rust-serde-derive" ,rust-serde-derive-1)
+         ("rust-serde-json" ,rust-serde-json-1)
+         ("rust-smallvec" ,rust-smallvec-1)
+         ("rust-strum" ,rust-strum-0.18)
+         ("rust-strum-macros" ,rust-strum-macros-0.18))))
+    (home-page "https://c2rust.com/")
+    (synopsis "C2Rust transpiler implementation")
+    (description "This package provides C2Rust transpiler implementation.")
+    (license license:bsd-3)))
+
 (define-public rust-cache-padded-1
   (package
     (name "rust-cache-padded")
