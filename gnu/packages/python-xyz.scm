@@ -665,6 +665,43 @@ Markdown.  All extensions are found under the module namespace of pymdownx.")
 generator MkDocs.")
     (license license:expat)))
 
+(define-public python-sl1tophoton
+  (package
+    (name "python-sl1tophoton")
+    (version "0.1.3")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/fookatchu/SL1toPhoton")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32
+            "1hmb74rcky3nax4lxn7pw6lcd5a66fdbwrm11c84zb31xb51bakw"))))
+    (build-system python-build-system)
+    (arguments
+      `(#:phases
+         (modify-phases %standard-phases
+           (add-after 'install 'install-binary
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((bin (string-append (assoc-ref outputs "out") "/bin")))
+                 (mkdir-p bin)
+                 (install-file "SL1_to_Photon_gui.py" bin)
+                 (install-file "SL1_to_Photon.py" bin)
+                 (chmod (string-append bin "/SL1_to_Photon_gui.py") #o555)
+                 (chmod (string-append bin "/SL1_to_Photon.py") #o555)))))))
+    (inputs `(("python-pyphotonfile", python-pyphotonfile)
+              ("python-numpy" ,python-numpy)
+              ("python-pyside-2" ,python-pyside-2)
+              ("python-pillow" ,python-pillow)))
+    (home-page "https://github.com/fookatchu/SL1toPhoton")
+    (synopsis "Converter for SL1 to Photon files")
+    (description "SL1toPhoton is a tool for converting PrusaSlicer's SL1 files
+to Photon files for the Anycubic Photon 3D-Printer.  Other cbddlp-files should
+also work (e.G. Elegoo Mars).")
+    (license license:gpl3)))
+
 (define-public python-slixmpp
   (package
     (name "python-slixmpp")
