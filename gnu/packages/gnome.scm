@@ -11358,6 +11358,47 @@ integrate seamlessly with the GNOME desktop.")
     (home-page "https://wiki.gnome.org/Apps/Polari")
     (license license:gpl2+)))
 
+(define-public postmarketos-tweaks
+  (package
+    (name "postmarketos-tweaks")
+    (version "0.7.3")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://gitlab.com/postmarketOS/postmarketos-tweaks")
+               (commit version)))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "05110x0y1pvzdgzmz66fhq9bnlyym1nd7zgn61knihzp4dx3acf5"))))
+    (build-system meson-build-system)
+    (arguments
+      `(#:phases
+        (modify-phases %standard-phases
+          (add-after 'unpack 'fix-install-dir
+            (lambda* _
+              (substitute* "data/meson.build"
+                (("/etc/init.d") (string-append %output "/etc/init.d"))))))))
+    (native-inputs `(("pkg-config" ,pkg-config)
+                     ("gtk+:bin"
+                       ,gtk+ "bin")         ; for gtk-update-icon-cache
+                     ("glib:bin"
+                       ,glib "bin")         ; glib-compile-schemas, etc.
+                     ("desktop-file-utils"
+                       ,desktop-file-utils) ; for update-desktop-database
+                     ("cmake" ,cmake)))
+    (inputs `(("libhandy" ,libhandy)
+              ("gtk" ,gtk)
+              ("python" ,python)
+              ("python-pygobject" ,python-pygobject)
+              ("python-pyyaml" ,python-pyyaml)))
+    (home-page "https://gitlab.com/postmarketOS/postmarketos-tweaks")
+    (synopsis "Extra settings on mobile platforms")
+    (description "Postmarket tweaks is an application for tweaking settings
+on desktop environments supported by postmarketOS.")
+    (license license:lgpl3)))
+
 (define-public gnome-boxes
   (package
     (name "gnome-boxes")
