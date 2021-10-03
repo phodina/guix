@@ -1137,6 +1137,42 @@ freedesktop.org desktop notification specification.")
     (home-page "https://wiki.gnome.org/Projects/NotificationDaemon")
     (license license:gpl2+)))
 
+(define-public megapixels
+  (package
+    (name "megapixels")
+    (version "1.3.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://git.sr.ht/~martijnbraam/megapixels")
+             (commit version)))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0dagp1sh5whnnllrydk7ijjid0hmvcbdm8kkzq2g168khdfn80jm"))))
+    (build-system meson-build-system)
+    (native-inputs `(("pkg-config" ,pkg-config)
+                     ("gtk:bin"
+                      ,gtk "bin")       ; for gtk-update-icon-cache
+                     ("glib:bin"
+                      ,glib "bin")      ; glib-compile-schemas, etc.
+                     ("desktop-file-utils"
+                      ,desktop-file-utils) ; for update-desktop-database
+                     ("zbar" ,zbar)
+                     ("libtiff" ,libtiff)
+                     ("cmake" ,cmake)))
+    (inputs `(("libhandy" ,libhandy)
+              ("perl-image-exiftool" ,perl-image-exiftool)
+              ("imagemagick" ,imagemagick)
+              ("libraw" ,libraw)
+              ("gtk" ,gtk)))
+    (home-page "https://git.sr.ht/~martijnbraam/megapixels")
+    (synopsis "Camera application")
+    (description "This package provides camera application that knows
+how to deal with the media request api.")
+    (license license:gpl3+)))
+
 (define-public mm-common
   (package
     (name "mm-common")
