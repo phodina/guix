@@ -24290,6 +24290,31 @@ qvarious formats: PDF, PostScript, PNG and even SVG.")
 existing Hunspell hyphenation dictionaries.")
     (license (list license:gpl2 license:lgpl2.1 license:mpl1.1))))
 
+(define-public python-pyphotonfile
+  (package
+    (name "python-pyphotonfile")
+    (version "0.2.1")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/fookatchu/pyphotonfile")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32
+            "1hh1fcn7q3kyk2413pjs18xnxvzrchrisbpj2cd59jrdp0qzgv2s"))))
+    (build-system python-build-system)
+    (inputs `(("python-numpy" ,python-numpy)
+              ("python-pillow" ,python-pillow)))
+    (home-page "https://github.com/fookatchu/pyphotonfile")
+    (synopsis "Library for Anycubic Photon 3D-Printer")
+    (description "This package provides library used for manipulating Photon-
+and cbddlp-files created for the Anycubic Photon 3D-Printer and compatibles
+(e.g. Elegoo Mars, etc.).  Currently it supports removing and adding new
+layers as well as changing global parameters like the exposure time, etc.")
+    (license license:gpl3)))
+
 (define-public python-intelhex
   (package
     (name "python-intelhex")
