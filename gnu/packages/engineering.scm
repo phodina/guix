@@ -1678,6 +1678,26 @@ bindings for Python, Java, OCaml and more.")
 bootloader in Espressif ESP8266 & ESP32 series chips.")
     (license license:gpl2+)))
 
+(define-public python-ropgadget
+  (package
+    (name "python-ropgadget")
+    (version "6.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "ROPGadget" version))
+        (sha256
+          (base32
+            "08ms7x4af07970ij9899l75sghnxsa7xyx73gkn6gv0l05p1hqfw"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      `(("python-capstone" ,python-capstone)))
+    (home-page "https://github.com/JonathanSalwan/ROPgadget")
+    (synopsis "Search binaries to facilitate ROP exploitation")
+    (description "This tool lets you search your gadgets on binaries
+to facilitate your ROP exploitation.")
+    (license license:bsd-3)))
+
 (define-public radare2
   (package
     (name "radare2")
