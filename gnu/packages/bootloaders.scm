@@ -519,7 +519,7 @@ tree binary files.  These are board description files used by Linux and BSD.")
     (name "u-boot")
     (version "2021.10")
     (source (origin
-	      (patches
+             (patches
                (list %u-boot-rockchip-inno-usb-patch
                      %u-boot-allow-disabling-openssl-patch
                      %u-boot-sifive-prevent-relocating-initrd-fdt
@@ -550,6 +550,21 @@ tree binary files.  These are board description files used by Linux and BSD.")
 also initializes the boards (RAM etc).")
     (license license:gpl2+)))
 
+(define u-boot-quartz64
+  (let ((commit "02ce577f7b7f32eff47bc711680046a7647d3c7a")
+	(revision "1"))
+  (package
+    (inherit u-boot)
+    (name "u-boot-quartz64")
+    (version "")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (commit "https://gitlab.com/pgwipeout/u-boot-rockchip")
+                    (version commit))
+              (sha256
+               (base32
+                "1zm7igkdnz0w4ir8rfl2dislfrl0ip104grs5hvd30a5wkm7wari"))))
 (define-public u-boot-tools
   (package
     (inherit u-boot)
@@ -654,7 +669,7 @@ def test_ctrl_c"))
 also initializes the boards (RAM etc).  This package provides its
 board-independent tools.")))
 
-(define-public (make-u-boot-package board triplet)
+(define-public (make-u-boot-package board triplet #:key (u-boot u-boot))
   "Returns a u-boot package for BOARD cross-compiled for TRIPLET."
   (let ((same-arch? (lambda ()
                       (string=? (%current-system)
@@ -813,6 +828,9 @@ it fits within common partitioning schemes.")
                    (("CONFIG_VIDEO_BRIDGE_ANALOGIX_ANX6345=y") "CONFIG_VIDEO_BRIDGE_ANALOGIX_ANX6345=y\nCONFIG_VIDEO_BPP32=y"))
                  #t)))))))))
 
+(define-public u-boot-pinephone
+  (make-u-boot-sunxi64-package "pinephone" "aarch64-linux-gnu"))
+
 (define-public u-boot-bananapi-m2-ultra
   (make-u-boot-package "Bananapi_M2_Ultra" "arm-linux-gnueabihf"))
 
@@ -939,6 +957,9 @@ to Novena upstream, does not load u-boot.img from the first partition.")
       (inputs
        `(("firmware" ,opensbi-generic)
          ,@(package-inputs base))))))
+
+(define-public u-boot-quartz64
+  (make-u-boot-package "sifive_unmatched" "aarch64-linux-gnu"))
 
 (define-public u-boot-rock64-rk3328
   (let ((base (make-u-boot-package "rock64-rk3328" "aarch64-linux-gnu")))
