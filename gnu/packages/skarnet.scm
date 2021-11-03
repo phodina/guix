@@ -4,6 +4,7 @@
 ;;; Copyright © 2017 Z. Ren <zren@dlut.edu.cn>
 ;;; Copyright © 2018–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2021 Dr. Stefan Karrmann <S.Karrmann@web.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -366,3 +367,42 @@ all the details.")))
      "s6-linux-utils is a set of minimalistic Linux-specific system utilities,
 such as @command{mount}, @command{umount}, and @command{chroot} commands,
 Linux uevent listeners, a @command{devd} device hotplug daemon, and more.")))
+
+(define-public mdevd
+  (package
+   (name "mdevd")
+   (version "0.1.3.0")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append
+           "https://skarnet.org/software/mdevd/mdevd-"
+           version ".tar.gz"))
+     (sha256
+      (base32 "0spvw27xxd0m6j8bl8xysmgsx18fl769smr6dsh25s2d5h3sp2dy"))))
+    (build-system gnu-build-system)
+    (inputs `(("skalibs" ,skalibs)
+              ("execline" ,execline)))
+    (arguments
+     '(#:configure-flags (list
+                          (string-append "--with-lib="
+                                         (assoc-ref %build-inputs "skalibs")
+                                         "/lib/skalibs")
+                          (string-append "--with-sysdeps="
+                                         (assoc-ref %build-inputs "skalibs")
+                                         "/lib/skalibs/sysdeps"))
+       #:tests? #f))                    ; no tests exist
+    (home-page "https://skarnet.org/software/mdevd")
+    (license isc)
+    (synopsis "A small daemon managing kernel hotplug events, similarly to udevd")
+    (description
+     "It uses the same configuration file as mdev, which is a hotplug
+manager integrated in the Busybox suite of tools. However, mdev needs
+to be registered in /proc/sys/kernel/hotplug, and the kernel forks an
+instance of mdev for every event; by contrast, mdevd is a daemon and
+does not fork.
+
+The point of mdevd is to provide a drop-in replacement to mdev that
+does not fork, so it can handle large influxes of events at boot time
+without a performance drop. mdevd is designed to be entirely
+compatible with advanced mdev usage such as mdev-like-a-boss.")))
