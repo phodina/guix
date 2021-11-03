@@ -13440,6 +13440,39 @@ named for) extending the Levenberg-Marquardt method from
 enhancements to optimization and data fitting problems.")
     (license license:bsd-3)))
 
+(define-public python-lmso-algorithm
+  (let ((commit "463699946d1805c6898ae9789370b1e8a122ccda")
+        (revision "1"))
+    (package
+      (name "python-lmso-algorithm")
+      (version (git-version "1.2" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/alexgrusu/lmso_algorithm")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256 "122kyd1m0l1x79x0sp201bgbg7sb36c2dz7cranbf8g6m69f4w68")))
+      (build-system python-build-system)
+      (arguments
+       '(#:phases
+         (modify-phases %standard-phases
+           (add-before 'build 'delete-egg
+             (lambda* (#:key outputs #:allow-other-keys)
+               ;; Delete the .egg-info directory, to avoid build errors
+               (delete-file-recursively "lmso_algorithm.egg-info"))))))
+      (propagated-inputs
+       `(("python-numpy" ,python-numpy)
+         ("python-scipy" ,python-scipy )))
+      (home-page "https://github.com/alexgrusu/lmso_algorithm")
+      (synopsis "Optimized LMS algorithm")
+      (description "This package provides an optimized least-mean-square (LMSO)
+algorithm.  The proposed algorithm follows an optimization problem and
+introduces a variable step-size in order to minimize the system
+misalignment.")
+      (license license:gpl3))))
+
 (define-public python-boto
   (package
     (name "python-boto")
