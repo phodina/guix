@@ -8421,6 +8421,27 @@ compressed streams in Go.")
 supports Printf/Sprintf etc.")
     (license license:unlicense)))
 
+(define-public go-github-com-caarlos0-spin
+  (package
+    (name "go-github-com-caarlos0-spin")
+    (version "1.1.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/caarlos0-graveyard/spin")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "1pnijds4145j8nsxvq8203r2sg2pbk7x8prkdg2ilghhrzqj6vyc"))
+       (file-name (git-file-name name version))))
+    (build-system go-build-system)
+    (arguments
+     '(#:import-path "github.com/caarlos0/spin"))
+    (home-page "https://github.com/caarlos0-graveyard/spin")
+    (synopsis "Simple spinner for cli apps")
+    (description "A very simple spinner for cli golang apps.")
+    (license license:expat)))
+
 (define-public go-github-com-songmu-gitconfig
   (package
     (name "go-github-com-songmu-gitconfig")
