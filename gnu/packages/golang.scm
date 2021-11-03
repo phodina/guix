@@ -8399,6 +8399,28 @@ compressed streams in Go.")
     (home-page "https://github.com/ulikunitz/xz")
     (license license:bsd-3)))
 
+(define-public go-github-com-logrusorgru-aurora
+  (package
+    (name "go-github-com-logrusorgru-aurora")
+    (version "3.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/logrusorgru/aurora")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "0z7cgj8gl69271d0ag4f4yjbsvbrnfibc96cs01spqf5krv2rzjc"))
+       (file-name (git-file-name name version))))
+    (build-system go-build-system)
+    (arguments
+     '(#:import-path "github.com/logrusorgru/aurora"))
+    (home-page "https://github.com/logrusorgru/aurora")
+    (synopsis "Ultimate ANSI colors for Golang")
+    (description "This package provides ANSI colors for Golang.  The package
+supports Printf/Sprintf etc.")
+    (license license:unlicense)))
+
 (define-public go-github-com-songmu-gitconfig
   (package
     (name "go-github-com-songmu-gitconfig")
