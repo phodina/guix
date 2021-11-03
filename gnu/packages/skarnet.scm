@@ -445,3 +445,58 @@ arbitrary programs to tamper with user accounting.
 utmps is a secure implementation of user accounting, using a daemon as
 the only authority to manage the utmp and wtmp data; programs running
 utmp functions are just clients to this daemon.")))
+
+(define-public nsss
+  (package
+   (name "nsss")
+   (version "0.1.0.0")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append
+           "https://skarnet.org/software/nsss/nsss-"
+           version ".tar.gz"))
+     (sha256
+      (base32 "15rxbwf16wm1la079yr2xn4bccjgd7m8dh6r7bpr6s57cj93i2mq"))))
+    (build-system gnu-build-system)
+    (inputs `(("skalibs" ,skalibs)
+              ("s6" ,s6)))
+    (arguments
+     '(#:configure-flags (list
+                          (string-append "--with-lib="
+                                         (assoc-ref %build-inputs "skalibs")
+                                         "/lib/skalibs")
+                          (string-append "--with-sysdeps="
+                                         (assoc-ref %build-inputs "skalibs")
+                                         "/lib/skalibs/sysdeps"))
+       #:tests? #f))                    ; no tests exist
+    (home-page "https://skarnet.org/software/nsss")
+    (license isc)
+    (synopsis "subset of the pwd.h, group.h and shadow.h family of functions, performing user database access on Unix systems")
+    (description
+     "Usually, user database access via getpwnam() and similar function is
+provided by the system's libc. However, not all libcs implement a
+configurable backend for the user/group database. For instance the
+musl libc, on Linux, only supports the standard /etc/passwd mechanism;
+it also supports the nscd protocol but this is not quite enough:
+
+musl only connects to nscd when it cannot find an answer in its files backend
+The nscd protocol does not support enumeration, so primitives
+such as getpwent() cannot be implemented over nscd.
+
+The mechanism used by glibc, called Name Service Switch
+(abbreviated to nsswitch or NSS), has its own set of issues
+that makes it unsuitable in certain situations.
+
+nsss is a secure implementation of a \"name service switch\":
+configurable user/group/shadow database access, providing
+getpwnam() et al. functionality by communicating over a Unix
+domain socket with a daemon; the daemon can perform lookups in
+any database it chooses.
+
+nsss does not perform dynamic module loading, only adds a
+small footprint to the application's binary, and does not add
+any complex decision engine into the client's address space.
+Applications can be statically linked against the nsss
+library, and still benefit from configurable user database
+access functions.")))
