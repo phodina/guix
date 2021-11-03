@@ -406,3 +406,42 @@ The point of mdevd is to provide a drop-in replacement to mdev that
 does not fork, so it can handle large influxes of events at boot time
 without a performance drop. mdevd is designed to be entirely
 compatible with advanced mdev usage such as mdev-like-a-boss.")))
+
+(define-public utmps
+  (package
+   (name "utmps")
+   (version "0.1.0.0")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append
+           "https://skarnet.org/software/utmps/utmps-"
+           version ".tar.gz"))
+     (sha256
+      (base32 "09p0k2sgxr7jlsbrn66fzvzf9zxvpjp85y79xk10hxjglypszyml"))))
+    (build-system gnu-build-system)
+    (inputs `(("skalibs" ,skalibs)
+              ("s6" ,s6)))
+    (arguments
+     '(#:configure-flags (list
+                          (string-append "--with-lib="
+                                         (assoc-ref %build-inputs "skalibs")
+                                         "/lib/skalibs")
+                          (string-append "--with-sysdeps="
+                                         (assoc-ref %build-inputs "skalibs")
+                                         "/lib/skalibs/sysdeps"))
+       #:tests? #f))                    ; no tests exist
+    (home-page "https://skarnet.org/software/utmps")
+    (license isc)
+    (synopsis "Implementation of the utmpx.h family of functions performing user accounting on Unix systems")
+    (description
+     "Traditionally, utmp functionality is provided by the system's libc.
+However, not all libcs implement utmp: for instance the musl libc, on
+Linux, does not. The main reason for it is that utmp functionality is
+difficult to implement in a secure way; in particular, it is
+impossible to implement without either running a daemon or allowing
+arbitrary programs to tamper with user accounting.
+
+utmps is a secure implementation of user accounting, using a daemon as
+the only authority to manage the utmp and wtmp data; programs running
+utmp functions are just clients to this daemon.")))
