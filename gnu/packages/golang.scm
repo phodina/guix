@@ -68,6 +68,7 @@
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages lua)
+  #:use-module (gnu packages libusb)
   #:use-module (gnu packages mp3)
   #:use-module (gnu packages password-utils)
   #:use-module (gnu packages pcre)
@@ -6319,6 +6320,31 @@ GitHub API v3.")
     (synopsis "Atomically create or replace a file or symbolic link")
     (description "@code{renameio} Go package provides a way to atomically
 create or replace a file or symbolic link.")
+    (license license:asl2.0)))
+
+(define-public go-github-com-google-gousb
+  (package
+    (name "go-github-com-google-gousb")
+    (version "2.1.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/google/gousb")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "1aki6hk009sicrf7gxy5nkjmj4j7lsy0by4kjgd9bwq8ragfyv5x"))
+       (file-name (git-file-name name version))))
+    (build-system go-build-system)
+    (arguments
+     '(#:import-path "github.com/google/gousb"))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (propagated-inputs `(("libusb" ,libusb)))
+    (home-page "https://github.com/google/gousb")
+    (synopsis "Wrapping for libusb")
+    (description "The gousb package is an attempt at wrapping the libusb
+library into a Go-like binding.")
     (license license:asl2.0)))
 
 (define-public go-golang.org-x-sync-errgroup
