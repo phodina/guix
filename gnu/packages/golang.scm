@@ -8442,6 +8442,29 @@ supports Printf/Sprintf etc.")
     (description "A very simple spinner for cli golang apps.")
     (license license:expat)))
 
+(define-public go-github-com-marcinbor85-gohex
+  (let ((commit "baab2527a9a2a4abb3dc06baabedfa5e0268b8d8")
+        (revision "1"))
+    (package
+      (name "go-github-com-marcinbor85-gohex")
+      (version (git-version "0.0.1" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/marcinbor85/gohex")
+                      (commit commit)))
+                (sha256
+                 (base32
+                  "06v4cc6ld6vvxd4xm9k6l49lhcd9ncq7xfx35mj5b9r96ih49fiz"))
+                (file-name (git-file-name name version))))
+      (build-system go-build-system)
+      (arguments
+       '(#:import-path "github.com/marcinbor85/gohex"))
+      (home-page "https://pkg.go.dev/github.com/marcinbor85/gohex?utm_source=godoc")
+      (synopsis "Parse Intel hex files")
+      (description "A Go library for parsing Intel HEX files.")
+      (license license:expat))))
+
 (define-public go-github-com-songmu-gitconfig
   (package
     (name "go-github-com-songmu-gitconfig")
