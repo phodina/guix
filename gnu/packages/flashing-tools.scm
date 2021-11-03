@@ -9,6 +9,7 @@
 ;;; Copyright © 2018–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2021 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2021 Mathieu Othacehe <othacehe@gnu.org>
+;;; Copyright © 2021 Martin Becze <mjbecze@riseup.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -34,6 +35,7 @@
   #:use-module (gnu packages)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system python)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages admin)
@@ -45,6 +47,7 @@
   #:use-module (gnu packages flex)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages gnupg)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages groff)
   #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pkg-config)
@@ -566,3 +569,32 @@ formats, and can perform many different manipulations.")
     (description "@code{uuu} is a command line tool, evolved out of MFGTools.
 It can be used to upload images to I.MX SoC's using at least their boot ROM.")
     (license license:bsd-3)))
+
+(define-public wally-cli
+  (package
+    (name "wally-cli")
+    (version "2.0.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/zsa/wally-cli")
+             (commit (string-append version "-linux"))))
+       (sha256
+        (base32
+         "1iswh1z7llapjn116lyr5lvry7q93zfaasxvm36q5jx09hf91v1n"))
+       (file-name (git-file-name name version))))
+    (build-system go-build-system)
+    (arguments
+     '(#:tests? #f                      ; tests fail on the linter
+       #:import-path "github.com/zsa/wally-cli"))
+    (native-inputs
+     `(("go-gopkg-in-cheggaaa-pb-v1" ,go-gopkg-in-cheggaaa-pb-v1)
+       ("go-github-com-google-gousb" ,go-github-com-google-gousb)
+       ("go-github-com-marcinbor85-gohex" ,go-github-com-marcinbor85-gohex)
+       ("go-github-com-caarlos0-spin" ,go-github-com-caarlos0-spin)
+       ("go-github-com-logrusorgru-aurora" ,go-github-com-logrusorgru-aurora)))
+    (home-page "https://ergodox-ez.com/pages/wally")
+    (synopsis "Flashing tool for ZSA keyboards")
+    (description "This tool is for flashing custom layouts to ZSA keyboards.")
+    (license license:expat)))
