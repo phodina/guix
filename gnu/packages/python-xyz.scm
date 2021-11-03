@@ -94,6 +94,7 @@
 ;;; Copyright © 2020, 2021 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2021 Morgan Smith <Morgan.J.Smith@outlook.com>
 ;;; Copyright © 2020 EuAndreh <eu@euandre.org>
+;;; Copyright © 2020 Ryan Desfosses <rdes@protonmail.com>
 ;;; Copyright © 2021 Sharlatan Hellseher <sharlatanus@gmail.com>
 ;;; Copyright © 2021 Ellis Kenyő <me@elken.dev>
 ;;; Copyright © 2021 LibreMiami <packaging-guix@libremiami.org>
@@ -1644,6 +1645,31 @@ version identifier.")
 
 (define-public python2-semantic-version
   (package-with-python2 python-semantic-version))
+
+(define-public python-serial
+  (package
+  (name "python-serial")
+  (version "0.0.97")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "serial" version))
+      (sha256
+        (base32
+          "0j7qjif5d9mxbdwcyyhr7fpcvjq7x16ar9n3mk95xgyx4yhm08al"))))
+  (build-system python-build-system)
+  (propagated-inputs
+    `(("python-future" ,python-future)
+      ("python-iso8601" ,python-iso8601)
+      ("python-pyyaml" ,python-pyyaml)))
+  (home-page
+    "https://bitbucket.com/davebelais/serial.git")
+  (synopsis
+    "Framework for serializing/deserializing JSON/YAML/XML")
+  (description
+    "This package provides a framework for serializing/deserializing
+JSON/YAML/XML into python class instances and vice versa")
+  (license license:expat)))
 
 (define-public python-serpent
   (package
