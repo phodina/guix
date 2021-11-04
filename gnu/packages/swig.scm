@@ -4,6 +4,7 @@
 ;;; Copyright © 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2020 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -30,7 +31,8 @@
   #:use-module (gnu packages guile)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
-  #:use-module (gnu packages python))
+  #:use-module (gnu packages python)
+  #:use-module (gnu packages ruby))
 
 (define-public swig
   (package
@@ -46,7 +48,8 @@
                "1ac7g0gd8ndwv3ybqn5vjgqxa7090bby4db164a7mn9ssp8b803s"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases
+     '(#:make-flags (append '("CFLAGS+=-O2"))
+       #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'workaround-gcc-bug
            (lambda _
@@ -59,6 +62,9 @@
                      ("pcre" ,pcre "bin")       ;for 'pcre-config'
                      ;; The following are for tests and examples:
                      ("guile" ,guile-3.0)
+					 ("ruby" ,ruby-2.7)
+					 ("python" ,python)
+					 ("python" ,python-2.7)
                      ("perl" ,perl)))
                      ;;("python" ,python-wrapper)
     (inputs `(("pcre" ,pcre)))
