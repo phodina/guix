@@ -573,28 +573,57 @@ It can be used to upload images to I.MX SoC's using at least their boot ROM.")
 (define-public wally-cli
   (package
     (name "wally-cli")
-    (version "2.0.1")
+    (version "0.0.0-20210719000148-96db616ef6d5")
     (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/zsa/wally-cli")
-             (commit (string-append version "-linux"))))
-       (sha256
-        (base32
-         "1iswh1z7llapjn116lyr5lvry7q93zfaasxvm36q5jx09hf91v1n"))
-       (file-name (git-file-name name version))))
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/zsa/wally-cli")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "15bm5hpgzr094h8gp066yw4i9959ikka9kl26s7l7gdr1bxg1knv"))))
     (build-system go-build-system)
-    (arguments
-     '(#:tests? #f                      ; tests fail on the linter
-       #:import-path "github.com/zsa/wally-cli"))
-    (native-inputs
-     `(("go-gopkg-in-cheggaaa-pb-v1" ,go-gopkg-in-cheggaaa-pb-v1)
-       ("go-github-com-google-gousb" ,go-github-com-google-gousb)
-       ("go-github-com-marcinbor85-gohex" ,go-github-com-marcinbor85-gohex)
-       ("go-github-com-caarlos0-spin" ,go-github-com-caarlos0-spin)
-       ("go-github-com-logrusorgru-aurora" ,go-github-com-logrusorgru-aurora)))
-    (home-page "https://ergodox-ez.com/pages/wally")
-    (synopsis "Flashing tool for ZSA keyboards")
-    (description "This tool is for flashing custom layouts to ZSA keyboards.")
+    (arguments '(#:import-path "github.com/zsa/wally-cli"))
+    (propagated-inputs
+      `(("go-gopkg-in-cheggaaa-pb-v1" ,go-gopkg-in-cheggaaa-pb-v1)
+        ("go-golang-org-x-sys" ,go-golang-org-x-sys)
+        ("go-github-com-mattn-go-runewidth" ,go-github-com-mattn-go-runewidth)
+        ("go-github-com-marcinbor85-gohex" ,go-github-com-marcinbor85-gohex)
+        ("go-github-com-logrusorgru-aurora" ,go-github-com-logrusorgru-aurora)
+        ("go-github-com-google-gousb" ,go-github-com-google-gousb)
+        ("go-github-com-caarlos0-spin" ,go-github-com-caarlos0-spin)))
+    (home-page "https://github.com/zsa/wally-cli")
+    (synopsis "Wally cli")
+    (description
+      "Flash your @url{https://ergodox-ez.com,ZSA Keyboard} the EZ way.")
     (license license:expat)))
+
+;(define-public wally-cli
+;  (package
+;    (name "wally-cli")
+;    (version "2.0.1")
+;    (source
+;     (origin
+;       (method git-fetch)
+;       (uri (git-reference
+;             (url "https://github.com/zsa/wally-cli")
+;             (commit (string-append version "-linux"))))
+;       (sha256
+;        (base32
+;         "1iswh1z7llapjn116lyr5lvry7q93zfaasxvm36q5jx09hf91v1n"))
+;       (file-name (git-file-name name version))))
+;    (build-system go-build-system)
+;    (arguments
+;     '(#:tests? #f                      ; tests fail on the linter
+;       #:import-path "github.com/zsa/wally-cli"))
+;    (native-inputs
+;     `(("go-gopkg-in-cheggaaa-pb-v1" ,go-gopkg-in-cheggaaa-pb-v1)
+;       ("go-github-com-google-gousb" ,go-github-com-google-gousb)
+;       ("go-github-com-marcinbor85-gohex" ,go-github-com-marcinbor85-gohex)
+;       ("go-github-com-caarlos0-spin" ,go-github-com-caarlos0-spin)
+;       ("go-github-com-logrusorgru-aurora" ,go-github-com-logrusorgru-aurora)))
+;    (home-page "https://ergodox-ez.com/pages/wally")
+;    (synopsis "Flashing tool for ZSA keyboards")
+;    (description "This tool is for flashing custom layouts to ZSA keyboards.")
+;    (license license:expat)))

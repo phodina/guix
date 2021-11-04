@@ -1183,6 +1183,29 @@ proxy protocol.")
       (description "Go-Bloom implements bloom filter using double hashing.")
       (license license:asl2.0))))
 
+(define-public go-github-com-rivo-uniseg
+  (package
+    (name "go-github-com-rivo-uniseg")
+    (version "0.2.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/rivo/uniseg")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0j7h22vfmjj562vr8gpsyrkrwp1pq9ayh5fylv24skxb467g9f0q"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/rivo/uniseg"))
+    (home-page "https://github.com/rivo/uniseg")
+    (synopsis "Unicode Text Segmentation for Go")
+    (description
+      "Package uniseg implements Unicode Text Segmentation according to Unicode
+Standard Annex #29 (@url{http://unicode.org/reports/tr29/,http://unicode.org/reports/tr29/}).
+")
+    (license license:expat)))
+
 (define-public go-github-com-aead-chacha20
   (let ((commit "8b13a72661dae6e9e5dea04f344f0dc95ea29547")
         (revision "0"))
@@ -4135,6 +4158,31 @@ makes it possible to handle ANSI color escapes on Windows.")
        "This package allows for a cgo argument to be passed a Go pointer.")
       (license license:expat))))
 
+(define-public go-github-com-mattn-go-runewidth
+  (package
+    (name "go-github-com-mattn-go-runewidth")
+    (version "0.0.13")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/mattn/go-runewidth")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1yir0f3wc5z5hnkwhvx5qb6nmpfb05zp2gvfjvna63s8kmla1rrn"))))
+    (build-system go-build-system)
+    (propagated-inputs
+     `(("go-github-com-rivo-uniseg" ,go-github-com-rivo-uniseg)
+	   ("go-golang-org-x-sys" ,go-golang-org-x-sys)))
+    (arguments
+     '(#:import-path "github.com/mattn/go-runewidth"))
+    (home-page "https://github.com/mattn/go-runwidth")
+    (synopsis "Provide @code{wcwidth} for Golang")
+    (description "This package provides @code{wcwidth}, a Go module that can
+get you fixed width of the character or string.")
+    (license license:expat)))
 (define-public go-github-com-mgutz-ansi
   (let ((commit "9520e82c474b0a04dd04f8a40959027271bab992")
         (revision "0"))
@@ -5262,6 +5310,28 @@ fast and distributable command line applications in an expressive way.")
         (search-patches "go-github-com-urfave-cli-v2-fix-tests.patch"))))
     (arguments
      '(#:import-path "github.com/urfave/cli/v2"))))
+
+(define-public go-github-com-vividcortex-ewma
+  (package
+    (name "go-github-com-vividcortex-ewma")
+    (version "1.2.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/VividCortex/ewma")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0whx516l9nm4n41spagb605ry7kfnz1qha96mcshnfjlahhnnylq"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/VividCortex/ewma"))
+    (home-page "https://github.com/VividCortex/ewma")
+    (synopsis "EWMA")
+    (description
+      "Package ewma implements exponentially weighted moving averages.
+")
+    (license license:expat)))
 
 (define-public go-github-com-go-md2man
   (package
