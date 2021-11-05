@@ -106,3 +106,22 @@
 (boards.txt etc).")
     ;; GPL covers the main body ("app", "core").  LGPL covers the remainder.
     (license (list license:lgpl2.1+ license:gpl3+))))
+
+(define-public arduino-libraries
+  (package (inherit arduino-hardware)
+    (name "arduino-libraries")
+    (inputs
+     `(("arduino-hardware" ,arduino-hardware)))
+    (arguments
+      (substitute-keyword-arguments
+        (package-arguments arduino-hardware)
+        ((#:phases phases)
+            `(modify-phases ,phases
+              (replace 'chdir
+                (lambda _
+				  ;; TODO: Libraries are no zipped in build directory
+                  ;(chdir "libraries")
+                  #t))
+              (replace 'install ,(arduino-installer "libraries"))))))
+    ;; Note: Some parts are BSD and ASL-2.0 licensed.
+    (license (list license:lgpl2.1+ license:gpl3+))))
