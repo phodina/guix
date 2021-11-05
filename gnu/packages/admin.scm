@@ -44,6 +44,7 @@
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
+;;; Copyright © 2021 Roel Janssen <roel@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -429,6 +430,47 @@ environments:
   @acronym{MIME,Multipurpose Internet Mail Extensions} messages
 @end itemize")
     (license license:gpl3)))
+
+(define-public collectl
+  (package
+   (name "collectl")
+   (version "4.3.1")
+   (source (origin
+             (method url-fetch)
+             (uri (string-append
+                   "mirror://sourceforge/collectl/collectl/collectl-" version
+                   "/collectl-" version ".src.tar.gz"))
+             (sha256
+              (base32
+               "1wc9k3rmhqzh6cx5dcpqhlc3xcpadsn2ic54r19scdjbjx6jd1r1"))))
+   (build-system gnu-build-system)
+   (arguments
+    `(#:tests? #f ; There are no tests.
+      #:phases
+      (modify-phases %standard-phases
+        (delete 'build) ; There's nothing to build.
+        (replace 'configure
+          (lambda* (#:key outputs #:allow-other-keys)
+            (substitute* "INSTALL"
+              (("DESTDIR:=\"/\"") (format #f "DESTDIR:=~s"
+                                          (assoc-ref outputs "out")))
+              (("DESTDIR/usr") "DESTDIR"))))
+        (replace 'install
+          (lambda* (#:key outputs #:allow-other-keys)
+            (substitute* "collectl"
+             (("\\$configFile='';")
+              (string-append "$configFile='"
+                             (assoc-ref outputs "out")
+                             "/etc';")))
+            (invoke "./INSTALL"))))))
+   (inputs
+    `(("perl" ,perl)))
+   (home-page "http://collectl.sourceforge.net")
+   (synopsis "Performance data collector")
+   (description "This package provides a program that collects various
+performance measurement data like CPU, memory, disk and network performance
+numbers.")
+   (license license:artistic2.0)))
 
 (define-public daemontools
   (package
