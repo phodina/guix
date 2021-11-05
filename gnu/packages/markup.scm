@@ -7,6 +7,8 @@
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 EuAndreh <eu@euandre.org>
 ;;; Copyright © 2021 Noisytoot <noisytoot@disroot.org>
+;;; Copyright © 2021 Zhu Zihao <all_but_last@163.com>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -34,12 +36,14 @@
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix utils)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
-  #:use-module (gnu packages web))
+  #:use-module (gnu packages web)
+  #:use-module ((guix licenses) #:prefix license:))
 
 (define-public hoedown
   (package
@@ -113,6 +117,36 @@ you to write using an easy-to-read, easy-to-write plain text format, then
 convert it to structurally valid XHTML (or HTML).")
     (license (non-copyleft "file://License.text"
                            "See License.text in the distribution."))))
+
+(define-public lowdown
+  (package
+    (name "lowdown")
+    (version "0.10.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://kristaps.bsd.lv/lowdown/snapshots/lowdown-"
+                           version ".tar.gz"))
+       (sha256
+        (base32 "2f6lpyz5bbvwqadal8xcfjcm46zcycrgk5079isjyipg85zdyvb2"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ;No test
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (invoke "./configure"
+                       (string-append "PREFIX=" out)
+                       (string-append "MANDIR=" out "/share/man"))))))))
+    (native-inputs
+     `(("which" ,which)))
+    (home-page "https://kristaps.bsd.lv/lowdown/")
+    (synopsis "Simple Markdown translator")
+    (description "Lowdown is a Markdown translator producing HTML5,
+roff documents in the ms and man formats, LaTeX, gemini, and terminal output.")
+    (license license:isc)))
 
 (define-public discount
   (package
