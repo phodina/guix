@@ -29,7 +29,8 @@
   #:use-module (gnu packages avr)
   #:use-module (gnu packages flashing-tools)
   #:use-module (gnu packages java)
-  #:use-module (gnu packages python))
+  #:use-module (gnu packages python)
+  #:use-module (gnu packages python-xyz))
 
 (define (arduino-installer filename)
   `(lambda* (#:key outputs #:allow-other-keys)
@@ -125,3 +126,87 @@
               (replace 'install ,(arduino-installer "libraries"))))))
     ;; Note: Some parts are BSD and ASL-2.0 licensed.
     (license (list license:lgpl2.1+ license:gpl3+))))
+
+(define-public arduino-makefile
+  (package
+    (name "arduino-makefile")
+    (version "1.6.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/sudar/Arduino-Makefile")
+                    (commit version)))
+              (sha256
+               (base32
+                "0flpl97d2231gp51n3y4qvf3y1l8xzafi1sgpwc305vwc2h4dl2x"))
+              (file-name (string-append name "-" version ".tar.gz"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f ; no tests exist
+       #:phases
+        (modify-phases %standard-phases
+          (delete 'configure)
+          (add-after 'unpack 'patch-paths
+            (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((avr-gcc (assoc-ref inputs "avr-toolchain")))
+              (substitute* "bin/ard-reset-arduino"
+                (("#!/usr/bin/env python") "#!/usr/bin/python3"))
+              (substitute* "Arduino.mk"
+                (("#    => ARDUINO_DIR.*")
+                   (string-append "ARDUINO_DIR = "
+                                  (assoc-ref %build-inputs "arduino-libraries")
+                                  "/share/arduino\n"))
+                ; ; defaults to "hardware/tools/avr"
+                (("#    => AVR_TOOLS_DIR.*")
+                   (string-append "AVR_TOOLS_DIR = "
+                                  (assoc-ref %build-inputs "avrdude")
+                                  "\n"))
+                (("#    => ARDMK_DIR.*")
+                   (string-append "ARDMK_DIR = "
+                                  (assoc-ref %outputs "out")
+                                  "/share/arduino\n"))
+                (("CC_NAME[ ]*=.*")
+                   (string-append "CC_NAME = " avr-gcc "/bin/avr-gcc\n"))
+                (("CXX_NAME[ ]*=.*")
+                   (string-append "CXX_NAME = " avr-gcc "/bin/avr-g++\n"))
+                (("OBJCOPY_NAME[ ]*=.*")
+                   (string-append "OBJCOPY_NAME = " avr-gcc "/bin/avr-objcopy\n"))
+                (("OBJDUMP_NAME[ ]*=.*")
+                   (string-append "OBJDUMP_NAME = " avr-gcc "/bin/avr-objdump\n"))
+                (("AR_NAME[ ]*=.*")
+                   (string-append "AR_NAME = " avr-gcc "/bin/avr-ar\n"))
+                (("SIZE_NAME[ ]*=.*")
+                   (string-append "SIZE_NAME = " avr-gcc "/bin/avr-size\n"))
+                (("NM_NAME[ ]*=.*")
+                   (string-append "NM_NAME = " avr-gcc "/bin/avr-nm\n"))))))
+          (delete 'build)
+          (replace 'install
+            (lambda* (#:key outputs #:allow-other-keys)
+              (let* ((out (assoc-ref outputs "out"))
+                     (out-mk (string-append out "/share/arduino"))
+                     (out-doc (string-append out "/share/doc"))
+                     (out-bin (string-append out "/bin"))
+                     (out-man (string-append out "/share/man/man1")))
+                    (mkdir-p out-mk)
+                    (for-each (lambda (name)
+                                (copy-file name (string-append out-mk "/" name)))
+                              '("Arduino.mk" "arduino-mk-vars.md"
+                                "chipKIT.mk" "Common.mk"))
+                    (mkdir-p out-doc)
+                    (copy-recursively "examples" out-doc)
+                    (mkdir-p out-bin)
+                    (copy-file "bin/ard-reset-arduino"
+                               (string-append out-bin "/ard-reset-arduino"))
+                    (mkdir-p out-man)
+                    (copy-file "ard-reset-arduino.1"
+                               (string-append out-man "/ard-reset-arduino.1"))))))))
+    (inputs
+     `(("python" ,python)
+       ("python-pyserial" ,python-pyserial)
+       ("arduino-libraries" ,arduino-libraries)
+       ("avrdude" ,avrdude)
+       ("avr-toolchain" ,avr-toolchain)))
+    (synopsis "Arduino Makefile Include Files")
+    (description "Allows you to build Arduino sketches using a very tiny Makefile")
+    (home-page "https://github.com/sudar/Arduino-Makefile")
+    (license license:lgpl2.1)))
