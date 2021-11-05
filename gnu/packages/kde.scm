@@ -903,6 +903,34 @@ capacity, free space, type and mount point.  It also allows you to mount and
 unmount drives and view them in a file manager.")
     (license license:gpl2+)))
 
+(define-public ktimer
+  (package
+    (name "ktimer")
+    (version "21.08.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/release-service/" version
+                                  "/src/ktimer-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1nr116cxw81c2bh32l2xrzmrglk36qkzycbfcffxnm7ka4flwzbm"))))
+    (build-system qt-build-system)
+    (native-inputs
+     `(("extra-cmake-modules" ,extra-cmake-modules)
+       ("kdoctools" ,kdoctools)))
+    (inputs
+     `(("kdbusaddons" ,kdbusaddons)
+       ("ki18n" ,ki18n)
+       ("kio" ,kio)
+       ("knotifications" ,knotifications)
+       ("qtbase" ,qtbase)))
+    (home-page "https://apps.kde.org/utilities/ktimer/")
+    (synopsis "Countdown Launcher")
+    (description "KTimer is a little tool to execute programs after some time.
+It allows you to enter several tasks and to set a timer for each of them.  The
+timers for each task can be started, stopped, changed, or looped.")
+    (license license:gpl2+)))
+
 (define-public kcachegrind
   (package
     (name "kcachegrind")
