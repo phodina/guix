@@ -55,7 +55,8 @@
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages rust)
   #:use-module (gnu packages tls)
-  #:use-module (gnu packages version-control))
+  #:use-module (gnu packages version-control)
+  #:use-module (gnu packages xorg))
 
 (define-public agate
   (package
@@ -450,23 +451,25 @@ characters, ASCII whitespace characters, other ASCII characters and non-ASCII.")
     (name "i3status-rust")
     (version "0.20.1")
     (source
-      (origin
-        (method git-fetch)
-        (uri (git-reference
-              (url "https://github.com/greshake/i3status-rust")
-              (commit (string-append "v" version))))
-        (file-name (git-file-name name version))
-        (patches (search-patches "i3status-rust-enable-unstable-features.patch"))
-        (sha256
-         (base32 "00gzm3g297s9bfp13vnb623p7dfac3g6cdhz2b3lc6l0kmnnqs1s"))))
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/greshake/i3status-rust")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (patches (search-patches "i3status-rust-enable-unstable-features.patch"))
+       (sha256
+        (base32 "00gzm3g297s9bfp13vnb623p7dfac3g6cdhz2b3lc6l0kmnnqs1s"))))
     (build-system cargo-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (inputs
      `(("curl" ,curl)
+       ("alsa-utils" ,alsa-utils)
        ("dbus" ,dbus)
        ("pulseaudio" ,pulseaudio)
        ("openssl" ,openssl)
+       ("setxkbmap" ,setxkbmap)
        ("zlib" ,zlib)))
     (arguments
      `(#:features '("pulseaudio" "libpulse-binding")
