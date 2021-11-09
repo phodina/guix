@@ -984,6 +984,62 @@ useful for C++.")
       (modify-inputs (package-propagated-inputs glibmm)
         (replace "libsigc++" libsigc++-2)))))
 
+(define-public libgbinder
+  (package
+    (name "libgbinder")
+    (version "1.1.23")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/mer-hybris/libgbinder")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "12nw2ihd2xhpvdh0jlyacskqmbdxhnrm5pnz30v4mkyg9kz4xhdc"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list #:make-flags #~(list (string-append "CC="
+                                               #$(cc-for-target))
+                                (string-append "DESTDIR="
+                                               #$output))
+           #:phases #~(modify-phases %standard-phases
+                        (delete 'configure)
+                        (add-after 'unpack 'fix-pkg-config-in
+                          (lambda* _
+                            (substitute* "Makefile"
+                              (("usr/") ""))
+                            (substitute* "libgbinder.pc.in"
+                              (("@libdir@") (string-append #$output "/lib"))
+                              (("/usr/include") (string-append #$output
+                                                               "/include")))))
+                        (add-after 'install 'install-dev
+                          (lambda* _
+                            (invoke "make" "install-dev"
+                                    (string-append "DESTDIR="
+                                                   #$output))))
+                        (replace 'check
+                          (lambda* (#:key tests? #:allow-other-keys)
+                            (when tests?
+                              (chdir "test")
+                              (invoke "make"
+                                      (string-append "CC="
+                                                     #$(cc-for-target)))
+                              (chdir "..")))))))
+    (native-inputs (list bison flex pkg-config))
+    (inputs (list glib libglibutil))
+    (home-page "https://github.com/mer-hybris/libgbinder")
+    (synopsis "GLib-style interface to binder")
+    (description
+     "This package provides GLib-style interface to binder:
+@enumerate
+@item Integration with GLib event loop
+@item Detection of 32 vs 64 bit kernel at runtime
+@item Asynchronous transactions that don't block the event thread
+@item Stable service manager and low-level transation APIs
+@end enumerate")
+    (license license:bsd-3)))
+
 (define-public libglibutil
   (package
     (name "libglibutil")
