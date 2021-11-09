@@ -41994,6 +41994,30 @@ needs of `primal`.")
 (the number of primes below n) and p_k (the k-th prime).")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-primal-sieve-0.2
+  (package
+    (name "rust-primal-sieve")
+    (version "0.2.9")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "primal-sieve" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "133rxfr8whqr0yr2gs5sgiqif0aw21yg0hzbmrrh4jxvd79nwbfs"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-hamming" ,rust-hamming-0.1)
+        ("rust-primal-bit" ,rust-primal-bit-0.2)
+        ("rust-primal-estimate" ,rust-primal-estimate-0.2)
+        ("rust-smallvec" ,rust-smallvec-0.6))))
+    (home-page "https://github.com/huonw/primal")
+    (synopsis "High performance prime sieve")
+    (description "This package provides a high performance prime sieve.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-proc-macro-crate-1
   (package
     (name "rust-proc-macro-crate")
