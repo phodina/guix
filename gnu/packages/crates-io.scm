@@ -52731,6 +52731,28 @@ small to medium sized project")
 a readable output format")
     (license license:expat)))
 
+(define-public rust-simple-allocator-trait-0.1
+  (package
+    (name "rust-simple-allocator-trait")
+    (version "0.1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "simple_allocator_trait" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0f9bvhr47ggcv6myhgwpb895i5qkdw1a1fpi7vhfv9q2fhxbzz10"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "https://github.com/aeplay/simple_allocator_trait")
+    (synopsis
+     "Simple placeholder for chunky and compact")
+    (description
+     "This package provides a Simple placeholder for chunky and compact until
+they integrate with a stable rust allocator API.")
+    (license license:expat)))
+
 (define-public rust-simple-mutex-1
   (package
     (name "rust-simple-mutex")
