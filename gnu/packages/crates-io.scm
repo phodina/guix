@@ -24668,6 +24668,28 @@ correct value of @samp{CARGO_HOME} and @samp{RUSTUP_HOME}.")
      "This package provides a port of the Hamcrest testing library.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-hamming-0.1
+  (package
+    (name "rust-hamming")
+    (version "0.1.3")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "hamming" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1q9hri1l1x1y7vv153kvdw9lkqslmbwgia5r3qj6i39pfji3s135"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "https://github.com/huonw/hamming")
+    (synopsis
+     "Performant popcount and bitwise hamming distance for a slice of bytes")
+    (description
+     "This package provides a performant popcount and bitwise hamming distance
+for a slice of bytes.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-hash-hasher-2
   (package
     (name "rust-hash-hasher")
