@@ -28803,6 +28803,44 @@ frameworks, including embedded Graphiql and GraphQL Playground for easy
 debugging.")
     (license license:bsd-2)))
 
+(define-public rust-kay-0.5
+  (package
+    (name "rust-kay")
+    (version "0.5.1")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "kay" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "059hi3fi3fyqi0li1s765x25jzvwfbswwdzhaydnsbhbaj5hlbkq"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-byteorder" ,rust-byteorder-1)
+        ("rust-chunky" ,rust-chunky-0.3)
+        ("rust-compact" ,rust-compact-0.2)
+        ("rust-compact-macros" ,rust-compact-macros-0.1)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-serde-derive" ,rust-serde-derive-1)
+        ("rust-stdweb" ,rust-stdweb-0.4)
+        ("rust-tungstenite" ,rust-tungstenite-0.11)
+        ("rust-url" ,rust-url-1))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-version-requirements
+           (lambda _
+             ;; Enable unstable features
+             (setenv "RUSTC_BOOTSTRAP" "1")
+             (substitute* "Cargo.toml"
+               (("0.5.3")
+                ,(package-version rust-tungstenite-0.11))))))))
+    (home-page "https://github.com/aeickhoff/kay")
+    (synopsis "Experimental high-performance actor system framework for Rust")
+    (description
+     "Experimental high-performance actor system framework for Rust")
+    (license license:expat)))
+
 (define-public rust-keccak-0.1
   (package
     (name "rust-keccak")
