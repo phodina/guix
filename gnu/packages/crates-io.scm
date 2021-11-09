@@ -41928,6 +41928,30 @@ losslessly as possible.")
        #:cargo-development-inputs
        (("rust-os-str-bytes" ,rust-os-str-bytes-2))))))
 
+(define-public rust-primal-bit-0.2
+  (package
+    (name "rust-primal-bit")
+    (version "0.2.4")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "primal-bit" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "08cvigajy2pdf9yn137qp1sqfvkbkrwzaalr894wd501ypi68sk8"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-hamming" ,rust-hamming-0.1))))
+    (home-page "https://github.com/huonw/primal")
+    (synopsis
+     "Bit-vector specialised to the prime-number-related needs")
+    (description
+     "This package provides bit-vector specialised to the prime-number-related
+needs of `primal`.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-proc-macro-crate-1
   (package
     (name "rust-proc-macro-crate")
