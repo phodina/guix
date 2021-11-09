@@ -41973,6 +41973,27 @@ needs of `primal`.")
     (description "This package provides fast standalone primality testing.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-primal-estimate-0.2
+  (package
+    (name "rust-primal-estimate")
+    (version "0.2.1")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "primal-estimate" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1mgq54jbvjn9p47sinlwpw3ld88xch28cg290rlvamz7vlqlbsjn"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "https://github.com/huonw/primal")
+    (synopsis "Estimation of upper and lower bounds for Ï and p_k")
+    (description
+     "This package provides estimation of upper and lower bounds for Ï(n)
+(the number of primes below n) and p_k (the k-th prime).")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-proc-macro-crate-1
   (package
     (name "rust-proc-macro-crate")
