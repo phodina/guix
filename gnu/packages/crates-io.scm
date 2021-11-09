@@ -11475,6 +11475,32 @@ literals.")
       "Store objects containing dynamic fields either compactly in consecutive memory or using traditional heap pointers")
     (license license:expat)))
 
+(define-public rust-compact-macros-0.1
+  (package
+    (name "rust-compact-macros")
+    (version "0.1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "compact-macros" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "12hf1vlzs1cfxmjh0i4lq1rd0f4alv3riqns5ir8kxbj5lalfy1y"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:tests? #f ;; test basic_enum ... FAILED
+       #:cargo-inputs
+       (("rust-quote" ,rust-quote-0.3)
+        ("rust-syn" ,rust-syn-0.11))
+       #:cargo-development-inputs
+       (("rust-pretty-assertions" ,rust-pretty-assertions-0.4))))
+    (home-page "https://github.com/aeplay/compact_macros")
+    (synopsis
+     "Automatic `#[derive(Compact)]` macro for structs whose fields are all `Compact`")
+    (description
+     "Automatic `#[derive(Compact)]` macro for structs whose fields are all `Compact`")
+    (license license:expat)))
+
 ;; This package requires features which are unavailable
 ;; on the stable releases of Rust.
 (define-public rust-compiler-builtins-0.1
