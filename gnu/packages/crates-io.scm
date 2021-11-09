@@ -11444,6 +11444,37 @@ idiomatic wrappers for Mac OS X's CommonCrypto library.")
 literals.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-compact-0.2
+  (package
+    (name "rust-compact")
+    (version "0.2.16")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "compact" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1xgfks00igzn8wg956vq821rg24g9mzffbpafmifndady8m299bv"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-primal" ,rust-primal-0.2)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-simple-allocator-trait" ,rust-simple-allocator-trait-0.1))
+        #:phases
+        (modify-phases %standard-phases
+          (add-after 'unpack 'enable-unstable-features
+            (lambda _
+              (setenv "RUSTC_BOOTSTRAP" "1")
+              #t)))))
+    (home-page "https://github.com/aeickhoff/compact")
+    (synopsis
+      "Store objects containing dynamic fields either compactly in consecutive memory or using traditional heap pointers")
+    (description
+      "Store objects containing dynamic fields either compactly in consecutive memory or using traditional heap pointers")
+    (license license:expat)))
+
 ;; This package requires features which are unavailable
 ;; on the stable releases of Rust.
 (define-public rust-compiler-builtins-0.1
