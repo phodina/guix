@@ -28841,6 +28841,31 @@ debugging.")
      "Experimental high-performance actor system framework for Rust")
     (license license:expat)))
 
+(define-public rust-kay-codegen-0.3
+  (package
+    (name "rust-kay-codegen")
+    (version "0.3.10")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "kay-codegen" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0xn5zzyn8l0bwbi9dgah7kf9x6ph0cbvcwgbdqfm4p7bh7pwgxjg"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-glob" ,rust-glob-0.3)
+        ("rust-indexmap" ,rust-indexmap-1)
+        ("rust-syn" ,rust-syn-0.15)
+        ("rust-unindent" ,rust-unindent-0.1))
+       #:cargo-development-inputs
+       (("rust-pretty-assertions" ,rust-pretty-assertions-0.6))))
+    (home-page "https://github.com/aeplay/kay_codegen")
+    (synopsis "Code generation for implementing kay actors")
+    (description "Code generation for implementing kay actors")
+    (license license:expat)))
+
 (define-public rust-keccak-0.1
   (package
     (name "rust-keccak")
