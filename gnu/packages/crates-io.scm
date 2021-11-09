@@ -32749,6 +32749,32 @@ quality, high performance hash algorithm.")
      "This package provides a simple math expression parser and evaluator.")
     (license (list license:unlicense license:expat))))
 
+(define-public rust-michelangelo-0.2
+  (package
+    (name "rust-michelangelo")
+    (version "0.2.5")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "michelangelo" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0gfj34w9awmjcvwkyd00qwzpcxdiwrazx3g2k3lzkwgiz81iksf7"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-compact" ,rust-compact-0.2)
+        ("rust-compact-macros" ,rust-compact-macros-0.1)
+        ("rust-descartes" ,rust-descartes-0.1)
+        ("rust-itertools" ,rust-itertools-0.7)
+        ("rust-lyon-tessellation" ,rust-lyon-tessellation-0.17))))
+    (home-page "https://github.com/aeickhoff/michelangelo")
+    (synopsis
+     "Library for procedurally constructing 3D geometries")
+    (description
+     "This package provides library for procedurally constructing 3D geometries.")
+    (license license:expat)))
+
 (define-public rust-migrations-internals-1
   (package
     (name "rust-migrations-internals")
