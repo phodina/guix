@@ -16621,6 +16621,51 @@ ciphers implementations.")
        #:cargo-development-inputs
        (("rust-cipher" ,rust-cipher-0.2))))))
 
+(define-public rust-descartes-0.1
+  (package
+    (name "rust-descartes")
+    (version "0.1.20")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "descartes" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0fwlj5wrhws37pmhvb331ah3cjsh7xpq2kac6x3kzxk56vssd89r"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-compact" ,rust-compact-0.2)
+        ("rust-compact-macros" ,rust-compact-macros-0.1)
+        ("rust-fnv" ,rust-fnv-1)
+        ("rust-itertools" ,rust-itertools-0.7)
+        ("rust-nalgebra" ,rust-nalgebra-0.21)
+        ("rust-ordered-float" ,rust-ordered-float-1)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-serde-derive" ,rust-serde-derive-1)
+        ("rust-smallvec" ,rust-smallvec-0.6)
+        ("rust-stable-vec" ,rust-stable-vec-0.4))
+       #:cargo-development-inputs
+       (("rust-pretty-assertions" ,rust-pretty-assertions-0.6))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-version-requirements
+           (lambda _
+             (substitute* "Cargo.toml"
+               (("0.5.0")
+                ,(package-version rust-ordered-float-1))
+               (("0.5.1")
+                ,(package-version rust-pretty-assertions-0.6))
+               (("0.3.1")
+                ,(package-version rust-stable-vec-0.4))
+               (("0.20")
+                ,(package-version rust-nalgebra-0.21))))))))
+    (home-page "https://github.com/aeplay/descartes")
+    (synopsis "Imprecision-tolerant computational geometry for Rust")
+    (description "This package provides imprecision-tolerant computational
+geometry for Rust.")
+    (license license:expat)))
+
 (define-public rust-deunicode-0.4
   (package
     (name "rust-deunicode")
