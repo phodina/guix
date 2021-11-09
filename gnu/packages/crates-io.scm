@@ -41952,6 +41952,27 @@ losslessly as possible.")
 needs of `primal`.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-primal-check-0.2
+  (package
+    (name "rust-primal-check")
+    (version "0.2.3")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "primal-check" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1lf2clwljbwhsjvg6lvzm9jyy5m1k4n3jx62k1qqh7qp19ngjrcf"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-num-integer" ,rust-num-integer-0.1))))
+    (home-page "https://github.com/huonw/primal")
+    (synopsis "Fast standalone primality testing")
+    (description "This package provides fast standalone primality testing.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-proc-macro-crate-1
   (package
     (name "rust-proc-macro-crate")
