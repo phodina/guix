@@ -42018,6 +42018,42 @@ needs of `primal`.")
     (description "This package provides a high performance prime sieve.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-primal-0.2
+  (package
+    (name "rust-primal")
+    (version "0.2.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "primal" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1900ilhxiid26krry95694qpi0lnd1k1l5sjahiv3bnyz9pbhc8f"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-primal-check" ,rust-primal-check-0.2)
+         ("rust-primal-estimate" ,rust-primal-estimate-0.2)
+         ("rust-primal-sieve" ,rust-primal-sieve-0.2))))
+    (home-page "https://github.com/huonw/primal")
+    (synopsis
+      "`primal` puts raw power into prime numbers. This crates includes:
+optimised prime sieves, checking for primality, enumerating primes,
+factorising numbers, and state-of-the-art estimation of upper and
+lower bounds for Ï\x80(n) (the number of primes below n) and p_k (the k-th
+prime).
+")
+    (description
+      "`primal` puts raw power into prime numbers.  This crates includes:
+optimised prime sieves, checking for primality, enumerating primes,
+factorising numbers, and state-of-the-art estimation of upper and
+lower bounds for Ï\x80(n) (the number of primes below n) and p_k (the k-th
+prime).
+")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-proc-macro-crate-1
   (package
     (name "rust-proc-macro-crate")
