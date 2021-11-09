@@ -17,6 +17,7 @@
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Arthur Margerit <ruhtra.mar@gmail.com>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -75,6 +76,7 @@
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
@@ -815,6 +817,49 @@ useful for C++.")
      (propagated-inputs
       (modify-inputs (package-propagated-inputs glibmm)
         (replace "libsigc++" libsigc++-2)))))
+
+(define-public libglibutil
+  (package
+    (name "libglibutil")
+    (version "1.0.62")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/sailfishos/libglibutil")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1nxh0cwkd942bi2jqfbdad7b2siw36h6s4syk9s8062054iw2iwb"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:make-flags (list (string-append "CC=" ,(cc-for-target))
+                          (string-append "DESTDIR=" %output))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (add-after 'unpack 'remove-usr-prefix
+           (lambda* _
+             (substitute* "libglibutil.pc.in"
+               (("/usr/include") (string-append %output "/include")))
+             (substitute* "Makefile"
+               (("usr/") ""))))
+         (add-after 'install 'install-dev
+           (lambda* _
+             (invoke "make" "install-dev" (string-append "DESTDIR=" %output))))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (chdir "test")
+               (invoke "make" (string-append "CC=" ,(cc-for-target)))
+               (chdir "..") #t))))))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (inputs `(("glib" ,glib)))
+    (home-page "https://git.sailfishos.org/mer-core/libglibutil")
+    (synopsis "GLib utilites")
+    (description "This package provides library of glib utilities.")
+    (license license:bsd-3)))
 
 (define-public python2-pygobject-2
   (package
