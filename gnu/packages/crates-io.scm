@@ -10364,6 +10364,43 @@ traits.")
         (sha256
          (base32 "00b8imbmdg7zdrbaczlivmdfdy09xldg95wl4iijl15xgjcfgy0j"))))))
 
+(define-public rust-citybound-time
+  (let ((commit "817de551d2bc96c90d0b7c74af4872454f42b44c")
+        (revision "1"))
+  (package
+  (name "rust-citybound-time")
+  (version commit)
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+                  (url "https://github.com/citybound/citybound")
+                  (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "19yldi0fhc17xgbi3ql891081js3ma8rdahm9zkvav1k08gmgnnf"))))
+  (build-system cargo-build-system)
+  (arguments
+    `(#:cargo-inputs
+      (("rust-serde" ,rust-serde-1)
+       ("rust-serde-derive" ,rust-serde-derive-1)
+       ("rust-uuid" ,rust-uuid-0.7)
+       ("rust-compact" ,rust-compact-0.2)
+	   ("rust-compact-macros" ,rust-compact-macros-0.1)
+       ("rust-kay" ,rust-kay-0.5)
+      #:cargo-development-inputs
+	  (("rust-kay-codegen" ,rust-kay-codegen-0.3))
+      #:phases
+	  (modify-phases %standard-phases
+	   (add-after 'unpack 'workspace-time
+	    (lambda* _
+		 (chdir "cb_time")))))))
+  (synopsis "Open-source, multi-player city simulation game")
+  (description "Citybound is a city building game with a focus on realism,
+collaborative planning and simulation of microscopic details.")
+  (home-page "https://aeplay.org/citybound")
+  (license license:agpl3))))
+
 (define-public rust-clang-sys-0.29
   (package
     (inherit rust-clang-sys-1)
