@@ -10203,6 +10203,29 @@ transfer coding.")
        (sha256
         (base32 "11yghnd24w0i9p8g368c3pg7qh9nfz7kgri6pywja9pnmakj13a9"))))))
 
+(define-public rust-chunky-0.3
+  (package
+    (name "rust-chunky")
+    (version "0.3.7")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "chunky" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0m1jp8q1ay79kyah5jq0h62kcd2dy39w9a0lykvr0vqq7rbshaif"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-memmap" ,rust-memmap-0.7))))
+	;; https://github.com/aeplay/chunky/issues/1
+    (home-page "https://github.com/aeplay/chunky")
+    (synopsis "Abstract storage of heterogeneously-sized entity-collections")
+    (description
+     "Abstract storage of heterogeneously-sized entity-collections")
+    (license license:expat)))
+
 (define-public rust-ci-info-0.3
   (package
     (name "rust-ci-info")
