@@ -22,6 +22,7 @@
 ;;; Copyright © 2020 Timotej Lazar <timotej.lazar@araneo.si>
 ;;; Copyright © 2020 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -57,12 +58,17 @@
   #:use-module (gnu packages backup)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
+<<<<<<< HEAD
   #:use-module (gnu packages build-tools)
+=======
+  #:use-module (gnu packages boost)
+>>>>>>> d0c8134f95 (gnu: Add xjournal++.)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cups)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages djvu)
+  #:use-module (gnu packages documentation)
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages game-development)
@@ -72,6 +78,7 @@
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gnupg)
+  #:use-module (gnu packages graphviz)
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
@@ -390,6 +397,53 @@ Poppler PDF rendering library.")
     "libHaru is a library for generating PDF files.  libHaru does not support
 reading and editing of existing PDF files.")
    (license license:zlib)))
+
+(define-public xjournal++
+(let ((ghcfs-version "1.3.8"))
+ (package
+  (name "xjournal++")
+  (version "1.1.0")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+                   (url "https://github.com/xournalpp/xournalpp")
+                   (commit version)))
+            (file-name (git-file-name name version))
+			(patches (search-patches "xjournalpp-remove-ghc-filesystem.patch"))
+            (sha256
+             (base32
+              "0ldf58l5sqy52x5dqfpdjdh7ldjilj9mw42jzsl5paxg0md2k0hl"))))
+  (build-system cmake-build-system)
+  (native-inputs `(("doxygen" ,doxygen)
+                   ("gettext" ,gettext-minimal)
+                   ("graphviz" ,graphviz)
+				   ("help2man" ,help2man)
+				   ("pkg-config" ,pkg-config)))
+  (inputs `(("ghcfs" ,(origin
+            (method git-fetch)
+            (uri (git-reference
+                   (url "https://github.com/gulrak/filesystem.git")
+                   (commit (string-append "v" ghcfs-version))))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "058znqbrnplvyhc22l5qhcdqdi5ql5lff3f1pyhkhn0bjhv04bfa"))))
+            ("boost" ,boost)
+			("librsvg" ,librsvg)
+            ("gtk+" ,gtk+)
+			("libsndfile" ,libsndfile)
+			("librsvg" ,librsvg)
+            ("libxml2" ,libxml2)
+			("libzip" ,libzip)
+			("lua", lua)
+			("poppler" ,poppler)
+			("portaudio" ,portaudio)))
+  (synopsis "Handwriting notetaking software with PDF annotation support")
+  (description "This package provides a handwriting notetaking software with PDF
+  annotation support which also supports pen input from devices such as Wacom
+  Tablets.")
+  (home-page "https://xournalpp.github.io/")
+  (license license:gpl2+))))
 
 (define-public xpdf
   (package
