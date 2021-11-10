@@ -1088,6 +1088,33 @@ useful for C++.")
     (description "This package provides library of glib utilities.")
     (license license:bsd-3)))
 
+(define-public python-gbinder
+  (package
+    (name "python-gbinder")
+    (version "1.0.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/erfanoabdi/gbinder-python")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0jgblzakjgsy0cj93bmh5gr7qnl2xgsrm0wzc6xjvzry9lrbs360"))))
+    (build-system python-build-system)
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (replace 'build
+                          (lambda* _
+                            (invoke "python" "setup.py" "build_ext"
+                                    "--inplace" "--cython"))))))
+    (native-inputs (list python-cython pkg-config))
+    (inputs (list glib libgbinder libglibutil))
+    (home-page "https://github.com/erfanoabdi/gbinder-python")
+    (synopsis "Python bindings for libgbinder")
+    (description "This package provides Python bindings for libgbinder.")
+    (license license:gpl3+)))
+
 (define-public python-pygobject
   (package
     (name "python-pygobject")
