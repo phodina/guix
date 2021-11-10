@@ -706,6 +706,61 @@ replacement for i3status, written in pure Rust.  It provides a way to display
 bar.  It is also compatible with sway.")
     (license license:gpl3)))
 
+(define-public plato
+  (package
+    (name "plato")
+    (version "0.8.6")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/NiLuJe/plato")
+               (commit version)))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "22mhszk9qy2q49dpab4p0d9d4aph61yshaxjf02mhdx07n9qpnmh"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+       ("rust-bitflags" ,rust-bitflags-1)
+       ("rust-downcast-rs" ,rust-downcast-rs-1)
+       ("rust-lazy-static" ,rust-lazy-static-1)
+       ("rust-libc" ,rust-libc-0.2)
+       ("rust-png" ,rust-png-0.16)
+       ("rust-regex" ,rust-regex-1)
+       ("rust-serde" ,rust-serde-1)
+       ("rust-serde-json" ,rust-serde-json-1)
+       ("rust-titlecase" rust-titlecase-1)
+       ("rust-unicode-normalization" ,rust-unicode-normalization-0.1)
+       ("rust-toml" ,rust-toml-0.5)
+       ("rust-zip" ,rust-zip-0.5)
+       ("rust-kl-hyphenate" ,rust-kl-hyphenate-0.7)
+       ("rust-entities" ,rust-entities-1)
+       ("rust-paragraph-breaker" ,rust-paragraph-breaker-0.4)
+       ("rust-xi-unicode" ,rust-xi-unicode-0.3)
+       ("rust-septem" ,rust-septem-1)
+       ("rust-byteorder" ,rust-byteorder-1)
+       ("rust-flate2" ,rust-flate-2)
+	   ("rust-levenshtein" ,rust-levenstein-1)
+       ("rust-nix" ,rust-nix-0.19)
+       ("rust-indexmap" ,rust-indexmap-1)
+       ("rust-anyhow" ,rust-anyhow-1)
+       ("rust-thiserror" ,rust-thiserror-1)
+       ("rust-walkdir" ,rust-walkdir-2)
+       ("rust-globset" ,rust-globset-0.4)
+       ("rust-filetime" ,rust-filetime-0.2)
+       ("rust-fxhash" ,rust-fxhash-0.2)
+       ("rust-rand-core" ,rust-rand-core-0.6)
+       ("rust-rand-xoshiro" ,rust-rand-xoshiro-0.6)
+       ("rust-percent-encoding" ,rsut-percent-encoding-2)))
+  (home-page "https://github.com/NiLuJe/plato")
+    (synopsis "Document reader for Eink screen")
+    (description "This package provides Document reader for Eink screens.")
+    (license license:agpl1)))
+
+
 (define-public ripgrep
   (package
     (name "ripgrep")
