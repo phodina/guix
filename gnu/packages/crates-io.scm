@@ -5069,6 +5069,29 @@ crate.")
 methods.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-atlatl-0.1
+  (package
+    (name "rust-atlatl")
+    (version "0.1.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "atlatl" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "18kyvdm56fdb52b1sryi80xgs3nkjdylynsv324aiqnj85l1bfrj"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-fnv" ,rust-fnv-1)
+        ("rust-num-traits" ,rust-num-traits-0.2)
+        ("rust-serde" ,rust-serde-1))))
+    (home-page "https://github.com/tapeinosyne/atlatl")
+    (synopsis "Double-array tries")
+    (description "This package provide double-array tries.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-atom-0.3
   (package
     (name "rust-atom")
