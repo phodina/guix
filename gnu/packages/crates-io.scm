@@ -30354,6 +30354,7 @@ kernel32.")
      "The Khronos XML API Registry, exposed as byte string constants.")
     (license license:asl2.0)))
 
+<<<<<<< HEAD
 (define-public rust-kqueue-sys-1
   (package
     (name "rust-kqueue-sys")
@@ -30398,6 +30399,29 @@ kernel32.")
     (synopsis "kqueue interface for BSDs")
     (description "This package provides a kqueue interface for BSDs.")
     (license license:expat)))
+
+(define-public rust-kl-hyphenate-commons-0.7
+  (package
+    (name "rust-kl-hyphenate-commons")
+    (version "0.7.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "kl-hyphenate-commons" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "0rbnks9zcmna4m3d2fbbpr1g4v4gdm584s34yslzjx3c5fc55nxp"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-atlatl" ,rust-atlatl-0.1)
+        ("rust-serde" ,rust-serde-1))))
+    (home-page "https://github.com/baskerville/kl-hyphenate")
+    (synopsis "Proemial code for the hyphenation library")
+    (description "This package provides Proemial code for the hyphenation
+library.")
+    (license (list license:asl2.0 license:expat))))
 
 (define-public rust-kv-log-macro-1
   (package
