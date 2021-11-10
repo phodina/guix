@@ -2037,6 +2037,93 @@ Bochs can run most Operating Systems inside the emulation including Linux,
 DOS or Microsoft Windows.")
     (license license:lgpl2.0+)))
 
+(define-public waydroid
+  (package
+    (name "waydroid")
+    (version "1.2.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/waydroid/waydroid")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1ssqlsnhmpzaq2n9rbkfn3d2ml4vmima0az6gakknjc2q6bnpza9"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (delete 'build) ;no setup.py
+                  (delete 'check) ;no test suite
+                  (replace 'install
+                    (lambda* (#:key outputs inputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out")) (lib (string-append
+                                                                   out
+                                                                   "/lib/waydroid"))
+                             (tools (string-append lib "/tools"))
+                             (data (string-append lib "/data"))
+                             (apps (string-append out "/share/applications"))
+                             (bin (string-append out "/bin"))
+                             (paths-bin (map (lambda (input)
+                                               (string-append (assoc-ref
+                                                               inputs input)
+                                                              "/bin"))
+                                             '("iptables" "nftables" "glibc"
+                                               "dnsmasq")))
+                             (paths-sbin (map (lambda (input)
+                                                (string-append (assoc-ref
+                                                                inputs input)
+                                                               "/sbin"))
+                                              '("dnsmasq")))
+                             (site (string-append out "/lib/python"
+                                                  ,(version-major+minor (package-version
+                                                                         python))
+                                                  "/site-packages")))
+                        (mkdir-p tools)
+                        (mkdir-p data)
+                        (mkdir-p apps)
+                        (mkdir-p bin)
+                        (copy-recursively "tools" tools)
+                        (copy-recursively "data" data)
+                        (install-file (string-append data "/Waydroid.desktop")
+                                      (string-append apps))
+                        (substitute* (string-append apps "/Waydroid.desktop")
+                          (("/usr") lib))
+                        (install-file "waydroid.py" lib)
+                        (symlink (string-append lib "/waydroid.py")
+                                 (string-append bin "/waydroid"))
+                        (wrap-program (string-append bin "/waydroid")
+                                      `("PYTHONPATH" ":" prefix
+                                        ,paths-bin))
+                        (substitute* (string-append out
+                                      "/lib/waydroid/data/scripts/waydroid-net.sh")
+                          (("/misc") ""))
+                        (wrap-program (string-append out
+                                       "/lib/waydroid/data/scripts/waydroid-net.sh")
+                                      `("PATH" ":" prefix
+                                        ,(append paths-bin paths-sbin)))))))))
+    (inputs
+     (list bash-minimal
+           dnsmasq
+           libgbinder
+           glibc
+           lxc
+           nftables
+           iptables
+           python
+           python-gbinder
+           python-pygobject))
+    (home-page "https://waydro.id")
+    (synopsis "Container-based approach to boot a full Android system")
+    (description
+     "Waydroid uses Linux namespaces @code{(user, pid, uts, net,
+mount, ipc)} to run a full Android system in a container and provide Android
+applications.  The Android inside the container has direct access to needed
+underlying hardware.  The Android runtime environment ships with a minimal
+customized Android system image based on LineageOS.  The used image is
+currently based on Android 10.")
+    (license license:gpl3)))
+
 (define-public xen
   (package
     (name "xen")
