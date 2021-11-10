@@ -50,7 +50,7 @@
   #:use-module (guix build-system python)
   #:use-module (guix download)
   #:use-module (guix git-download)
-  #:use-module (guix licenses)
+  #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages))
 
 (define-public time
@@ -72,7 +72,7 @@
      "Time is a command that displays information about the resources that a
 program uses.  The display output of the program can be customized or saved
 to a file.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public python-pytimeparse
   (package
@@ -92,7 +92,7 @@ to a file.")
     (synopsis "Time expression parser")
     (description "This small Python module parses various kinds of time
 expressions.")
-    (license expat)))
+    (license license:expat)))
 
 (define-public python-pytzdata
   (package
@@ -115,7 +115,7 @@ expressions.")
     (synopsis "Timezone database for Python")
     (description
      "This library provides a timezone database for Python.")
-    (license expat)))
+    (license license:expat)))
 
 (define-public python2-tzdata
   (package-with-python2 python-pytzdata))
@@ -139,7 +139,7 @@ expressions.")
 allows accurate and cross platform timezone calculations using Python 2.4 or
 higher.  It also solves the issue of ambiguous times at the end of daylight
 saving time.  Almost all of the Olson timezones are supported.")
-    (license expat)))
+    (license license:expat)))
 
 (define-public python2-pytz
   (package-with-python2 python-pytz))
@@ -167,7 +167,7 @@ saving time.  Almost all of the Olson timezones are supported.")
 @{datetime} class, providing an alternative API.  As it inherits from the
 standard @code{datetime} all @code{datetime} instances can be replaced by
 Pendulum instances.")
-    (license expat)))
+    (license license:expat)))
 
 (define-public python-dateutil
   (package
@@ -208,7 +208,7 @@ datetime module, available in Python 2.3+.")
     ;; The license was changed from the three-clause BSD license to a dual
     ;; Apache 2.0/BSD-3 variant at 2017-12-01.  Some code is only available as
     ;; BSD-3 still; but all new code is dual licensed (the user can choose).
-    (license (list bsd-3 asl2.0))))
+    (license (list license:bsd-3 license:asl2.0))))
 
 (define-public python2-dateutil
   (package-with-python2 python-dateutil))
@@ -236,7 +236,7 @@ datetime module, available in Python 2.3+.")
     (synopsis "Parse human-readable date/time text")
     (description
      "Parse human-readable date/time text.")
-    (license asl2.0)))
+    (license license:asl2.0)))
 
 (define-public python2-parsedatetime
   (package-with-python2 python-parsedatetime))
@@ -267,7 +267,7 @@ datetime module, available in Python 2.3+.")
     (description
      "The package ciso8601 converts ISO 8601 or RFC 3339 date time strings into
 Python datetime objects.")
-    (license expat)))
+    (license license:expat)))
 
 (define-public python-tzlocal
   (package
@@ -305,7 +305,7 @@ Python datetime objects.")
 This module attempts to fix a glaring hole in pytz, that there is no way to
 get the local timezone information, unless you know the zoneinfo name, and
 under several distributions that's hard or impossible to figure out.")
-    (license expat)))
+    (license license:expat)))
 
 (define-public python-isodate
   (package
@@ -326,7 +326,7 @@ under several distributions that's hard or impossible to figure out.")
     (description
      "Python-isodate is a python module for parsing and formatting
 ISO 8601 dates, time and duration.")
-    (license bsd-3)))
+    (license license:bsd-3)))
 
 (define-public python2-isodate
   (package-with-python2 python-isodate))
@@ -355,7 +355,7 @@ ISO 8601 dates, time and duration.")
     (description
      "This module parses the most common forms of ISO 8601 date strings (e.g.
 @code{2007-01-14T20:34:22+00:00}) into @code{datetime} objects.")
-    (license expat)))
+    (license license:expat)))
 
 (define-public python2-iso8601
   (package-with-python2 python-iso8601))
@@ -378,7 +378,7 @@ ISO 8601 dates, time and duration.")
     (description
      "This module provides a @code{monotonic()} function which returns the
 value (in fractional seconds) of a clock which never goes backwards.")
-    (license asl2.0)))
+    (license license:asl2.0)))
 
 (define-public python2-monotonic
   (package-with-python2 python-monotonic))
@@ -403,7 +403,7 @@ value (in fractional seconds) of a clock which never goes backwards.")
     (synopsis "Python timestamp library")
     (description "Python library for generating and parsing RFC 3339-compliant
 timestamps.")
-    (license expat)))
+    (license license:expat)))
 
 (define-public python2-pyrfc3339
   (package-with-python2 python-pyrfc3339))
@@ -445,7 +445,7 @@ timestamps.")
      "Arrow is a Python library to creating, manipulating, formatting and
 converting dates, times, and timestamps.  It implements and updates the
 datetime type.")
-    (license asl2.0)))
+    (license license:asl2.0)))
 
 (define-public python-aniso8601
   (package
@@ -510,7 +510,7 @@ datetime type.")
      "Utility that fakes the system time by pre-loading a small library that
 modifies the @code{time}, @code{gettimeofday} and @code{clock_gettime} system
 calls.")
-    (license gpl2)))
+    (license license:gpl2)))
 
 (define-public countdown
   (package
@@ -537,4 +537,4 @@ calls.")
      "Countdown provides a fancy text display while it counts down to zero
 from a starting point you provide.  The user can pause and resume the
 countdown from the text user interface.")
-    (license expat)))
+    (license license:expat)))
