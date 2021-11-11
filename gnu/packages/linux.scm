@@ -727,6 +727,14 @@ for ARCH and optionally VARIANT, or #f if there is no such configuration."
     ;; kheaders module
     ("CONFIG_IKHEADERS" . #t)))
 
+(define %waydroid-extra-linux-options
+  `(;; Modules required for waydroid:
+   ("CONFIG_ASHMEM" . #t)
+   ("CONFIG_ANDROID" . #t)
+   ("CONFIG_ANDROID_BINDER_IPC" . #t)
+   ("CONFIG_ANDROID_BINDERFS" . #t)
+   ("CONFIG_ANDROID_BINDER_DEVICES" . "binder,hwbinder,vndbinder")))
+
 (define (config->string options)
   (string-join (map (match-lambda
                       ((option . #f)
@@ -1153,6 +1161,24 @@ It has been modified to remove all non-free binary blobs.")
                      (append
                       `(("CONFIG_OVERLAY_FS" . m))
                       %default-extra-linux-options)))
+
+(define-public linux-libre-with-waydroid
+  (let ((base-linux-libre
+         (make-linux-libre*
+          linux-libre-version
+          linux-libre-gnu-revision
+          linux-libre-source
+          '("x86_64-linux" "i686-linux" "armhf-linux"
+            "aarch64-linux" "riscv64-linux")
+          #:extra-version "linux"
+          #:configuration-file kernel-config
+          #:extra-options
+          (append %waydroid-extra-linux-options
+                  %default-extra-linux-options))))
+    (package
+      (inherit base-linux-libre)
+         (name "linux-libre-waydroid")
+      (inputs `(("cpio" ,cpio) ,@(package-inputs base-linux-libre))))))
 
 (define-public linux-libre-with-bpf
   (let ((base-linux-libre
