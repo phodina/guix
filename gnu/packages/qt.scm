@@ -79,6 +79,7 @@
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages icu4c)
   #:use-module (gnu packages image)
+  #:use-module (gnu packages java)
   #:use-module (gnu packages kde-frameworks)
   #:use-module (gnu packages libevent)
   #:use-module (gnu packages linux)
@@ -111,6 +112,49 @@
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages xml)
   #:use-module (srfi srfi-1))
+
+(define-public apkstudio
+(package
+  (name "apkstudio")
+  (version "5.2.4")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/vaibhavpandeyvpz/apkstudio")
+			 (recursive? #t)
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "1qiz3c8681xcddphdgh3dfz8xj0jwnqw8vfgxvi7lnpl5n8inv68"))))
+  (build-system qt-build-system)
+    (arguments
+     '(#:tests? #f                      ; no check target
+       #:make-flags
+       (list (string-append "PREFIX="
+                            (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+	     (add-after 'install 'wrap-programs
+           (lambda* (#:key outputs inputs #:allow-other-keys)
+		   (wrap-program (string-append (assoc-ref outputs "out")
+		   "/bin/apkstudio")
+ `("PATH" ":" prefix
+    (,(string-append (assoc-ref inputs "openjdk") "/bin"))))))
+         (replace 'configure
+           (lambda* (#:key make-flags #:allow-other-keys)
+             (apply invoke (cons "qmake" make-flags)))))))
+  (native-inputs `(("pkg-config" ,pkg-config)))
+  ; TODO: Requires jdx, depends on Maven build system
+  (inputs `(("qtbase" ,qtbase-5)))
+  (propagated-inputs `(("openjdk" ,openjdk16)))
+  (synopsis "IDE for reverse-engineering Android application packages")
+  (description "Open-source, cross platform Qt based IDE for
+reverse-engineering Android application packages.  It features a friendly
+IDE-like layout including code editor with syntax highlighting support
+for *.smali code files.")
+  (home-page "https://vaibhavpandey.com/apkstudio/")
+  (license license:lgpl3)))
 
 (define-public qite
   (let ((commit "75fb3b6bbd5c6a5a8fc35e08a6efbfb588ed546a")
