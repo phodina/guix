@@ -71,6 +71,7 @@
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages fontutils)
+  #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages game-development)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
@@ -82,6 +83,7 @@
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
+  #:use-module (gnu packages iso-codes)
   #:use-module (gnu packages javascript)
   #:use-module (gnu packages lesstif)
   #:use-module (gnu packages libffi)
@@ -158,6 +160,38 @@ This program is able to extract the page mode and named targets as PDFmark
 from PDF.  In this way, you can obtain embedded PDF files that have kept this
 information.")
     (license license:gpl3)))
+
+; FIXME: Depends on gtk4
+(define-public foliate
+  (package
+    (name "foliate")
+    (version "2.6.3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/johnfactotum/foliate")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0ribqaxl8g1i83fxbn288afwbzzls48ni57xqi07d19p9ka892mr"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:tests? #f))
+    (native-inputs `(("gettext" ,gettext-minimal)
+                     ("glib" ,glib "bin") ; for glib-compile-schemas, gio-2.0.
+                     ("gtk" ,gtk "bin") ; gtk-update-icon-cache
+                     ("desktop-file-utils" ,desktop-file-utils)
+                     ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("webkitgtk" ,webkitgtk)
+       ("gjs" ,gjs)
+	   ("gtk", gtk)
+       ("iso-codes" ,iso-codes)))
+    (home-page "https://johnfactotum.github.io/foliate/")
+    (synopsis "Simple and modern GTK eBook reader")
+    (description "This package provides a simple and modern GTK eBook viewer.")
+    (license license:gpl3+)))
 
 (define-public flyer-composer
   (package
