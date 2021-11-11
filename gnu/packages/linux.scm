@@ -729,12 +729,16 @@ for ARCH and optionally VARIANT, or #f if there is no such configuration."
 
 (define (config->string options)
   (string-join (map (match-lambda
-                      ((option . 'm)
-                       (string-append option "=m"))
-                      ((option . #t)
-                       (string-append option "=y"))
                       ((option . #f)
-                       (string-append option "=n")))
+                       (format #f "# ~a is not set" option))
+                      ((option . #t)
+                       (format #f "~a=y" option))
+                      ((option . 'm)
+                       (format #f "~a=m" option))
+                      ((option . (? number? value))
+                       (format #f "~a=~a" option value))
+                      ((option . (? string? value))
+                       (format #f "~a=\"~a\"" option value)))
                     options)
                "\n"))
 
