@@ -70922,6 +70922,25 @@ to XDG Base Directory specification.")
      "This package provides a moderately simple command line arguments parser.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-xi-unicode-0.3
+  (package
+    (name "rust-xi-unicode")
+    (version "0.3.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "xi-unicode" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+"12mvjgrhr7557cib69wm4q5s4srba27pg2df9l1zihrxgnbh0wx6"))))
+    (build-system cargo-build-system)
+    (home-page "https://github.com/xi-editor/xi-editor")
+    (synopsis "Unicode utilities useful for text editing")
+    (description "This package provides unicode utilities useful for text
+editing, including a line breaking iterator.")
+    (license license:asl2.0)))
+
 (define-public rust-xml-rs-0.8
   (package
     (name "rust-xml-rs")
