@@ -87,6 +87,7 @@
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
+  #:use-module (gnu packages kde)
   #:use-module (gnu packages language)
   #:use-module (gnu packages libffi)
   #:use-module (gnu packages libunwind)
@@ -1685,6 +1686,64 @@ wish to perform colour calibration.")
 developers to add support for consumer fingerprint readers to their
 software.")
     (license license:lgpl2.1+)))
+
+;; https://github.com/RogueScholar/fingerprint-gui/issues/14
+(define-public fingerprint-gui
+  (let ((commit "85a376e908b1daee0e3e0760574b19dccd84afd4")
+        (revision "1"))
+    (package
+      (name "fingerprint-gui")
+      (version (git-version "1.0.9" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/RogueScholar/fingerprint-gui")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0m7cj1rgfp6zsl9vyp9qnyd15lngxs15j9krzvycznwbxs438dry"))))
+      (build-system cmake-build-system)
+      (arguments
+       `(#:configure-flags (list        ;"-DQT_NO_KEYWORDS"
+                            (string-append "-DCMAKE_INSTALL_PREFIX=" (assoc-ref %outputs "out"))
+                            (string-append "-DCMAKE_CXX_FLAGS=-I" (assoc-ref %build-inputs "glib")
+                                           "/include/glib-2.0 -I" (assoc-ref %build-inputs
+                                                                             "glib")
+                                           "/lib/glib-2.0/include -I" (assoc-ref
+                                                                       %build-inputs "linux-pam") "/include"))
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'fix-libfprint
+             (lambda* _
+               (substitute* "CMakeLists.txt"
+                 (("libfprint") "libfprint-2"))
+               (substitute* "include/Globals.h"
+                 (("<libfprint") "<libfprint-2")))))))
+      (native-inputs `(("pkg-config" ,pkg-config)
+                       ("qttools" ,qttools)))
+      (inputs `(("eudev" ,eudev)
+                ("qtx11extras" ,qtx11extras)
+                ("qca" ,qca)
+                ("libusb" ,libusb)
+                ("glib" ,glib)
+                ("dbus-glib", dbus-glib)
+                ("gusb" ,gusb)
+                ("fprintd" ,fprintd)
+                ("linux-pam" ,linux-pam)
+                ("libfakekey" ,libfakekey)
+                ("libfprint" ,libfprint)
+                ("polkit-qt" ,polkit-qt)
+                ("pixman" ,pixman)
+                ("nss" ,nss)
+                ("qtbase" ,qtbase-5)))
+      (synopsis "GUI for fingerprint management")
+      (description "Fingerprint GUI is an application providing
+fingerprint-based authentication on Linux desktops.  Based on the libfprint
+library, it features a simple GUI for fingerprint management and a PAM module.")
+      (home-page (string-append "https://web.archive.org/web/20190607022148/"
+                                "http://www.ullrich-online.cc:80/fingerprint/index.php"))
+      (license license:gpl2))))
 
 (define-public fprintd
   (package
