@@ -40191,6 +40191,24 @@ Concatenating Aggregated Little Endians.")
 derive macro for Parity SCALE Codec.")
     (license license:asl2.0)))
 
+(define-public rust-paragraph-breaker-0.4
+  (package
+    (name "rust-paragraph-breaker")
+    (version "0.4.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "paragraph-breaker" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1lvkzm6jhpqfnsxryh73ka7rq65yfyrkpy83x49f4x6rafy6acyz"))))
+    (build-system cargo-build-system)
+    (home-page "https://github.com/baskerville/paragraph-breaker")
+    (synopsis "Break paragraphs into lines")
+    (description "This package provides an implementation of the Knuth-Plass
+algorithm for breaking paragraphs into lines")
+    (license license:expat)))
+
 (define-public rust-parity-tokio-ipc-0.4
   (package
     (name "rust-parity-tokio-ipc")
