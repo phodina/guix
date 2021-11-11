@@ -53652,6 +53652,24 @@ formats:
 ")
     (license license:expat)))
 
+(define-public rust-septem-1
+  (package
+    (name "rust-septem")
+    (version "1.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "septem" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1g5ff7rs41d4h396mqbzm4kizy6c84acnp2lwj36d5p4mqgwzgf3"))))
+    (build-system cargo-build-system)
+    (home-page "https://github.com/mipli/septem")
+    (synopsis "Parse Roman numerals")
+    (description "This package provides a library for parsing and working
+with Roman numerals.")
+    (license license:expat)))
+
 (define-public rust-seq-macro-0.2
   (package
     (name "rust-seq-macro")
