@@ -942,6 +942,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/binutils-CVE-2021-45078.patch		\
   %D%/packages/patches/bloomberg-bde-cmake-module-path.patch	\
   %D%/packages/patches/bloomberg-bde-tools-fix-install-path.patch	\
+  %D%/packages/patches/boost-fix-icu-build.patch        \
   %D%/packages/patches/bpftrace-disable-bfd-disasm.patch	\
   %D%/packages/patches/breezy-fix-gio.patch			\
   %D%/packages/patches/byobu-writable-status.patch		\
