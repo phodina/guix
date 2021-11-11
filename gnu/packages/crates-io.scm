@@ -30354,7 +30354,6 @@ kernel32.")
      "The Khronos XML API Registry, exposed as byte string constants.")
     (license license:asl2.0)))
 
-<<<<<<< HEAD
 (define-public rust-kqueue-sys-1
   (package
     (name "rust-kqueue-sys")
@@ -30399,6 +30398,43 @@ kernel32.")
     (synopsis "kqueue interface for BSDs")
     (description "This package provides a kqueue interface for BSDs.")
     (license license:expat)))
+
+(define-public rust-kl-hyphenate-0.7
+  (package
+    (name "rust-kl-hyphenate")
+    (version "0.7.3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/baskerville/kl-hyphenate")
+             (commit version)))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "187p31wk1ga1b309ia6pva74wrjsabdsg45dj413lhxjnfw3xr8g"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:tests? #f                      ; TODO: tests fail
+       #:cargo-inputs
+       (("rust-atlatl" ,rust-atlatl-0.1)
+        ("rust-atlatl" ,rust-atlatl-0.1)
+        ("rust-bincode" ,rust-bincode-1)
+        ("rust-bincode" ,rust-bincode-1)
+        ("rust-kl-hyphenate-commons" ,rust-kl-hyphenate-commons-0.7)
+        ("rust-kl-hyphenate-commons" ,rust-kl-hyphenate-commons-0.7)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-unicode-normalization" ,rust-unicode-normalization-0.1))
+       #:cargo-development-inputs
+       (("rust-lazy-static" ,rust-lazy-static-1)
+        ("rust-quickcheck" ,rust-quickcheck-0.9)
+        ("rust-unicode-segmentation" ,rust-unicode-segmentation-1))))
+    (home-page "https://github.com/baskerville/kl-hyphenate")
+    (synopsis "Text hyphenation")
+    (description "This package provides Knuth-Liang hyphenation for
+a variety of languages")
+    (license (list license:asl2.0 license:expat))))
 
 (define-public rust-kl-hyphenate-commons-0.7
   (package
