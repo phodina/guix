@@ -62,6 +62,7 @@
   #:use-module (gnu packages base)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages check)
+  #:use-module (gnu packages boost)
   #:use-module (gnu packages cmake)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cups)
@@ -4260,6 +4261,52 @@ being fully customizable and easy to extend.")
 simple editor for binary data, just like @code{QPlainTextEdit} is for text
 data.")
     (license license:lgpl2.1)))
+
+(define-public sourcetrail
+(package
+  (name "sourcetrail")
+  (version "2021.1.30")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/CoatiSoftware/Sourcetrail")
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0h0q2bfa6dv8hmc15rzj48bna1krzjwlcjm25dffbsi81xjcazb5"))))
+  (build-system cmake-build-system)
+  (arguments
+    `(#:configure-flags (list "-DBoost_USE_STATIC_LIBS=OFF" (string-append "-DBOOST_ROOT=" (assoc-ref %build-inputs "boost") "/lib"))
+      #:phases
+      (modify-phases %standard-phases
+       (replace 'install
+        (lambda* (#:key outputs #:allow-other-keys)
+		 (let* ((out (assoc-ref outputs "out"))
+		       (prefix (string-append out "/opt/sourcetrail"))
+			   (build (string-append (getcwd) "/../build"))
+			   (share (string-append prefix "/share")))
+		       (mkdir-p (string-append out "/bin"))
+			   (mkdir-p (string-append prefix "/bin"))
+			   (copy-recursively (string-append build "/app/data") share)
+			   (mkdir-p (string-append share "/data/fallback"))
+			   (copy-recursively (string-append build "/app/data/user/projects") (string-append share
+			   "/data/fallback"))
+			   (install-file (string-append build "/app/Sourcetrail") (string-append
+			   "/bin/sourcetrail"))
+			   (install-file (string-append build
+			   "/app/sourcetrail_indexer") (string-append
+			   "/bin/sourcetrail_indexer"))
+			   (symlink (string-append prefix "/bin/sourcetrail") (string-append
+			   out "/bin/sourcetrail"))))))))
+  (native-inputs (list pkg-config))
+  (inputs (list boost-for-sourcetrail
+            qtbase-5
+            qtsvg-5))
+  (synopsis "Interactive source explorer")
+  (description "Offline source explorer that helps you get productive on unfamiliar source code with optional IDE integration.")
+  (home-page "https://www.sourcetrail.com")
+  (license license:gpl3)))
 
 (define-public soqt
   (let ((commit-ref "fb8f655632bb9c9c60e0ff9fa69a5ba22d3ff99d")
