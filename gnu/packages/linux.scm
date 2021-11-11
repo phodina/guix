@@ -1102,6 +1102,19 @@ It has been modified to remove all non-free binary blobs.")
                      #:defconfig "omap2plus_defconfig"
                      #:extra-version "arm-omap2plus"))
 
+(define-public linux-libre-arm-pinebook-pro-5.10
+  (make-linux-libre* linux-libre-5.10-version
+                     linux-libre-5.10-gnu-revision
+                     (source-with-patches linux-libre-5.10-pristine-source
+                       (append
+                         %pinebook-pro-patches
+                         (list
+                           %boot-logo-patch
+                           %linux-libre-arm-export-__sync_icache_dcache-patch)))
+                     '("aarch64-linux")
+                     #:defconfig "pinebook_pro_defconfig"
+                     #:extra-version "pinebook-pro"))
+
 (define-public linux-libre-arm64-generic
   (make-linux-libre* linux-libre-version
                      linux-libre-gnu-revision
