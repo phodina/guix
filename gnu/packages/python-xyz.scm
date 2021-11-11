@@ -4564,6 +4564,33 @@ increment.  It also creates commits and tags.")
 software version simply.")
     (license license:expat)))
 
+(define-public python-dedrm-tools
+  (package
+    (name "python-dedrm-tools")
+    (version "7.2.1")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+		(url "https://github.com/apprenticeharper/DeDRM_tools")
+		(commit (string-append "v" version))))
+        (file-name
+          (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "128xz4j337mlv0xzfx6ki8yr70ywxdafw9lcixd0fkrplxi5fhvj"))))
+    (build-system python-build-system)
+	(arguments
+	`(#:tests? #f
+	  #:phases
+	  (modify-phases %standard-phases
+	  (delete 'build)
+	  (delete 'install))))
+    (home-page "https://github.com/apprenticeharper/DeDRM_tools")
+    (synopsis "DeDRM tools for ebooks")
+    (description "This package provides tools to remove DRM from ebooks.")
+    (license license:gpl3)))
+
 (define-public python-deprecated
   (package
     (name "python-deprecated")
