@@ -864,6 +864,16 @@ for ARCH and optionally VARIANT, or #f if there is no such configuration."
     ;; kheaders module
     ("CONFIG_IKHEADERS" . #t)))
 
+;; NOTE: ASHMEM is removed in kernel 5.18 -> breaking waydroid on newer kernel
+(define %waydroid-extra-linux-options
+  `(;; Modules required for waydroid:
+   ("CONFIG_STAGING" . #t)
+   ("CONFIG_ASHMEM" . #t)
+   ("CONFIG_ANDROID" . #t)
+   ("CONFIG_ANDROID_BINDER_IPC" . #t)
+   ("CONFIG_ANDROID_BINDERFS" . #t)
+   ("CONFIG_ANDROID_BINDER_DEVICES" . "binder,hwbinder,vndbinder")))
+
 (define (config->string options)
   (string-join (map (match-lambda
                       ((option . 'm)
@@ -1343,6 +1353,25 @@ Linux-Libre, as an Info manual.  To consult it, run @samp{info linux}.")))
                      (append
                       `(("CONFIG_OVERLAY_FS" . m))
                       %default-extra-linux-options)))
+
+;; NOTE: Don't update the kernel over 5.17 as the CONFIG_ASHMEM has been removed
+(define-public linux-libre-waydroid
+  (let ((base-linux-libre
+         (make-linux-libre*
+          linux-libre-5.15-version
+          linux-libre-5.15-gnu-revision
+          linux-libre-5.15-source
+          '("x86_64-linux" "i686-linux" "armhf-linux"
+            "aarch64-linux" "riscv64-linux")
+          #:extra-version "waydroid"
+          #:configuration-file kernel-config
+          #:extra-options
+          (append %waydroid-extra-linux-options
+                  %default-extra-linux-options))))
+    (package
+      (inherit base-linux-libre)
+         (name "linux-libre-waydroid")
+      (inputs `(("cpio" ,cpio) ,@(package-inputs base-linux-libre))))))
 
 (define-public linux-libre-with-bpf
   (let ((base-linux-libre
