@@ -19455,6 +19455,24 @@ transport methods, unicode support, secure delivery with SMTP using encryption
 and authentication, easy email builders, and async support.")
     (license license:expat)))
 
+(define-public rust-levenshtein-1
+  (package
+    (name "rust-levenshtein")
+    (version "1.0.5")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "levenshtein" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0q0pa1prsjk3v28xkas5rf30ng9816mxpr2n3xls65dmgawss4yv"))))
+    (build-system cargo-build-system)
+    (home-page "https://github.com/wooorm/levenshtein-rs")
+    (synopsis "Levenshtein algorithm")
+    (description "This package provides Levenshtein algorithm.")
+    (license license:expat)))
+
 (define-public rust-embed-resource-1
   (package
     (name "rust-embed-resource")
