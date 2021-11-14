@@ -15,6 +15,7 @@
 ;;; Copyright © 2020, 2021 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2021 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2021 Stefan <stefan-guix@vodafonemail.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -66,13 +67,17 @@
   #:use-module (gnu packages virtualization)
   #:use-module (gnu packages xorg)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system trivial)
   #:use-module (guix download)
+  #:use-module (guix gexp)
   #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
+  #:use-module (ice-9 match)
+  #:use-module (ice-9 optargs)
   #:use-module (ice-9 regex))
 
 (define unifont
@@ -367,6 +372,91 @@ menu to select one of the installed operating systems.")
                   (scandir input-dir))
                  #t)))))))))
 
+(define-public (make-grub-efi-netboot name subdir)
+  "Make a grub-efi-netboot package named NAME, which will be able to boot over
+network via TFTP by accessing its files in the SUBDIR of a TFTP root directory.
+This package is also able to boot from local storage devices.
+
+A bootloader-installer basically needs to copy the package content into the
+bootloader-target directory, which will usually be the TFTP root, as
+'grub-mknetdir' will be invoked already during the package creation.
+
+Alternatively the bootloader-target directory can be a mounted EFI System
+Partition (ESP), or a similar partition with a FAT file system, for booting
+from local storage devices.
+
+The name of the GRUB EFI binary will conform to the UEFI specification for
+removable media.  Depending on the system it will be e.g. bootx64.efi or
+bootaa64.efi below SUBDIR.
+
+The SUBDIR argument needs to be set to \"efi/boot\" to create a package which
+conforms to the UEFI specification for removable media.
+
+The SUBDIR argument defaults to \"efi/Guix\", as it is also the case for
+'grub-efi-bootloader'."
+  (package
+    (name name)
+    (version (package-version grub-efi))
+    ;; Source is not needed, but it cannot be omitted.
+    (source #f)
+    (build-system trivial-build-system)
+    (arguments
+     (let* ((system (string-split (nix-system->gnu-triplet
+                                  (or (%current-target-system)
+                                      (%current-system)))
+                                  #\-))
+            (arch (first system))
+            (boot-efi
+             (match system
+               ;; These are the supportend systems and the names defined by
+               ;; the UEFI standard for removable media.
+               (("i686" _ ...)        "/bootia32.efi")
+               (("x86_64" _ ...)      "/bootx64.efi")
+               (("arm" _ ...)         "/bootarm.efi")
+               (("aarch64" _ ...)     "/bootaa64.efi")
+               (("riscv" _ ...)       "/bootriscv32.efi")
+               (("riscv64" _ ...)     "/bootriscv64.efi")
+               ;; Other systems are not supported, although defined.
+               ;; (("riscv128" _ ...) "/bootriscv128.efi")
+               ;; (("ia64" _ ...)     "/bootia64.efi")
+               ((_ ...)               #f)))
+            (core-efi (string-append
+                       ;; This is the arch dependent file name of GRUB, e.g.
+                       ;; i368-efi/core.efi or arm64-efi/core.efi.
+                       (match arch
+                         ("i686"    "i386")
+                         ("aarch64" "arm64")
+                         ("riscv"   "riscv32")
+                         (_         arch))
+                       "-efi/core.efi")))
+       `(#:modules ((guix build utils))
+         #:builder
+         (begin
+           (use-modules (guix build utils))
+           (let* ((bootloader (assoc-ref %build-inputs "grub-efi"))
+                  (net-dir (assoc-ref %outputs "out"))
+                  (sub-dir (string-append net-dir "/" ,subdir "/"))
+                  (boot-efi (string-append sub-dir ,boot-efi))
+                  (core-efi (string-append sub-dir ,core-efi)))
+             ;; Install GRUB, which refers to the grub.cfg, with support for
+             ;; encrypted partitions,
+             (setenv "GRUB_ENABLE_CRYPTODISK" "y")
+             (invoke/quiet (string-append bootloader "/bin/grub-mknetdir")
+                           (string-append "--net-directory=" net-dir)
+                           (string-append "--subdir=" ,subdir)
+                           ;; These modules must be preloaded to allow booting
+                           ;; from an ESP or a similar partition with a FAT
+                           ;; file system.
+                           (string-append "--modules=part_msdos part_gpt fat"))
+             ;; Move GRUB's core.efi to the removable media name.
+             (false-if-exception (delete-file boot-efi))
+             (rename-file core-efi boot-efi))))))
+    (inputs `(("grub-efi" ,grub-efi)))
+    (synopsis (package-synopsis grub-efi))
+    (description (package-description grub-efi))
+    (home-page (package-home-page grub-efi))
+    (license (package-license grub-efi))))
+
 (define-public syslinux
   (let ((commit "bb41e935cc83c6242de24d2271e067d76af3585c"))
     (package
@@ -637,16 +727,30 @@ def test_ctrl_c"))
 also initializes the boards (RAM etc).  This package provides its
 board-independent tools.")))
 
-(define-public (make-u-boot-package board triplet)
-  "Returns a u-boot package for BOARD cross-compiled for TRIPLET."
+(define*-public (make-u-boot-package board
+                                     triplet
+                                     #:key
+                                     defconfig
+                                     configs
+                                     name
+                                     description)
+  "Returns a u-boot package for BOARD cross-compiled for TRIPLET with the
+optional DEFCONFIG file and optional configuration changes from CONFIGS.
+Either NAME, if used, or otherwise BOARD will be part of the package name.
+DESCRIPTION will be appended to the package description."
   (let ((same-arch? (lambda ()
                       (string=? (%current-system)
                                 (gnu-triplet->nix-system triplet)))))
     (package
       (inherit u-boot)
       (name (string-append "u-boot-"
-                           (string-replace-substring (string-downcase board)
-                                                     "_" "-")))
+                           (string-replace-substring
+                            (string-downcase (or name board))
+                            "_" "-")))
+      (description (if description
+                       (string-append (package-description u-boot)
+                                      "\n" description)
+                       (package-description u-boot)))
       (native-inputs
        `(,@(if (not (same-arch?))
              `(("cross-gcc" ,(cross-gcc triplet))
@@ -656,8 +760,11 @@ board-independent tools.")))
       (arguments
        `(#:modules ((ice-9 ftw)
                     (srfi srfi-1)
-                    (guix build utils)
-                    (guix build gnu-build-system))
+                    (guix build gnu-build-system)
+                    (guix build kconfig)
+                    (guix build utils))
+         #:imported-modules (,@%gnu-build-system-modules
+                             (guix build kconfig))
          #:test-target "test"
          #:make-flags
          (list "HOSTCC=gcc"
@@ -668,9 +775,18 @@ board-independent tools.")))
          (modify-phases %standard-phases
            (replace 'configure
              (lambda* (#:key outputs make-flags #:allow-other-keys)
-               (let ((config-name (string-append ,board "_defconfig")))
-                 (if (file-exists? (string-append "configs/" config-name))
-                     (apply invoke "make" `(,@make-flags ,config-name))
+               (let* ((config-name (string-append ,board "_defconfig"))
+                      (config-file (string-append "configs/" config-name))
+                      (defconfig ,defconfig)
+                      (configs ',configs))
+                 (when defconfig
+                   ;; Replace the board-specific defconfig with the given one.
+                   (copy-file defconfig config-file))
+                 (if (file-exists? config-file)
+                     (begin
+                       (when configs
+                         (modify-defconfig config-file configs))
+                       (apply invoke "make" `(,@make-flags ,config-name)))
                      (begin
                        (display "Invalid board name. Valid board names are:"
                                 (current-error-port))
@@ -718,7 +834,11 @@ board-independent tools.")))
   (make-u-boot-package "malta" "mips64el-linux-gnuabi64"))
 
 (define-public u-boot-am335x-boneblack
-  (let ((base (make-u-boot-package "am335x_evm" "arm-linux-gnueabihf")))
+  (let ((base (make-u-boot-package "am335x_evm" "arm-linux-gnueabihf"
+               ;; Patch out other device trees to build image small enough to
+               ;; fit within typical partitioning schemes where the first
+               ;; partition begins at sector 2048.
+               #:configs '("CONFIG_OF_LIST=\"am335x-evm am335x-boneblack\""))))
     (package
       (inherit base)
       (name "u-boot-am335x-boneblack")
@@ -727,25 +847,13 @@ also initializes the boards (RAM etc).
 
 This U-Boot is built for the BeagleBone Black, which was removed upstream,
 adjusted from the am335x_evm build with several device trees removed so that
-it fits within common partitioning schemes.")
-      (arguments
-       (substitute-keyword-arguments (package-arguments base)
-         ((#:phases phases)
-          `(modify-phases ,phases
-             (add-after 'unpack 'patch-defconfig
-               ;; Patch out other devicetrees to build image small enough to
-               ;; fit within typical partitioning schemes where the first
-               ;; partition begins at sector 2048.
-               (lambda _
-                 (substitute* "configs/am335x_evm_defconfig"
-                   (("CONFIG_OF_LIST=.*$") "CONFIG_OF_LIST=\"am335x-evm am335x-boneblack\"\n"))
-                 #t)))))))))
+it fits within common partitioning schemes."))))
 
 (define-public u-boot-am335x-evm
   (make-u-boot-package "am335x_evm" "arm-linux-gnueabihf"))
 
-(define-public (make-u-boot-sunxi64-package board triplet)
-  (let ((base (make-u-boot-package board triplet)))
+(define*-public (make-u-boot-sunxi64-package board triplet #:key defconfig configs)
+  (let ((base (make-u-boot-package board triplet #:defconfig defconfig #:configs configs)))
     (package
       (inherit base)
       (arguments
@@ -775,20 +883,10 @@ it fits within common partitioning schemes.")
   (make-u-boot-sunxi64-package "pine64-lts" "aarch64-linux-gnu"))
 
 (define-public u-boot-pinebook
-  (let ((base (make-u-boot-sunxi64-package "pinebook" "aarch64-linux-gnu")))
-    (package
-      (inherit base)
-      (arguments
-       (substitute-keyword-arguments (package-arguments base)
-         ((#:phases phases)
-          `(modify-phases ,phases
-             (add-after 'unpack 'patch-pinebook-config
-               ;; Fix regression with LCD video output introduced in 2020.01
-               ;; https://patchwork.ozlabs.org/patch/1225130/
-               (lambda _
-                 (substitute* "configs/pinebook_defconfig"
-                   (("CONFIG_VIDEO_BRIDGE_ANALOGIX_ANX6345=y") "CONFIG_VIDEO_BRIDGE_ANALOGIX_ANX6345=y\nCONFIG_VIDEO_BPP32=y"))
-                 #t)))))))))
+  (make-u-boot-sunxi64-package "pinebook" "aarch64-linux-gnu"
+   ;; Fix regression with LCD video output introduced in 2020.01
+   ;; https://patchwork.ozlabs.org/patch/1225130/
+   #:configs '("CONFIG_VIDEO_BPP32=y")))
 
 (define-public u-boot-bananapi-m2-ultra
   (make-u-boot-package "Bananapi_M2_Ultra" "arm-linux-gnueabihf"))
@@ -839,25 +937,17 @@ device while it's being turned on (and a while longer).")
   (make-u-boot-package "mx6cuboxi" "arm-linux-gnueabihf"))
 
 (define-public u-boot-novena
-  (let ((base (make-u-boot-package "novena" "arm-linux-gnueabihf")))
+  (let ((base (make-u-boot-package "novena" "arm-linux-gnueabihf"
+               ;; Patch configuration to disable loading u-boot.img from FAT
+               ;; partition, allowing it to be installed at a device offset.
+               #:configs '("CONFIG_SPL_FS_FAT="))))
     (package
       (inherit base)
       (description "U-Boot is a bootloader used mostly for ARM boards. It
 also initializes the boards (RAM etc).
 
 This U-Boot is built for Novena.  Be advised that this version, contrary
-to Novena upstream, does not load u-boot.img from the first partition.")
-      (arguments
-       (substitute-keyword-arguments (package-arguments base)
-         ((#:phases phases)
-          `(modify-phases ,phases
-             (add-after 'unpack 'patch-novena-defconfig
-               ;; Patch configuration to disable loading u-boot.img from FAT partition,
-               ;; allowing it to be installed at a device offset.
-               (lambda _
-                 (substitute* "configs/novena_defconfig"
-                   (("CONFIG_SPL_FS_FAT=y") "# CONFIG_SPL_FS_FAT is not set"))
-                 #t)))))))))
+to Novena upstream, does not load u-boot.img from the first partition."))))
 
 (define-public u-boot-cubieboard
   (make-u-boot-package "Cubieboard" "arm-linux-gnueabihf"))
@@ -973,6 +1063,157 @@ to Novena upstream, does not load u-boot.img from the first partition.")
       (native-inputs
        `(("firmware" ,arm-trusted-firmware-rk3399)
          ,@(package-native-inputs base))))))
+
+(define*-public (make-preinstalled-u-boot-package board
+                                                  triplet
+                                                  #:key
+                                                  defconfig
+                                                  configs
+                                                  name
+                                                  description
+                                                  (u-boot-file "u-boot.bin"))
+  "Returns a package with a single U-BOOT-FILE for BOARD cross-compiled for
+TRIPLET with the optional DEFCONFIG file and optional configuration changes
+from CONFIGS.  Either NAME, if used, or otherwise BOARD will be part of the
+package name.  DESCRIPTION will be appended to the package description."
+  (let* ((name-suffix "-complete")
+         (u-boot-package (make-u-boot-package board
+                                              triplet
+                                              #:defconfig defconfig
+                                              #:configs configs
+                                              #:name (string-append
+                                                      (or name board)
+                                                      name-suffix)
+                                              #:description description)))
+    (package
+      (name (string-drop-right (package-name u-boot-package)
+                               (string-length name-suffix)))
+      (version (package-version u-boot-package))
+      (source #f)
+      (build-system trivial-build-system)
+      (arguments
+       `(#:builder
+         (begin
+           (let ((out (assoc-ref %outputs "out")))
+             (mkdir out)
+             (symlink (string-append (assoc-ref %build-inputs "u-boot")
+                                   "/libexec/"
+                                   ,u-boot-file)
+                      (string-append out "/" ,u-boot-file))))))
+      (inputs `(("u-boot" ,u-boot-package)))
+      (home-page (package-home-page u-boot-package))
+      (synopsis (package-synopsis u-boot-package))
+      (description (package-description u-boot-package))
+      (license (package-license u-boot-package)))))
+
+(define-public %u-boot-rpi-efi-configs
+  '("CONFIG_OF_EMBED="
+    "CONFIG_OF_BOARD=y"
+    "CONFIG_BOOTDELAY=0"))
+
+(define %u-boot-rpi-description-32-bit
+  "This is a 32-bit build of U-Boot.")
+
+(define %u-boot-rpi-description-64-bit
+  "This is a common 64-bit build of U-Boot for all 64-bit capable Raspberry Pi
+variants.")
+
+(define %u-boot-rpi-efi-description
+  "It allows network booting and uses the device-tree from the firmware,
+allowing the usage of overlays.  It can act as an EFI firmware for the
+grub-efi-netboot-removable-bootloader.")
+
+(define %u-boot-rpi-efi-description-32-bit
+  (string-append %u-boot-rpi-efi-description "  "
+                 %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-0-w
+  (make-preinstalled-u-boot-package
+   "rpi_0_w"
+   "arm-linux-gnueabihf"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi
+  (make-preinstalled-u-boot-package
+   "rpi"
+   "arm-linux-gnueabihf"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-2
+  (make-preinstalled-u-boot-package
+   "rpi_2"
+   "arm-linux-gnueabihf"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-3
+  (make-preinstalled-u-boot-package
+   "rpi_3_32b"
+   "arm-linux-gnueabihf"
+   #:name "rpi-3"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-4
+  (make-preinstalled-u-boot-package
+   "rpi_4_32b"
+   "arm-linux-gnueabihf"
+   #:name "rpi-4"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-64
+  (make-preinstalled-u-boot-package
+   "rpi_arm64"
+   "aarch64-linux-gnu"
+   #:name "rpi-64"
+   #:description %u-boot-rpi-description-64-bit))
+
+(define-public u-boot-rpi-0-w-efi
+  (make-preinstalled-u-boot-package
+   "rpi_0_w"
+   "arm-linux-gnueabihf"
+   #:name "rpi-0-w-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-efi
+  (make-preinstalled-u-boot-package
+   "rpi"
+   "arm-linux-gnueabihf"
+   #:name "rpi-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-2-efi
+  (make-preinstalled-u-boot-package
+   "rpi_2"
+   "arm-linux-gnueabihf"
+   #:name "rpi-2-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-3-efi
+  (make-preinstalled-u-boot-package
+   "rpi_3_32b"
+   "arm-linux-gnueabihf"
+   #:name "rpi-3-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-4-efi
+  (make-preinstalled-u-boot-package
+   "rpi_4_32b"
+   "arm-linux-gnueabihf"
+   #:name "rpi-4-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-efi-64
+  (make-preinstalled-u-boot-package
+   "rpi_arm64"
+   "aarch64-linux-gnu"
+   #:name "rpi-efi-64"
+   #:configs %u-boot-rpi-efi-configs
+   #:description (string-append %u-boot-rpi-efi-description "  "
+                                %u-boot-rpi-description-64-bit)))
 
 (define-public vboot-utils
   (package

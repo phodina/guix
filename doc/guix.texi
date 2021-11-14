@@ -33535,8 +33535,9 @@ The type of a bootloader configuration declaration.
 @cindex BIOS, bootloader
 The bootloader to use, as a @code{bootloader} object.  For now
 @code{grub-bootloader}, @code{grub-efi-bootloader},
-@code{grub-efi-netboot-bootloader}, @code{extlinux-bootloader} and
-@code{u-boot-bootloader} are supported.
+@code{grub-efi-netboot-bootloader},
+@code{grub-efi-netboot-removable-bootloader},
+@code{extlinux-bootloader} and @code{u-boot-bootloader} are supported.
 
 @cindex ARM, bootloaders
 @cindex AArch64, bootloaders
@@ -33562,9 +33563,10 @@ build a diskless Guix system.
 
 The installation of the @code{grub-efi-netboot-bootloader} generates the
 content of the TFTP root directory at @code{targets} (@pxref{Bootloader
-Configuration, @code{targets}}), to be served by a TFTP server.  You may
-want to mount your TFTP server directories onto the @code{targets} to
-move the required files to the TFTP server automatically.
+Configuration, @code{targets}}) below the sub-directory @file{efi/Guix}, to be
+served by a TFTP server.  You may want to mount your TFTP server directories
+onto the @code{targets} to move the required files to the TFTP server
+automatically during installation.
 
 If you plan to use an NFS root file system as well (actually if you mount the
 store from an NFS share), then the TFTP server needs to serve the file
@@ -33598,12 +33600,22 @@ directory to your @code{targets}.
 It is important to note that symlinks pointing outside the TFTP root directory
 may need to be allowed in the configuration of your TFTP server.  Further the
 store link exposes the whole store through TFTP@.  Both points need to be
-considered carefully for security aspects.
+considered carefully for security aspects.  It is advised to disable any TFTP
+write access!
+
+Please note, that this bootloader will not modify the ‘UEFI Boot Manager’ of
+the system.
 
 Beside the @code{grub-efi-netboot-bootloader}, the already mentioned TFTP and
 NFS servers, you also need a properly configured DHCP server to make the booting
 over netboot possible.  For all this we can currently only recommend you to look
 for instructions about @acronym{PXE, Preboot eXecution Environment}.
+
+@vindex grub-efi-netboot-removable-bootloader
+@code{grub-efi-netboot-removable-bootloader} is identical to
+@code{grub-efi-netboot-bootloader} with the exception that the sub-directory
+@file{efi/boot} will be used instead of @file{efi/Guix} to comply to the UEFI
+specification for removable media.
 
 @item @code{targets}
 This is a list of strings denoting the targets onto which to install the
