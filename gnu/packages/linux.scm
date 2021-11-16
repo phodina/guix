@@ -2851,7 +2851,7 @@ external rate conversion.")
     (arguments
      '(#:tests? #f       ; no test suite
        #:configure-flags ; add $libdir to the RUNPATH of executables
-       (list (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib"))))
+       (list (string-append "LDFLAGS=-Wl,-rpath=" (assoc-ref %outputs "out") "/lib"))))
     (home-page "https://www.netfilter.org/projects/iptables/index.html")
     (synopsis "Programs to configure Linux IP packet filtering rules")
     (description
@@ -4323,9 +4323,9 @@ dm-thin, dm-cache and dm-era device-mapper targets.")
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
-       (list (string-append "PREFIX=" %output)
-             (string-append "INSTALL_MAN=" %output "/share/man")
-             (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib")
+       (list (string-append "PREFIX=" (assoc-ref %outputs "out"))
+             (string-append "INSTALL_MAN=" (assoc-ref %outputs "out") "/share/man")
+             (string-append "LDFLAGS=-Wl,-rpath=" (assoc-ref %outputs "out") "/lib")
              "BUILD_STATIC=")
        #:phases
        (modify-phases %standard-phases
@@ -5343,7 +5343,7 @@ Linux Device Mapper multipathing driver:
     (arguments
      `(#:make-flags
        (let ((target ,(%current-target-system)))
-         (list (string-append "prefix=" %output)
+         (list (string-append "prefix=" (assoc-ref %outputs "out"))
                (string-append
                 "CC=" (if target
                           (string-append (assoc-ref %build-inputs "cross-gcc")
@@ -6791,10 +6791,12 @@ under OpenGL graphics workloads.")
     (arguments
      `(;; Tests require a UEFI system and is not detected in the chroot.
        #:tests? #f
-       #:make-flags (list (string-append "prefix=" %output)
-                          (string-append "libdir=" %output "/lib")
+       #:make-flags (list (string-append "prefix=" (assoc-ref %outputs
+	   "out"))
+                          (string-append "libdir=" (assoc-ref %outputs "out") "/lib")
                           (string-append "CC_FOR_BUILD=" ,(cc-for-target))
-                          (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib"))
+                          (string-append "LDFLAGS=-Wl,-rpath=" (assoc-ref
+						  %outputs "out") "/lib"))
        #:phases
        (modify-phases %standard-phases
          (delete 'configure))))
@@ -6825,8 +6827,8 @@ interface to the variable facility of UEFI boot firmware.")
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ;no tests
-       #:make-flags (list (string-append "prefix=" %output)
-                          (string-append "libdir=" %output "/lib")
+       #:make-flags (list (string-append "prefix=" (assoc-ref %outputs "out"))
+                          (string-append "libdir=" (assoc-ref %outputs "out") "/lib")
                           ;; EFIDIR denotes a subdirectory relative to the
                           ;; EFI System Partition where the loader will be
                           ;; installed (known as OS_VENDOR in the code).

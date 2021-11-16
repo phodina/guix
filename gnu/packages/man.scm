@@ -183,9 +183,9 @@ a flexible and convenient way.")
                        (string-append "--with-col=" util "/bin/col")
                        ;; The default systemd directories ignore --prefix.
                        (string-append "--with-systemdsystemunitdir="
-                                      %output "/lib/systemd/system")
+                                      (assoc-ref %outputs "out") "/lib/systemd/system")
                        (string-append "--with-systemdtmpfilesdir="
-                                      %output "/lib/tmpfiles.d"))
+                                      (assoc-ref %outputs "out") "/lib/tmpfiles.d"))
                  (map (lambda (prog)
                         (string-append "--with-" prog "=" groff-minimal
                                        "/bin/" prog))

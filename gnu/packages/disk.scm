@@ -447,7 +447,7 @@ to recover data more efficiently by only reading the necessary blocks.")
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags (list "--enable-compat-symlinks")
-       #:make-flags (list (string-append "PREFIX=" %output)
+       #:make-flags (list (string-append "PREFIX=" (assoc-ref %outputs "out"))
                           "CC=gcc")))
     (native-inputs
      `(("autoconf" ,autoconf)

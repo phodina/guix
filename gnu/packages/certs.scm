@@ -158,7 +158,7 @@ that was originally contributed to Debian.")
                 '(set-paths install-locale unpack))
          (add-after 'unpack 'install
            (lambda _
-             (let ((certsdir (string-append %output "/etc/ssl/certs/")))
+             (let ((certsdir (string-append (assoc-ref %outputs "out") "/etc/ssl/certs/")))
                (with-directory-excursion "nss/lib/ckfw/builtins/"
                  (unless (file-exists? "blacklist.txt")
                    (call-with-output-file "blacklist.txt" (const #t)))
@@ -206,7 +206,7 @@ taken from the NSS package and thus ultimately from the Mozilla project.")
 
            ;; Create hash symlinks suitable for OpenSSL ('SSL_CERT_DIR' and
            ;; similar.)
-           (chdir (string-append %output "/etc/ssl/certs"))
+           (chdir (string-append (assoc-ref %outputs "out") "/etc/ssl/certs"))
            (invoke (string-append perl "/bin/perl")
                    (string-append openssl "/bin/c_rehash")
                    ".")))))

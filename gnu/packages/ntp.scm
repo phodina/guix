@@ -159,7 +159,8 @@ time-stamping or reference clock, sub-microsecond accuracy is possible.")
             `(("libcap" ,libcap))
             '())))
    (arguments
-    `(#:phases
+    `(#:configure-flags (list "--with-yielding-select=yes")
+	  #:phases
       (modify-phases %standard-phases
         (add-after 'unpack 'disable-network-test
                    (lambda _

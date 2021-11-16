@@ -90,7 +90,10 @@
                 (invoke "./Add2TestDB")
 
                 ;; The ‘standard’ tests suggest running ‘optional’ ones as well.
-                (invoke "make" "standard" "optional")))
+				;; optional test fail on BTRFS
+				;; https://www.spinics.net/lists/linux-btrfs/msg09044.html
+				;; https://githubmemory.com/repo/lsof-org/lsof/issues/152?page=2
+                (invoke "make" "standard" )));"optional")))
             #t))
         (replace 'install
           (lambda* (#:key outputs #:allow-other-keys)
