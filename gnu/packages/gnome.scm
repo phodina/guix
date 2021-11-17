@@ -72,6 +72,7 @@
 ;;; Copyright © 2022 Leo Nikkilä <hello@lnikki.la>
 ;;; Copyright © 2022 Rene Saavedra <nanuui@protonmail.com>
 ;;; Copyright © 2022 Alexandros Theodotou <alex@zrythm.org>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -215,6 +216,7 @@
   #:use-module (gnu packages vpn)
   #:use-module (gnu packages web)
   #:use-module (gnu packages webkit)
+  #:use-module (gnu packages wm)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xiph)
   #:use-module (gnu packages xml)
@@ -1169,6 +1171,72 @@ archives of mm-common include the Doxygen tag file for the GNU C++
 Library reference documentation.")
     (home-page "https://gitlab.gnome.org/GNOME/mm-common")
     (license license:gpl2+)))
+
+(define-public phoc
+  (package
+    (name "phoc")
+    (version "0.20.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.gnome.org/World/Phosh/phoc")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1mm47n5x7kjgrpxbvb0d0yvpxgzyg90mmmafb6fxhsqklf2dhryy"))))
+    (build-system meson-build-system)
+    (arguments
+     (list #:tests? #f ;requires server connection
+           #:configure-flags #~(list "-Dembed-wlroots=disabled")
+           #:phases #~(modify-phases %standard-phases
+                        (add-after 'unpack 'get-wlroots
+                          (lambda* (#:key inputs #:allow-other-keys)
+                            (copy-recursively #$(origin
+                                                  (method git-fetch)
+                                                  (uri (git-reference (url
+                                                                       "https://source.puri.sm/Librem5/wlroots.git")
+                                                                      (commit
+                                                                       "1f8bb9e0e3058fc31a14866dc52e8f83c1287a09")))
+                                                  (file-name (string-append
+                                                              name "-" version
+                                                              "-checkout"))
+                                                  (sha256 (base32
+                                                           "1551c1qrybygyfba0darb58ahj57rasnhnkdfd2yxrrg9wc5h1vs")))
+                                              "subprojects/wlroots")))
+                        (add-after 'get-wlroots 'patch-paths
+                          (lambda _
+                            (substitute* "src/server.c"
+                              (("/bin/sh")
+                               (which "sh")))
+                            (substitute* "tests/test-run.c"
+                              (("/bin/true")
+                               (which "true"))
+                              (("/bin/false")
+                               (which "false")))))
+                        (add-before 'patch-paths 'disable-failing-tests
+                          (lambda _
+                            (substitute* "tests/meson.build"
+                              (("'layer-shell',")
+                               "")
+                              (("'xdg-shell',")
+                               "")
+                              (("'phosh'")
+                               ""))))
+                        (add-before 'check 'pre-check
+                          (lambda* (#:key inputs #:allow-other-keys)
+                            (system "Xvfb :1 &")
+                            (setenv "DISPLAY" ":1"))))))
+    (native-inputs (list gobject-introspection python pkg-config
+                         `(,glib "bin") wayland-protocols
+                         xorg-server-for-tests))
+    (propagated-inputs (list gnome-desktop libinput libseat libxkbcommon wayland
+                             wlroots mutter))
+    (synopsis "Wayland compositor for mobile phones")
+    (description "Phoc is a wayland compositor for mobile phones based on
+        wlroots.")
+    (home-page "https://gitlab.gnome.org/World/Phosh/phoc")
+    (license license:gpl3+)))
 
 (define-public phodav
   (package
