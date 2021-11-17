@@ -94,6 +94,7 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu packages aidc)
   #:use-module (gnu packages aspell)
+  #:use-module (gnu packages audio)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages avahi)
   #:use-module (gnu packages backup)
@@ -1280,6 +1281,118 @@ but it is generic enough to be reused in other projects,
 in particular in the GNOME desktop.")
    (home-page "https://wiki.gnome.org/phodav")
    (license license:lgpl2.1+)))
+
+(define-public phosh
+  (package
+    (name "phosh")
+    (version "0.21.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.gnome.org/World/Phosh/phosh")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "19rgrdb655vnjvwy89fl335zhlc1bqc20432iwwy8yqj0ayfs6ds"))))
+    (build-system meson-build-system)
+    (arguments
+     (list #:modules '((guix build meson-build-system)
+            ((guix build glib-or-gtk-build-system)
+            #:prefix glib-or-gtk:)
+            (guix build utils)
+            (ice-9 match))
+	       #:configure-flags #~(list "-Dsystemd=false")
+           #:imported-modules `((guix build glib-or-gtk-build-system)
+            ,@%meson-build-system-modules)
+           #:phases #~(modify-phases %standard-phases
+                        (add-after 'unpack 'get-submodules
+                          (lambda* (#:key inputs #:allow-other-keys)
+                            (copy-recursively #$(origin
+                                                  (method git-fetch)
+                                                  (uri (git-reference (url
+                                                                       "https://gitlab.gnome.org/GNOME/libgnome-volume-control.git")
+                                                                      (commit
+                                                                       "ae1a34aafce7026b8c0f65a43c9192d756fe1057")))
+                                                  (file-name (string-append
+                                                              name "-" version
+                                                              "-checkout"))
+                                                  (sha256 (base32
+                                                           "0a4qh5pgyjki904qf7qmvqz2ksxb0p8xhgl2aixfbhixn0pw6saw")))
+                                              "subprojects/gvc")
+                            (copy-recursively #$(origin
+                                                  (method git-fetch)
+                                                  (uri (git-reference (url
+                                                                       "https://gitlab.gnome.org/World/Phosh/libcall-ui")
+                                                                      (commit
+                                                                       "f81f46045ac85e5c5c93d9b5be673c0f20991927")))
+                                                  (file-name (string-append
+                                                              name "-" version
+                                                              "-checkout"))
+                                                  (sha256 (base32
+                                                           "1sb6z8ll6088kh3idxlzvavgs1dcixr6n4ykcjkxhfhhyfgdc8an")))
+                                              "subprojects/libcall-ui")))
+                        (add-after 'unpack 'patch-systemd
+                          (lambda* (#:key inputs #:allow-other-keys)
+                            (substitute* "meson.build"
+                              (("libsystemd")
+                               "libelogind"))
+                            (substitute* "src/meson.build"
+                              (("libsystemd_dep")
+                               "libelogind_dep"))
+                            (substitute* "src/util.c"
+                              (("systemd/sd-login.h")
+                               "elogind/sd-login.h"))
+                            (substitute* "src/main.c"
+                              (("systemd/sd-daemon.h")
+                               "elogind/sd-daemon.h"))))
+                        (add-before 'configure 'fix-phoc-path
+                          (lambda* (#:key inputs #:allow-other-keys)
+                            (substitute* "data/phosh.in"
+                              (("@bindir@")
+                               (string-append (assoc-ref inputs "phoc") "/bin")))))
+                        (add-after 'install 'glib-or-gtk-compile-schemas
+                          (assoc-ref glib-or-gtk:%standard-phases
+                                     'glib-or-gtk-compile-schemas))
+                        (add-after 'install 'glib-or-gtk-wrap
+                          (assoc-ref glib-or-gtk:%standard-phases
+                                     'glib-or-gtk-wrap))
+                        (delete 'check))))
+    (native-inputs (list elogind
+                         gcr
+                         gettext-minimal
+                         git
+                         `(,glib "bin")
+                         gsettings-desktop-schemas
+                         gnome-desktop
+                         `(,gtk+ "bin")
+                         pkg-config
+                         python
+						 wayland-protocols))
+    (inputs (list callaudiod
+	evolution-data-server
+                  feedbackd
+                  libgudev
+                  libhandy
+                  libsecret
+                  linux-pam
+                  network-manager
+                  polkit
+                  pulseaudio
+                  upower))
+    (propagated-inputs
+                       ;; "missing" schema files
+                       ;; org.gnome.DejaDup.File org.guido-berhoerster.code.package-update-indicator org.blueberry
+                       (list gsettings-desktop-schemas ;org.gnome.desktop.wm.keybindings
+                             gnome-session
+                             mutter ;org.gnome.mutter.keybindings
+                             network-manager-applet ;org.gnome.nm-applet
+                             phoc)) ;sm.puri.phoc
+    (synopsis "Wayland shell for GNOME on mobile devices")
+    (description
+     "Phosh is a pure Wayland prototype intended for mobile devices.")
+    (home-page "https://gitlab.gnome.org/World/Phosh/phosh")
+    (license license:gpl3+)))
 
 (define-public gnome-color-manager
   (package
