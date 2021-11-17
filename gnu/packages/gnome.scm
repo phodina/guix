@@ -69,6 +69,7 @@
 ;;; Copyright © 2022 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2022 John Kehayias <john.kehayias@protonmail.com>
 ;;; Copyright © 2022 Denis 'GNUtoo' Carikli <GNUtoo@cyberdimension.org>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -1167,6 +1168,81 @@ archives of mm-common include the Doxygen tag file for the GNU C++
 Library reference documentation.")
     (home-page "https://gitlab.gnome.org/GNOME/mm-common")
     (license license:gpl2+)))
+
+(define-public phoc
+  (package
+    (name "phoc")
+    (version "0.9.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.gnome.org/World/Phosh/phoc")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "18nwjbyjxq11ppfdky3bnfh9pr23fjl2543jwva0iz1n6c8mkpd9"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:tests? #f                      ; requires server connection
+       #:phases
+       (modify-phases %standard-phases
+        ; source of wlroots required in subprojects/wlroots folder
+         (add-after 'unpack 'get-wlroots
+           (lambda* (#:key inputs #:allow-other-keys)
+             (copy-recursively (assoc-ref inputs "wlroots-librem5-source")
+                               "subprojects/wlroots")
+             #t))
+         (add-after 'get-wlroots 'patch-paths
+           (lambda _
+             (substitute* "src/server.c"
+               (("/bin/sh") (which "sh")))
+             (substitute* "tests/test-run.c"
+               (("/bin/true") (which "true"))
+               (("/bin/false") (which "false")))
+             #t))
+         ;; Those check a running phoc server against some screenshots in the repo.
+         ;; They differ only by the mouse cursor (shadow vs. no shadow).
+         (add-before 'patch-paths 'disable-failing-tests
+           (lambda _
+             (substitute* "tests/meson.build"
+               (("'layer-shell',") "")
+               (("'xdg-shell',") "")
+               (("'phosh'") ""))
+             #t))
+         (add-before 'check 'pre-check
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; Tests require a running X server.
+             (system "Xvfb :1 &")
+             (setenv "DISPLAY" ":1")
+             #t)))))
+    (native-inputs
+     `(("gobject-introspection" ,gobject-introspection)
+       ("glib:bin" ,glib "bin")
+       ("gnome-desktop" ,gnome-desktop)
+       ("libinput" ,libinput)
+       ("libxkbcommon" ,libxkbcommon)
+       ("pkg-config" ,pkg-config)
+       ("wayland" ,wayland)
+       ("wayland-protocols" ,wayland-protocols)
+       ("wlroots-librem5-source"        ; patched version for Librem 5
+        ,(origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://source.puri.sm/Librem5/wlroots.git")
+                 (commit "5413b1ec61c6e3390929db595c0ec92f92ea2594")))
+           (file-name (string-append name "-" version "-checkout"))
+           (sha256
+            (base32
+             "02q70244sfs2jzl8mxsvd51rrv59jxllyss821xgg0cmq49rgq5w"))))
+       ("xorg-server" ,xorg-server-for-tests)))
+    (propagated-inputs
+     `(("mutter" ,mutter)))
+    (synopsis "Wayland compositor for mobile phones")
+    (description "Phoc is a wayland compositor for mobile phones based on
+        wlroots.")
+    (home-page "https://gitlab.gnome.org/World/Phosh/phoc")
+    (license license:gpl3+)))
 
 (define-public phodav
   (package
