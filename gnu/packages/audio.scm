@@ -36,6 +36,7 @@
 ;;; Copyright © 2020 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2021 jgart <jgart@dismail.de>
 ;;; Copyright © 2021 Aleksandr Vityazev <avityazev@posteo.org>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2022 Arjan Adriaanse <arjan@adriaan.se>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -1075,6 +1076,33 @@ tools (analyzer, mono/stereo tools, crossovers).")
     ;; calfjackhost is released under GPLv2+
     ;; The plugins are released under LGPLv2.1+
     (license (list license:lgpl2.1+ license:gpl2+))))
+
+(define-public callaudiod
+  (package
+    (name "callaudiod")
+    (version "0.1.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/mobian1/callaudiod")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "04pn6f9p2n0qsy7cbchmnqlmjfvn908vdryc4y38srnj3xiq212l"))))
+    (build-system meson-build-system)
+    (native-inputs `(("alsa-lib" ,alsa-lib)
+                     ("glib" ,glib)
+                     ("glib" ,glib "bin")
+                     ("pkg-config" ,pkg-config)
+                     ("pulseaudio" ,pulseaudio)))
+    (inputs `(("alsa-utils" ,alsa-utils)
+              ("pulseaudio" ,pulseaudio)))
+    (synopsis "Call audio routing daemon")
+    (description "This package provides a daemon for dealing with audio routing
+during phone calls.  It provides a D-Bus interface.")
+    (home-page "https://gitlab.com/mobian1/callaudiod")
+    (license license:gpl3+)))
 
 (define-public caps-plugins-lv2
   (package
