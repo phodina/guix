@@ -51185,6 +51185,26 @@ for later processing.")
     (description "This package provides YAML support for Serde.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-serial-core-0.4
+  (package
+    (name "rust-serial-core")
+    (version "0.4.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "serial-core" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "10a5lvllz3ljva66bqakrn8cxb3pkaqyapqjw9x760al6jdj0iiz"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs (("rust-libc" ,rust-libc-0.2))))
+    (home-page "https://github.com/dcuddeback/serial-rs")
+    (synopsis "Rust abstractions for serial ports")
+    (description "This package provides abstractions for serial ports.")
+    (license license:expat)))
+
 (define-public rust-serial-test-0.6
   (package
     (name "rust-serial-test")
