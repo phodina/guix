@@ -55470,17 +55470,17 @@ easier in Rust.")
      `(#:cargo-inputs
        (("rust-strum-macros" ,rust-strum-macros-0.18))))))
 
-(define-public rust-strum-macros-0.21
+(define-public rust-strum-macros-0.22
   (package
     (name "rust-strum-macros")
-    (version "0.21.1")
+    (version "0.22.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "strum_macros" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1v55b1in7dn07s6vxr8dajqpvxkxjbfq6qamnjgcbnq9x3pawsnh"))))
+        (base32 "1yz9ia03p3xbndhjbcmxjifh1r43cchynzxcqx23g7jliffpk7rk"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
@@ -55494,6 +55494,20 @@ easier in Rust.")
     (description
      "This crate provides helpful macros for working with enums and strings.")
     (license license:expat)))
+
+(define-public rust-strum-macros-0.21
+  (package
+    (inherit rust-strum-macros-0.22)
+    (name "rust-strum-macros")
+    (version "0.21.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "strum_macros" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+		"1v55b1in7dn07s6vxr8dajqpvxkxjbfq6qamnjgcbnq9x3pawsnh"))))))
 
 (define-public rust-strum-macros-0.20
   (package
