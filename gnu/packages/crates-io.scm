@@ -27692,6 +27692,24 @@ versions < 0.2.")
 network configuration for Windows.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-is-ci-1
+  (package
+    (name "rust-is-ci")
+    (version "1.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "is_ci" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1ywra2z56x6d4pc02zq24a4x7gvpixynh9524icbpchbf9ydwv31"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://github.com/zkat/is_ci")
+    (synopsis "Lightweight CI environment checker")
+    (description "This package provides lightweight CI environment checker.")
+    (license license:isc)))
+
 (define-public rust-is-macro-0.1
   (package
     (name "rust-is-macro")
