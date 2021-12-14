@@ -30554,6 +30554,31 @@ in plain text.  It is smart about where a link ends, such as with trailing
 punctuation.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-librocksdb-sys-6
+  (package
+    (name "rust-librocksdb-sys")
+    (version "6.20.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "librocksdb-sys" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "0pd2kjxx4mv3nfk7b2w6jq2x4m3153sqq2aakbmsqi088z9aj2f3"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-bindgen" ,rust-bindgen-0.59)
+        ("rust-cc" ,rust-cc-1)
+        ("rust-glob" ,rust-glob-0.3)
+        ("rust-libc" ,rust-libc-0.2))))
+    (native-inputs (list clang))
+    (home-page "https://github.com/rust-rocksdb/rust-rocksdb")
+    (synopsis "Native bindings to librocksdb")
+    (description "This package provides native bindings to librocksdb.")
+    (license (list license:expat license:asl2.0 license:bsd-3))))
+
 (define-public rust-libssh2-sys-0.2
   (package
     (name "rust-libssh2-sys")
