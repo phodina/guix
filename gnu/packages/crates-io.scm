@@ -46414,6 +46414,34 @@ and speed.")
 responses, and headers for the Rocket web framework.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-rocksdb-0.16
+  (package
+    (name "rust-rocksdb")
+    (version "0.16.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "rocksdb" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1cs8bhin1galcwmy2qhhianb7p21r2zmjgb4vv891z4bv97i6jf7"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-libc" ,rust-libc-0.2)
+        ("rust-librocksdb-sys" ,rust-librocksdb-sys-6))
+       #:cargo-development-inputs
+       (("rust-bincode" ,rust-bincode-1)
+        ("rust-pretty-assertions" ,rust-pretty-assertions-0.7)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-tempfile" ,rust-tempfile-3)
+        ("rust-trybuild" ,rust-trybuild-1))))
+    (inputs (list rocksdb clang))
+    (home-page "https://github.com/rust-rocksdb/rust-rocksdb")
+    (synopsis "Rust wrapper for Facebook's RocksDB embeddable database")
+    (description "This package provides rust wrapper for Facebook's RocksDB embeddable database.")
+    (license license:asl2.0)))
+
 (define-public rust-romio-0.3
   (package
     (name "rust-romio")
