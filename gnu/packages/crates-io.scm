@@ -55860,6 +55860,36 @@ cryptographic implementations.")
 alike.  It's completely modular, and built directly for @code{async/await}.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-supports-unicode-1
+  (package
+    (name "rust-supports-unicode")
+    (version "1.0.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "supports-unicode" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (patches
+        ;; enable extended_key_value_attributes feature
+        (search-patches "rust-supports-unicode-enable-attributes.patch"))
+       (sha256
+        (base32 "1cpq6mbixlpdibwx203p6qh7kpzqy9yin7y5ird14ys1bgj4bfd8"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-atty" ,rust-atty-0.2))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'enable-unstable-features
+           (lambda _
+             (setenv "RUSTC_BOOTSTRAP" "1")
+             #t)))))
+    (home-page "https://github.com/zkat/supports-unicode")
+    (synopsis "Detects whether a terminal supports unicode")
+    (description "This package detects whether a terminal supports unicode.")
+    (license license:asl2.0)))
+
 (define-public rust-supercow-0.1
   (package
     (name "rust-supercow")
