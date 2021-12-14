@@ -32661,6 +32661,30 @@ quality, high performance hash algorithm.")
      "This package provides a simple math expression parser and evaluator.")
     (license (list license:unlicense license:expat))))
 
+(define-public rust-miette-derive-3
+  (package
+    (name "rust-miette-derive")
+    (version "3.2.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "miette-derive" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "0zjv009zzw6z4scslyjb0laz0z2379c2a89jhrz9z6lvk5phn3rc"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-proc-macro2" ,rust-proc-macro2-1)
+        ("rust-quote" ,rust-quote-1)
+        ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/zkat/miette")
+    (synopsis "Derive macros for miette")
+    (description "This package provides derive macros for miette similar to
+`thiserror` for Diagnostics.")
+    (license license:asl2.0)))
+
 (define-public rust-migrations-internals-1
   (package
     (name "rust-migrations-internals")
