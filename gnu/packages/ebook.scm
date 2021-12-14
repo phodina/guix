@@ -417,6 +417,35 @@ accessing and converting various ebook file formats.")
     (description "This package provides InkBox eBook reader.")
     (license license:gpl3)))
 
+(define-public inkwave
+  (let ((commit "ebc27ae10a3ede08a417549421ba68a19327a7bd")
+        (revision "1"))
+    (package
+      (name "inkwave")
+      (version "0.1-pre")
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/fread-ink/inkwave")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "0drk9rj8mpv30z9gpzg041ldn0yk6qhrswz2yx0ykddnxyhwjsfk"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f                    ; no test suites
+         #:make-flags (list (string-append "DESTDIR=" (assoc-ref %outputs "out")))
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'configure))))       ; no config
+      (synopsis "Convert electronic paper display waveforms")
+      (description "This package provides convert electronic paper display
+waveforms from .wbf to .wrf format.")
+      (home-page "https://github.com/fread-ink/inkwave")
+      (license license:gpl2+))))
+
 (define-public liblinebreak
   (package
     (name "liblinebreak")
