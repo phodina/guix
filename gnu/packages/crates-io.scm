@@ -55878,6 +55878,28 @@ cryptographic implementations.")
 alike.  It's completely modular, and built directly for @code{async/await}.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-supports-color-1
+  (package
+    (name "rust-supports-color")
+    (version "1.3.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "supports-color" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1yfi8yswjipk3ljzm79rbf3phw2fwlznhji1iap7pm4idg9wwwj8"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-atty" ,rust-atty-0.2) ("rust-is-ci" ,rust-is-ci-1))))
+    (home-page "https://github.com/zkat/supports-color")
+    (synopsis "Detect whether a terminal supports color")
+    (description "This package detects whether a terminal supports color
+and gives details about that support.")
+    (license license:asl2.0)))
+
 (define-public rust-supports-hyperlinks-1
   (package
     (name "rust-supports-hyperlinks")
