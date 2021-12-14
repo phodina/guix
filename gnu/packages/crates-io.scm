@@ -145,6 +145,27 @@ cubic beziers.")
 library in Rust.")
     (license license:expat)))
 
+(define-public rust-accelerate-src-0.3
+  (package
+    (name "rust-accelerate-src")
+    (version "0.3.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "accelerate-src" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "17fiqyq7f9k41pbsyrvk9pxyx9z6fw399wq036cvwkbmb14xcpj1"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "https://github.com/blas-lapack-rs/accelerate-src")
+    (synopsis "Source of BLAS and LAPACK via the Accelerate framework")
+    (description
+     "The package provides a source of BLAS and LAPACK via the Accelerate
+framework.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-actix-0.10
   (package
     (name "rust-actix")
