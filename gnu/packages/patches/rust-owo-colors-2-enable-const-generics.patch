@@ -1,0 +1,11 @@
+--- a/src/lib.rs	2021-11-09 10:12:42.834659828 +0100
++++ b.src/lib.rs	2021-11-09 10:49:50.384574950 +0100
+@@ -49,6 +49,8 @@
+ //! Supports `NO_COLOR`/`FORCE_COLOR` environment variables, checks if it's a tty, checks
+ //! if it's running in CI (and thus likely supports color), and checks which terminal is being
+ //! used. (Note: requires `supports-colors` feature)
++#![feature(const_generics)]
++#![feature(const_if_match)]
+ #![cfg_attr(not(test), no_std)]
+ #![doc(html_logo_url = "https://jam1.re/img/rust_owo.svg")]
+ #![warn(missing_docs)]

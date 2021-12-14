@@ -1833,6 +1833,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/rust-nettle-disable-vendor.patch		 \
   %D%/packages/patches/rust-nettle-sys-disable-vendor.patch	 \
   %D%/packages/patches/rust-openssl-sys-no-vendor.patch	\
+  %D%/packages/patches/rust-owo-colors-2-enable-const-generics.patch	\
   %D%/packages/patches/rust-wl-clipboard-rs-newer-wl.patch      \
   %D%/packages/patches/rust-supports-hyperlinks-enable-attributes.patch	\
   %D%/packages/patches/rust-supports-unicode-enable-attributes.patch	\

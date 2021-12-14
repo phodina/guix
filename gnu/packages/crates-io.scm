@@ -37856,6 +37856,36 @@ platform-native strings.")
      "This package provides a macro to simplify operator overloading.")
     (license license:expat)))
 
+(define-public rust-owo-colors-2
+  (package
+    (name "rust-owo-colors")
+    (version "2.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "owo-colors" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (patches
+        ;; enable unstable feature const generics
+        (search-patches "rust-owo-colors-2-enable-const-generics.patch"))
+       (sha256
+        (base32 "0z2j9vlajrg65j5pc8nsp7zwdbqzl2hs64iqnayhmi5f4mcpcq9s"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-atty" ,rust-atty-0.2)
+        ("rust-supports-color" ,rust-supports-color-1))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'enable-unstable-features
+           (lambda* (#:key inputs #:allow-other-keys)
+             (setenv "RUSTC_BOOTSTRAP" "1"))))))
+    (home-page "https://github.com/jam1garner/owo-colors")
+    (synopsis "Zero-allocation terminal colors")
+    (description "This package provides zero-allocation terminal colors.")
+    (license license:expat)))
+
 (define-public rust-owned-ttf-parser-0.6
   (package
     (name "rust-owned-ttf-parser")
