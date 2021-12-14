@@ -50925,6 +50925,27 @@ data.  This crate provides a wrapper that works with any existing Serde
       "This package provides a path to the element that failed to deserialize.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-serde-plain-1
+  (package
+    (name "rust-serde-plain")
+    (version "1.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "serde_plain" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "0n1q2gdryp9jfmw89vixld68ldmydwiayw11wx921nps55z5wicm"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-serde" ,rust-serde-1))))
+    (home-page "https://docs.rs/serde_plain")
+    (synopsis "Restricted plain text serializer for Serde")
+    (description "This package provides a restricted plain text serializer for
+Serde.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-serde-qs-0.7
   (package
     (name "rust-serde-qs")
