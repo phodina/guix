@@ -32075,7 +32075,7 @@ unstable -Z self-profile flag.")
      `(#:skip-build? #t
        #:cargo-inputs
        (("rust-libc" ,rust-libc-0.2))))
-    (home-page "https://github.com/BurntSushi/rust-memchr")
+    (home-page "https://github.com/BurntSushi/memchr")
     (synopsis "Safe interface to memchr")
     (description "The @code{memchr} crate provides heavily optimized routines
 for searching bytes.")
