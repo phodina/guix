@@ -9094,8 +9094,29 @@ messages.")
 remote procedure call protocol")
     (license license:expat)))
 
+(define-public rust-capnpc-0.14
+  (package
+    (name "rust-capnpc")
+    (version "0.14.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "capnpc" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1zhis7h4wbhd4d7zc3jnpgkjm4nj9dcfsipp71f8nlb2260wwyxl"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-capnp" ,rust-capnp-0.14))))
+    (home-page "https://github.com/capnproto/capnproto-rust")
+    (synopsis "Cap'n Proto code generation")
+    (description "Cap'n Proto code generation")
+    (license license:expat)))
+
 (define-public rust-capnpc-0.13
   (package
+    (inherit rust-capnpc-0.14)
     (name "rust-capnpc")
     (version "0.13.1")
     (source
@@ -9105,14 +9126,9 @@ remote procedure call protocol")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "1hbm5xqpam3f0ha5ds39wjmpqpzdalpbrls9wlp7m3slh3p5r1c1"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
-       #:cargo-inputs (("rust-capnp" ,rust-capnp-0.13))))
-    (home-page "https://github.com/capnproto/capnproto-rust")
-    (synopsis "Cap'n Proto code generation")
-    (description "Cap'n Proto code generation")
-    (license license:expat)))
+       #:cargo-inputs (("rust-capnp" ,rust-capnp-0.13))))))
 
 (define-public rust-caps-0.5
   (package
