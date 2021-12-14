@@ -48,6 +48,7 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
+  #:use-module (gnu packages cmake)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages crates-io)
   #:use-module (gnu packages crates-graphics)
@@ -63,12 +64,15 @@
   #:use-module (gnu packages image)
   #:use-module (gnu packages jemalloc)
   #:use-module (gnu packages kde)
+  #:use-module (gnu packages llvm)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages networking)
+  #:use-module (gnu packages serialization)
   #:use-module (gnu packages ssh)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pulseaudio)
+  #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages rust)
   #:use-module (gnu packages tls)
@@ -708,6 +712,67 @@ replacement for i3status, written in pure Rust.  It provides a way to display
 @code{blocks} of system information (time, battery status, volume, etc) on the i3
 bar.  It is also compatible with sway.")
     (license license:gpl3)))
+
+(define-public rd
+ (package
+  (name "rd")
+  (version "7")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+                   (url "https://github.com/sidkshatriya/rd")
+                   (commit (string-append "alpha" version))))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0a6mjfnar195yc6y55p62vxiy0wcvdx368cfd5cgn95hi82l8xmv"))))
+  (build-system cargo-build-system)
+  (arguments
+   `(#:cargo-inputs
+  (("rust-array-init" ,rust-array-init-2)
+   ("rust-bit-field" ,rust-bit-field-0.10)
+   ("rust-brotli-sys" ,rust-brotli-sys-0.3)
+   ("rust-crc32fast" ,rust-crc32fast-1)
+   ("rust-capnp" ,rust-capnp-0.14)
+   ("rust-goblin" ,rust-goblin-0.3)
+   ("rust-backtrace" ,rust-backtrace-0.3)
+   ("rust-bitflags" ,rust-bitflags-1)
+   ("rust-lazy-static" ,rust-lazy-static-1)
+   ("rust-libc" ,rust-libc-0.2)
+   ("rust-memchr" ,rust-memchr-2)
+   ("rust-memoffset" ,rust-memoffset-0.6)
+   ("rust-nix" ,rust-nix-0.21)
+   ("rust-object" ,rust-object-0.25)
+   ("rust-owning-ref" ,rust-owning-ref-0.4)
+   ("rust-rand" ,rust-rand-0.8)
+   ("rust-raw-cpuid" ,rust-raw-cpuid-9)
+   ("rust-regex" ,rust-regex-1)
+   ("rust-rocksdb" ,rust-rocksdb-0.16)
+   ("rust-serde" ,rust-serde-1)
+   ("rust-serde-derive" ,rust-serde-derive-1)
+   ("rust-serde-json" ,rust-serde-json-1)
+   ("rust-static-assertions" ,rust-static-assertions-1)
+   ("rust-structopt" ,rust-structopt-0.3))
+   #:cargo-development-inputs
+   (("rust-bindgen" ,rust-bindgen-0.58)
+   ("rust-capnpc" ,rust-capnpc-0.14)
+   ("rust-cc" ,rust-cc-1)
+   ("rust-cmake" ,rust-cmake-0.1))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'enable-unstable-features
+           (lambda* (#:key inputs #:allow-other-keys)
+		     (substitute* "build.rs"
+			 (("target_dir\\)") 
+			 "target_dir)\n.define(\"disable32bit\", \"ON\")"))
+             (setenv "RUSTC_BOOTSTRAP" "1"))))))
+  (native-inputs (list cmake `(,rust "rustfmt")))
+  (inputs (list (module-ref (resolve-interface '(gnu packages
+  commencement)) 'gcc-toolchain-9) capnproto clang python))
+  (synopsis "Record/replay debugger")
+  (description "This package allows you to record Linux program executions. Subsequently you can replay these executions back exactly and debug them in the gdb front-end. If you know how to use rr then you already know how to use rd.")
+  (home-page "https://github.com/sidkshatriya/rd")
+  (license license:expat)))
 
 (define-public ripgrep
   (package
