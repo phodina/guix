@@ -319,6 +319,26 @@ protocol used in @code{node-lynx}.")
 function with browser support.")
     (license license:expat)))
 
+(define-public node-victor
+(package
+  (name "node-victor")
+  (version "1.1.0")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+             (git-reference
+               (url "https://github.com/maxkueng/victor")
+               (commit version)))
+            (sha256
+             (base32
+              "0nl74irf7fp8ricjwv2vb7wis1wzfqjpqngbyivd9hmmg7hjdkhm"))))
+  (build-system node-build-system)
+  (synopsis "2D Vector Maths Library")
+  (description "")
+  (home-page "https://github.com/maxkueng/victor")
+  (license license:expat)))
+
 (define-public node-semver
   (package
     (name "node-semver")
