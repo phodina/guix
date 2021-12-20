@@ -175,6 +175,26 @@
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg))
 
+(define-public snort-libdaq
+(package
+  (name "snort-libdaq")
+  (version "3.0.5")
+  (source (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/snort3/libdaq")
+		(commit (string-append "v" version))))
+            (sha256
+             (base32
+              "1b1mj9r6lknhjp1yfzdnigvbbwqnlvwdm76j47spxmp8sv97aj4c"))))
+  (build-system gnu-build-system)
+  (native-inputs (list autoconf automake cmocka libtool pkg-config which))
+  (synopsis "Data Acquisition Library")
+  (description "LibDAQ is a pluggable abstraction layer for interacting with a data source (traditionally a network interface or network data plane). Applications using LibDAQ use the library API defined in daq.h to load, configure, and interact with pluggable DAQ modules.")
+  (home-page "https://github.com/snort3/libdaq")
+  (license license:gpl2+)))
+
 (define-public libdnet
 (package
   (name "libdnet")
