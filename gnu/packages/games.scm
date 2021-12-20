@@ -5857,6 +5857,33 @@ application that locks the keyboard and mouse and instead displays bright
 colors, pictures, and sounds.")
     (license license:gpl3+)))
 
+(define-public cegui
+  (package
+   (name "cegui")
+   (version "0-8-7")
+   (source
+    (origin
+     (method git-fetch)
+     (uri
+	 (git-reference
+	 (url "https://github.com/cegui/cegui")
+	 (commit (string-append "v" version))))
+     (sha256
+      (base32
+       "1dn519d76x6wil01g5pq7vzcif2bz8p3b4hs1i7p803ngdf7sdif"))))
+   (build-system cmake-build-system)
+   (arguments
+    `(#:tests? #f))
+   (native-inputs
+     (list pkg-config))
+    (inputs
+     (list pcre mesa freetype fribidi glew sdl2 irrlicht irrlicht ogre3d libepoxy expat libxml2 freeimage python lua-5.1 gtk+-2 boost minizip tinyxml))
+   (home-page "http://cegui.org.uk/")
+   (synopsis "Graphical user interface library for C++")
+   (description "Crazy Eddie's GUI is a graphical user interface library for the
+programming language C++.")
+   (license license:expat)))
+
 (define-public mrrescue
   (package
     (name "mrrescue")
