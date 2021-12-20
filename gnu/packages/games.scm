@@ -1660,6 +1660,37 @@ and much more stand between you and the exit.  Record your moves and let your
 shadow mimic them to reach blocks you couldn't reach alone.")
     (license license:gpl3+)))
 
+(define ois-for-opendungeons
+  (package
+    (name "ois")
+    (version "1.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/wgois/" name
+                                  "/archive/v" version ".tar.gz"))
+              (sha256
+               (base32
+                "0ij42lnbpmgp1j2zpvahcjy6w7fams3a8x68nj94qnb2g9vcbkph")))) ;; 1.3
+;;                "0xawwcdfr2p4mwwxb0i259bi9b2ywq81sjw97sqgpgy01jd2iada")))) ;; 1.4
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f))                    ; no test suite
+    ;; Fails with:
+    ;;    ./linux/LinuxJoyStickEvents.cpp:100:77: error: ‘read’ was not declared in this scope
+    ;;   int ret = read(mJoyStick, &js, sizeof(struct input_event) * JOY_BUFFERSIZE);
+    (native-inputs
+     (list autoconf automake libtool pkg-config))
+    (inputs
+     (list libx11 libxaw))
+    (synopsis "Object Oriented Input System")
+    (description
+     "Cross Platform Object Oriented Input Lib System is a cross platform,
+simple solution for using all kinds of Input Devices (Keyboards, Mice,
+Joysticks, etc) and feedback devices (e.g. force feedback).  Meant to be very
+robust and compatible with many systems and operating systems.")
+    (home-page "https://github.com/wgois/OIS")
+    (license license:zlib)))
+
 (define-public opensurge
   (package
     (name "opensurge")
