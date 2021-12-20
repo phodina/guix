@@ -175,6 +175,25 @@
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg))
 
+(define-public libdnet
+(package
+  (name "libdnet")
+  (version "1.14")
+  (source (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/ofalk/libdnet")
+		(commit (string-append "libdnet-" version))))
+            (sha256
+             (base32
+              "0msypqw3man65l0viifsi3w4w4yb4hrfb77mkcmwzf7lhvvz694w"))))
+  (build-system gnu-build-system)
+  (synopsis "Interface to low-level networking routines")
+  (description "libdnet provides a simplified, portable interface to several low-level networking routines, including network address manipulation, kernel arp(4) cache and route(4) table lookup and manipulation, network firewalling, network interface lookup and manipulation, IP tunnelling, and raw IP packet and Ethernet frame transmission.")
+  (home-page "https://github.com/ofalk/libdnet")
+  (license license:bsd-3)))
+
 ;; This package uses su instead of sudo (because of SpaceFM).
 (define-public ktsuss
   (package
