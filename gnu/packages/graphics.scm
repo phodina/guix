@@ -1116,6 +1116,20 @@ graphics.")
     (home-page "https://www.ogre3d.org/")
     (license license:expat)))
 
+(define ogre3d
+  (package
+    (inherit ogre)
+    (name "ogre")
+    (version "1.9.1")
+    (source (origin
+             (method url-fetch)
+             (uri (string-append "https://github.com/ogrecave/" name
+                         "/archive/v" version ".tar.gz"))
+             (sha256
+              (base32
+               "1b5993p59dl7pd441hd3vz87lm0fmz1ia5dqy51wlikjfnnizvzi"))))
+    ))
+
 (define-public openexr
   (package
     (name "openexr")
