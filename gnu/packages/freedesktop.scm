@@ -28,6 +28,7 @@
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021 John Kehayias <john.kehayias@protonmail.com>
 ;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -870,6 +871,35 @@ mediate access to shared devices, such as graphics and input, for applications
 that require it.  It also provides a universal seat management library that
 allows applications to use whatever seat management is available.")
     (license license:expat)))
+
+(define-public oguri
+  (let ((commit "6937fee10a9b0ef3ad8f94f606c0e0d9e7dec564")
+        (revision "1"))
+    (package
+      (name "oguri")
+      (version (git-version "0.1-pre" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri
+          (git-reference
+           (url "https://github.com/vilhalmer/oguri")
+           (commit commit)))
+         (sha256
+          (base32
+           "110dr5hncnisskl1cpw20kb7dsz29vs03l65v7fk6g6qiyj6ywxi"))))
+      (build-system meson-build-system)
+      (arguments
+       '(#:tests? #f))                  ; no tests
+      (native-inputs
+       (list cmake pkg-config wayland-protocols))
+      (inputs
+       (list cairo gdk-pixbuf wayland))
+      (synopsis "Animated wallpaper daemon for Wayland compositors")
+      (description "This package provides animated wallpapers daemon for Wayland
+compositors capable of displaying gif and static images.")
+      (home-page "https://github.com/vilhalmer/oguri")
+      (license license:expat))))
 
 (define-public packagekit
   (package
