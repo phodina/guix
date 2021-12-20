@@ -8258,6 +8258,34 @@ defined by the W3C standard Gamepad specification or as implemented by the SDL
 GameController.")
     (license license:lgpl2.1+)))
 
+(define-public libsquish
+(let ((commit "f5e44a360fd8b456b1291a2eaba61871c64d6288")
+     (revision "1"))
+(package
+  (name "libsquish")
+  (version "0.1-pre")
+  (source (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/tito/libsquish")
+		(commit version)))
+            (sha256
+             (base32
+              "04ji9ar0909a5sgwwflxzwg0ckh7xrxghmj147ix93y1cw48krj0"))))
+  (build-system cmake-build-system)
+  (arguments
+    '(#:tests? #f))
+  (native-inputs
+    (list pkg-config))
+;  (inputs
+;    `(("bullet" ,bullet)))
+  (synopsis "Libsquish that includes python bindings")
+  (description "")
+  (home-page "https://github.com/tito/libsquish")
+  (license #f))))
+
+
 (define-public quadrapassel
   (package
     (name "quadrapassel")
