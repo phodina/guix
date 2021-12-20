@@ -8203,6 +8203,34 @@ defined by the W3C standard Gamepad specification or as implemented by the SDL
 GameController.")
     (license license:lgpl2.1+)))
 
+(define-public librw
+  (let ((commit "b2ceadc9f2e478c5a470f625a0ee5b08ad12efb6")
+        (revision "1"))
+    (package
+      (name "librw")
+      (version (git-version "0.1-pre" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri
+          (git-reference
+           (url "https://github.com/aap/librw")
+           (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "1jim3z8pn2s9f7gdha0mz9s7fsaarwi751sk2b42zzd9vw83kczx"))))
+      (build-system cmake-build-system)
+      (arguments
+       '(#:tests? #f                    ; no tests
+         #:configure-flags (list "-DLIBRW_INSTALL=ON")))
+                                        ;#:phases (modify-phases %standard-phases
+                                        ;       (delete 'install))))
+      (synopsis "Reimplementation of RenderWare graphics")
+      (description "")
+      (home-page "https://github.com/aap/librw")
+      (license license:expat))))
+
 (define-public quadrapassel
   (package
     (name "quadrapassel")
