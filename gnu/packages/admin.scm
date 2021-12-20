@@ -175,6 +175,31 @@
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg))
 
+(define-public suricata
+(package
+  (name "suricata")
+  (version "6.0.2")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/OISF/suricata")
+		(commit (string-append "suricata-" version))))
+            (sha256
+             (base32
+              "1snwwfywjlrnxfkn2vbk08hbx847kmqnw1v9pnn98i3ywxdwwxah"))))
+  (build-system gnu-build-system)
+;  (arguments
+;    '(#:tests? #f
+;      #:make-flags (list "PREFIX=$out" "CC=gcc")
+  (native-inputs (list autoconf automake libtool pkg-config which))
+  (inputs (list libhtp jansson libpcap pcre libyaml libyaml))
+  (synopsis "Suricata git repository maintained by the OISF")
+  (description "Suricata is a network IDS, IPS and NSM engine.")
+  (home-page "https://suricata-ids.org")
+  (license license:gpl2)))
+
 (define-public libhtp
 (package
   (name "libhtp")
