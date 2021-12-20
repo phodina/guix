@@ -242,6 +242,29 @@ random number generator.")
 while being as light-weight and simple as possible.")
       (license license:expat))))
 
+(define-public node-sandify
+(package
+  (name "node-sandify")
+  (version "0.2.6")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+             (git-reference
+               (url "https://github.com/jeffeb3/sandify")
+               (commit (string-append "v" version))))
+            (sha256
+             (base32
+              "1lgfyc3hvf2xpbzsc0znb6ivz5k1y36pylypv35fgp31jvfn1fqm"))))
+  (build-system node-build-system)
+    (inputs
+     (list node-markdox node-victor))
+  (synopsis "Create patterns drawing in sand with ball")
+  (description "Sandify is providing a solution to turn your enchanting
+patterns into motion commands for your sand table.")
+  (home-page "https://github.com/jeffeb3/sandify")
+  (license license:public-domain)))
+
 (define-public node-stack-trace
   ;; There have been improvements since the last release.
   (let ((commit "4fd379ee78965ce7ce8820b436f1b1b590d5dbcf")
