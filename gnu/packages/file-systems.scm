@@ -199,6 +199,35 @@ another location, similar to @command{mount --bind}.  It can be used for:
 @end itemize")
     (license license:gpl2+)))
 
+(define-public btrfs-list
+  (let ((commit "8fbe5b851372603e7c48f7b90d9a76e24131a3c8")
+        (revision "1"))
+    (package
+      (name "btrfs-list")
+      (version (git-version "0.1-pre" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/speed47/btrfs-list")
+               (commit commit)))
+         (sha256
+          (base32
+           "1j6bs7d16ijqw2aqqx3yl9lxnwqlz6ha6rzk7fw80aa8w6bdy5k6"))))
+      (build-system copy-build-system)
+      (inputs
+       (list btrfs-progs perl))
+      (synopsis "Tree-style view of your btrfs subvolumes/snapshots")
+      (description "@code{btrfs-list} provides a wrapper to make sense out of the btrfs sub list and btrfs qgroup show commands.
+@enumerate
+@item a nice overview of your subvolumes/snapshots
+@item you're missing the zfs list command
+@item list snapshot to destroy to regain some space
+@item a more accurate estimation of how much space is remaining
+@end enumerate")
+      (home-page "https://github.com/speed47/btrfs-list")
+      (license license:gpl2))))
+
 (define-public cachefilesd-inotify
   (package
     (name "cachefilesd-inotify")
