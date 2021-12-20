@@ -175,6 +175,36 @@
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg))
 
+(define-public libhtp
+(package
+  (name "libhtp")
+  (version "0.5.39")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/OISF/libhtp")
+		(commit version)))
+            (sha256
+             (base32
+              "1xrchlbnczrn37qqy3mrkkrvyjvdirwbrnqha79npfl11nqhb47b"))))
+  (build-system gnu-build-system)
+  (native-inputs (list pkg-config which libtool autoconf automake))
+  (inputs (list zlib))
+  (arguments
+    `(#:phases
+        (modify-phases %standard-phases
+		(add-after 'unpack 'patch-shebangs
+			(lambda* (#:key inputs #:allow-other-keys)
+				(substitute* "get-version.sh"
+				   (("/bin/sh") (string-append (assoc-ref inputs "bash") "/bin/sh"))) #t)))))
+  (synopsis "LibHTP is a security-aware parser for the HTTP protocol and the related bits
+and pieces")
+  (description "LibHTP is a security-aware parser for the HTTP protocol and the related bits and pieces")
+  (home-page "https://github.com/OISF/libhtp")
+  (license license:bsd-3)))
+
 (define-public snort
 (package
   (name "snort")
