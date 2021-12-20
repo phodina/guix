@@ -636,6 +636,35 @@ and templates.")
 attacks you can use on opponents.")
     (license license:public-domain)))
 
+(define-public tinysoundfont
+(let ((commit "e763bd93badbd390945a3d0ee25d75e54e4fb8eb")
+     (revision "1"))
+(package
+  (name "tinysoundfont")
+  (version "0.1-pre")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/schellingb/TinySoundFont")
+		(commit version)))
+            (sha256
+             (base32
+              "0wkia40cirzj3x4sppnmgzqk3hvd7nxfgzx8vh593f0j4qrb81hh"))))
+  (build-system gnu-build-system)
+  (arguments
+    '(#:tests? #f))
+  (native-inputs
+    (list pkg-config))
+;  (inputs
+;    `(("bullet" ,bullet)))
+  (synopsis "SoundFont2 synthesizer library")
+  (description "This package provides synthesizer using SoundFont2 sound
+bank files.  The library is a single C header file.")
+  (home-page "https://github.com/schellingb/TinySoundFont")
+  (license #f))))
+
 (define-public vitetris
   (package
     (name "vitetris")
