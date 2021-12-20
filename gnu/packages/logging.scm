@@ -8,6 +8,7 @@
 ;;; Copyright © 2019 Meiyo Peng <meiyo@riseup.net>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2021 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37,10 +38,12 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages c)
+  #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages cyrus-sasl)
   #:use-module (gnu packages databases)
+  #:use-module (gnu packages documentation)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages geo)
   #:use-module (gnu packages gnupg)
@@ -114,6 +117,29 @@ helper macros.  You can log a message by simply streaming things to log at a
 particular severity level.  It allows logging to be controlled from the
 command line.")
     (license license:bsd-3)))
+
+(define-public hawktracer
+  (package
+    (name "hawktracer")
+    (version "0.10.0")
+    (home-page "https://github.com/amzn/hawktracer")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference (url home-page)
+                                  (commit (string-append "v" version))))
+              (sha256
+               (base32
+                "0l892hl1j46vvp5miari9vjacxyaanyw9p80yy6p85842cx1zl1n"))
+              (file-name (git-file-name name version))))
+    (build-system cmake-build-system)
+    (arguments
+     '(#:configure-flags (list "-DENABLE_TESTS=ON")))
+    (native-inputs (list doxygen googletest python))
+    (synopsis "Configurable profiling tool")
+    (description "This package provides a highly portable, low-overhead,
+configurable profiling tool for getting performance metrics from low-end
+devices.")
+    (license license:expat)))
 
 (define-public tailon
   (package
