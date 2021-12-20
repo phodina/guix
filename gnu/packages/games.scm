@@ -1691,6 +1691,43 @@ robust and compatible with many systems and operating systems.")
     (home-page "https://github.com/wgois/OIS")
     (license license:zlib)))
 
+(define-public opendungeons
+(let   ((commit "c180ed1864eab5fbe847d1dd5c5c936c4e45444e")
+        (revision "1"))
+  (package
+   (name "opendungeons")
+   (version (git-version "0.1-pre" revision commit))
+   (source
+    (origin
+     (method git-fetch)
+     (uri (git-reference
+           (url "https://github.com/OpenDungeons/OpenDungeons")
+           (commit commit)))
+     (file-name (string-append name version))
+     (sha256
+      (base32
+       "0vpd6frnq6pmzhha414p5f8mlljs0khdkrg1shsjsc4ksbay87c6"))))
+   (build-system cmake-build-system)
+   (arguments
+     `(#:tests? #f
+       #:configure-flags (list (string-append "-DDESTDIR=" (assoc-ref %outputs "out")))))
+   (native-inputs
+         (list pkg-config))
+   (inputs
+                                        ; Opendungeons has not been
+                                        ; updated since 2016. Thus it
+                                        ; needs OGRE 1.9.1
+    (list ogre boost cegui ois sfml))
+   (home-page "http://opendungeons.github.io/")
+   (synopsis "Real time strategy game about dungeon building")
+   (description "OpenDungeons is an open source, real time strategy game sharing
+game elements with the Dungeon Keeper series and Evil Genius.  Players
+build an underground dungeon which is inhabited by creatures.  Players
+fight each other for control of the underground by indirectly commanding
+their creatures, directly casting spells in combat, and luring enemies
+into sinister traps.")
+   (license license:gpl3+)))
+
 (define-public opensurge
   (package
     (name "opensurge")
