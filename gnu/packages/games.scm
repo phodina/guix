@@ -178,6 +178,7 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pretty-print)
   #:use-module (gnu packages protobuf)
+  #:use-module (gnu packages pth)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-web)
@@ -2189,6 +2190,43 @@ Every puzzle has a complete solution, although there may be more than one.")
    (description
     "PrBoom+ is a Doom source port developed from the original PrBoom project.")
    (license license:gpl2+)))
+
+(define-public re3
+(let ((commit "3233ffe1c4b99e8efb4c41c6794b4fce880cf503")
+      (revision "1"))
+  (package
+    (name "re3")
+    (version (git-version "0.1-pre" revision commit))
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/halpz/re3")
+         (commit commit)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "0pilkjn9yawd7wqh9735g2nvxdf6s0r0xirh151xfizx6iw3i4sw"))))
+                                        ;(patches (search-patches "re3-Find-Threads-pkg.patch"))))
+    (build-system cmake-build-system)
+;    (arguments
+;     `(#:configure-flags (list "-DRE3_VENDORED_LIBRW=OFF")
+;       #:phases (modify-phases %standard-phases
+;                  (add-after 'unpack 'fix-librw
+;                    (lambda* (#:key inputs #:allow-other-keys)
+;                      (substitute* "CMakeLists.txt"
+;                                        ;(("find_package\\(librw REQUIRED\\)")
+;                        (("find_package\\(librw REQUIRED\\)")
+;                                        ;(string-append "find_package(librw" (assoc-ref inputs "librw") "/lib/cmake REQUIRED)"))) #t)))))
+;                         (string-append "add_library(librw " (assoc-ref inputs "librw") "/lib)"))) #t)))))
+;                                        ;(string-append "vendor/librw " (assoc-ref inputs "librw")))) #t)))))
+    (native-inputs (list pkg-config))
+    (inputs (list openal mpg123 librw pth))
+    (synopsis "Reverse engineered GTA III & GTA VC")
+    (description "")
+    (home-page "https://github.com/halpz/re3")
+    (license #f))))
 
 (define-public retux
   (let ((release "1.5")
