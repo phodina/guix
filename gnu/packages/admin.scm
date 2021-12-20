@@ -175,6 +175,44 @@
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg))
 
+(define-public snort
+(package
+  (name "snort")
+  (version "3.1.6.0")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/snort3/snort3")
+		(commit version)))
+	    (modules '((guix build utils)))
+            (snippet '(begin
+		    (substitute* "cmake/FindFlexLexer.cmake"
+                       (("FLEX 2.6.0") "FLEX 2.6.4"))
+		    #t))
+            (sha256
+             (base32
+              "1rswbih2nlbpqwa7hmv7pc6f2jzyyys86bv8lmi0cjhyrz3961bb"))))
+  (build-system cmake-build-system)
+  (native-inputs (list pkg-config))
+  (inputs (list snort-libdaq libdnet flex hwloc))
+  (arguments
+    `(#:make-flags
+       (list (string-append "CPATH="
+                            (assoc-ref %build-inputs "snort-libdaq")
+                       	    "")
+	     (string-append "CPATH="
+			    (assoc-ref %build-inputs "hwloc")
+			    "")
+	     (string-append "CPATH="
+			    (assoc-ref %build-inputs "libdnet")
+			    ""))))
+  (synopsis "Snort++ Intrusion Prevention System")
+  (description "Snort 3 is the next generation Snort IPS (Intrusion Prevention System). This file will show you what Snort++ has to offer and guide you through the steps from download to demo. If you are unfamiliar with Snort you should take a look at the Snort documentation first")
+  (home-page "https://github.com/snort3/snort3")
+  (license #f)))
+
 (define-public snort-libdaq
 (package
   (name "snort-libdaq")
