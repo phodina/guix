@@ -12601,3 +12601,32 @@ disassembly of the DOS version, extended with new features.")
 Magic II (aka HOMM2) game engine.  It requires assets and game resources to
 play; it will look for them at @file{~/.local/share/fheroes2} folder.")
     (license license:gpl2)))
+
+(define-public zenlib
+(let ((commit "a38ad95781565607dac8ccdd06412b60c9612521")
+     (revision "1"))
+(package
+  (name "zenlib")
+  (version "0.1-pre")
+  (source (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/Try/ZenLib")
+		(commit commit)))
+       (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0k0dlmkgn48abi54m9zm9l41jr6qf7zs8syj5k1sx8bpl6j8582j"))))
+  (build-system cmake-build-system)
+  (arguments
+    '(#:tests? #f)) ; no tests
+  (native-inputs
+    (list pkg-config))
+  (inputs
+    (list libsquish))
+  (synopsis "Loader of proprietary formats for Gothic and Gothic II games")
+  (description "This package provides loader of proprietary formats used by the
+engine of the games Gothic and Gothic II.")
+  (home-page "https://github.com/Try/ZenLib")
+  (license #f))))
