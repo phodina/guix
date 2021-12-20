@@ -558,6 +558,43 @@ Playing bastet can be a painful experience, especially if you usually make
 canyons and wait for the long I-shaped block to clear four rows at a time.")
     (license license:gpl3+)))
 
+(define-public tempest
+(let ((commit "71c03d2cb35875d6d479113f86e47f79e15ba054")
+     (revision "1"))
+(package
+  (name "tempest")
+  (version "0.1-pre")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/Try/Tempest")
+		(commit commit)))
+            (sha256
+             (base32
+              "1rl4liwbvb5srg8xa0j6r0iy12ri5ymgjdwlcdq0n6zjcwkm739g"))))
+  (build-system cmake-build-system)
+  (arguments
+    `(#:tests? #f ; no tests
+      #:phases (modify-phases %standard-phases
+        (add-before 'configure 'chdir
+        (lambda _
+        (chdir "Engine")
+         #t)))))
+  (native-inputs
+    (list pkg-config vulkan-headers))
+  (inputs
+  (list glslang alsa-lib vulkan-loader libx11))
+;    `(("bullet" ,bullet)))
+  (synopsis "Crossplatform 3d engine")
+  (description "Tempest is graphics engine written in modern C++14.
+Main idea behind this engine is to provide a low-level GPU-programming
+concepts, like Ubo, Vbo, Ssbo, in convenient C++ packaging, with RAII, types
+and templates.")
+  (home-page "https://github.com/Try/Tempest")
+  (license #f))))
+
 (define-public tetrinet
   (package
     (name "tetrinet")
