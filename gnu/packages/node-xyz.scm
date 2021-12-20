@@ -173,6 +173,27 @@ codes.")
 user-land JavaScript.")
     (license license:expat))) ; in README
 
+(define-public node-markdox
+(package
+  (name "node-markdox")
+  (version "0.0.9")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+             (git-reference
+               (url "https://github.com/cbou/markdox")
+               (commit version)))
+            (sha256
+             (base32
+              "163l4p9i9y30xi55m58lcl0w8fda86sxw6hxaspkbz52pc73nsyv"))))
+  (build-system node-build-system)
+  (synopsis "Documentation generator based on Dox and Markdown")
+  (inputs (list node-coffee-script))
+  (description "")
+  (home-page "https://github.com/cbou/markdox")
+  (license license:expat)))
+
 (define-public node-mersenne
   (package
     (name "node-mersenne")
