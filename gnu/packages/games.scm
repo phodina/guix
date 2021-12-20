@@ -1696,6 +1696,34 @@ and much more stand between you and the exit.  Record your moves and let your
 shadow mimic them to reach blocks you couldn't reach alone.")
     (license license:gpl3+)))
 
+(define-public opengothic
+(package
+  (name "opengothic")
+  (version "0.44")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/Try/OpenGothic")
+		(commit (string-append "v" version))))
+            (sha256
+             (base32
+              "008j2fl21692kyvwx55slnsq3gfy77mkbkh9vxi9076x0z1fzrzq"))))
+  (build-system cmake-build-system)
+  (arguments
+    '(#:tests? #f)) ; no tests
+  (native-inputs
+    (list pkg-config))
+  (inputs
+    (list bullet zenlib tempest))
+  (synopsis "Reimplementation of Gothic 2 Notr engine")
+  (description "This package provides open source remake of Gothic 2: Night of
+  the raven.  This project aims to to make a feature complete Gothic
+ client compatible with the game and mods.")
+  (home-page "https://github.com/Try/OpenGothic")
+  (license #f)))
+
 (define-public opensurge
   (package
     (name "opensurge")
