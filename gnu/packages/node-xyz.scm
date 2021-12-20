@@ -56,6 +56,26 @@
 architecture supporting plugins.")
     (license license:expat)))
 
+(define-public node-coffee-script
+(package
+  (name "node-coffee-script")
+  (version "2.6.1")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+             (git-reference
+               (url "https://github.com/jashkenas/coffeescript")
+               (commit version)))
+            (sha256
+             (base32
+              "563l4p9i9y30xi55m58lcl0w8fda86sxw6hxaspkbz52pc73nsyv"))))
+  (build-system node-build-system)
+  (synopsis "CoffeeScript is a little language that compiles into JavaScript")
+  (description "")
+  (home-page "https://coffeescript.org/")
+  (license license:expat)))
+
 (define-public node-color-name
   (package
     (name "node-color-name")
