@@ -8123,6 +8123,56 @@ modifying them.")
 @end itemize")
     (license license:expat)))
 
+(define-public grafana
+(package
+  (name "grafana")
+  (version "7.5.9")
+  (source (origin
+            (method git-fetch)
+            (uri 
+	      (git-reference
+		(url "https://github.com/grafana/grafana")
+		(commit (string-append "v" version))))
+	    (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "1pvydm5sdaiwpbazrlj9599286243pyvpizhwzcpn5kzhlmkc6cj"))))
+  (build-system gnu-build-system)
+  (inputs `(expect node python))
+  ;; Use docker as a build reference for the arguments
+  (arguments 
+   `(#:modules
+      ((guix build gnu-build-system)
+       ((guix build go-build-system) #:prefix go:)
+      (guix build union)
+      (guix build utils))
+    #:imported-modules
+    (,@%gnu-build-system-modules
+      (guix build union)
+      (guix build go-build-system))
+    #:phases
+      (modify-phases %standard-phases
+        (add-before 'build 'setup-go-environment
+		(assoc-ref go:%standard-phases 'setup-go-environment))
+	(replace 'configure
+	      (lambda _
+		 (setenv "AUTO_GOPATH" "1")
+		 (setenv "LDFLAGS" "-s -w")
+		 (setenv "GOCACHE" "/tmp")
+		 #t))
+	(replace 'check
+		 (lambda _
+		   (setenv "GOPATH" (string-append (getcwd) "./gopath"))
+		   (setenv "PWD" (string-append (getcwd) "./gopath/src/github.com/grafana/grafana"))
+		   (setenv "PWD" #f)
+		   #t))
+	(add-after 'install 'remove-go-references
+		   (assoc-ref go:%standard-phases 'remove-go-references)))))
+  (synopsis "The open-source platform for monitoring and observability.")
+  (description "Grafana allows you to query, visualize, alert on and understand your metrics no matter where they are stored. Create, explore, and share dashboards with your team and foster a data driven culture")
+  (home-page "https://github.com/grafana/grafana")
+  (license license:agpl3)))
+
 (define-public go-github-com-tekwizely-go-parsing
   (let ((commit "1548cfb17df54d365ce9febed0677c06a40a8ceb")
         (revision "0"))
