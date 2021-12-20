@@ -1757,6 +1757,60 @@ display a clock or apply image manipulation techniques to the background image."
 Wlroots based compositors.")
     (license license:expat))) ; MIT license
 
+(define-public wayfire
+  (package
+    (name "wayfire")
+    (version "0.7.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/WayfireWM/wayfire")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0gcx4sa8nsad3ifalh5iqh5zc6j2083s5m5722izmjndk35bbrh7"))))
+    (build-system meson-build-system)
+;    (arguments
+;     `(#:phases
+;       (modify-phases %standard-phases
+;         (add-before 'configure 'hardcode-paths
+;           (lambda* (#:key inputs #:allow-other-keys)
+;             ;; Hardcode path to swaybg.
+;             (substitute* "sway/config.c"
+;               (("strdup..swaybg..")
+;                (string-append "strdup(\"" (assoc-ref inputs "swaybg")
+;                               "/bin/swaybg\")")))
+;             ;; Hardcode path to scdoc.
+;             (substitute* "meson.build"
+;               (("scdoc.get_pkgconfig_variable..scdoc..")
+;                (string-append "'" (assoc-ref inputs "scdoc")
+;                               "/bin/scdoc'")))
+;             #t)))))
+    (inputs (list cairo
+                  elogind
+				  freetype
+				  glm
+                  ;gdk-pixbuf
+                  ;json-c
+                  libevdev
+                  libinput
+				  libjpeg-turbo
+				  libpng
+                  libxkbcommon
+				  libxml2
+				  pixman
+                  pango
+                  swaybg
+                  wayland
+                  wlroots))
+    (native-inputs
+     (list linux-pam mesa pkg-config wayland-protocols))
+    (home-page "https://wayfire.org/")
+    (synopsis "Modular and extensible wayland compositor")
+    (description "")
+    (license license:expat)))
+
 (define-public wlr-randr
   (package
     (name "wlr-randr")
