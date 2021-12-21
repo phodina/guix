@@ -6582,6 +6582,32 @@ test results.")
     (home-page "https://github.com/gotestyourself/gotestsum")
     (license license:asl2.0)))
 
+(define-public go-github-com-golang-crypto
+  (package
+    (name "go-github-com-golang-crypto")
+    (version "0.0.0-20211215153901-e495a2d5b3d3")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/golang/crypto")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "06xw3x5sf6aq6gxdh24jlhfzi26zpym5jc4g43s63v8gh1fghg6m"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/golang/crypto"))
+    (propagated-inputs
+      `(("go-golang-org-x-text" ,go-golang-org-x-text)
+        ("go-golang-org-x-term" ,go-golang-org-x-term)
+        ("go-golang-org-x-sys" ,go-golang-org-x-sys)
+        ("go-golang-org-x-net" ,go-golang-org-x-net)))
+    (home-page "https://github.com/golang/crypto")
+    (synopsis "Go Cryptography")
+    (description
+      "This repository holds supplementary Go cryptography libraries.")
+    (license license:bsd-3)))
+
 (define-public go-github-com-golang-protobuf-proto
   (package
     (name "go-github-com-golang-protobuf-proto")
