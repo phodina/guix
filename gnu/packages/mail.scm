@@ -91,9 +91,11 @@
   #:use-module (gnu packages file)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages gcc)
   #:use-module (gnu packages gdb)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages ghostscript)
+  #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages golang)
   #:use-module (gnu packages gnome)
@@ -137,6 +139,7 @@
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages qt)
   #:use-module (gnu packages ragel)
   #:use-module (gnu packages regex)
   #:use-module (gnu packages rdf)
@@ -2475,6 +2478,57 @@ maintained.")
                               ;; nonfree Artistic License 1.0
                               ;; as alternative to the GPL2+.
                               ;; This option is not listed here.
+
+(define-public protonmail-bridge
+(package
+  (name "protonmail-bridge")
+  (version "1.8.7")
+  (source
+  (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/ProtonMail/proton-bridge")
+		(commit (string-append "v" version))))
+            (sha256
+             (base32
+              "1887qa59i4vj3q71sd48hdcrinq0gm235qync6qqapsy0ywcyabg"))))
+  (build-system gnu-build-system)
+  (arguments
+   `(#:modules
+      ((guix build gnu-build-system)
+       ((guix build go-build-system) #:prefix go:)
+      (guix build union)
+      (guix build utils))
+    #:imported-modules
+    (,@%gnu-build-system-modules
+      (guix build union)
+      (guix build go-build-system))
+    #:phases
+      (modify-phases %standard-phases
+        (add-before 'build 'setup-go-environment
+               (assoc-ref go:%standard-phases 'setup-go-environment))
+       (replace 'configure
+             (lambda _
+                (setenv "AUTO_GOPATH" "1")
+                (setenv "LDFLAGS" "-s -w")
+                (setenv "GOCACHE" "/tmp")
+                #t))
+       (replace 'check
+                (lambda _
+                  (setenv "GOPATH" (string-append (getcwd) "./gopath"))
+                  (setenv "PWD" (string-append (getcwd) "./gopath/src/github.com/Protonmail/proton-bridge"))
+                  (setenv "PWD" #f)
+                  #t))
+       (add-after 'install 'remove-go-references
+                  (assoc-ref go:%standard-phases 'remove-go-references)))))
+      (inputs (list gcc go glu libglvnd glib libsecret gtk+ qtbase-5 qtdeclarative qtsvg))
+  (synopsis "ProtonMail Bridge application")
+  (description "An application that runs on your computer in the background and
+seamlessly encrypts and decrypts your mail as it enters and leaves your
+computer.")
+  (home-page "https://github.com/ProtonMail/proton-bridge")
+  (license license:gpl3+)))
 
 (define-public khard
   (package
