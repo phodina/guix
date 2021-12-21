@@ -1,0 +1,151 @@
+From 7f3d90310decd0b5d36c8102cb7c30090b8a024d Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Tue, 31 Aug 2021 10:48:01 +0200
+Subject: [PATCH] Remove wget
+
+
+diff --git a/Makefile b/Makefile
+index 081f5cb..866dbf0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -93,7 +93,7 @@ boot-%.img: initramfs-%.gz kernel-%.gz-dtb
+ 	@echo "XZ    $@"
+ 	@xz -c $< > $@
+ 
+-initramfs/bin/busybox: src/busybox src/busybox_config
++initramfs/bin/busybox:
+ 	@echo "MAKE  $@"
+ 	@mkdir -p build/busybox
+ 	@cp src/busybox_config build/busybox/.config
+@@ -118,7 +118,7 @@ initramfs-%.gz: initramfs-%.cpio
+ 	@echo "GZ    $@"
+ 	@gzip < $< > $@
+ 	
+-kernel-sunxi.gz: src/linux_config_sunxi src/linux-sunxi
++kernel-sunxi.gz:
+ 	@echo "MAKE  kernel-sunxi.gz"
+ 	@mkdir -p build/linux-sunxi
+ 	@mkdir -p dtbs/sunxi
+@@ -132,7 +132,7 @@ dtbs/sunxi/sun50i-a64-pinephone-1.2.dtb: kernel-sunxi.gz
+ 
+ dtbs/sunxi/sun50i-a64-pinetab.dtb: kernel-sunxi.gz
+ 
+-kernel-rockchip.gz: src/linux_config_rockchip src/linux-rockchip
++kernel-rockchip.gz:
+ 	@echo "MAKE  $@"
+ 	@mkdir -p build/linux-rockchip
+ 	@mkdir -p dtbs/rockchip
+@@ -142,7 +142,7 @@ kernel-rockchip.gz: src/linux_config_rockchip src/linux-rockchip
+ 	@cp build/linux-rockchip/arch/arm64/boot/Image.gz $@
+ 	@cp build/linux-rockchip/arch/arm64/boot/dts/rockchip/*.dtb dtbs/rockchip/
+ 
+-kernel-librem5.gz: src/linux_config_librem5 src/linux-librem5
++kernel-librem5.gz:
+ 	@echo "MAKE  $@"
+ 	@mkdir -p build/linux-librem5
+ 	@mkdir -p dtbs/librem5
+@@ -154,7 +154,7 @@ kernel-librem5.gz: src/linux_config_librem5 src/linux-librem5
+ 
+ dtbs/librem5/imx8mq-librem5-r2.dtb: kernel-librem5.gz
+ 
+-kernel-sdm845.gz: src/linux-sdm845
++kernel-sdm845.gz:
+ 	@echo "MAKE  $@"
+ 	@mkdir -p build/linux-sdm845
+ 	@mkdir -p dtbs/sdm845
+@@ -176,87 +176,38 @@ dtbs/sdm845/sdm845-oneplus-fajita.dtb: kernel-sdm845.gz
+ 	@echo "MKIMG $@"
+ 	@mkimage -A arm -O linux -T script -C none -n "U-Boot boot script" -d $< $@
+ 	
+-build/atf/sun50i_a64/bl31.bin: src/arm-trusted-firmware
++build/atf/sun50i_a64/bl31.bin:
+ 	@echo "MAKE  $@"
+ 	@mkdir -p build/atf/sun50i_a64
+ 	@cd src/arm-trusted-firmware; make $(CROSS_FLAGS_BOOT) PLAT=sun50i_a64 bl31
+ 	@cp src/arm-trusted-firmware/build/sun50i_a64/release/bl31.bin "$@"
+ 
+-u-boot-sunxi-with-spl.bin: build/atf/sun50i_a64/bl31.bin src/u-boot
++u-boot-sunxi-with-spl.bin: build/atf/sun50i_a64/bl31.bin
+ 	@echo "MAKE  $@"
+ 	@mkdir -p build/u-boot/sun50i_a64
+ 	@BL31=../../../build/atf/sun50i_a64/bl31.bin $(MAKE) -C src/u-boot O=../../build/u-boot/sun50i_a64 $(CROSS_FLAGS_BOOT) pinephone_defconfig
+ 	@BL31=../../../build/atf/sun50i_a64/bl31.bin $(MAKE) -C src/u-boot O=../../build/u-boot/sun50i_a64 $(CROSS_FLAGS_BOOT) ARCH=arm all
+ 	@cp build/u-boot/sun50i_a64/u-boot-sunxi-with-spl.bin "$@"
+ 
+-build/atf/rk3399/bl31.elf: src/arm-trusted-firmware
++build/atf/rk3399/bl31.elf:
+ 	@echo "MAKE  $@"
+ 	@mkdir -p build/atf/rk3399
+ 	@cd src/arm-trusted-firmware; make $(CROSS_FLAGS_BOOT) PLAT=rk3399 bl31
+ 	@cp src/arm-trusted-firmware/build/sun50i_a64/release/bl31/bl31.elf "$@"
+ 
+-u-boot-rk3399.bin: build/atf/rk3399/bl31.elf src/u-boot
++u-boot-rk3399.bin: build/atf/rk3399/bl31.elf
+ 	@echo "MAKE  $@"
+ 	@mkdir -p build/u-boot/rk3399
+ 	@BL31=../../../build/atf/rk3399/bl31.elf $(MAKE) -C src/u-boot O=../../build/u-boot/rk3399 $(CROSS_FLAGS_BOOT) rockpro64-rk3399_defconfig
+ 	@BL31=../../../build/atf/rk3399/bl31.elf $(MAKE) -C src/u-boot O=../../build/u-boot/rk3399 $(CROSS_FLAGS_BOOT) all
+ 	@cp build/u-boot/rk3399/u-boot "$@"
+ 
+-u-boot-librem5.bin: src/u-boot-librem5
++u-boot-librem5.bin:
+ 	@echo "MAKE  $@"
+ 	@mkdir -p build/u-boot/librem5
+ 	@cd build/u-boot/librem5 && ../../../src/u-boot-librem5/build_uboot.sh -b librem5
+ 	@cp build/u-boot/librem5/output/uboot-librem5/u-boot-librem5.imx $@
+ 
+-src/linux-rockchip:
+-	@echo "WGET  linux-rockchip"
+-	@mkdir src/linux-rockchip
+-	@wget https://gitlab.manjaro.org/tsys/linux-pinebook-pro/-/archive/v5.6/linux-pinebook-pro-v5.6.tar.gz
+-	@tar -xf linux-pinebook-pro-v5.6.tar.gz --strip-components 1 -C src/linux-rockchip
+-
+-src/linux-sunxi:
+-	@echo "WGET  linux-sunxi"
+-	@mkdir src/linux-sunxi
+-	@wget https://github.com/megous/linux/archive/orange-pi-5.9-20201019-1553.tar.gz
+-	@tar -xf orange-pi-5.9-20201019-1553.tar.gz --strip-components 1 -C src/linux-sunxi
+-
+-src/linux-librem5:
+-	@echo "WGET linux-librem5"
+-	@mkdir src/linux-librem5
+-	@wget -c https://source.puri.sm/Librem5/linux-next/-/archive/pureos/5.9.16+librem5.2/linux-next-pureos-5.9.16+librem5.2.tar.gz
+-	@tar -xf linux-next-pureos-5.9.16+librem5.2.tar.gz --strip-components 1 -C src/linux-librem5
+-
+-src/linux-sdm845:
+-	@echo "WGET linux-sdm845"
+-	@mkdir src/linux-sdm845
+-	@wget -c https://gitlab.com/sdm845-mainline/linux/-/archive/b7a1e57f78d690d02aff902114bf2f6ca978ecfe/linux-b7a1e57f78d690d02aff902114bf2f6ca978ecfe.tar.gz
+-	@tar -xf linux-b7a1e57f78d690d02aff902114bf2f6ca978ecfe.tar.gz --strip-components 1 -C src/linux-sdm845
+-
+-src/arm-trusted-firmware:
+-	@echo "WGET  arm-trusted-firmware"
+-	@mkdir src/arm-trusted-firmware
+-	@wget https://github.com/ARM-software/arm-trusted-firmware/archive/50d8cf26dc57bb453b1a52be646140bfea4aa591.tar.gz
+-	@tar -xf 50d8cf26dc57bb453b1a52be646140bfea4aa591.tar.gz --strip-components 1 -C src/arm-trusted-firmware
+-
+-src/u-boot:
+-	@echo "WGET  u-boot"
+-	@mkdir src/u-boot
+-	@wget https://ftp.denx.de/pub/u-boot/u-boot-2020.04.tar.bz2
+-	@tar -xf u-boot-2020.04.tar.bz2 --strip-components 1 -C src/u-boot
+-	@cd src/u-boot && patch -p1 < ../u-boot-pinephone.patch
+-
+-src/u-boot-librem5:
+-	@echo "WGET  u-boot-librem5"
+-	@mkdir src/u-boot-librem5
+-	@wget https://source.puri.sm/Librem5/u-boot-builder/-/archive/3b1c7d957f46c87c6cdd71cd8dab7c84aca26570/u-boot-builder-3b1c7d957f46c87c6cdd71cd8dab7c84aca26570.tar.gz
+-	@tar -xf u-boot-builder-3b1c7d957f46c87c6cdd71cd8dab7c84aca26570.tar.gz --strip-components 1 -C src/u-boot-librem5
+-
+-src/busybox:
+-	@echo "WGET  busybox"
+-	@mkdir src/busybox
+-	@wget https://www.busybox.net/downloads/busybox-1.32.0.tar.bz2
+-	@tar -xf busybox-1.32.0.tar.bz2 --strip-components 1 -C src/busybox
+-
+ .PHONY: clean cleanfast purism-librem5
+ 
+ purism-librem5: initramfs-purism-librem5.gz kernel-librem5.gz u-boot-librem5.bin src/purism-librem5.txt dtbs/librem5/imx8mq-librem5-r2.dtb
+-- 
+2.32.0
+

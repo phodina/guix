@@ -96,6 +96,8 @@
   #:use-module (gnu packages bash)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages boost)
+  #:use-module (gnu packages bootloaders)
+  #:use-module (gnu packages busybox)
   #:use-module (gnu packages calendar)
   #:use-module (gnu packages check)
   #:use-module (gnu packages cpio)
@@ -103,6 +105,8 @@
   #:use-module (gnu packages cryptsetup)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages databases)
+  #:use-module (gnu packages dbm)
+  #:use-module (gnu packages disk)
   #:use-module (gnu packages datastructures)
   #:use-module (gnu packages dbm)
   #:use-module (gnu packages docbook)
@@ -129,6 +133,7 @@
   #:use-module (gnu packages lua)
   #:use-module (gnu packages man)
   #:use-module (gnu packages maths)
+  #:use-module (gnu packages mtools)
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages netpbm)
@@ -2718,6 +2723,86 @@ properly seeded random numbers to services like SSH or those using TLS during
 early boot when entropy may be low, especially in virtualised environments.")
     (license (list license:bsd-3        ; or
                    license:gpl2+))))
+
+(define* (make-jumpdrive-firmware #:key target)
+(let  ((commit "9ec8c77d792bdd5296110436ebdf27e24d3ee866")
+       (revision "1"))
+  (package
+    (name (string-append "jumpdrive-" target))
+	(version (git-version "0.1-pre" revision commit))
+    (source
+      (origin
+        (method git-fetch)
+        (uri
+          (git-reference
+            (url "https://github.com/dreemurrs-embedded/Jumpdrive")
+            (commit commit)))
+        (file-name (git-file-name name version))
+	(patches (search-patches "jumpdrive-remove-downloads.patch"))
+        (sha256
+          (base32
+            "0fpj9xnsqwprvlfsdnxk9fmmsxaw0la7jna2b7pgbln8na812ghb"))))
+    (build-system gnu-build-system)
+    (arguments
+    `(#:phases (modify-phases %standard-phases
+        (delete 'configure)
+	(add-after 'unpack 'unpack-sources
+		   (lambda* (#:key inputs #:allow-other-keys)
+			    (mkdir-p "src/busybox")
+                 (invoke "tar" "xf" (assoc-ref inputs "busybox")
+				 "--strip-components" "1" "-C" "src/busybox")
+			    (mkdir-p "src/linux-rockchip")
+                 (invoke "tar" "xf" (assoc-ref inputs "linux-rockchip") "--strip-components" "1" "-C" "src/linux-rockchip")
+			    (mkdir-p "src/linux-sunxi")
+                 (invoke "tar" "xf" (assoc-ref inputs "linux-sunxi") "--strip-components" "1" "-C" "src/linux-sunxi")
+			    (mkdir-p "src/linux-librem5")
+                 (invoke "tar" "xf" (assoc-ref inputs "linux-librem5") "--strip-components" "1" "-C" "src/linux-librem5")
+			    (mkdir-p "src/linux-sdm845")
+                 (invoke "tar" "xf" (assoc-ref inputs "linux-sdm845") "--strip-components" "1" "-C" "src/linux-sdm845")))
+        (replace 'build
+		 (lambda* (#:key outputs #:allow-other-keys)
+		   (invoke "make" (string-append ,target ".img")))))))
+    (home-page "https://github.com/dreemurrs-embedded/Jumpdrive")
+    (native-inputs `(("busybox" ,(package-source busybox))
+		     ("u-boot-tools" ,u-boot-tools)
+		     ("mtools" ,mtools)
+		     ("cpio" ,cpio)
+		     ("bison" ,bison)
+		     ("flex" ,flex)
+		     ("swig" ,swig)
+		     ("bc" ,bc)
+		     ("python", python)
+		     ("python-distlib" ,python-distlib)
+		     ("parted" ,parted)
+		     ("dosfstools", dosfstools)))
+    (inputs `(("linux-rockchip" ,(origin (method url-fetch)
+              (uri "https://gitlab.manjaro.org/tsys/linux-pinebook-pro/-/archive/v5.6/linux-pinebook-pro-v5.6.tar.gz")
+              (sha256
+               (base32
+                "0xcbfrcc8zhk4q9d6gvclqfxv55m2jcbsh6nyllkha2il6lfsnlc"))))
+    ("linux-sunxi" ,(origin (method url-fetch)
+              (uri "https://github.com/megous/linux/archive/orange-pi-5.9-20201019-1553.tar.gz")
+              (sha256
+               (base32
+                "02zrvx1l03j6dlgx5sra7vq1p33qikvznizaw5nxf2ngqdlhfq9z"))))
+    ("linux-librem5" ,(origin (method url-fetch)
+              (uri "https://source.puri.sm/Librem5/linux-next/-/archive/pureos/5.9.16+librem5.2/linux-next-pureos-5.9.16+librem5.2.tar.gz")
+              (sha256
+               (base32
+                "12l6c8v2ddpajmbnkkrc6dgj84k887wnpwrrp33dpvav9pvqk2rk"))))
+    ("linux-sdm845" ,(origin (method url-fetch)
+              (uri "https://gitlab.com/sdm845-mainline/linux/-/archive/b7a1e57f78d690d02aff902114bf2f6ca978ecfe/linux-b7a1e57f78d690d02aff902114bf2f6ca978ecfe.tar.gz")
+              (sha256
+               (base32
+                "0b30kpqjlyp9pwqbm8yv29w7a0kzvcrsivg9n2ix22p60pm7k79k"))))))
+    (synopsis "Flash/Rescue SD Card image for PinePhone and PineTab")
+    (description "This package provides a flash/rescue image for PinePhone and
+PineTab.")
+    (license license:gpl2+))))
+
+(define-public jumpdrive-pinephone
+	       (make-jumpdrive-firmware #:target "pine64-pinephone"))
+
 
 (define-public lsscsi
   (package
