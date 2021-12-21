@@ -1327,6 +1327,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/julia-SOURCE_DATE_EPOCH-mtime.patch	\
   %D%/packages/patches/julia-tracker-16-compat.patch		\
   %D%/packages/patches/julia-allow-parallel-build.patch		\
+  %D%/packages/patches/jumpdrive-remove-downloads.patch		\
   %D%/packages/patches/kdbusaddons-kinit-file-name.patch	\
   %D%/packages/patches/libffi-3.3-powerpc-fixes.patch		\
   %D%/packages/patches/libffi-float128-powerpc64le.patch	\
