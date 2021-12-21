@@ -1945,6 +1945,36 @@ mouse, and terminal resizing events.")
 the operating system.")
     (license license:bsd-3)))
 
+(define-public go-github-com-golang-tools
+  (package
+    (name "go-github-com-golang-tools")
+    (version "0.1.8")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/golang/tools")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0h9ip7sry1y8z94jypygas4ylb403wji3vljcc5jlb54rf51x3z7"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/golang/tools"))
+    (propagated-inputs
+      `(("go-golang-org-x-xerrors" ,go-golang-org-x-xerrors)
+        ("go-golang-org-x-text" ,go-golang-org-x-text)
+        ("go-golang-org-x-sys" ,go-golang-org-x-sys)
+        ("go-golang-org-x-sync" ,go-golang-org-x-sync)
+        ("go-golang-org-x-net" ,go-golang-org-x-net)
+        ("go-golang-org-x-mod" ,go-golang-org-x-mod)
+        ("go-github-com-yuin-goldmark" ,go-github-com-yuin-goldmark)))
+    (home-page "https://github.com/golang/tools")
+    (synopsis "Go Tools")
+    (description
+      "This subrepository holds the source for various packages and tools that support
+the Go programming language.")
+    (license license:bsd-3)))
+
 (define-public go-github-com-golangplus-fmt
   (package
     (name "go-github-com-golangplus-fmt")
