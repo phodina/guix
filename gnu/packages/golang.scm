@@ -5542,6 +5542,28 @@ generates Go code that statically implements the provided http.FileSystem.
 have super fancy logs.")
       (license license:expat))))
 
+(define-public go-github-com-konsorten-go-windows-terminal-sequences
+  (package
+    (name "go-github-com-konsorten-go-windows-terminal-sequences")
+    (version "1.0.3")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/konsorten/go-windows-terminal-sequences")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "1yrsd4s8vhjnxhwbigirymz89dn6qfjnhn28i33vvvdgf96j6ypl"))))
+    (build-system go-build-system)
+    (arguments
+      '(#:import-path "github.com/konsorten/go-windows-terminal-sequences"))
+    (home-page "https://github.com/konsorten/go-windows-terminal-sequences")
+    (synopsis "Windows Terminal Sequences")
+    (description
+      "This library allow for enabling Windows terminal color support for Go.")
+    (license license:expat)))
+
 (define-public go-github-com-kr-fs
   (let ((commit "1455def202f6e05b95cc7bfc7e8ae67ae5141eba")
         (revision "0"))
