@@ -1984,6 +1984,28 @@ mouse, and terminal resizing events.")
       "This repository holds supplementary Go networking libraries.")
     (license license:bsd-3)))
 
+(define-public go-github-com-golang-sys
+  (package
+    (name "go-github-com-golang-sys")
+    (version "0.0.0-20211216021012-1d35b9e2eb4e")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/golang/sys")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "09xmnw6hhpqnakm99xxigg0znbx46f084lpacz67p5rbcdngjxis"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/golang/sys"))
+    (home-page "https://github.com/golang/sys")
+    (synopsis "sys")
+    (description
+      "This repository holds supplemental Go packages for low-level interactions with
+the operating system.")
+    (license license:bsd-3)))
+
 (define-public go-github-com-golangplus-fmt
   (package
     (name "go-github-com-golangplus-fmt")
