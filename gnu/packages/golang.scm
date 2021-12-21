@@ -2091,6 +2091,46 @@ way of specifying command line options.")
 custom assertions to be used alongside native Go testing.")
     (license license:expat)))
 
+(define-public go-github-com-gopherjs-gopherjs
+  (package
+    (name "go-github-com-gopherjs-gopherjs")
+    (version "0.0.0-20211219123610-ec9572f70e60")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/gopherjs/gopherjs")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0dm1lkmss9cw4ghm9il5jz12162l0w49gfx0qlmvgh49j7pvcxx9"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/gopherjs/gopherjs"))
+    (propagated-inputs
+      `(("go-golang-org-x-xerrors" ,go-golang-org-x-xerrors)
+        ("go-golang-org-x-term" ,go-golang-org-x-term)
+        ("go-github-com-shurcool-vfsgen" ,go-github-com-shurcool-vfsgen)
+        ("go-github-com-inconshreveable-mousetrap"
+         ,go-github-com-inconshreveable-mousetrap)
+        ("go-golang-org-x-tools" ,go-golang-org-x-tools)
+        ("go-golang-org-x-sys" ,go-golang-org-x-sys)
+        ("go-golang-org-x-sync" ,go-golang-org-x-sync)
+        ("go-golang-org-x-crypto" ,go-golang-org-x-crypto)
+        ("go-github-com-spf13-pflag" ,go-github-com-spf13-pflag)
+        ("go-github-com-spf13-cobra" ,go-github-com-spf13-cobra)
+        ("go-github-com-shurcool-httpfs" ,go-github-com-shurcool-httpfs)
+        ("go-github-com-shurcool-go" ,go-github-com-shurcool-go)
+        ("go-github-com-neelance-sourcemap" ,go-github-com-neelance-sourcemap)
+        ("go-github-com-neelance-astrewrite"
+         ,go-github-com-neelance-astrewrite)
+        ("go-github-com-google-go-cmp-cmp" ,go-github-com-google-go-cmp-cmp)
+        ("go-github-com-fsnotify-fsnotify" ,go-github-com-fsnotify-fsnotify)))
+    (home-page "https://github.com/gopherjs/gopherjs")
+    (synopsis "GopherJS - A compiler from Go to JavaScript")
+    (description
+      "GopherJS compiles Go code (@url{https://golang.org/,golang.org}) to pure JavaScript code.  Its main purpose is to give you the opportunity to write front-end code in Go which will still run in all browsers.")
+    (license license:bsd-2)))
+
 (define-public go-github-com-go-playground-locales
   (package
     (name "go-github-com-go-playground-locales")
