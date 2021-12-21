@@ -5211,6 +5211,27 @@ the purpose of building man pages.")
     (description "Common Go code.")
     (license license:expat)))
 
+(define-public go-github-com-shurcool-httpfs
+  (package
+    (name "go-github-com-shurcool-httpfs")
+    (version "0.0.0-20190707220628-8d4bc4ba7749")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/shurcooL/httpfs")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0qjkbjnp86kjr7r0xjwp39blnk1ggkzy6zm3xphr5dpin4jkgfa1"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/shurcooL/httpfs"))
+    (home-page "https://github.com/shurcooL/httpfs")
+    (synopsis "httpfs")
+    (description
+      "Collection of Go packages for working with the @url{https://godoc.org/net/http#FileSystem,(code http.FileSystem)} interface.")
+    (license license:expat)))
+
 (define-public go-github-com-shurcool-sanitized-anchor-name
   (package
     (name "go-github-com-shurcool-sanitized-anchor-name")
