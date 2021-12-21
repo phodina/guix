@@ -1959,6 +1959,31 @@ styled and positioned absolutely or relatively.  They respond to keyboard,
 mouse, and terminal resizing events.")
     (license license:expat)))
 
+(define-public go-github-com-golang-net
+  (package
+    (name "go-github-com-golang-net")
+    (version "0.0.0-20211216030914-fe4d6282115f")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/golang/net")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "16p3fqc0nb00gn8csiz5y2416r22yma4mg44f6zp0l7ra0a800qq"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/golang/net"))
+    (propagated-inputs
+      `(("go-golang-org-x-text" ,go-golang-org-x-text)
+        ("go-golang-org-x-term" ,go-golang-org-x-term)
+        ("go-golang-org-x-sys" ,go-golang-org-x-sys)))
+    (home-page "https://github.com/golang/net")
+    (synopsis "Go Networking")
+    (description
+      "This repository holds supplementary Go networking libraries.")
+    (license license:bsd-3)))
+
 (define-public go-github-com-golangplus-fmt
   (package
     (name "go-github-com-golangplus-fmt")
