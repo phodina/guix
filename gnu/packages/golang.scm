@@ -6051,7 +6051,7 @@ colorized or SGR defined output to the standard output.")
 (define-public go-github-com-google-go-cmp-cmp
   (package
     (name "go-github-com-google-go-cmp-cmp")
-    (version "0.5.2")
+    (version "0.5.6")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -6060,7 +6060,7 @@ colorized or SGR defined output to the standard output.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0qchy411jm9q2l9mf7x3ry2ycaqp9xdhf2nx14qrpzcxfigv2705"))))
+                "0lrb0pacv5iy3m6fn1qb3nv7zwimfhpzqq8f6hwpwx88cx3g6p1s"))))
     (build-system go-build-system)
     (arguments
      '(#:import-path "github.com/google/go-cmp/cmp"
