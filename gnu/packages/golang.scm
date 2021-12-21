@@ -2006,6 +2006,31 @@ mouse, and terminal resizing events.")
 the operating system.")
     (license license:bsd-3)))
 
+(define-public go-github-com-golang-text
+  (package
+    (name "go-github-com-golang-text")
+    (version "0.3.7")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/golang/text")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0xkw0qvfjyifdqd25y7nxdqkdh92inymw3q7841nricc9s01p4jy"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/golang/text"))
+    (propagated-inputs `(("go-golang-org-x-tools" ,go-golang-org-x-tools)))
+    (home-page "https://github.com/golang/text")
+    (synopsis "Go Text")
+    (description
+      "text is a repository of text-related packages related to internationalization
+(i18n) and localization (l10n), such as character encodings, text
+transformations, and locale-specific text handling.
+")
+    (license license:bsd-3)))
+
 (define-public go-github-com-golang-tools
   (package
     (name "go-github-com-golang-tools")
