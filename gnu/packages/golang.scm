@@ -7228,6 +7228,26 @@ style your output, without you having to deal with all kinds of weird ANSI
 escape sequences and color conversions.")
     (license license:expat)))
 
+(define-public go-github-com-neelance-astrewrite
+  (package
+    (name "go-github-com-neelance-astrewrite")
+    (version "0.0.0-20160511093645-99348263ae86")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/neelance/astrewrite")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "07527807p8q6h05iq4qy0xrlcmwyzj76gpk0yqf71yaj447mz24v"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/neelance/astrewrite"))
+    (home-page "https://github.com/neelance/astrewrite")
+    (synopsis #f)
+    (description #f)
+    (license license:bsd-2)))
+
 (define-public go-github-com-nwidger-jsoncolor
   (package
     (name "go-github-com-nwidger-jsoncolor")
