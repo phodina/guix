@@ -7248,6 +7248,26 @@ escape sequences and color conversions.")
     (description #f)
     (license license:bsd-2)))
 
+(define-public go-github-com-neelance-sourcemap
+  (package
+    (name "go-github-com-neelance-sourcemap")
+    (version "0.0.0-20200213170602-2833bce08e4c")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/neelance/sourcemap")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "05ymjg1z9phf0wp4w058kvf13bmn4skv67chb3r04z69in8y8jih"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/neelance/sourcemap"))
+    (home-page "https://github.com/neelance/sourcemap")
+    (synopsis #f)
+    (description #f)
+    (license license:bsd-2)))
+
 (define-public go-github-com-nwidger-jsoncolor
   (package
     (name "go-github-com-nwidger-jsoncolor")
