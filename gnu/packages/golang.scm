@@ -5191,6 +5191,26 @@ the purpose of building man pages.")
     (description "Blackfriday is a Markdown processor in Go.")
     (license license:bsd-2)))
 
+(define-public go-github-com-shurcool-go
+  (package
+    (name "go-github-com-shurcool-go")
+    (version "0.0.0-20200502201357-93f07166e636")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/shurcooL/go")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0wgwlhsgx1c2v650xvf099hgrd4av18gfb0kha09klmsh0p0hc5r"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/shurcooL/go"))
+    (home-page "https://github.com/shurcooL/go")
+    (synopsis "go")
+    (description "Common Go code.")
+    (license license:expat)))
+
 (define-public go-github-com-shurcool-sanitized-anchor-name
   (package
     (name "go-github-com-shurcool-sanitized-anchor-name")
