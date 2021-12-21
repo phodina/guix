@@ -2556,6 +2556,39 @@ per-goroutine.")
     (description "The @code{walker} function is a faster, parallel version, of
 @code{filepath.Walk}")))
 
+(define-public go-github-com-therecipe-qt
+  (package
+    (name "go-github-com-therecipe-qt")
+    (version "0.0.0-20200904063919-c0c124a5770d")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/therecipe/qt")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "197wdh2v0g5g2dpb1gcd5gp0g4wqzip34cawisvy6z7mygmsc8rd"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/therecipe/qt"))
+    (propagated-inputs
+      `(("go-github-com-golang-text" ,go-github-com-golang-text)
+        ("go-github-com-golang-tools" ,go-github-com-golang-tools)
+        ("go-github-com-golang-sys" ,go-github-com-golang-sys)
+        ("go-github-com-golang-net" ,go-github-com-golang-net)
+        ("go-github-com-golang-crypto" ,go-github-com-golang-crypto)
+        ("go-github-com-stretchr-testify" ,go-github-com-stretchr-testify)
+        ("go-github-com-stretchr-objx" ,go-github-com-stretchr-objx)
+        ("go-github-com-sirupsen-logrus" ,go-github-com-sirupsen-logrus)
+        ("go-github-com-konsorten-go-windows-terminal-sequences"
+         ,go-github-com-konsorten-go-windows-terminal-sequences)
+        ("go-github-com-gopherjs-gopherjs" ,go-github-com-gopherjs-gopherjs)))
+    (home-page "https://github.com/therecipe/qt")
+    (synopsis "Introduction")
+    (description
+      "@url{https://en.wikipedia.org/wiki/Qt_(software),Qt} is a free and open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms with little or no change in the underlying codebase.")
+    (license license:lgpl3)))
+
 (define-public go-github-com-tj-docopt
   (package
     (name "go-github-com-tj-docopt")
