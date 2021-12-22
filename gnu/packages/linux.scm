@@ -1270,6 +1270,34 @@ Linux-Libre, as an Info manual.  To consult it, run @samp{info linux}.")))
                      #:defconfig "omap2plus_defconfig"
                      #:extra-version "arm-omap2plus"))
 
+;; NOTE: Don't update the kernel over 5.17 as the CONFIG_ASHMEM has been removed
+(define-public linux-libre-arm64-waydroid
+  (make-linux-libre* linux-libre-5.15-version
+                     linux-libre-5.15-gnu-revision
+                     linux-libre-5.15-source
+                     '("aarch64-linux")
+                     #:defconfig "defconfig"
+                     #:extra-version "arm64-waydroid"
+                     #:extra-options
+                     (append
+                      `(;; needed to fix the RTC on rockchip platforms
+                        ("CONFIG_RTC_DRV_RK808" . #t)
+                        ;; Pinebook display, battery, charger and usb
+                        ("CONFIG_DRM_ANALOGIX_ANX6345" . m)
+                        ("CONFIG_CHARGER_AXP20X" . m)
+                        ("CONFIG_INPUT_AXP20X_PEK" . m)
+                        ("CONFIG_CHARGER_AXP20X" . m)
+                        ("CONFIG_BATTERY_AXP20X" . m)
+                        ("CONFIG_PINCTRL_AXP209" . m)
+                        ("CONFIG_AXP20X_POWER" . m)
+                        ("CONFIG_AXP20X_ADC" . m)
+                        ;; Pinebook PRO battery and sound support
+                        ("CONFIG_BATTERY_CW2015" . m)
+                        ("CONFIG_CHARGER_GPIO" . m)
+                        ("CONFIG_SND_SOC_ES8316" . m))
+                        %waydroid-extra-linux-options
+                      %default-extra-linux-options)))
+
 (define-public linux-libre-arm64-generic
   (make-linux-libre* linux-libre-version
                      linux-libre-gnu-revision
