@@ -559,6 +559,17 @@ TARGET in the other system."
            (check? #f)
            (options "none,name=elogind")
            (create-mount-point? #t)
+           (dependencies (list (car %control-groups))))
+         ;; The systemd cgroup needs to exist to run systemd inside linux
+         ;; containers (eg. via LXD).  This is *not* required for elogind, but
+         ;; keeping it with the other systemd hacks seemed sensible, for now.
+         (file-system
+           (device "cgroup")
+           (mount-point "/sys/fs/cgroup/systemd")
+           (type "cgroup")
+           (check? #f)
+           (options "none,name=systemd")
+           (create-mount-point? #t)
            (dependencies (list (car %control-groups)))))
    %control-groups))
 

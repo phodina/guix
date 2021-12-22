@@ -76,6 +76,9 @@
             virtlog-configuration
             virtlog-service-type
 
+            lxd-configuration
+            lxd-service-type
+
             %qemu-platforms
             lookup-qemu-platforms
             qemu-platform?
@@ -556,6 +559,69 @@ potential infinite waits blocking libvirt."))
   (generate-documentation
    `((libvirt-configuration ,libvirt-configuration-fields))
    'libvirt-configuration))
+
+
+;;;
+;;; LXD linux container daemon.
+;;;
+
+(define-configuration lxd-configuration
+  (lxd
+   (package lxd)
+   "LXD package.")
+  (debug?
+   (boolean #f)
+   "Enable or disable debug messages.")
+  (verbose?
+   (boolean #f)
+   "Enable or disable information messages."))
+
+(define %lxd-accounts
+  (list (user-group (name "lxd") (system? #t))))
+
+(define (%lxd-activation config)
+  #~(begin
+      (use-modules (guix build utils))
+      (mkdir-p "/var/log/lxd")))
+
+(define (lxd-shepherd-service config)
+  (let* ((lxd (lxd-configuration-lxd config))
+         (debug? (lxd-configuration-debug? config))
+         (verbose? (lxd-configuration-verbose? config)))
+    (list
+     (shepherd-service
+      (documentation "LXD daemon.")
+      (provision '(lxd))
+      (requirement '(dbus-system
+                     elogind
+                     file-system-/sys/fs/cgroup/blkio
+                     file-system-/sys/fs/cgroup/cpu
+                     file-system-/sys/fs/cgroup/cpuset
+                     file-system-/sys/fs/cgroup/devices
+                     file-system-/sys/fs/cgroup/memory
+                     file-system-/sys/fs/cgroup/pids
+                     file-system-/sys/fs/cgroup/systemd
+                     networking
+                     udev))
+      (start #~(make-forkexec-constructor
+                (list (string-append #$lxd "/bin/lxd")
+                      "--group=lxd"
+                      "--logfile=/var/log/lxd/lxd.log"
+                      #$@(if debug? '("--debug") '())
+                      #$@(if verbose? '("--verbose") '()))))
+      (stop #~(make-kill-destructor))))))
+
+(define lxd-service-type
+  (service-type
+   (name 'lxd)
+   (extensions
+    (list (service-extension activation-service-type
+                             %lxd-activation)
+          (service-extension shepherd-root-service-type
+                             lxd-shepherd-service)
+          (service-extension account-service-type
+                             (const %lxd-accounts))))
+   (default-value (lxd-configuration))))
 
 
 ;;;
