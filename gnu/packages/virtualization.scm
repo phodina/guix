@@ -2037,6 +2037,38 @@ Bochs can run most Operating Systems inside the emulation including Linux,
 DOS or Microsoft Windows.")
     (license license:lgpl2.0+)))
 
+(define-public waydroid-script
+  (let ((commit "f49918dab68adca38ba72ae57bd0bec31fa9c364")
+        (revision "1"))
+    (package
+      (name "waydroid-script")
+      (version (git-version "0.1-pre" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/casualsnek/waydroid_script")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0kdvrx0lmjp6m148sd7a0yglkc7skjwfmjafwc72iqgbwa81pap0"))))
+      (build-system python-build-system)
+      (arguments
+       `(#:phases
+         (modify-phases %standard-phases
+           (delete 'build)
+           (replace 'install
+             (lambda* (#:key inputs outputs #:allow-other-keys)
+               (install-file "waydroid_extras.py"
+                             (string-append (assoc-ref outputs "out") "/bin"))))
+           (delete 'check))))
+      (inputs (list lzip python-requests python-tqdm))
+      (home-page "https://github.com/casualsnek/waydroid_script")
+      (synopsis "Add OpenGapps, Magisk and more to waydroid")
+      (description "This package adds OpenGapps, Magisk, libhoudini
+translation library and libndk translation library to waydroid.")
+      (license license:gpl3+))))
+
 (define-public waydroid
   (package
     (name "waydroid")
