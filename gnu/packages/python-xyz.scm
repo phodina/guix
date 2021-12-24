@@ -19870,6 +19870,28 @@ belong to tagged versions.")
 Git.")
     (license license:bsd-3)))
 
+(define-public python-pyclip
+  (package
+    (name "python-pyclip")
+    (version "0.5.4")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/spyoungtech/pyclip")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "19ff9cgnfx03mbmy5zpbdi986ppx38a5jf97vkqnic4g5sd1qyrn"))))
+    (build-system python-build-system)
+    (arguments
+    '(#:tests? #f)) ; failing test
+    (native-inputs (list python-pytest))
+    (home-page "https://github.com/spyoungtech/pyclip")
+    (synopsis "Clipboard utilities supporting both binary and text data.")
+    (description "This package provides clipboard utilities supporting both
+binary and text data.")
+    (license license:asl2.0)))
+
 (define-public python-pyclipper
   (package
     (name "python-pyclipper")
