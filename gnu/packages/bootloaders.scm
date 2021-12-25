@@ -15,6 +15,7 @@
 ;;; Copyright © 2020, 2021 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2021 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -49,7 +50,9 @@
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
+  #:use-module (gnu packages imagemagick)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages llvm)
   #:use-module (gnu packages man)
   #:use-module (gnu packages mtools)
   #:use-module (gnu packages ncurses)
@@ -1086,6 +1089,35 @@ Chrome-branded devices.  This includes the @command{cgpt} partitioning
 program, the @command{futility} and @command{crossystem} firmware management
 tools, and more.")
     (license license:bsd-3)))
+
+(define-public m1n1
+(let ((commit "054e437c314dad8e2ccbee172cff0ee29ace6155")
+      (revision "1"))
+  (package
+    (name "m1n1")
+    (version (git-version "0.1-pre" revision commit))
+    (source
+	(origin
+              (method git-fetch)
+              (uri (git-reference
+			  (url "https://github.com/asahilinux/m1n1")
+			  (commit commit)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1nwpz8z7q0dm32qpbqv084b1kjb9kr8zql91rv3sgyw1jys58d8j"))))
+    (build-system gnu-build-system)
+	(arguments
+	`(#:phases
+	  (modify-phases %standard-phases
+	   (delete 'configure))))
+    (inputs
+     (list dtc imagemagick llvm python))
+    (synopsis "Bootloader for Apple Silicon")
+    (description "The package provides a bootloader and experimentation
+;playground for Apple Silicon.")
+    (home-page "https://github.com/asahilinux/m1n1")
+    (license license:expat))))
 
 (define-public os-prober
   (package
