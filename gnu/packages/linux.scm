@@ -59,7 +59,7 @@
 ;;; Copyright © 2021 Josselin Poiret <josselin.poiret@protonmail.ch>
 ;;; Copyright © 2021 Olivier Dion <olivier.dion@polymtl.ca>
 ;;; Copyright © 2021 Solene Rapenne <solene@perso.pw>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -8490,73 +8490,69 @@ headers.")
 (define-public bcc
   (package
     (name "bcc")
-    (version "0.16.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/iovisor/bcc")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32
-         "1367c0bzrpclvjvmk0sxgi49rh7j2f9izqk5a7g3yvawh1fmvvjh"))))
+    (version "0.24.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/iovisor/bcc")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1i6xikkxf2nasfkqa91hjzdq0a88mgyzrvia4fi2i2v1d8pbmnp4"))))
     (build-system cmake-build-system)
-    (native-inputs
-     (list bison flex))
-    (inputs
-     `(("clang-toolchain" ,clang-toolchain-9)
-       ("libbpf" ,(package-source libbpf))
-       ;; LibElf required but libelf does not contain
-       ;; archives, only object files.
-       ;; https://github.com/iovisor/bcc/issues/504
-       ("elfutils" ,elfutils)
-       ("luajit" ,luajit)
-       ("python-wrapper" ,python-wrapper)))
+    (native-inputs (list bison flex))
+    (inputs (list bash-minimal
+                  clang-toolchain-9
+                  (package-source libbpf)
+                  ;; LibElf required but libelf does not contain
+                  ;; archives, only object files.
+                  ;; https://github.com/iovisor/bcc/issues/504
+                  elfutils
+                  luajit
+                  python-wrapper))
     (arguments
-     `(;; Tests all require root permissions and a "standard" file hierarchy.
-       #:tests? #f
+     `( ;Tests all require root permissions and a "standard" file hierarchy.
+        #:tests?
+       #f
        #:configure-flags
        (let ((revision ,version))
          `(,(string-append "-DREVISION=" revision)))
        #:phases
        (modify-phases %standard-phases
          ;; FIXME: Use "-DCMAKE_USE_LIBBPF_PACKAGE=ON".
+		 ;; FAILS to build
          (add-after 'unpack 'copy-libbpf
            (lambda* (#:key inputs #:allow-other-keys)
              (delete-file-recursively "src/cc/libbpf")
-             (copy-recursively
-              (assoc-ref inputs "libbpf") "src/cc/libbpf")))
+             (copy-recursively (assoc-ref inputs "libbpf") "src/cc/libbpf")))
          (add-after 'copy-libbpf 'substitute-libbc
            (lambda* (#:key outputs #:allow-other-keys)
              (substitute* "src/python/bcc/libbcc.py"
-               (("(libbcc\\.so.*)\\b" _ libbcc)
-                (string-append
-                 (assoc-ref outputs "out") "/lib/" libbcc)))))
+               (("(libbcc\\.so.*)\\b" _ libbcc) (string-append (assoc-ref
+                                                                outputs "out")
+                                                               "/lib/" libbcc)))))
          (add-after 'install 'wrap-tools
            (lambda* (#:key outputs #:allow-other-keys)
              (use-modules (ice-9 textual-ports))
-             (let* ((out (assoc-ref outputs "out"))
-                    (lib (string-append out "/lib"))
+             (let* ((out (assoc-ref outputs "out")) (lib (string-append out
+                                                          "/lib"))
                     (tools (string-append out "/share/bcc/tools"))
-                    (python-executable?
-                     (lambda (filename _)
-                       (call-with-input-file filename
-                         (lambda (port)
-                           (string-contains (get-line port)
-                                            "/bin/python"))))))
-               (for-each
-                (lambda (python-executable)
-                  (format #t "Wrapping: ~A.~%" python-executable)
-                  (wrap-program python-executable
-                    `("GUIX_PYTHONPATH" ":" prefix
-                      (,(string-append lib
-                                       "/python"
-                                       ,(version-major+minor
-                                         (package-version python))
-                                       "/site-packages")))))
-                (find-files tools python-executable?))
-               #t))))))
+                    (python-executable? (lambda (filename _)
+                                          (call-with-input-file filename
+                                            (lambda (port)
+                                              (string-contains (get-line port)
+                                                               "/bin/python"))))))
+               (for-each (lambda (python-executable)
+                           (format #t "Wrapping: ~A.~%" python-executable)
+                           (wrap-program python-executable
+                                         `("GUIX_PYTHONPATH" ":" prefix
+                                           (,(string-append lib "/python"
+                                                            ,(version-major+minor
+                                                              (package-version
+                                                               python))
+                                                            "/site-packages")))))
+                         (find-files tools python-executable?)) #t))))))
     (home-page "https://github.com/iovisor/bcc")
     (synopsis "Tools for BPF on Linux")
     (description
