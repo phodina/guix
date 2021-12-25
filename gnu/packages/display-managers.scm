@@ -11,6 +11,7 @@
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2021 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2021 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -49,6 +50,7 @@
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages image)
   #:use-module (gnu packages kde-frameworks)
   #:use-module (gnu packages linux)
@@ -126,6 +128,15 @@ create smooth, animated user interfaces.")
     (home-page "https://github.com/sddm/sddm")
     ;; QML files are MIT licensed and images are CC BY 3.0.
     (license (list license:gpl2+ license:expat license:cc-by3.0))))
+
+(define-public sddm-gst
+  (package
+    (inherit sddm)
+    (name "sddm-gst")
+    (inputs `(("gst-libav" ,gst-libav) ("gst-plugins-good" ,gst-plugins-good)
+              ("phonon-backend-gstreamer" ,phonon-backend-gstreamer) ("qtmultimedia"
+                                                                      ,qtmultimedia)
+              ,@(package-inputs sddm)))))
 
 (define-public guix-simplyblack-sddm-theme
   (package
