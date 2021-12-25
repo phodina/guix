@@ -59,6 +59,7 @@
 ;;; Copyright © 2021 Josselin Poiret <josselin.poiret@protonmail.ch>
 ;;; Copyright © 2021 Olivier Dion <olivier.dion@polymtl.ca>
 ;;; Copyright © 2021 Solene Rapenne <solene@perso.pw>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -8397,7 +8398,7 @@ persistent over reboots.")
 (define-public libbpf
   (package
     (name "libbpf")
-    (version "0.1.1")
+    (version "0.6.1")
     (source
      (origin
        (method git-fetch)
@@ -8407,7 +8408,7 @@ persistent over reboots.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0ilnnm4q22f8fagwp8kb37licy4ks861i2iqh2djsypqhnxvx3fv"))))
+         "114rw5f6kv209bpcmc99hvk24053jdq37g1wbaxqg8nzb5zczhpw"))))
     (build-system gnu-build-system)
     (native-inputs
      (list pkg-config))
