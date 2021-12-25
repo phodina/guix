@@ -151,6 +151,41 @@ create smooth, animated user interfaces.")
 	         (prepend gst-libav gst-plugins-good
               phonon-backend-gstreamer qtmultimedia-5)))))
 
+(define-public aerial-sddm-theme
+  (let ((commit "218199a298ee21cf428efa2521561093d7450acc")
+        (revision "1"))
+    (package
+      (name "aerial-sddm-theme")
+      (version (git-version "0.1-pre" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/3ximus/aerial-sddm-theme")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "1yxqm3kqf1q00ihgr8zv6x15hf6dkqgj67fmhih091bx1cpk6d53"))))
+      (build-system trivial-build-system)
+      (arguments
+       (list #:modules `((guix build utils))
+         #:builder
+         #~(begin
+           (use-modules (guix build utils))
+           (let* ((sddm-themes (string-append #$output
+		   "/share/sddm/themes/aerial")))
+             (mkdir-p sddm-themes)
+             (copy-recursively #$source
+                               sddm-themes)
+			 (substitute* (string-append sddm-themes "/Main.qml")
+			 (("import QtMultimedia 5.7") "import QtMultimedia 5.15"))))))
+      (home-page "https://github.com/3ximus/aerial-sddm-theme")
+      (synopsis "Aerial theme for SDDM")
+      (description "Aerial provides theme with HD videos which are streamed so it
+        requires good internet connection otherwise it will fallback to the
+        image background.jpg.")
+      (license license:gpl3+))))
+
 (define-public guix-simplyblack-sddm-theme
   (package
     (name "guix-simplyblack-sddm-theme")
