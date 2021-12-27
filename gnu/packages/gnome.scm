@@ -567,6 +567,59 @@ in JavaScript.")
     (home-page "https://wiki.gnome.org/Projects/Seed")
     (license license:lgpl2.0+)))
 
+(define-public squeekboard
+  (package
+    (name "squeekboard")
+    (version "1.15.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://gitlab.gnome.org/World/Phosh/squeekboard")
+	   (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "1xwvyda686gz7hkw8bw3yiypdd9b5d4lpa28mrimigq2b33biag9"))))
+    (build-system cargo-build-system)
+    (arguments
+	`(#:modules
+	  ((guix build cargo-build-system)
+	   (guix build utils)
+	   ((guix build glib-or-gtk-build-system) #:prefix gtk:)
+	   ((guix build meson-build-system) #:prefix meson:))
+      #:imported-modules (,@%cargo-build-system-modules
+	  (guix build meson-build-system)
+	  (guix build glib-or-gtk-build-system)
+	  (guix build union))
+      #:cargo-inputs
+       (("rust-cairo-sys-rs" ,rust-cairo-sys-rs-0.9)
+        ("rust-glib-sys" ,rust-glib-sys-0.9)
+	    ("rust-gtk-sys" ,rust-gtk-sys-0.9)
+        ("rust-maplit" ,rust-maplit-1)
+		("rust-serde" ,rust-serde-1)
+		("rust-serde-yaml" ,rust-serde-yaml-0.8)
+		("rust-xkbcommon" ,rust-xkbcommon-0.5))
+		#:phases
+		(modify-phases %standard-phases
+         (add-after 'configure 'meson-configure
+           (lambda* (#:key outputs #:allow-other-keys #:rest args)
+             (apply (assoc-ref meson:%standard-phases 'configure)
+                    #:configure-flags
+                    (list "-Dstrict=true"
+                          "-Dtests=true")
+                    args)))
+         (replace 'build
+		 (assoc-ref meson:%standard-phases 'build))
+	   )))
+	(native-inputs (list wayland-protocols))
+    (inputs
+     (list gtk dbus))
+    (home-page "https://gitlab.gnome.org/World/Phosh/squeekboard")
+    (synopsis "On-screen-keyboard input method for Wayland")
+    (description "This package provides an on-screen-keyboard input
+	method for Wayland.")
+    (license license:gpl3+)))
+
 (define-public libdmapsharing
   (package
     (name "libdmapsharing")
