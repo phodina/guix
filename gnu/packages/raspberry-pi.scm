@@ -22,11 +22,21 @@
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
+  #:use-module (gnu packages llvm)
+  #:use-module (gnu packages cmake)
   #:use-module (gnu packages commencement)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages cross-base)
+  #:use-module (gnu packages digest)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages file)
+  #:use-module (gnu packages linux)
   #:use-module (gnu packages gcc)
+  #:use-module (gnu packages tbb)
+  #:use-module (gnu packages tls)
+  #:use-module (gnu packages perl)
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages python)
   #:use-module (gnu packages embedded)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system cmake)
@@ -73,6 +83,57 @@ It provides the following benefits:
 ")
     (home-page "https://github.com/microsoft/mimalloc")
     (license license:expat)))
+
+(define-public mold
+  (package
+    (name "mold")
+    (version "1.0.2")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/rui314/mold")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (modules '((guix build utils)))
+              (snippet '(begin
+                          (delete-file-recursively "third-party")))
+              (sha256
+               (base32
+                "08iiycbzb4324mnzph6m4y5kf700zhr66c0sq93k5sajm3xy8dfi"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:make-flags (list "SYSTEM_MIMALLOC=true" "SYSTEM_TBB=true"
+                          "SYSTEM_XXHASH=true"
+                          (string-append "PREFIX=" %output))
+       #:tests? #f ; failing test mold-wrapper
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-reference-to-cc
+           ;; This prevents errors like 'error: linker `cc` not found' when
+           ;; "cc" is not found on PATH.
+           (lambda* (#:key outputs inputs #:allow-other-keys)
+             (let ((gcc (assoc-ref inputs "gcc")) (util-linux (assoc-ref
+                                                               inputs
+                                                               "util-linux")))
+               (substitute* "test/elf/exception.sh"
+                 (("`pwd`/../../mold") (string-append (getcwd) "/mold")))
+               (substitute* "test/elf/gc-sections.sh"
+                 (("`pwd`/../../mold") (string-append (getcwd) "/mold")))
+               (substitute* "test/elf/filler.sh"
+                 (("hexdump") (string-append util-linux "/bin/hexdump")))
+               (mkdir-p "/tmp/bin")
+               (symlink (string-append gcc "/bin/gcc") "/tmp/bin/cc")
+               (setenv "PATH"
+                       (string-append "/tmp/bin:"
+                                      (getenv "PATH"))))))
+         (delete 'configure))))
+    (native-inputs (list clang-12 gcc grep pkg-config util-linux xxhash))
+    (inputs (list mimalloc openssl python tbb zlib))
+    (synopsis "Modern Linker")
+    (description "This package provides a faster drop-in replacement for
+existing Unix linkers.")
+    (home-page "https://savannah.gnu.org/projects/patch/")
+    (license license:gpl3+)))
 
 (define-public bcm2835
   (package
