@@ -29,6 +29,7 @@
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages embedded)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system cmake)
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
@@ -41,6 +42,37 @@
   #:use-module (srfi srfi-2)
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match))
+
+(define-public mimalloc
+  (package
+    (name "mimalloc")
+    (version "2.0.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/microsoft/mimalloc")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0avamijn2dcrkba291rmdiv6z0kjzkhc1vigcwmhk9h0cvsc0q44"))))
+    (build-system cmake-build-system)
+    (synopsis "Compact general purpose allocator")
+    (description "This package provides a drop-in replacement for malloc.
+It provides the following benefits:
+@enumerate
+@item small and consistent
+@item free list sharding
+@item free list multi-sharding
+@item eager page reset
+@item secure
+@item first-class heaps
+@item bounded
+@item fast
+@end enumerate
+")
+    (home-page "https://github.com/microsoft/mimalloc")
+    (license license:expat)))
 
 (define-public bcm2835
   (package
