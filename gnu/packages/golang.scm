@@ -8578,6 +8578,28 @@ or capture raw audio.")
 programs that use traditional command lines.")
     (license license:bsd-3)))
 
+(define-public go-go-mozilla-org-pkcs7
+  (package
+    (name "go-go-mozilla-org-pkcs7")
+    (version "0.0.0-20210826202110-33d05740a352")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/mozilla-services/pkcs7")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "1gw1jsmcyf881612v5ncq23rlvqsvan47clh5pfdfn6cp4gax4y7"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "go.mozilla.org/pkcs7"))
+	(inputs (list openssl))
+    (home-page "https://go.mozilla.org/pkcs7")
+    (synopsis "pkcs7")
+    (description
+      "Package pkcs7 implements parsing and generation of some PKCS#7 structures.")
+    (license license:expat)))
+
 (define-public go-go-uber-org-atomic
   (package
     (name "go-go-uber-org-atomic")
