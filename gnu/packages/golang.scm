@@ -7590,6 +7590,57 @@ structures and algorithms in Go.")
 errors (warnings).")
     (license license:bsd-2)))
 
+(define-public go-github-com-foxboron-go-uefi
+(let ((commit "3d898a764ffd5107102e161c276a8cca63bcb41e")
+      (revision "1"))
+(package
+  (name "go-github-com-foxboron-go-uefi")
+  (version (git-version "0.1-pre" revision commit))
+  (source (origin
+            (method git-fetch)
+            (uri
+	      (git-reference
+		(url "https://github.com/Foxboron/go-uefi")
+		(commit commit)))
+		(file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0d39vsva6grx9f628ibh4agghizn93iidq8196q3f56a6n7qsksw"))))
+  (build-system go-build-system)
+  (arguments
+  `(#:import-path "github.com/Foxboron/go-uefi"
+    #:modules
+       (((guix build gnu-build-system) #:prefix gnu:)
+        (guix build go-build-system)
+        (guix build union)
+        (guix build utils))
+       #:imported-modules
+       (,@%go-build-system-modules
+        (guix build union)
+        (guix build gnu-build-system))
+       #:phases
+       (modify-phases %standard-phases
+	     (add-before 'build 'cwd
+		 (lambda* _
+		  (display (getcwd))))
+         (replace 'build 
+           (assoc-ref gnu:%standard-phases 'build)))))
+  (inputs (list
+        go-github-com-spf13-afero
+        go-golang-org-x-text
+        go-golang-org-x-sys
+        go-golang-org-x-crypto
+        go-go-mozilla-org-pkcs7
+        go-github-com-pkg-errors
+        go-github-com-anatol-vmtest))
+  (synopsis "UEFI library for interfacing with efivars")
+  (description "This package provides a UEFI library written to interact
+with Linux efivars.  This also includes unit-testing to ensure the library
+is compatible with existing tools, and integration tests to ensure the library
+is able of deal with future UEFI revisions.")
+  (home-page "https://github.com/Foxboron/go-uefi")
+  (license license:expat))))
+
 (define-public go-github-com-go-git-gcfg
   (package
     (name "go-github-com-go-git-gcfg")
