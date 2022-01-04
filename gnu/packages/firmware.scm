@@ -35,21 +35,43 @@
   #:use-module (guix build-system meson)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
+  #:use-module (gnu packages autotools)
   #:use-module (gnu packages assembly)
+  #:use-module (gnu packages backup)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages check)
   #:use-module (gnu packages cmake)
-  #:use-module (gnu packages curl)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages cross-base)
+  #:use-module (gnu packages curl)
+  #:use-module (gnu packages efi)
+  #:use-module (gnu packages elf)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages gcc)
+  #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
+  #:use-module (gnu packages gnupg)
+  #:use-module (gnu packages gtk)
+  #:use-module (gnu packages hardware)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages man)
+  #:use-module (gnu packages mingw)
+  #:use-module (gnu packages package-management)
   #:use-module (gnu packages perl)
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages polkit)
+  #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
-  #:use-module (gnu packages pkg-config))
+  #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages sqlite)
+  #:use-module (gnu packages tls)
+  #:use-module (gnu packages version-control)
+  #:use-module (gnu packages web)
+  #:use-module (gnu packages xml))
 
 (define-public ath9k-htc-firmware
   (package
@@ -166,6 +188,101 @@ Linux-libre.")
 assembler, disassembler, and debugging tools for the Linux kernel b43 wireless
 driver.")
       (license license:gpl2))))
+
+(define-public fwupd
+  (package
+    (name "fwupd")
+    (version "1.7.3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/fwupd/fwupd")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1dviiqhn37kmka26pxs39ackdzpfiqxgdh8yfw8vk86afklwr1x9"))
+       (patches (search-patches
+	             "fwupd-installed-tests-path.patch"
+				 "fwupd-add-option-for-installation-sysconfdir.patch"
+	))))
+    (build-system meson-build-system)
+    (outputs (list "out" "installed-tests"))
+    (arguments
+     `(#:configure-flags
+       (list "--wrap-mode=nofallback"
+             "-Dsystemd=false"
+             (string-append
+              "-Defi_os_dir=" (assoc-ref %build-inputs "gnu-efi") "/lib")
+			 ;"-Defi_binary=true"
+			 "-Defi_binary=false"
+             (string-append
+              "-Dudevdir=" (assoc-ref %outputs "out") "/lib/udev")
+             "--localstatedir=/var"
+             "--sysconfdir=/etc"
+             (string-append
+              "-Dsysconfdir_install=" (assoc-ref %outputs "out") "/etc")
+             (string-append
+              "--libexecdir=" (assoc-ref %outputs "out") "/libexec")
+             "-Dsupported_build=true"
+             (string-append
+              "-Dinstalled_test_prefix="
+              (assoc-ref %outputs "installed-tests")))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'make-source-writable
+           (lambda _
+             ;; XXX: Git checkouts are read-only, but this package needs to
+             ;; modify some of its files.
+             (for-each make-file-writable (find-files "."))
+             #t))
+         (add-before 'install 'no-polkit-magic
+           ;; Meson â€˜magicallyâ€™ invokes pkexec, which fails (not setuid).
+           (lambda _
+             (setenv "PKEXEC_UID" "something")
+             #t)))))
+    (native-inputs
+     `(("gobject-introspection" ,gobject-introspection)
+       ("python-pygobject" ,python-pygobject)
+       ("python-pillow" ,python-pillow)
+       ("python-pycairo" ,python-pycairo)
+       ("pkg-config" ,pkg-config)
+       ("vala" ,vala)
+	   ("gtk-doc" ,gtk-doc)
+       ("umockdev" ,umockdev)
+       ("glib:bin" ,glib "bin")
+       ("help2man" ,help2man)
+       ("gettext" ,gettext-minimal)))
+    (inputs
+     `(("bash-completion" ,bash-completion)
+	   ("glib" ,glib)
+       ("libgudev" ,libgudev)
+       ("libxmlb" ,libxmlb)
+       ("gusb" ,gusb)
+       ("sqlite" ,sqlite)
+       ("libarchive" ,libarchive)
+       ("libjcat" ,libjcat)
+       ("json-glib" ,json-glib)
+       ("curl" ,curl)
+       ("polkit" ,polkit)
+       ("eudev" ,eudev)
+       ("gcab" ,gcab)
+       ("gnutls" ,gnutls)
+       ("libelf" ,libelf)
+       ("tpm2-tss" ,tpm2-tss)
+       ("cairo" ,cairo)
+       ("efivar" ,efivar)
+       ("pango" ,pango)
+	   ("protobuf-c" ,protobuf-c)
+       ("mingw-w64-tools", mingw-w64-tools)
+       ("libsmbios" ,libsmbios)
+       ("gnu-efi" ,gnu-efi)))
+    (home-page "https://fwupd.org/")
+    (synopsis "A simple daemon to allow session software to update firmware")
+    (description "This package aims to make updating firmware on Linux
+automatic, safe and reliable.")
+    (license license:lgpl2.1+)))
 
 (define-public openfwwf-firmware
   (package

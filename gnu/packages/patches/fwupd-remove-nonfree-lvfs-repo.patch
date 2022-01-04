@@ -1,0 +1,147 @@
+diff --git a/data/remotes.d/lvfs-testing.conf b/data/remotes.d/lvfs-testing.conf
+deleted file mode 100644
+index 740a793e..00000000
+--- a/data/remotes.d/lvfs-testing.conf
++++ /dev/null
+@@ -1,12 +0,0 @@
+-[fwupd Remote]
+-
+-# this remote provides metadata and firmware marked as 'testing' from the LVFS
+-Enabled=false
+-Title=Linux Vendor Firmware Service (testing)
+-MetadataURI=https://cdn.fwupd.org/downloads/firmware-testing.xml.gz
+-ReportURI=https://fwupd.org/lvfs/firmware/report
+-Username=
+-Password=
+-OrderBefore=lvfs,fwupd
+-AutomaticReports=false
+-ApprovalRequired=false
+diff --git a/data/remotes.d/lvfs-testing.metainfo.xml b/data/remotes.d/lvfs-testing.metainfo.xml
+deleted file mode 100644
+index 3e36aab7..00000000
+--- a/data/remotes.d/lvfs-testing.metainfo.xml
++++ /dev/null
+@@ -1,35 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<!-- Copyright 2018 Richard Hughes <richard@hughsie.com> -->
+-
+-<component type="source">
+-  <id>org.freedesktop.fwupd.remotes.lvfs-testing</id>
+-  <name>Linux Vendor Firmware Service (testing firmware)</name>
+-  <metadata_license>CC0-1.0</metadata_license>
+-  <agreement version_id="1.0">
+-    <agreement_section>
+-      <description>
+-        <!-- TRANSLATORS: do not translate the variables marked using $ -->
+-        <p>
+-          The LVFS is a free service that operates as an independent legal
+-          entity and has no connection with $OS_RELEASE:NAME$.
+-          Your distributor may not have verified any of the firmware updates for
+-          compatibility with your system or connected devices.
+-          All firmware is provided only by the original equipment manufacturer.
+-        </p>
+-        <p>
+-          This remote contains firmware which is not embargoed, but is still being
+-          tested by the hardware vendor.
+-          You should ensure you have a way to manually downgrade the firmware if
+-          the firmware update fails.
+-        </p>
+-        <p>
+-          Enabling this functionality is done at your own risk, which means you
+-          have to contact your original equipment manufacturer regarding any
+-          problems caused by these updates.
+-          Only problems with the update process itself should be filed at
+-          $OS_RELEASE:BUG_REPORT_URL$.
+-        </p>
+-      </description>
+-    </agreement_section>
+-  </agreement>
+-</component>
+diff --git a/data/remotes.d/lvfs.conf b/data/remotes.d/lvfs.conf
+deleted file mode 100644
+index f956bc97..00000000
+--- a/data/remotes.d/lvfs.conf
++++ /dev/null
+@@ -1,12 +0,0 @@
+-[fwupd Remote]
+-
+-# this remote provides metadata and firmware marked as 'stable' from the LVFS
+-Enabled=true
+-Title=Linux Vendor Firmware Service
+-MetadataURI=https://cdn.fwupd.org/downloads/firmware.xml.gz
+-ReportURI=https://fwupd.org/lvfs/firmware/report
+-SecurityReportURI=https://fwupd.org/lvfs/hsireports/upload
+-OrderBefore=fwupd
+-AutomaticReports=false
+-AutomaticSecurityReports=false
+-ApprovalRequired=false
+diff --git a/data/remotes.d/lvfs.metainfo.xml b/data/remotes.d/lvfs.metainfo.xml
+deleted file mode 100644
+index d9565ddd..00000000
+--- a/data/remotes.d/lvfs.metainfo.xml
++++ /dev/null
+@@ -1,29 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<!-- Copyright 2018 Richard Hughes <richard@hughsie.com> -->
+-
+-<component type="source">
+-  <id>org.freedesktop.fwupd.remotes.lvfs</id>
+-  <name>Linux Vendor Firmware Service (stable firmware)</name>
+-  <metadata_license>CC0-1.0</metadata_license>
+-  <agreement version_id="1.0">
+-    <agreement_section>
+-      <description>
+-        <!-- TRANSLATORS: do not translate the variables marked using $ -->
+-        <p>
+-          The LVFS is a free service that operates as an independent legal
+-          entity and has no connection with $OS_RELEASE:NAME$.
+-          Your distributor may not have verified any of the firmware updates for
+-          compatibility with your system or connected devices.
+-          All firmware is provided only by the original equipment manufacturer.
+-        </p>
+-        <p>
+-          Enabling this functionality is done at your own risk, which means you
+-          have to contact your original equipment manufacturer regarding any
+-          problems caused by these updates.
+-          Only problems with the update process itself should be filed at
+-          $OS_RELEASE:BUG_REPORT_URL$.
+-        </p>
+-      </description>
+-    </agreement_section>
+-  </agreement>
+-</component>
+diff --git a/data/remotes.d/meson.build b/data/remotes.d/meson.build
+index 826a3c1d..1f585c09 100644
+--- a/data/remotes.d/meson.build
++++ b/data/remotes.d/meson.build
+@@ -1,30 +1,3 @@
+-if build_daemon and get_option('lvfs')
+-  install_data([
+-      'lvfs.conf',
+-      'lvfs-testing.conf',
+-    ],
+-    install_dir : join_paths(sysconfdir, 'fwupd', 'remotes.d')
+-  )
+-  i18n.merge_file(
+-    input: 'lvfs.metainfo.xml',
+-    output: 'org.freedesktop.fwupd.remotes.lvfs.metainfo.xml',
+-    type: 'xml',
+-    po_dir: join_paths(meson.source_root(), 'po'),
+-    data_dirs: join_paths(meson.source_root(), 'po'),
+-    install: true,
+-    install_dir: join_paths(get_option('datadir'), 'fwupd', 'metainfo')
+-  )
+-  i18n.merge_file(
+-    input: 'lvfs-testing.metainfo.xml',
+-    output: 'org.freedesktop.fwupd.remotes.lvfs-testing.metainfo.xml',
+-    type: 'xml',
+-    po_dir: join_paths(meson.source_root(), 'po'),
+-    data_dirs: join_paths(meson.source_root(), 'po'),
+-    install: true,
+-    install_dir: join_paths(get_option('datadir'), 'fwupd', 'metainfo')
+-  )
+-endif
+-
+ install_data('README.md',
+   install_dir : join_paths(datadir, 'fwupd', 'remotes.d', 'vendor', 'firmware')
+ )

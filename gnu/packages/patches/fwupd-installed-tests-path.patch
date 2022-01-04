@@ -1,0 +1,47 @@
+From 4d9c24ec3a76dc72492d9c4dde6312b6c9cf00b0 Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Mon, 3 Jan 2022 23:35:42 +0100
+Subject: [PATCH 1/2] fwupd installed tests path
+
+
+diff --git a/data/installed-tests/meson.build b/data/installed-tests/meson.build
+index d99e737a..42ff4050 100644
+--- a/data/installed-tests/meson.build
++++ b/data/installed-tests/meson.build
+@@ -66,5 +66,5 @@ configure_file(
+   output : 'fwupd-tests.conf',
+   configuration : con2,
+   install: true,
+-  install_dir: join_paths(sysconfdir, 'fwupd', 'remotes.d'),
++  install_dir: join_paths(get_option('installed_test_prefix'), 'etc', 'fwupd', 'remotes.d'),
+ )
+diff --git a/meson.build b/meson.build
+index f9c213a1..41b52a77 100644
+--- a/meson.build
++++ b/meson.build
+@@ -178,8 +178,8 @@ else
+   datadir = join_paths(prefix, get_option('datadir'))
+   sysconfdir = join_paths(prefix, get_option('sysconfdir'))
+   localstatedir = join_paths(prefix, get_option('localstatedir'))
+-  installed_test_bindir = join_paths(libexecdir, 'installed-tests', meson.project_name())
+-  installed_test_datadir = join_paths(datadir, 'installed-tests', meson.project_name())
++  installed_test_bindir = join_paths(get_option('installed_test_prefix'), 'libexec', 'installed-tests', meson.project_name())
++  installed_test_datadir = join_paths(get_option('installed_test_prefix'), 'share', 'installed-tests', meson.project_name())
+ endif
+ mandir = join_paths(prefix, get_option('mandir'))
+ localedir = join_paths(prefix, get_option('localedir'))
+diff --git a/meson_options.txt b/meson_options.txt
+index 730b4e40..c74fa96c 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -50,6 +50,7 @@ option('supported_build', type : 'boolean', value : false, description: 'distrib
+ option('systemd', type : 'boolean', value : true, description : 'enable systemd support')
+ option('systemd_root_prefix', type: 'string', value: '', description: 'Directory to base systemd’s installation directories on')
+ option('elogind', type : 'boolean', value : false, description : 'enable elogind support')
++option('installed_test_prefix', type: 'string', description: 'Prefix for installed tests')
+ option('tests', type : 'boolean', value : true, description : 'enable tests')
+ option('soup_session_compat', type : 'boolean', value : true, description : 'enable SoupSession runtime compatibility support')
+ option('curl', type : 'boolean', value : true, description : 'enable libcurl support')
+-- 
+2.34.0
+
