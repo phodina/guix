@@ -25,7 +25,7 @@
 ;;; Copyright © 2021 Gerd Heber <gerd.heber@gmail.com>
 ;;; Copyright © 2021, 2022 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2021 Ivan Gankevich <i.gankevich@spbu.ru>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 Foo Chuan Wei <chuanwei.foo@hotmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -64,6 +64,7 @@
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages bdw-gc)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages boost)
@@ -925,7 +926,7 @@ Emacs).")
 (define-public kicad
   (package
     (name "kicad")
-    (version "5.1.12")
+    (version "6.0.1")
     (source
      (origin
        (method git-fetch)
@@ -933,7 +934,7 @@ Emacs).")
              (url "https://gitlab.com/kicad/code/kicad.git")
              (commit version)))
        (sha256
-        (base32 "0kgikchqxds3mp71nkg307mr4c1dgv8akbmksz4w9x8jg4i1mfqq"))
+        (base32 "1vpcbhhw8844hm6vpk3kk405wak531pvcvcpc66z0b48iprk3imr"))
        (file-name (git-file-name name version))))
     (build-system cmake-build-system)
     (arguments
@@ -941,12 +942,11 @@ Emacs).")
        #:tests? #f                      ; no tests
        #:build-type "Release"
        #:configure-flags
-       ,#~(list
-           "-DKICAD_SCRIPTING_PYTHON3=ON"
-           "-DKICAD_SCRIPTING_WXPYTHON_PHOENIX=ON"
-           "-DCMAKE_BUILD_WITH_INSTALL_RPATH=TRUE"
-           (string-append "-DOCC_INCLUDE_DIR="
-                          #$(this-package-input "opencascade-occt") "/include/opencascade"))
+       (list "-DKICAD_SCRIPTING_PYTHON3=ON"
+            (string-append "-DOCC_INCLUDE_DIR=" (assoc-ref %build-inputs
+             "opencascade-occt") "/include/opencascade")
+             "-DKICAD_SCRIPTING_WXPYTHON_PHOENIX=ON"
+             "-DCMAKE_BUILD_WITH_INSTALL_RPATH=TRUE")
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'fix-ngspice-detection
@@ -966,11 +966,6 @@ Emacs).")
              (substitute* "common/lib_tree_model.cpp"
                (("#include <eda_pattern_match.h>" all)
                 (string-append "#include <algorithm>\n" all)))))
-         (add-after 'install 'install-translations
-           (lambda* (#:key inputs outputs #:allow-other-keys)
-             (copy-recursively (assoc-ref inputs "kicad-i18n")
-                               (assoc-ref outputs "out"))
-             #t))
          (add-after 'install 'wrap-program
            ;; Ensure correct Python at runtime.
            (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -1006,27 +1001,28 @@ Emacs).")
             (variable "KISYS3DMOD")     ; 3D model path
             (files '("share/kicad/modules/packages3d")))))
     (native-inputs
-     `(("boost" ,boost)
-       ("desktop-file-utils" ,desktop-file-utils)
-       ("gettext" ,gettext-minimal)
-       ("kicad-i18n" ,kicad-i18n)
-       ("pkg-config" ,pkg-config)
-       ("swig" ,swig)
-       ("zlib" ,zlib)))
+     (list boost
+       desktop-file-utils
+       gettext-minimal
+       pkg-config
+       swig
+       zlib))
     (inputs
-     `(("cairo" ,cairo)
-       ("curl" ,curl)
-       ("glew" ,glew)
-       ("glm" ,glm)
-       ("hicolor-icon-theme" ,hicolor-icon-theme)
-       ("libngspice" ,libngspice)
-       ("libsm" ,libsm)
-       ("mesa" ,mesa)
-       ("opencascade-occt" ,opencascade-occt)
-       ("openssl" ,openssl)
-       ("python" ,python-wrapper)
-       ("wxwidgets" ,wxwidgets)
-       ("wxpython" ,python-wxpython)))
+     (list bash-minimal
+       cairo
+       curl
+       glew
+       glm
+       hicolor-icon-theme
+       libngspice
+       libsm
+       mesa
+       opencascade-occt
+       openssl
+       python-wrapper
+       gtk+
+       wxwidgets
+       python-wxpython))
     (home-page "https://www.kicad.org/")
     (synopsis "Electronics Design Automation Suite")
     (description "Kicad is a program for the formation of printed circuit
