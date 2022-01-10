@@ -8418,6 +8418,33 @@ constructs.")
     (description "This package provides context managers by jaraco.")
     (license license:expat)))
 
+(define-public python-jaraco-functools
+  (package
+    (name "python-jaraco-functools")
+    (version "3.5.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "jaraco.functools" version))
+        (sha256
+          (base32 "186xqzs3bqhjwajnprxy3sc3h0w5vdld8spc1dxjnn9720yykq1i"))))
+    (build-system python-build-system)
+    (propagated-inputs (list python-more-itertools))
+    (native-inputs
+      (list python-jaraco.classes
+            python-pytest
+            python-pytest-black
+            python-pytest-checkdocs
+            python-pytest-cov
+            python-pytest-enabler
+            python-pytest-flake8
+            python-pytest-mypy))
+    (home-page "https://github.com/jaraco/jaraco.functools")
+    (synopsis "Functools like those found in stdlib")
+    (description "This package provides functools like those found in
+stdlib")
+    (license license:expat)))
+
 (define-public python-jaraco-packaging
   (package
     (name "python-jaraco-packaging")
