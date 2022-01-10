@@ -64,7 +64,7 @@
 ;;; Copyright © 2021, 2022 Felix Gruber <felgru@posteo.net>
 ;;; Copyright © 2021 Solene Rapenne <solene@perso.pw>
 ;;; Copyright © 2021 Noisytoot <noisytoot@disroot.org>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021, 2022 Brendan Tildesley <mail@brendan.scot>
 ;;; Copyright © 2021 Christopher Baines <mail@cbaines.net>
 ;;; Copyright © 2021 Foo Chuan Wei <chuanwei.foo@hotmail.com>
@@ -661,6 +661,35 @@ canyons and wait for the long I-shaped block to clear four rows at a time.")
     (description "Tetrinet is a multiplayer Tetris-like game with powerups and
 attacks you can use on opponents.")
     (license license:public-domain)))
+
+(define-public fuzzylite
+    (package
+      (name "fuzzylite")
+      (version "6.0")
+      (source (origin
+                (method git-fetch)
+                (uri
+                 (git-reference
+                  (url "https://github.com/fuzzylite/fuzzylite")
+                  (commit (string-append "v" version))))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0yay0qc81x0irlvxqpy7jywjxpkmpjabdhq2hdh28r9z85wp2nwb"))))
+      (build-system cmake-build-system)
+	  (arguments
+	   `(#:tests? #f ;fuzzylite/test/BenchmarkTest.cpp:32
+	     #:phases
+	     (modify-phases %standard-phases
+		  (add-after 'unpack 'chdir
+		   (lambda* _
+		   (chdir "fuzzylite"))))))
+      (native-inputs
+       (list pkg-config))
+      (synopsis "Fuzzy logic control library")
+      (description "This package provides fuzzy logic control library.")
+      (home-page "https://fuzzylite.com/")
+      (license license:gpl3+)))
 
 (define-public vitetris
   (package
