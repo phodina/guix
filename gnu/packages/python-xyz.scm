@@ -8394,6 +8394,30 @@ finding unresolved symbols in Python code and their corresponding imports.")
 constructs.")
     (license license:expat)))
 
+(define-public python-jaraco-context
+  (package
+    (name "python-jaraco-context")
+    (version "4.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "jaraco.context" version))
+        (sha256
+          (base32 "0hbjm1rpxf4pzmbdp9rh3ali4zqnlcr8m97bhh1nizxvzcpxim7h"))))
+    (build-system python-build-system)
+    (native-inputs
+      (list python-pytest
+            python-pytest-black
+            python-pytest-checkdocs
+            python-pytest-cov
+            python-pytest-enabler
+            python-pytest-flake8
+            python-pytest-mypy))
+    (home-page "https://github.com/jaraco/jaraco.context")
+    (synopsis "Context managers by jaraco")
+    (description "This package provides context managers by jaraco.")
+    (license license:expat)))
+
 (define-public python-jaraco-packaging
   (package
     (name "python-jaraco-packaging")
