@@ -197,6 +197,7 @@
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages squirrel)
   #:use-module (gnu packages swig)
+  #:use-module (gnu packages tbb)
   #:use-module (gnu packages tcl)
   #:use-module (gnu packages terminals)
   #:use-module (gnu packages texinfo)
@@ -690,6 +691,39 @@ attacks you can use on opponents.")
       (description "This package provides fuzzy logic control library.")
       (home-page "https://fuzzylite.com/")
       (license license:gpl3+)))
+
+(define-public vcmi
+  (let ((commit "ccfa6359ad0f62e9aaff7d3ea656ef94b57e214b")
+        (revision "1"))
+    (package
+      (name "vcmi")
+      (version (git-version "0.99" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri
+                 (git-reference
+                  (url "https://github.com/vcmi/vcmi")
+                  (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "13b1vx2alry04winf9z87pialc5hy950hlbflbp43nn9v41krnl5"))))
+      (build-system cmake-build-system)
+      (arguments
+       '(#:tests? #f
+         #:make-flags
+         (list (string-append "CPATH="
+                              (assoc-ref %build-inputs "sdl-union")
+                              "/include/SDL"))))
+      (native-inputs
+       (list pkg-config))
+      (inputs
+       (list boost ffmpeg fuzzylite luajit minizip tbb qtbase-5
+             (sdl-union (list sdl2 sdl2-mixer sdl2-image sdl2-ttf))))
+      (synopsis "Engine for Heroes of Might and Magic III")
+      (description "This package provides engine for Heroes of Might and Magic III.")
+      (home-page "https://vcmi.eu/")
+      (license license:gpl2+))))
 
 (define-public vitetris
   (package
