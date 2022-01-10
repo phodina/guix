@@ -28163,6 +28163,33 @@ graph can be output for rendering by GraphViz or yEd.")
 function implementations based on the types of the arguments.")
     (license license:bsd-3)))
 
+(define-public python-mvt
+  (package
+    (name "python-mvt")
+    (version "1.4.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "mvt" version))
+        (sha256
+          (base32 "1bhycy22n9bgnpr3b8jcwsnynclcrr8nrvkgm8mkmaxbva4k7wps"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      (list python-adb-shell
+            python-click
+            python-iosbackup
+            python-libusb1
+            python-packaging
+            python-requests
+            python-rich
+            python-simplejson
+            python-tld
+            python-tqdm))
+    (home-page "https://github.com/mvt-project/mvt")
+    (synopsis "Mobile Verification Toolkit")
+    (description "Mobile Verification Toolkit")
+    (license license:mvt1.1)))
+
 (define-public python-logical-unification
   (package
     (name "python-logical-unification")
