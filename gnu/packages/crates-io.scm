@@ -85,6 +85,7 @@
   #:use-module (gnu packages version-control)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
+  #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages webkit)
@@ -70892,6 +70893,31 @@ to XDG Base Directory specification.")
     (home-page "https://github.com/netvl/xml-rs")
     (synopsis "XML library in pure Rust")
     (description "An XML library in pure Rust.")
+    (license license:expat)))
+
+(define-public rust-xkbcommon-0.5
+  (package
+    (name "rust-xkbcommon")
+    (version "0.5.0-beta.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "xkbcommon" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0a5jpmgybpdcxx0w9l7z4rhsv9yvkibldbbz3kp7hd54s8287d77"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-libc" ,rust-libc-0.2)
+         ("rust-memmap" ,rust-memmap-0.7)
+         ("rust-xcb" ,rust-xcb-1))
+        #:cargo-development-inputs
+        (("rust-evdev" ,rust-evdev-0.11))))
+    (inputs (list libxkbcommon))
+    (home-page "https://github.com/rust-x-bindings/xkbcommon-rs")
+    (synopsis "Rust bindings and wrappers for libxkbcommon")
+    (description "Rust bindings and wrappers for libxkbcommon")
     (license license:expat)))
 
 (define-public rust-xml-rs-0.7
