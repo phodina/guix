@@ -836,10 +836,10 @@ EUI-64, also known as MAC-48 media access control addresses.")
        #:cargo-development-inputs
        (("rust-glob" ,rust-glob-0.3))))))
 
-(define-public rust-gl-0.11
+(define-public rust-gl-0.14
   (package
     (name "rust-gl")
-    (version "0.11.0")
+    (version "0.14.0")
     (source
       (origin
         (method url-fetch)
@@ -848,12 +848,14 @@ EUI-64, also known as MAC-48 media access control addresses.")
          (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
-          "1wcqpyhck0xriffkmgmldy33lwk2044hb4l02d44vm4fbvicin6p"))))
+          "015lgy3qpzdw7mnh59a4y4hdjq1fhv7nkqlmh1h6fzc212qxlkm9"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-gl-generator" ,rust-gl-generator-0.10))))
+       (("rust-gl-generator" ,rust-gl-generator-0.14))
+       #:cargo-development-inputs
+       (("rust-glutin" ,rust-glutin-0.21))))
     (home-page "https://github.com/brendanzab/gl-rs/")
     (synopsis "OpenGL bindings for rust")
     (description "This package provides OpenGL bindings for rust.")
@@ -1879,7 +1881,7 @@ interactive applications.")
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-gl" ,rust-gl-0.11)
+       (("rust-gl" ,rust-gl-0.14)
         ("rust-glutin" ,rust-glutin-0.21)
         ("rust-pistoncore-input" ,rust-pistoncore-input-0.28)
         ("rust-pistoncore-window" ,rust-pistoncore-window-0.44)
