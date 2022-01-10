@@ -70724,10 +70724,10 @@ extended attributes.")
     (license (list license:asl2.0
                    license:expat))))
 
-(define-public rust-xcb-0.9
+(define-public rust-xcb-1
   (package
     (name "rust-xcb")
-    (version "0.9.0")
+    (version "1.0.0-beta.3")
     (source
      (origin
        (method url-fetch)
@@ -70736,15 +70736,29 @@ extended attributes.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "19i2pm8alpn2f0m4jg8bsw6ckw8irj1wjh55h9pi2fcb2diny1b2"))))
+         "19axw8v861qf672hrfd981rxvgjc8fqclzy71i1j5ln487bdk8yh"))))
     (build-system cargo-build-system)
     (arguments
      `(#:tests? #f  ; Building all the features tests the code.
-       #:cargo-build-flags '("--features" "debug_all")
+       ;#:cargo-build-flags '("--features" "debug_all")
        #:cargo-inputs
-       (("rust-libc" ,rust-libc-0.2)
-        ("rust-log" ,rust-log-0.4)
-        ("rust-x11" ,rust-x11-2))))
+        (("rust-bitflags" ,rust-bitflags-1.3)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-quick-xml" ,rust-quick-xml-0.22)
+         ("rust-x11" ,rust-x11-2))
+       #:cargo-development-inputs
+        (("rust-gl" ,rust-gl-0.14))
+       ;#:features '("array_methods")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'enable-unstable-features
+           (lambda _
+		     (substitute* "src/lib.rs"
+			 (("#!\\[allow\\(dead_code\\)\\]")
+			 "#![feature(array_methods)]\n#![allow(dead_code)]"))
+             (setenv "RUSTC_BOOTSTRAP" "1")
+             #t)))))
     (inputs
      (list libx11 libxcb xcb-proto))
     (native-inputs
