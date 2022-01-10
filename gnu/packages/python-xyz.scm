@@ -8368,6 +8368,32 @@ finding unresolved symbols in Python code and their corresponding imports.")
      "@code{inotify-simple} is a simple wrapper around inotify library.")
     (license license:bsd-3)))
 
+(define-public python-jaraco-classes
+  (package
+    (name "python-jaraco-classes")
+    (version "3.2.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "jaraco.classes" version))
+        (sha256
+          (base32 "0d6g7qvfv1jlzbzh6asprqdblqd59grvlvr3nwbdqdqrmwlbfm7d"))))
+    (build-system python-build-system)
+    (propagated-inputs (list python-more-itertools))
+    (native-inputs
+      (list python-pytest
+            python-pytest-black
+            python-pytest-checkdocs
+            python-pytest-cov
+            python-pytest-enabler
+            python-pytest-flake8
+            python-pytest-mypy))
+    (home-page "https://github.com/jaraco/jaraco.classes")
+    (synopsis "Utility functions for Python class constructs")
+    (description "This package provides utility functions for Python class
+constructs.")
+    (license license:expat)))
+
 (define-public python-jaraco-packaging
   (package
     (name "python-jaraco-packaging")
