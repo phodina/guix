@@ -19077,7 +19077,7 @@ multitouch applications.")
 (define-public python2-backports-functools-lru-cache
   (package
     (name "python2-backports-functools-lru-cache")
-    (version "1.6.1")
+    (version "1.6.4")
     (source
      (origin
        (method url-fetch)
@@ -19085,10 +19085,18 @@ multitouch applications.")
        (uri (pypi-uri "backports.functools_lru_cache" version))
        (sha256
         (base32
-         "0jidrkk2w6bhjm197plxiaxrav64mgcrign0bfyr7md2ilc5zplg"))))
+         "0wc28ynnhnlk2hwmkcfsav20jfwj78v0sq758p2x6rwb6xlj3vfm"))))
     (build-system python-build-system)
-    (native-inputs
-     (list python2-setuptools-scm))
+	;(native-inputs
+    ;  (list python-pytest
+    ;        python-pytest-black
+    ;        python-pytest-checkdocs
+    ;        python-pytest-cov
+    ;        python-pytest-enabler
+    ;        python-pytest-flake8
+    ;        python-pytest-mypy))
+    ;(native-inputs
+    ; (list python2-setuptools-scm))
     (arguments
      `(#:python ,python-2))
     (home-page "https://github.com/jaraco/backports.functools_lru_cache")
