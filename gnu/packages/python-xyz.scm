@@ -175,6 +175,7 @@
   #:use-module (gnu packages libevent)
   #:use-module (gnu packages libffi)
   #:use-module (gnu packages libidn)
+  #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages llvm)
   #:use-module (gnu packages man)
@@ -444,6 +445,36 @@ features of the Python's built-in dict.")
     (build-system python-build-system)
     (arguments
      `(#:python ,python-2))))
+
+(define-public python-adb-shell
+  (package
+    (name "python-adb-shell")
+    (version "0.4.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/JeffLIrion/adb_shell")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "1rnd272ba6h48kn0xkb51d5jz75lqs1yvbdfg84315cb7552bmzj"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:tests? #f                      ; needs access to USB
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'check 'fix-home
+           (lambda _
+             (setenv "HOME" "/tmp"))))))
+    (native-inputs (list python-pycryptodome))
+    (propagated-inputs (list python-cryptography python-libusb1 python-pyasn1 python-rsa))
+    (inputs (list libusb))
+    (home-page "https://github.com/JeffLIrion/adb_shell")
+    (synopsis "Python implementation of ADB")
+    (description
+     "This package provides a Python implementation of ADB with shell and FileSync
+functionality.")
+    (license license:asl2.0)))
 
 (define-public python-argopt
   (package
