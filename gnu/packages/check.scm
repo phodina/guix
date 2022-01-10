@@ -1239,6 +1239,25 @@ supports coverage of subprocesses.")
 contacting the real http server.")
     (license license:expat)))
 
+(define-public python-pytest-mypy
+  (package
+    (name "python-pytest-mypy")
+    (version "0.8.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "pytest-mypy" version))
+        (sha256
+          (base32 "049v7y4zv2l0ymj03casr5fad8hm89lvvhx1rd7ha7dzlhimg98z"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      (list python-attrs python-filelock python-mypy python-pytest))
+    (home-page "https://github.com/dbader/pytest-mypy")
+    (synopsis "Mypy static type checker plugin for Pytest")
+    (description "This package provides mypy static type checker plugin for
+Pytest.")
+    (license license:expat)))
+
 (define-public python-pytest-random-order
   (package
     (name "python-pytest-random-order")
