@@ -81,6 +81,7 @@
             miros
             mpl1.0 mpl1.1 mpl2.0
             ms-pl
+            mvt1.1
             ncsa
             nmap
             ogl-psi1.0
@@ -551,6 +552,11 @@ at URI, which may be a file:// URI pointing the package's tree."
   (license "Ms-PL"                                ;Microsoft Public License
            "http://directory.fsf.org/wiki/License:MsPL"
            "http://www.gnu.org/licenses/license-list.html#ms-pl"))
+
+(define mvt1.1
+  (license "MVT License 1.1"
+           "http://directory.fsf.org/wiki/License:MVT1.1"
+  "https://github.com/mvt-project/license/blob/main/MVT%20License%201.1.txt"))
 
 (define ncsa
   (license "NCSA/University of Illinois Open Source License"
