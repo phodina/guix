@@ -24547,6 +24547,26 @@ bindings for Python 3.")
 standard error channel (stderr) in your program.")
       (license license:expat))))
 
+(define-public python-iosbackup
+  (package
+    (name "python-iosbackup")
+    (version "0.9.921")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "iOSbackup" version))
+       (sha256
+        (base32 "1mj9xzzd9r1xq5glgw3f6m7i04cqvr74sdimi77ivvrcfriy0rcv"))))
+    (build-system python-build-system)
+    (propagated-inputs (list python-nskeyedunarchiver python-pycryptodome))
+    (home-page "https://github.com/avibrazil/iOSbackup")
+    (synopsis "Read and extract files from iOS backups")
+    (description "This package reads and extracts files from
+password-encrypted iOS backups")
+    ;; Not sure about the exact version of the license
+    ;; https://github.com/avibrazil/iOSbackup/blob/ca4b3d9c6148237917d290615c6c7f172c03c3a0/setup.py#L29
+    (license license:lgpl2.0)))
+
 (define-public python-anyio
   (package
     (name "python-anyio")
