@@ -1181,6 +1181,33 @@ supports coverage of subprocesses.")
 (define-public python2-pytest-cov
   (package-with-python2 python-pytest-cov))
 
+(define-public python-pytest-enabler
+  (package
+    (name "python-pytest-enabler")
+    (version "1.2.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "pytest-enabler" version))
+        (sha256
+          (base32 "023ymm0r2gpn5q7aikvx567s507j0zk46w41w6gxb69c688zgs73"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      (list python-jaraco-context python-jaraco-functools python-toml))
+    (native-inputs
+      (list python-pytest
+            python-pytest-black
+            python-pytest-checkdocs
+            python-pytest-cov
+            python-pytest-enabler
+            python-pytest-flake8
+            python-pytest-mypy
+            python-types-toml))
+    (home-page "https://github.com/jaraco/pytest-enabler")
+    (synopsis "Enable installed pytest plugins")
+    (description "This package enables installed pytest plugins.")
+    (license license:expat)))
+
 (define-public python-pytest-httpserver
   (package
     (name "python-pytest-httpserver")
