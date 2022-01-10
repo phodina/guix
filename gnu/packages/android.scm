@@ -1025,6 +1025,32 @@ Boot Images.  @code{abootimg} can work directly on block devices, or, the
 safest way, on a file image.")
     (license license:gpl2+)))
 
+(define-public boot-deploy
+(package
+  (name "boot-deploy")
+  (version "0.3")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+              (url "https://gitlab.com/postmarketOS/boot-deploy")
+              (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0qwgxks3j5wxzm34c0hlacp0f5i8rn20r1fz37h0y574j1cbf6va"))))
+  (build-system gnu-build-system)
+  (arguments
+    '(#:tests? #f
+      #:phases
+        (modify-phases %standard-phases
+         (delete 'configure)
+         (delete 'build))))
+  ;; Add phase install
+  (synopsis "Boot deploy for PostmarketOS devices")
+  (description "This packages provides tools to generate and deploy images for PostmarketOS devices.")
+  (home-page "https://gitlab.com/postmarketOS/boot-deploy")
+  (license license:gpl3+)))
+
 (define-public python-androguard
   (package
     (name "python-androguard")
