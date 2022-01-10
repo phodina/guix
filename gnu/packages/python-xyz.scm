@@ -104,7 +104,7 @@
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021 Hugo Lecomte <hugo.lecomte@inria.fr>
 ;;; Copyright © 2021 Franck Pérignon <franck.perignon@univ-grenoble-alpes.fr>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 Simon Streit <simon@netpanic.org>
 ;;; Copyright © 2021 Daniel Meißner <daniel.meissner-i4k@ruhr-uni-bochum.de>
 ;;; Copyright © 2021 Pradana Aumars <paumars@courrier.dev>
@@ -21588,6 +21588,23 @@ based on the CPython 2.7 and 3.7 parsers.")
 Python 3.6+ type hints.")
     ;; MIT license
     (license license:expat)))
+
+(define-public python-types-toml
+  (package
+    (name "python-types-toml")
+    (version "0.10.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "types-toml" version))
+       (sha256
+        (base32 "0jjncbnkq4pkk9n25xry5yj83dhywz0r6qfnvxdyqlc635wplni1"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/python/typeshed")
+    (synopsis "External type annotations")
+    (description "This package provides external type annotations for
+the Python standard library and Python builtins.")
+    (license license:asl2.0)))
 
 (define-public python-typeguard
   (package
