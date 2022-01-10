@@ -5570,6 +5570,24 @@ writing C extensions for Python as easy as Python itself.")
                 "17fqacrpis05w1rpi7d7sbimrk20xf8h6d3vrz5nf6ix3899abil"))))
     (properties '())))
 
+(define-public python-nskeyedunarchiver
+  (package
+    (name "python-nskeyedunarchiver")
+    (version "1.5")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "NSKeyedUnArchiver" version))
+       (sha256
+        (base32 "1x0lsjx4935lhgj6ph2zrj7g1a61fw1sib7y1xp365qq0a009npf"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/avibrazil/NSKeyedUnArchiver")
+    (synopsis "Decode Apple's NSKeyedArchiver")
+    (description
+     "This package decodes Apple's NSKeyedArchiver that were archived into
+text or binary plist files and returns a usable Python dict.")
+    (license license:lgpl3)))
+
 (define-public python-numpy-next
   (package
     (name "python-numpy-next")
