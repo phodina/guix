@@ -22604,6 +22604,25 @@ Public Suffix List's private domains as well.")
 (define-public python2-tldextract
   (package-with-python2 python-tldextract))
 
+(define-public python-tld
+  (package
+    (name "python-tld")
+    (version "0.12.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "tld" version))
+        (sha256
+          (base32 "1w77ydipnfmsmbl00aq5bk2rds5cvrpzcjpvcr9p2gxv4sfx3zk9"))))
+    (build-system python-build-system)
+    (propagated-inputs
+      (list python2-backports-functools-lru-cache python-six python-typing))
+    (home-page "https://github.com/barseghyanartur/tld")
+    (synopsis "Extract the top-level domain")
+    (description "This package extracts the top-level domain from the URL
+given.")
+    (license (list license:mpl1.1 license:gpl2 license:lgpl2.1+))))
+
 (define-public python-tldr
   (package
     (name "python-tldr")
