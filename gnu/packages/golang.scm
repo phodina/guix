@@ -1750,6 +1750,29 @@ Go.")
 to list and manipulate processes in a safe way.")
       (license license:expat))))
 
+(define-public go-github-com-absfs-absfs
+  (package
+    (name "go-github-com-absfs-absfs")
+    (version "0.0.0-20200602175035-e49edc9fef15")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/absfs/absfs")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0vqnlzhqx02mcl3vqxyavvvwa8h1kmcs0cqj5cpcih1aszg0r6hg"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/absfs/absfs"))
+    (home-page "https://github.com/absfs/absfs")
+    (synopsis "Abstract File System for go")
+    (description
+      "This package provides file and file system interfaces for abstract file
+system primitives.  It's purpose is to define a filesystem abstraction that
+supports common file system operations.")
+    (license license:expat)))
+
 (define-public go-github-com-apparentlymart-go-openvpn-mgmt
   (let ((commit "4d2ce95ae600ee04eeb020ee0997aabb82752210")
         (revision "0"))
