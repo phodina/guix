@@ -45,7 +45,7 @@
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -156,6 +156,31 @@
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg))
+
+(define-public adalanche
+  (package
+    (name "adalanche")
+    (version "20210902")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/lkarlslund/adalanche")
+                    (commit (string-append "r" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "16wf0xsslv0f63zimfqrsyxq5555y1knzvi8p634mmj7ihgwgcdv"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/lkarlslund/adalanche"
+       #:unpack-path "github.com/lkarlslund/adalanche"))
+    (inputs (list go-github-com-absfs-absfs go-github-com-absfs-osfs go-github-com-absfs-gofs go-github-com-oneofone-xxhash go-github-com-showmax-go-fqdn))
+    (home-page "https://github.com/lkarlslund/adalanche")
+    (synopsis "Active Directory ACL Visualizer and Explorer")
+    (description "This package provides GUI tool to visualize and explore
+who can take over accounts, machines or the entire domain, and can be used
+to find and show misconfigurations.")
+    (license license:gpl3+)))
 
 ;; This package uses su instead of sudo (because of SpaceFM).
 (define-public ktsuss
