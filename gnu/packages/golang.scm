@@ -1796,6 +1796,29 @@ implementations, in particular file systems that implement
 the absfs.FileSystem interface.")
     (license license:expat)))
 
+(define-public go-github-com-absfs-gofs
+  (package
+    (name "go-github-com-absfs-gofs")
+    (version "0.0.0-20210326223041-415ec8094056")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/absfs/gofs")
+             (commit (go-version->git-ref version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "16ji24wsi09hf8zrvzgib08va2h3wkfcfa2ag45663iifqs1scgc"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/absfs/gofs"))
+    (inputs
+     (list go-github-com-absfs-absfs go-github-com-absfs-inode go-github-com-absfs-memfs))
+    (home-page "https://github.com/absfs/gofs")
+    (synopsis "Abstract File System interface")
+    (description "The @code{gofs} package adds Go @code{fs} filesystem
+interface support to any @code{absfs} filesystem implementation.")
+    (license license:expat)))
+
 (define-public go-github-com-absfs-inode
   (package
     (name "go-github-com-absfs-inode")
