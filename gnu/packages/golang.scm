@@ -1773,6 +1773,29 @@ system primitives.  It's purpose is to define a filesystem abstraction that
 supports common file system operations.")
     (license license:expat)))
 
+(define-public go-github-com-absfs-fstesting
+  (package
+    (name "go-github-com-absfs-fstesting")
+    (version "0.0.0-20180810212821-8b575cdeb80d")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/absfs/fstesting")
+             (commit (go-version->git-ref version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1kzzy1v8p78d3iz5zk8vx5ck4ijrnz442ymb71cbyahawskin6lw"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/absfs/fstesting"))
+    (inputs (list go-github-com-absfs-absfs go-github-com-fatih-color go-github-com-xtgo-set))
+    (home-page "https://github.com/absfs/fstesting")
+    (synopsis "File System testing suite")
+    (description "@code{fstesting} is a go package for testing filesystem
+implementations, in particular file systems that implement
+the absfs.FileSystem interface.")
+    (license license:expat)))
+
 (define-public go-github-com-absfs-inode
   (package
     (name "go-github-com-absfs-inode")
