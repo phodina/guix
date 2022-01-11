@@ -7755,6 +7755,28 @@ ssh-agent that uses UNIX sockets, and one could implement an alternative
 ssh-agent process using the sample server.")
     (license license:asl2.0)))
 
+(define-public go-github-com-xtgo-set
+  (package
+    (name "go-github-com-xtgo-set")
+    (version "1.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/xtgo/set")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "148jb5f87lf7090jg8340f24r29818krydajkm75vpzylaw6yd8w"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/xtgo/set"))
+    (home-page "https://github.com/xtgo/set")
+    (synopsis "Algorithms for ordered sets")
+    (description
+     "Package set implements type-safe, non-allocating algorithms that operate on
+ordered sets.")
+    (license license:bsd-2)))
+
 (define-public go-github-com-alcortesm-tgz
   (let ((commit "9c5fe88206d7765837fed3732a42ef88fc51f1a1")
         (revision "1"))
