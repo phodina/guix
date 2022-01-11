@@ -49,7 +49,8 @@
   #:use-module (gnu packages linux)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages python)
-  #:use-module (gnu packages pkg-config))
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages vim)) ; xxd
 
 (define-public ath9k-htc-firmware
   (package
@@ -166,6 +167,38 @@ Linux-libre.")
 assembler, disassembler, and debugging tools for the Linux kernel b43 wireless
 driver.")
       (license license:gpl2))))
+
+(define-public pinebook-pro-keyboard-updater
+  (package
+    (name "pinebook-pro-keyboard-updater")
+    (version "0.0.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/dragan-simic/pinebook-pro-keyboard-updater")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "03zvdqbyl4kvk99b50d2j2l164x8c5mwklpk5rml5m34k5mjrr6z"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (install-file "updater" (string-append (assoc-ref outputs "out")
+                                                    "/bin")))))))
+    (native-inputs (list pkg-config))
+    (inputs (list libusb xxd))
+    (synopsis "Improved keyboard and touchpad firmware updater")
+    (description "This package provides utility to update the keyboard
+and trackpad firmware in the Pinebook Pro laptop, made by Pine64.  Both ANSI
+and ISO variants of the Pinebook Pro are supported.")
+    (home-page "https://github.com/dragan-simic/pinebook-pro-keyboard-updater")
+    (license license:expat)))
 
 (define-public openfwwf-firmware
   (package
