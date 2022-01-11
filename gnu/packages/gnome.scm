@@ -6548,6 +6548,31 @@ GNOME Games, but it may be used by others.")
                                        libgnome-games-support)
                          (replace "gtk" gtk+)))))
 
+;; patch for systemd
+(define-public gnome-kiosk
+  (package
+    (name "gnome-kiosk")
+    (version "41.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://gitlab.gnome.org/GNOME/gnome-kiosk")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1qc13n0r8kzcac0nm884hwcl38c6vb8aad80q7gmykb13s8b6cxd"))))
+    (build-system meson-build-system)
+    (native-inputs (list pkg-config))
+    (inputs (list glib graphene gtk+ mutter))
+    (home-page "https://gitlab.gnome.org/GNOME/gnome-kiosk")
+    (synopsis "Mutter based compositor for kiosk")
+    (description "Kiosk provides a desktop enviroment suitable for fixed
+purpose, or single application deployments like wall displays and
+point-of-sale systems.  It is requires less system resources than Mutter.")
+    (license license:gpl2+)))
+
 (define-public gnome-klotski
   (package
     (name "gnome-klotski")
