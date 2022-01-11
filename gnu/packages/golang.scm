@@ -1819,6 +1819,30 @@ This package does not implement any actual data storage features, only
 the data structures and logic needed to implement a storage system.")
     (license license:expat)))
 
+(define-public go-github-com-absfs-osfs
+  (package
+    (name "go-github-com-absfs-osfs")
+    (version "0.0.0-20210816191758-403afc5396f8")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/absfs/osfs")
+             (commit (go-version->git-ref version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0l85aqdn2sw1grpxssx6p2vnsblg7cxw50izsnbg5prjn8z3sxrc"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/absfs/osfs"))
+    (inputs
+     (list go-github-com-xtgo-set go-github-com-fatih-color go-github-com-absfs-fstesting go-github-com-absfs-absfs))
+    (home-page "https://github.com/absfs/osfs")
+    (synopsis "osfs - Abstract File System interface")
+    (description
+     "@code{osfs} package implements the absfs.FileSystem interface using the
+@code{os} standard library file access functions.")
+    (license license:expat)))
+
 (define-public go-github-com-apparentlymart-go-openvpn-mgmt
   (let ((commit "4d2ce95ae600ee04eeb020ee0997aabb82752210")
         (revision "0"))
