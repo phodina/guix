@@ -1773,6 +1773,29 @@ system primitives.  It's purpose is to define a filesystem abstraction that
 supports common file system operations.")
     (license license:expat)))
 
+(define-public go-github-com-absfs-inode
+  (package
+    (name "go-github-com-absfs-inode")
+    (version "0.0.0-20190804195220-b7cd14cdd0dc")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/absfs/inode")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0sryaj5n2chhzq0svvxiv9wnfy2jdprqcwm6j41qxd0qn01ydjgm"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/absfs/inode"))
+    (home-page "https://github.com/absfs/inode")
+    (synopsis "Inode filesystem primitive")
+    (description "The @code{inode} package provides @code{Inode},
+@code{Directory}, and @code{DirEntry} primitives for inode style filesystems.
+This package does not implement any actual data storage features, only
+the data structures and logic needed to implement a storage system.")
+    (license license:expat)))
+
 (define-public go-github-com-apparentlymart-go-openvpn-mgmt
   (let ((commit "4d2ce95ae600ee04eeb020ee0997aabb82752210")
         (revision "0"))
