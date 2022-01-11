@@ -11641,6 +11641,25 @@ asyncio.")
 Python code formatter \"black\".")
     (license license:expat)))
 
+(define-public python-geojson
+  (package
+    (name "python-geojson")
+    (version "2.5.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "geojson" version))
+       (sha256
+        (base32 "12k5bzqskvq3gqzkryarhdjl0df47y5k9cf8r3clasi2wjnbfjvf"))))
+    (build-system python-build-system)
+    (arguments
+     ;; https://github.com/jazzband/geojson/issues/175
+     `(#:tests? #f))
+    (home-page "https://github.com/jazzband/geojson")
+    (synopsis "Python bindings and utilities for GeoJSON")
+    (description "Python bindings and utilities for GeoJSON")
+    (license license:bsd-3)))
+
 (define-public python-get-version
   (package
     (name "python-get-version")
