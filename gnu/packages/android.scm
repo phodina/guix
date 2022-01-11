@@ -11,7 +11,7 @@
 ;;; Copyright © 2019 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2020 Sergey Trofimov <sarg@sarg.org.ru>
 ;;; Copyright © 2021 Guillaume Le Vaillant <glv@posteo.net>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -34,6 +34,7 @@
   #:use-module (guix gexp)
   #:use-module (guix git-download)
   #:use-module (guix build-system android-ndk)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system go)
   #:use-module (guix build-system python)
@@ -49,7 +50,9 @@
   #:use-module (gnu packages image)
   #:use-module (gnu packages java)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages qt)
   #:use-module (gnu packages pcre)
+  #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
@@ -61,6 +64,7 @@
   #:use-module (gnu packages time)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages version-control)
+  #:use-module (gnu packages video)
   #:use-module (gnu packages virtualization)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml))
@@ -1122,6 +1126,59 @@ backups.  It supports encrypted archives.")
     (description "This package provides library and command line interface
 for communicating with Xiaomi smart appliances over miIO and MIoT protocols.")
     (license license:gpl3+)))
+
+(define-public qtscrcpy
+    (package
+      (name "qtscrcpy")
+      (version "1.7.1")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/barry-ran/QtScrcpy")
+                      (commit (string-append "v" version))))
+                (file-name (git-file-name name version))
+		(modules '((guix build utils)))
+		(snippet
+		  ; remove third_party libs
+		  '(begin
+		     (delete-file-recursively "third_party")))
+                (sha256
+                 (base32
+                  "0i84qv6llsp4g8si2iczbpr5igvw42lz8n3h2kymsp1qf68748qw"))))
+      (build-system cmake-build-system)
+      (arguments
+        `(#:tests? #f
+          #:phases
+          (modify-phases %standard-phases
+		    (add-after 'unpack 'fix-adb-path
+			(lambda* (#:key inputs #:allow-other-keys)
+			 (substitute* "QtScrcpy/main.cpp"
+			 (("\"\\..*linux/adb") (string-append "\""
+			 (assoc-ref inputs "adb") "/bin/adb")))))
+            (replace 'install
+              (lambda* (#:key outputs #:allow-other-keys)
+                (let* ((out (assoc-ref outputs "out"))
+				(build (string-append (getenv "PWD") "/source"))
+		      (bin (string-append out "/bin"))
+		      (qtscrcpy (string-append build "/output/linux/release/QtScrcpy"))
+		      (pixmaps (string-append out "/usr/share/pixmaps"))
+		      (logo (string-append build "/backup/logo.png"))
+		      (config (string-append out "/etc/qtscrcpy"))
+		      (ini (string-append build "/config/config.ini")))
+		  (mkdir-p bin)
+		  (mkdir-p pixmaps)
+		  (mkdir-p config)
+		  (install-file qtscrcpy bin)
+		  (install-file logo pixmaps)
+		  (install-file ini config)))))))
+      (native-inputs (list pkg-config))
+      (inputs (list adb ffmpeg qttools qtx11extras qtbase-5))
+      (synopsis "Android real-time display control software")
+      (description "This package provides QtScrcpy which connects to Android
+devices via USB (or via TCP/IP) for display and control.  It does NOT require
+the root privileges.  Supports up to 16 Android device connections at the same time.")
+      (home-page "https://github.com/DanielOgorchock/joycond")
+      (license license:asl2.0)))
 
 (define-public fdroidserver
   (package
