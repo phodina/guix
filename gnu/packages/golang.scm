@@ -1819,6 +1819,32 @@ This package does not implement any actual data storage features, only
 the data structures and logic needed to implement a storage system.")
     (license license:expat)))
 
+(define-public go-github-com-absfs-memfs
+  (package
+    (name "go-github-com-absfs-memfs")
+    (version "0.0.0-20190429000831-6a320d582782")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/absfs/memfs")
+             (commit (go-version->git-ref version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "1lx3277zdx92f7vdql2g64jwr2qibyn113kqaphrarw32dq1h5ks"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/absfs/memfs"))
+    (home-page "https://github.com/absfs/memfs")
+    (native-inputs (list go-github-com-absfs-fstesting
+                         go-github-com-absfs-osfs go-github-com-fatih-color go-github-com-xtgo-set))
+    (inputs (list go-github-com-absfs-absfs go-github-com-absfs-inode))
+        
+    (synopsis "In Memory File System")
+    (description
+     "The @code{memfs} package implements the @code{absfs.FileSystem}
+interface as a RAM backed filesystem.")
+    (license license:expat)))
+
 (define-public go-github-com-absfs-osfs
   (package
     (name "go-github-com-absfs-osfs")
