@@ -2134,6 +2134,47 @@ role, and your gender.")
       (license:fsdg-compatible
         "https://nethack.org/common/license.html"))))
 
+(define-public pekka-kana-2
+(package
+  (name "pekka-kana-2")
+  (version "1.4.2")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/danilolc/pk2")
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "1jmiqswkjy1hpb2vzanga8kzv4nd42mmifzh8gq297yvb18gq3qc"))))
+  (build-system gnu-build-system)
+  (arguments
+  `(#:tests? #f
+    #:phases
+    (modify-phases %standard-phases
+         (add-after 'unpack 'find-SDL-image
+           (lambda _
+		     ;; No need to pass git commit
+             (substitute* "Makefile"
+               (("-DCOMMIT_HASH.*") ""))
+             (substitute* "src/engine/PSound.cpp"
+               (("SDL_mixer.h") "SDL2/SDL_mixer.h"))
+             (substitute* "src/engine/PDraw.cpp"
+               (("SDL_image.h") "SDL2/SDL_image.h"))
+             (substitute* "src/engine/PRender.cpp"
+               (("SDL_image.h") "SDL2/SDL_image.h"))))
+	 (delete 'configure)
+	 (replace 'install
+	 (lambda* (#:key outputs #:allow-other-keys)
+	  (install-file "bin/pekka-kana-2" (string-append (assoc-ref outputs "out")
+	  "/bin")))))))
+  (native-inputs (list autoconf automake libtool pkg-config))
+  (inputs (list perl python (sdl-union (list sdl2 sdl2-image sdl2-mixer sdl2-net))))
+  (synopsis "Rooster platformer game")
+  (description "")
+  (home-page "http://pistegamez.net/game_pk2.html")
+  (license license:expat)))
+
 (define-public pipewalker
   (package
     (name "pipewalker")
