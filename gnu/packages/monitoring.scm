@@ -481,13 +481,13 @@ demand.")
 (define-public python-prometheus-client
   (package
     (name "python-prometheus-client")
-    (version "0.7.1")
+    (version "0.12.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "prometheus_client" version))
        (sha256
-        (base32 "1ni2yv4ixwz32nz39ckia76lvggi7m19y5f702w5qczbnfi29kbi"))))
+        (base32 "1if31rsklqfsvpbymg3fmg8g5ifkrd3i0jp6kl5rnfz3rr4bl4hv"))))
     (build-system python-build-system)
     (arguments
      '(;; No included tests.
