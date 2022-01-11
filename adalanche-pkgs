@@ -1,0 +1,325 @@
+(define-public go-github-com-gin-contrib-sse
+  (package
+    (name "go-github-com-gin-contrib-sse")
+    (version "0.1.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/gin-contrib/sse")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "072nq91a65n5xvwslqjyvydfd0mfpnvb3vwjyfvmzm1ym96wr1nd"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/gin-contrib/sse"))
+    (propagated-inputs
+      `(("go-github-com-stretchr-testify" ,go-github-com-stretchr-testify)))
+    (home-page "https://github.com/gin-contrib/sse")
+    (synopsis "Server-Sent Events")
+    (description
+      "Server-sent events (SSE) is a technology where a browser receives automatic
+updates from a server via HTTP connection.  The Server-Sent Events EventSource
+API is @url{http://www.w3.org/TR/2009/WD-eventsource-20091029/,standardized as
+part of HTML5[1] by the W3C}.")
+    (license license:expat)))
+
+(define-public go-github-com-go-playground-assert-v2
+  (package
+    (name "go-github-com-go-playground-assert-v2")
+    (version "2.0.1")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/go-playground/assert")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "1cl9c4s405zddzrj36hhs0a18g02zscdl46fyipp6k91mhvai8wz"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/go-playground/assert/v2"))
+    (home-page "https://github.com/go-playground/assert")
+    (synopsis "Package assert")
+    (description
+      "Package assert provides some basic assertion functions for testing and also
+provides the building blocks for creating your own more complex validations.")
+    (license license:expat)))
+
+(define-public go-github-com-go-playground-validator-v10
+  (package
+    (name "go-github-com-go-playground-validator-v10")
+    (version "10.10.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/go-playground/validator")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0cqbmi9nzh0l41162yb0h69q06kcjjqk6w3asd8jxj4ykxn7fsx4"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/go-playground/validator/v10"))
+    (propagated-inputs
+      `(("go-gopkg-in-yaml-v3" ,go-gopkg-in-yaml-v3)
+        ("go-gopkg-in-check-v1" ,go-gopkg-in-check-v1)
+        ("go-golang-org-x-text" ,go-golang-org-x-text)
+        ("go-golang-org-x-sys" ,go-golang-org-x-sys)
+        ("go-golang-org-x-crypto" ,go-golang-org-x-crypto)
+        ("go-github-com-stretchr-testify" ,go-github-com-stretchr-testify)
+        ("go-github-com-rogpeppe-go-internal"
+         ,go-github-com-rogpeppe-go-internal)
+        ("go-github-com-leodido-go-urn" ,go-github-com-leodido-go-urn)
+        ("go-github-com-kr-pretty" ,go-github-com-kr-pretty)
+        ("go-github-com-go-playground-universal-translator"
+         ,go-github-com-go-playground-universal-translator)
+        ("go-github-com-go-playground-locales"
+         ,go-github-com-go-playground-locales)
+        ("go-github-com-go-playground-assert-v2"
+         ,go-github-com-go-playground-assert-v2)
+        ("go-github-com-davecgh-go-spew" ,go-github-com-davecgh-go-spew)))
+    (home-page "https://github.com/go-playground/validator")
+    (synopsis "Package validator")
+    (description
+      "Package validator implements value validations for structs and individual fields
+based on tags.")
+    (license license:expat)))
+
+(define-public go-github-com-google-go-cmp
+  (package
+    (name "go-github-com-google-go-cmp")
+    (version "0.5.6")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/google/go-cmp")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0lrb0pacv5iy3m6fn1qb3nv7zwimfhpzqq8f6hwpwx88cx3g6p1s"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/google/go-cmp"))
+    (propagated-inputs `(("go-golang-org-x-xerrors" ,go-golang-org-x-xerrors)))
+    (home-page "https://github.com/google/go-cmp")
+    (synopsis "Package for equality of Go values")
+    (description
+      "This package is intended to be a more powerful and safer alternative to
+@code{reflect.DeepEqual} for comparing whether two values are semantically
+equal.")
+    (license license:bsd-3)))
+
+(define-public go-google-golang-org-protobuf
+  (package
+    (name "go-google-golang-org-protobuf")
+    (version "1.27.1")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://go.googlesource.com/protobuf")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0aszb7cv8fq1m8akgd4kjyg5q7g5z9fdqnry6057ygq9r8r2yif2"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "google.golang.org/protobuf"))
+    (propagated-inputs
+      `(("go-github-com-google-go-cmp" ,go-github-com-google-go-cmp)
+        ("go-github-com-golang-protobuf" ,go-github-com-golang-protobuf)))
+    (home-page "https://google.golang.org/protobuf")
+    (synopsis "Go support for Protocol Buffers")
+    (description
+      "This project hosts the Go implementation for
+@url{https://developers.google.com/protocol-buffers,protocol buffers}, which is
+a language-neutral, platform-neutral, extensible mechanism for serializing
+structured data.  The protocol buffer language is a language for specifying the
+schema for structured data.  This schema is compiled into language specific
+bindings.  This project provides both a tool to generate Go code for the
+protocol buffer language, and also the runtime implementation to handle
+serialization of messages in Go.  See the
+@url{https://developers.google.com/protocol-buffers/docs/overview,protocol
+buffer developer guide} for more information about protocol buffers themselves.")
+    (license license:bsd-3)))
+
+(define-public go-github-com-golang-protobuf
+  (package
+    (name "go-github-com-golang-protobuf")
+    (version "1.5.2")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/golang/protobuf")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "1mh5fyim42dn821nsd3afnmgscrzzhn3h8rag635d2jnr23r1zhk"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/golang/protobuf"))
+    (propagated-inputs
+      `(("go-google-golang-org-protobuf" ,go-google-golang-org-protobuf)
+        ("go-github-com-google-go-cmp" ,go-github-com-google-go-cmp)))
+    (home-page "https://github.com/golang/protobuf")
+    (synopsis "Go support for Protocol Buffers")
+    (description
+      "This module (@url{https://pkg.go.dev/mod/github.com/golang/protobuf,(code
+github.com/golang/protobuf)}) contains Go bindings for protocol buffers.")
+    (license license:bsd-3)))
+
+(define-public go-github-com-modern-go-concurrent
+  (package
+    (name "go-github-com-modern-go-concurrent")
+    (version "0.0.0-20180306012644-bacd9c7ef1dd")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/modern-go/concurrent")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0s0fxccsyb8icjmiym5k7prcqx36hvgdwl588y0491gi18k5i4zs"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/modern-go/concurrent"))
+    (home-page "https://github.com/modern-go/concurrent")
+    (synopsis "concurrent")
+    (description
+      "because sync.Map is only available in go 1.9, we can use concurrent.Map to make
+code portable")
+    (license license:asl2.0)))
+
+(define-public go-github-com-modern-go-reflect2
+  (package
+    (name "go-github-com-modern-go-reflect2")
+    (version "1.0.2")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/modern-go/reflect2")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "05a89f9j4nj8v1bchfkv2sy8piz746ikj831ilbp54g8dqhl8vzr"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/modern-go/reflect2"))
+    (home-page "https://github.com/modern-go/reflect2")
+    (synopsis "reflect2")
+    (description "reflect api that avoids runtime reflect.Value cost")
+    (license license:asl2.0)))
+
+(define-public go-github-com-json-iterator-go
+  (package
+    (name "go-github-com-json-iterator-go")
+    (version "1.1.12")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/json-iterator/go")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "1c8f0hxm18wivx31bs615x3vxs2j3ba0v6vxchsjhldc8kl311bz"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/json-iterator/go"))
+    (propagated-inputs
+      `(("go-github-com-stretchr-testify" ,go-github-com-stretchr-testify)
+        ("go-github-com-modern-go-reflect2" ,go-github-com-modern-go-reflect2)
+        ("go-github-com-modern-go-concurrent"
+         ,go-github-com-modern-go-concurrent)
+        ("go-github-com-google-gofuzz" ,go-github-com-google-gofuzz)
+        ("go-github-com-davecgh-go-spew" ,go-github-com-davecgh-go-spew)))
+    (home-page "https://github.com/json-iterator/go")
+    (synopsis "Benchmark")
+    (description
+      "Package jsoniter implements encoding and decoding of JSON as defined in
+@url{https://rfc-editor.org/rfc/rfc4627.html,RFC 4627} and provides interfaces
+with identical syntax of standard lib encoding/json.  Converting from
+encoding/json to jsoniter is no more than replacing the package with jsoniter
+and variable type declarations (if any).  jsoniter interfaces gives 100%
+compatibility with code using standard lib.")
+    (license license:expat)))
+
+(define-public go-github-com-ugorji-go
+  (package
+    (name "go-github-com-ugorji-go")
+    (version "1.2.6")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/ugorji/go")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0nwqx41f82r9rmdhzi01bgvwpsa7jgcl3s6n3r7q3hq48kw13g67"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/ugorji/go"))
+    (propagated-inputs
+      `(("go-github-com-ugorji-go-codec" ,go-github-com-ugorji-go-codec)))
+    (home-page "https://github.com/ugorji/go")
+    (synopsis "go-codec")
+    (description
+      "This repository contains the @code{go-codec} library, the @code{codecgen} tool
+and benchmarks for comparing against other libraries.")
+    (license license:expat)))
+
+(define-public go-github-com-ugorji-go-codec
+  (package
+    (name "go-github-com-ugorji-go-codec")
+    (version "1.2.6")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/ugorji/go")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0nwqx41f82r9rmdhzi01bgvwpsa7jgcl3s6n3r7q3hq48kw13g67"))))
+    (build-system go-build-system)
+    (arguments
+      '(#:import-path
+        "github.com/ugorji/go/codec"
+        #:unpack-path
+        "github.com/ugorji/go"))
+    (propagated-inputs `(("go-github-com-ugorji-go" ,go-github-com-ugorji-go)))
+    (home-page "https://github.com/ugorji/go")
+    (synopsis "Package Documentation for github.com/ugorji/go/codec")
+    (description
+      "Package codec provides a High Performance, Feature-Rich Idiomatic Go 1.4+
+codec/encoding library for binc, msgpack, cbor, json.")
+    (license license:expat)))
+
+(define-public go-github-com-gin-gonic-gin
+  (package
+    (name "go-github-com-gin-gonic-gin")
+    (version "1.7.7")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/gin-gonic/gin")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "1nrmynkpi8698hxp3k2pgwph262xkxblwjj57979cwfmfhqk1lpz"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/gin-gonic/gin"))
+    (propagated-inputs
+      `(("go-gopkg-in-yaml-v2" ,go-gopkg-in-yaml-v2)
+        ("go-github-com-ugorji-go-codec" ,go-github-com-ugorji-go-codec)
+        ("go-github-com-stretchr-testify" ,go-github-com-stretchr-testify)
+        ("go-github-com-mattn-go-isatty" ,go-github-com-mattn-go-isatty)
+        ("go-github-com-json-iterator-go" ,go-github-com-json-iterator-go)
+        ("go-github-com-golang-protobuf" ,go-github-com-golang-protobuf)
+        ("go-github-com-go-playground-validator-v10"
+         ,go-github-com-go-playground-validator-v10)
+        ("go-github-com-gin-contrib-sse" ,go-github-com-gin-contrib-sse)))
+    (home-page "https://github.com/gin-gonic/gin")
+    (synopsis "Gin Web Framework")
+    (description "Package gin implements a HTTP web framework called gin.")
+    (license license:expat)))
