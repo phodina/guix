@@ -5340,6 +5340,32 @@ the purpose of building man pages.")
     (description "Blackfriday is a Markdown processor in Go.")
     (license license:bsd-2)))
 
+(define-public go-github-com-showmax-go-fqdn
+  (package
+    (name "go-github-com-showmax-go-fqdn")
+    (version "1.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/Showmax/go-fqdn")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "0a80mpqpvqss2v2har9cxigilr04jlyr5s20p13njjigra3jg3lx"))))
+    (build-system go-build-system)
+    (arguments
+     ;; https://github.com/Showmax/go-fqdn/issues/11
+     '(#:tests? #f                 ; tests return localhost in sandbox
+       #:import-path "github.com/Showmax/go-fqdn"))
+    (inputs (list inetutils))           ; hostname command
+    (home-page "https://github.com/Showmax/go-fqdn")
+    (synopsis "Get Fully Qualified Domain Name of the machine")
+    (description "Go package to provide reasonable robust access to fully
+qualified hostname.  It first tries to looks up your hostname in hosts
+file.  If that fails, it falls back to doing lookup via dns.")
+    (license license:asl2.0)))
+
 (define-public go-github-com-shurcool-sanitized-anchor-name
   (package
     (name "go-github-com-shurcool-sanitized-anchor-name")
