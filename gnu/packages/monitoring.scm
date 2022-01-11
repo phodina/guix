@@ -406,6 +406,35 @@ caching them in memory for \"hot queries\" from the Graphite-Web application,
 and persisting them to disk using the Whisper time-series library.")
     (license license:asl2.0)))
 
+(define-public python-coredump-exporter
+ (package
+  (name "python-coredump-exporter")
+  (version "0.2.1")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+                   (url "https://gitlab.com/Ma27/coredump-exporter")
+                   (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0h71cpwrs3gx00mcs3rs77mjmb0sh607yvh1wc948sf3aksg4yqy"))))
+  (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'check 'change-home
+           (lambda _
+             (setenv "HOME" "/tmp"))))))
+  (native-inputs `(("python-nose" ,python-nose)
+		   ; TODO: Provide update >= 0.9
+                   ("python-prometheus-client" ,python-prometheus-client)))
+  (synopsis "Coredump exporter")
+  (description "This package provides Prometheus exporter to export metrics
+of core dumps.")
+  (home-page "https://gitlab.com/Ma27/coredump-exporter")
+  (license license:expat)))
+
 (define-public graphite-web
   (package
     (name "graphite-web")
