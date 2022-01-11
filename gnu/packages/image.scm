@@ -33,6 +33,7 @@
 ;;; Copyright © 2021 Nicolò Balzarotti <nicolo@nixo.xyz>
 ;;; Copyright © 2021 Alexandr Vityazev <avityazev@posteo.org>
 ;;; Copyright © 2022 Jai Vetrivelan <jaivetrivelan@gmail.com>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -100,6 +101,7 @@
   #:use-module (guix git-download)
   #:use-module (guix utils)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system copy)
   #:use-module (guix build-system meson)
@@ -932,6 +934,36 @@ algorithm was patented.  Tools are also included to convert, manipulate,
 compose, and analyze GIF images.")
     (home-page "http://giflib.sourceforge.net/")
     (license license:x11)))
+
+; https://github.com/stilldavid/gopro-utils/issues/46
+(define-public gopro-utils
+  (let ((commit "9794b95cda68e7a96f3516da793a624f9756dcca")
+	(revision "1"))
+  (package
+    (name "gopro-utils")
+    (version "")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+		     (url "https://github.com/stilldavid/gopro-utils")
+                     (commit commit)))
+              (sha256
+               (base32
+                "00j1cdknkn7nspyxvrwqf00cr8g35h37zzpz68blb80p44dkmkwn"))))
+    (build-system go-build-system)
+	(arguments
+	`(#:import-path "github.com/stilldavid/gopro-utils"))
+    ; TODO: enter correct dir
+;    (arguments
+;     `(#:install-plan
+;       `((,(assoc-ref %build-inputs "source")
+;          ,(string-append "/webapps/jenkins.war")))
+;       #:phases (modify-phases %standard-phases (delete 'unpack))))
+    (home-page "https://github.com/stilldavid/gopro-utils")
+    (synopsis "Tools to parse metadata from GoPro Hero 5 & 6 cameras")
+    (description
+     "This package provides tools to parse metadata from GoPro Hero 5 & 6 cameras.")
+    (license license:bsd-2))))
 
 (define-public libuemf
   (package
