@@ -197,6 +197,29 @@ Broadcom/AirForce chipset BCM43xx with Wireless-Core Revision 5.  It is used
 by the b43-open driver of Linux-libre.")
     (license license:gpl2)))
 
+(define-public pinephone-modem-sdk
+(package
+  (name "pinephone-modem-sdk")
+  (version "0.4.2")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/Biktorgj/pinephone_modem_sdk")
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "1065lhp2948jp1aqxlx1m78vkzy2lls8j81j5ki49kspi3r8gcqk"))))
+  (build-system gnu-build-system)
+  (arguments
+  `(#:phases
+    (modify-phases %standard-phases
+	 (delete 'configure))))
+  (synopsis "Firmware for Pinephone modem")
+  (description "This package contains all the tools to create modem userspace.")
+  (home-page "https://github.com/Biktorgj/pinephone_modem_sdk")
+  (license license:gpl3)))
+
 (define-public eg25-manager
   (package
     (name "eg25-manager")
