@@ -102,6 +102,7 @@
   #:use-module (gnu packages guile-xyz)
   #:use-module (gnu packages image)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages lisp)
   #:use-module (gnu packages mail)
   #:use-module (gnu packages maths)
   #:use-module (gnu packages nano)
@@ -765,6 +766,30 @@ Gitless is implemented on top of Git and its commits and repositories are
 indistinguishable from Git's.  You (or other contributors) can always fall back
 on @command{git}, and use any regular Git hosting service.")
     (license license:expat)))
+
+(define-public gittocl
+  (let ((commit "6fee2526082a97ec85298a5e92907b6e991f7d01")
+	(revision "1"))
+(package
+  (name "gittocl")
+  (version (git-version "0" revision commit))
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://notabug.org/cage/gittocl")
+             (commit commit)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "1jrgqgly7yg67svrxpmrc664m38kq0p45cxv46h5vsvk0d58g6ci"))))
+  (build-system gnu-build-system)
+  (native-inputs (list autoconf automake))
+  (inputs (list sbcl gnupg curl))
+  (synopsis "Convert git log output to GNU stile Changelog")
+  (description "This packages contains a tool to  convert git log output
+to GNU stile Changelog.")
+  (home-page "https://notabug.org/cage/gittocl")
+  (license license:gpl3+))))
 
 (define-public git-cal
   (package
