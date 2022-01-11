@@ -1838,6 +1838,45 @@ features of sudo with a fraction of the codebase.")
     (license (list license:bsd-3        ; libbsd/*
                    license:isc))))      ; everything else
 
+(define-public wfetch
+  (let ((commit "e1cfa37814aebc9eb56ce994ebe877b6a6f9a715")
+        (revision "1"))
+    (package
+      (name "wfetch")
+      (version (git-version "0.1-pre" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/Gcat101/Wfetch")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "1dmr85plx8zr6s14ym3r32g6crwxghkval5a24ah90ijx4dbn5q5"))))
+      (build-system python-build-system)
+      (arguments
+       `(#:use-setuptools? #f           ; no setup.py
+         #:tests? #f                    ; no test suite
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'build)
+           (replace 'install
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((out (assoc-ref outputs "out"))
+                      (bin (string-append out "/bin"))
+                      (share (string-append out "/share")))
+                 (mkdir-p share)
+                 (substitute* "wfetch/wfetch.py"
+                   (("os.sep, 'opt', 'wfetch'") (string-append "'" share "'")))
+                 (install-file "wfetch/wfetch.py" bin)
+                 (copy-recursively "wfetch/icons" share)))))))
+      (inputs (list python-pyowm python-fire python-termcolor python-requests))
+      (home-page "https://github.com/zJairO/wfetch")
+      (synopsis "Neofetch/pfetch, but for weather")
+      (description "This package provides Neofetch/pfetch, but for weather.
+In order to use you must export WEATHER_CLI_API=<your OWM api key>.")
+      (license license:gpl3+))))
+
 (define-public wpa-supplicant-minimal
   (package
     (name "wpa-supplicant-minimal")
