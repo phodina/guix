@@ -2316,6 +2316,29 @@ Format) file format decoder and encoder.")
 (encoder and decoder).")
     (license license:bsd-3)))
 
+(define-public mmt
+  (package
+    (name "mmt")
+    (version "1.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+		     (url "https://github.com/KonradIT/mmt")
+                     (commit version)))
+              (sha256
+               (base32
+                "0y3k0y0hx5h634ihd1fpzpvmrlfwzhwisbjyxfc6r2dwk2ippkid"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/KonradIT/mmt"))
+    (home-page "https://github.com/KonradIT/mmt")
+    (synopsis "Media Management Tool")
+    (description
+     "This package provides tools make importing videos/photos from GoPro
+and other action cameras/drones a little bit more bearable.")
+	;; https://github.com/KonradIT/mmt/issues/7
+    (license #f)))
+
 (define-public mtpaint
   (package
     (name "mtpaint")
