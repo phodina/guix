@@ -1363,6 +1363,46 @@
     (description "FFI bindings to libgraphene-1.0")
     (license license:expat)))
 
+(define-public rust-gtk4-0.3
+  (package
+    (name "rust-gtk4")
+    (version "0.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "gtk4" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0gba39mjnd3am4wys8p6nida1g18b2gij8z7753vm18l3m14z82q"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:tests? #f
+	    ;; Unable to init Broadway server: Could not connect: No such file or directory
+	    #:cargo-inputs
+        (("rust-bitflags" ,rust-bitflags-1)
+         ("rust-cairo-rs" ,rust-cairo-rs-0.14)
+         ("rust-field-offset" ,rust-field-offset-0.3)
+         ("rust-futures-channel" ,rust-futures-channel-0.3)
+         ("rust-gdk-pixbuf" ,rust-gdk-pixbuf-0.14)
+         ("rust-gdk4" ,rust-gdk4-0.3)
+         ("rust-gio" ,rust-gio-0.14)
+         ("rust-glib" ,rust-glib-0.14)
+         ("rust-graphene-rs" ,rust-graphene-rs-0.14)
+         ("rust-gsk4" ,rust-gsk4-0.3)
+         ("rust-gtk4-macros" ,rust-gtk4-macros-0.3)
+         ("rust-gtk4-sys" ,rust-gtk4-sys-0.3)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-once-cell" ,rust-once-cell-1)
+         ("rust-pango" ,rust-pango-0.14))
+        #:cargo-development-inputs
+        (("rust-gir-format-check" ,rust-gir-format-check-0.1))))
+	(native-inputs (list pkg-config gtk))
+	(inputs (list cairo glib graphene gtk pango))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Rust bindings of the GTK 4 library")
+    (description "Rust bindings of the GTK 4 library")
+    (license license:expat)))
+
 (define-public rust-gtk-0.14
   (package
     (name "rust-gtk")
