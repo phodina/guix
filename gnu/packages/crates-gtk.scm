@@ -1619,6 +1619,38 @@ library.")
     (description "Macros helpers for GTK 4 bindings")
     (license license:expat)))
 
+(define-public rust-gtk4-sys-0.3
+  (package
+    (name "rust-gtk4-sys")
+    (version "0.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "gtk4-sys" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0j9vfcsi7iyn0dfzfc1mlhs7iyzj8w3i6k7h5y8gikyxy34682p2"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-cairo-sys-rs" ,rust-cairo-sys-rs-0.14)
+         ("rust-gdk-pixbuf-sys" ,rust-gdk-pixbuf-sys-0.14)
+         ("rust-gdk4-sys" ,rust-gdk4-sys-0.3)
+         ("rust-gio-sys" ,rust-gio-sys-0.14)
+         ("rust-glib-sys" ,rust-glib-sys-0.14)
+         ("rust-gobject-sys" ,rust-gobject-sys-0.14)
+         ("rust-graphene-sys" ,rust-graphene-sys-0.14)
+         ("rust-gsk4-sys" ,rust-gsk4-sys-0.3)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-pango-sys" ,rust-pango-sys-0.14)
+         ("rust-system-deps" ,rust-system-deps-5))))
+    (home-page "http://gtk-rs.org/")
+    (synopsis "FFI bindings of GTK 4")
+    (description "FFI bindings of GTK 4")
+    (license license:expat)))
+
 (define-public rust-gsk4-0.3
   (package
     (name "rust-gsk4")
