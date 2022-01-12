@@ -64,6 +64,7 @@
   #:use-module (gnu packages base)
   #:use-module ((gnu packages bootstrap) #:select (glibc-dynamic-linker))
   #:use-module (gnu packages check)
+  #:use-module (gnu packages documentation)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnupg)
@@ -79,6 +80,7 @@
   #:use-module (gnu packages terminals)
   #:use-module (gnu packages textutils)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages virtualization)
   #:use-module (gnu packages web)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1))
@@ -7116,6 +7118,38 @@ synchronizing plain text:
     (description "Chroma takes source code and other structured text and
 converts it into syntax highlighted HTML, ANSI-coloured text, etc.")
     (license license:expat)))
+
+(define-public go-github-com-anatol-vmtest
+(let ((commit "afd7b1dd38ef02b9b439234322e83e606f1219dd")
+      (revision "1"))
+  (package
+    (name "go-github-com-anatol-vmtest")
+    (version (git-version "0.1-pre" revision commit))
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/anatol/vmtest")
+               (commit commit)))
+		(patches (search-patches
+		"go-github-com-anatol-vmtest-kernel-initrd-location.patch"))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32
+            "0y8a3jxwg1wy71z5bvrkcwx4c7ivs18im6vlak9qw9zv9xbv12gz"))))
+    (build-system go-build-system)
+    (arguments
+      `(;#:tests? #f
+	#:import-path "github.com/anatol/vmtest"))
+	;#:phases
+	;(modify-phases %standard-phases
+	;	       (delete 'build))))
+    (inputs (list qemu go-golang-org-x-sys go-github-com-stretchr-testify))
+    (home-page "https://github.com/anatol/vmtest")
+    (synopsis "Setup Virtual Machine for tests")
+    (description "This package provides a library to setup Virtual Machine for
+integration tests written in Go.")
+    (license license:expat))))
 
 (define-public go-github-com-andybalholm-cascadia
   (package
