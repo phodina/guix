@@ -1,0 +1,110 @@
+From 9e27f3c4942296a495727f801ab107f770b415f1 Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Fri, 28 Jan 2022 22:50:56 +0100
+Subject: [PATCH] Remove submodules
+
+
+diff --git a/Makefile b/Makefile
+index a2d2e98..d219e79 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,95 +1,6 @@
+ VERSION ?= 0.7
+ 
+-BINS += bin/sbsign.safeboot
+-BINS += bin/sign-efi-sig-list.safeboot
+-BINS += bin/tpm2-totp
+-BINS += bin/tpm2
+-
+-all: $(BINS) update-certs
+-
+-#
+-# sbsign needs to be built from a patched version to avoid a
+-# segfault when using the PKCS11 engine to talk to the Yubikey.
+-#
+-SUBMODULES += sbsigntools
+-bin/sbsign.safeboot: sbsigntools/Makefile
+-	$(MAKE) -C $(dir $<)
+-	mkdir -p $(dir $@)
+-	cp $(dir $<)src/sbsign $@
+-sbsigntools/Makefile: sbsigntools/autogen.sh
+-	cd $(dir $@) ; ./autogen.sh && ./configure
+-sbsigntools/autogen.sh:
+-	git submodule update --init --recursive --recommend-shallow sbsigntools
+-
+-#
+-# sign-efi-sig-list needs to be built from source to have support for
+-# the PKCS11 engine to talk to the Yubikey.
+-#
+-SUBMODULES += efitools
+-bin/sign-efi-sig-list.safeboot: efitools/Makefile
+-	$(MAKE) -C $(dir $<) sign-efi-sig-list
+-	mkdir -p $(dir $@)
+-	cp $(dir $<)sign-efi-sig-list $@
+-efitools/Makefile:
+-	git submodule update --init efitools
+-
+-#
+-# tpm2-tss is the library used by tpm2-tools
+-#
+-SUBMODULES += tpm2-tss
+-
+-libtss2-mu = tpm2-tss/src/tss2-mu/.libs/libtss2-mu.a
+-libtss2-rc = tpm2-tss/src/tss2-rc/.libs/libtss2-rc.a
+-libtss2-sys = tpm2-tss/src/tss2-sys/.libs/libtss2-sys.a
+-libtss2-esys = tpm2-tss/src/tss2-esys/.libs/libtss2-esys.a
+-
+-$(libtss2-esys): tpm2-tss/Makefile
+-	$(MAKE) -C $(dir $<)
+-	mkdir -p $(dir $@)
+-tpm2-tss/Makefile:
+-	git submodule update --init $(dir $@)
+-	cd $(dir $@) ; ./bootstrap && ./configure \
+-		--disable-doxygen-doc \
+-
+-#
+-# tpm2-tools is the head after bundling and ecc support built in
+-#
+-SUBMODULES += tpm2-tools
+-
+-tpm2-tools/tools/tpm2: tpm2-tools/Makefile
+-	$(MAKE) -C $(dir $<)
+-
+-bin/tpm2: tpm2-tools/tools/tpm2
+-	cp $< $@
+-
+-tpm2-tools/Makefile: $(libtss2-esys)
+-	git submodule update --init $(dir $@)
+-	cd $(dir $@) ; ./bootstrap \
+-	&& ./configure \
+-		TSS2_RC_CFLAGS=-I../tpm2-tss/include \
+-		TSS2_RC_LIBS="../$(libtss2-rc)" \
+-		TSS2_MU_CFLAGS=-I../tpm2-tss/include \
+-		TSS2_MU_LIBS="../$(libtss2-mu)" \
+-		TSS2_SYS_CFLAGS=-I../tpm2-tss/include \
+-		TSS2_SYS_LIBS="../$(libtss2-sys)" \
+-		TSS2_ESYS_3_0_CFLAGS=-I../tpm2-tss/include \
+-		TSS2_ESYS_3_0_LIBS="../$(libtss2-esys) -ldl" \
+-
+-
+-
+-
+-#
+-# tpm2-totp is build from a branch with hostname support
+-#
+-SUBMODULES += tpm2-totp
+-bin/tpm2-totp: tpm2-totp/Makefile
+-	$(MAKE) -C $(dir $<)
+-	mkdir -p $(dir $@)
+-	cp $(dir $<)/tpm2-totp $@
+-tpm2-totp/Makefile:
+-	git submodule update --init tpm2-totp
+-	cd $(dir $@) ; ./bootstrap && ./configure
+-
++all: update-certs
+ 
+ #
+ # Extra package building requirements
+-- 
+2.34.0
+

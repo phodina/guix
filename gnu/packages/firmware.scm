@@ -35,6 +35,8 @@
   #:use-module (guix build-system meson)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
+  #:use-module (gnu packages aidc)
+  #:use-module (gnu packages autotools)
   #:use-module (gnu packages assembly)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
@@ -43,16 +45,29 @@
   #:use-module (gnu packages cmake)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages cross-base)
+  #:use-module (gnu packages efi)
+  #:use-module (gnu packages elf)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages gawk)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
+  #:use-module (gnu packages gnupg)
+  #:use-module (gnu packages hardware)
+  #:use-module (gnu packages haskell-apps)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages networking)
+  #:use-module (gnu packages man)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages python)
-  #:use-module (gnu packages pkg-config))
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages security-token)
+  #:use-module (gnu packages tcl)
+  #:use-module (gnu packages tls)
+  #:use-module (gnu packages virtualization)
+  #:use-module (gnu packages web))
 
 (define-public ath9k-htc-firmware
   (package
@@ -312,6 +327,83 @@ for platform-specific firmwares executing in M-mode.")
 
 (define-public opensbi-generic
   (make-opensbi-package "generic" "opensbi-generic"))
+
+(define-public safeboot
+  (package
+    (name "safeboot")
+    (version "0.7")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/osresearch/safeboot")
+                    (commit (string-append "release-" version))))
+              (file-name (git-file-name name version))
+              (patches
+              (search-patches "safeboot-remove-submodules.patch"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  (for-each delete-file-recursively
+                              '("efitools" "sbsigntools"
+                               "tpm2-tools" "tpm2-totp" "tpm2-tss"))))
+              (sha256
+               (base32
+                "1sfshidib8lqihbhv5bx3dwkslndzzxl11piwfci2gg9d5v580gc"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list #:tests? #f
+       #:make-flags #~(list "package")
+       #:phases
+       #~(modify-phases %standard-phases
+	     (add-after 'unpack 'fix
+		 (lambda* _
+		 (substitute* "Makefile"
+		 (("mkdir \\$\\(SUBMODULES\\)") ""))))
+         (delete 'configure))))
+     (native-inputs (list
+            pkg-config
+            automake
+            autoconf
+            autoconf-archive
+            help2man
+            shellcheck
+            flex
+            bison
+            perl
+            python))
+    (inputs (list
+             qrencode
+             gnu-efi
+             opensc
+             yubico-piv-tool
+             binutils
+             openssl
+             util-linux ;uuid-dev \
+             json-c
+             expect
+             socat
+             libseccomp
+             gnutls
+             libtasn1
+             ncurses
+             qemu
+             gnupg
+             libelf
+             json-glib
+             efitools
+             tpm2-tss
+             sbsigntools))
+    (synopsis "Booting Linux Safely")
+    (description "This package provides safe Boot that has four goals to improve
+the safety of booting Linux on normal laptops:
+@enumerate
+@item Booting only code that is authorized by the system owner
+@item Streamlining the encrypted disk boot process
+@item Reducing the attack surface
+@item Protecting the runtime system integrity
+@end enumerate")
+    (home-page "https://safeboot.dev/")
+    (license license:gpl2+)))
 
 (define-public seabios
   (package
