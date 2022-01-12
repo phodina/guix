@@ -45,7 +45,7 @@
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;; Copyright © 2022 Wamm K. D. <jaft.r@outlook.com>
 ;;;
@@ -194,6 +194,50 @@
 It is a graphical version of @command{su} written in C and GTK+ 2, with
 simplicity in mind.")
     (home-page "https://github.com/nomius/ktsuss")
+    (license license:bsd-3)))
+
+(define-public 9esec
+  (package
+    (name "9esec")
+    (version "2.6.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/coreboot/9esec-security-tooling")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0r291qq7aay2p08895z77wrrxm8s5wbssccz0kz3sfmm55ynn10x"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/coreboot/9esec-security-tooling"))
+;	(inputs (list
+;	go-github-com-9elements-go-linux-lowlevel-hw
+;	go-github-com-alecthomas-kong
+;	go-github-com-creasty-defaults
+;	go-github-com-digitalocean-go-smbios
+;	go-github-com-edsrzf-mmap-go
+;	go-github-com-fearful-symmetry-gomsr
+;	go-github-com-golang-collections-go-datastructures
+;	go-github-com-google-go-attestation
+;	go-github-com-google-go-tpm
+;	go-github-com-google-uuid
+;	go-github-com-klauspost-cpuid
+;	go-github-com-kr-pretty
+;	go-github-com-linuxboot-fiano
+;	go-github-com-logrusorgru-aurora
+;	go-github-com-steakknife-hamming
+;	go-github-com-stretchr-testify
+;	go-github-com-tidwall-pretty
+;	go-github-com-tjfoc-gmsm
+;	go-github-com-ulikunitz-xz
+;	go-github-com-xaionaro-go-bytesextra
+;	go-github-com-xaionaro-go-unsafetools
+;	go-golang-org-x-crypto))
+    (synopsis "Converged Security Suite for Intel platform security features")
+    (description "")
+    (home-page "www.9esec.io")
     (license license:bsd-3)))
 
 (define-public aide
