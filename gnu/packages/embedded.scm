@@ -28,6 +28,7 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages embedded)
+  #:use-module (guix gexp)
   #:use-module (guix utils)
   #:use-module (guix packages)
   #:use-module (guix download)
@@ -67,6 +68,7 @@
   #:use-module (gnu packages swig)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages version-control)
+  #:use-module (gnu packages virtualization)
   #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1))
 
@@ -1582,6 +1584,36 @@ and Zilog Z80 families, plus many of their variants.")
                    license:lgpl3+
                    license:public-domain
                    license:zlib))))
+
+(define-public serialice
+  (let ((commit "a2c3d3c52933ae02b77970768d624fb15a0b784f") (revision "1"))
+    (package
+      (name "serialice")
+      (version (git-version "0.1-pre" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/coreboot/serialice")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (modules '((guix build utils)))
+                (snippet '(begin
+                            (delete-file-recursively "qemu-2.5.x")))
+                (sha256
+                 (base32
+                  "1cwhfag3vaqn1gqadkrwq34p25xp5383j29fvhms2rlrjd2ax18m"))))
+      (build-system gnu-build-system)
+      (arguments
+       (list #:tests? #f
+             #:phases
+             #~(modify-phases %standard-phases
+                 (delete 'configure))))
+      (inputs (list qemu))
+      (home-page "https://www.serialice.com/Main_Page")
+      (synopsis "Flexible, software based system software debugger")
+      (description "This package provides flexible, software based system
+        software debugger.")
+      (license license:gpl2))))
 
 (define-public python-psptool
   (package
