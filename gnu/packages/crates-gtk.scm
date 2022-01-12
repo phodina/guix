@@ -346,6 +346,35 @@
         ("rust-x11" ,rust-x11-2)
         ("rust-pkg-config" ,rust-pkg-config-0.3))))))
 
+(define-public rust-gdk4-0.3
+  (package
+    (name "rust-gdk4")
+    (version "0.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "gdk4" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "03yg3qji71d6y325fw4js5yndcd0aqqnhgxgh7wink912wn1cypr"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-bitflags" ,rust-bitflags-1)
+         ("rust-cairo-rs" ,rust-cairo-rs-0.14)
+         ("rust-gdk-pixbuf" ,rust-gdk-pixbuf-0.14)
+         ("rust-gdk4-sys" ,rust-gdk4-sys-0.3)
+         ("rust-gio" ,rust-gio-0.14)
+         ("rust-glib" ,rust-glib-0.14)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-pango" ,rust-pango-0.14))))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Rust bindings of the GDK 4 library")
+    (description "Rust bindings of the GDK 4 library")
+    (license license:expat)))
+
 (define-public rust-gdk-0.14
   (package
     (name "rust-gdk")
