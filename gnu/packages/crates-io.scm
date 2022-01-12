@@ -10361,8 +10361,34 @@ that need to represent UTF-16 data as 8-bit characters.")
 winded @code{#[cfg()]} checks.")
     (license license:expat)))
 
+(define-public rust-cfg-expr-0.9
+  (package
+    (name "rust-cfg-expr")
+    (version "0.9.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cfg-expr" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0wbmpnf6mwda8iz4370sxilq9gxiv621gdv4glpy7z6i4nb0pbpd"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-smallvec" ,rust-smallvec-1)
+         ("rust-target-lexicon" ,rust-target-lexicon-0.12))))
+    (home-page "https://github.com/EmbarkStudios/cfg-expr")
+    (synopsis "Parser and evaluator for Rust @code{cfg()} expressions")
+    (description
+     "This package provides a parser and evaluator for Rust @code{cfg()}
+expressions.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-cfg-expr-0.8
   (package
+    (inherit rust-cfg-expr-0.9)
     (name "rust-cfg-expr")
     (version "0.8.1")
     (source
