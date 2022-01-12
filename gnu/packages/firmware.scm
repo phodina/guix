@@ -268,6 +268,38 @@ battery charging, and verified boot.")
     (home-page "https://chromium.googlesource.com/chromiumos/platform/ec")
     (license license:gpl2+)))
 
+(define-public coreboot
+  (package
+    (name "coreboot")
+    (version "4.16")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://review.coreboot.org/coreboot.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "16ali4qlyr07b0j58rmfnm48gpc0m5z2lkjdhl6r4ckmrp5h9d7b"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+	     (add-after 'unpack 'select-config
+		 (lambda* _
+		 (substitute* "util/genbuild_h/genbuild_h.sh"
+		 (("printf \"#define COREBOOT_MAJOR_VERSION.*") " printf \"#define COREBOOT_MAJOR_VERSION 4 \n#define COREBOOT_MINOR_VERSION 16\n\""))
+		 (copy-file "configs/config.lenovo_x220_mrc_bin" ".config")))
+         (delete 'configure))))
+    (native-inputs (list acpica perl python python-2 pkg-config))
+    (synopsis "Bootloader for modern computers and embedded systems")
+    (description "This package provides extended firmware platform that
+delivers a lightning fast and secure boot experience on modern computers
+and embedded systems")
+    (home-page "https://www.coreboot.org/")
+    (license license:gpl2+)))
+
 (define-public heads
 (package
   (name "heads")
