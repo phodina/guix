@@ -3991,6 +3991,34 @@ post-processing of video formats like MPEG2, H.264/AVC, and VC-1.")
     (license (list license:bsd-2        ; src/gen9_vp9_const_def.c
                    license:expat))))    ; the rest, excluding the test suite
 
+; https://github.com/NixOS/nixpkgs/blob/nixos-21.05/pkgs/development/libraries/live555/default.nix#L56
+(define-public live555
+(package
+  (name "live555")
+  (version "2019.11.22")
+  (source (origin
+            (method url-fetch)
+            (uri (string-append "https://download.videolan.org/contrib/live555//live." version ".tar.gz"))
+            (sha256
+             (base32
+              "144y2wsfpaclkj7srx85f3y3parzn7vbjmzc2afc62wdsb9gn46d"))))
+  (build-system gnu-build-system)
+  (arguments
+    `(#:tests? #f
+      ;#:make-flags (list (string-append "CC=" ,(cc-for-target)))
+      #:phases
+      (modify-phases %standard-phases
+       (replace 'configure
+        (lambda* _
+		;; substitute /bin/rm in genMakefiles
+         (invoke "./genMakefiles" "linux"))))))
+  (synopsis "Libraries for RTP/RTCP/RTSP/SIP multimedia streaming")
+  (description "This package provides libraries for standards-based
+RTP/RTCP/RTSP/SIP multimedia streaming, suitable for embedded and/or low-cost
+streaming applications")
+  (home-page "http://www.live555.com/")
+  (license license:lgpl3)))
+
 (define-public openh264
   (package
     (name "openh264")
