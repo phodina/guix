@@ -1531,6 +1531,35 @@
 library.")
     (license license:expat)))
 
+(define-public rust-gtk4-macros-0.3
+  (package
+    (name "rust-gtk4-macros")
+    (version "0.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "gtk4-macros" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "18dlwa5w17gqhjndqg173vhqma8a209wdbc78vs5897h98sx8s2h"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-anyhow" ,rust-anyhow-1)
+         ("rust-heck" ,rust-heck-0.3)
+         ("rust-itertools" ,rust-itertools-0.10)
+         ("rust-proc-macro-crate" ,rust-proc-macro-crate-1)
+         ("rust-proc-macro-error" ,rust-proc-macro-error-1)
+         ("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Macros helpers for GTK 4 bindings")
+    (description "Macros helpers for GTK 4 bindings")
+    (license license:expat)))
+
 (define-public rust-pango-0.14
   (package
     (name "rust-pango")
