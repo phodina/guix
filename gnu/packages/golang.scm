@@ -8206,6 +8206,26 @@ Included are the following:
 @end itemize\n")
     (license license:bsd-3)))
 
+(define-public go-github-com-ropnop-gokrb5
+  (package
+    (name "go-github-com-ropnop-gokrb5")
+    (version "7.2.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/ropnop/gokrb5")
+               (commit (string-append "v" (go-version->git-ref version)))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0k7cfrvik6qv800zk3x9pvqg6p6zw5vk310076x7mmalckm5abi1"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/ropnop/gokrb5"))
+    (home-page "https://github.com/ropnop/gokrb5")
+    (synopsis "gokrb5")
+    (description "Package gokrb5 provides a Kerberos 5 implementation for Go")
+    (license license:asl2.0)))
+
 (define-public gopkg-in-errgo-fmt-errors
   (package
     (name "gopkg-in-errgo-fmt-errors")
