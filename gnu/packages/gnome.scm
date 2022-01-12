@@ -1031,6 +1031,45 @@ between different kinds of computer systems.")
       license:gpl2+
       license:lgpl2.1+))))
 
+(define-public telegrand
+  (let ((commit "74930785605585aea35d136a8a0f1b55e2630bff")
+	(revision "1"))
+  (package
+    (name "telegrand")
+    (version (git-version "0.1-pre" revision commit))
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+	       (url "https://github.com/melix99/telegrand")
+	       (commit commit)))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "1zaqkfgk313l63mimnf0qwk7qv847103r2klfdcjaz3vc9mxr8lg"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+;	  adw = { version = "0.1.0-alpha-6", package = "libadwaita" }
+(("rust-gettext-rs" ,rust-gettext-rs-0.7)
+("rust-gtk4" ,rust-gtk4-0.3)
+("rust-indexmap" ,rust-indexmap-1.7)
+("rust-locale-config" ,rust-locale-config-0.3)
+("rust-log" ,rust-log-0.4)
+("rust-once-cell" ,rust-once-cell-1.9)
+("rust-pretty-env-logger" ,rust-pretty-env-logger-0.4)
+;qrcode-generator = { version = "4.1", default-features = false }
+("rust-regex" ,rust-regex-1)
+;tdgrand = { git = "https://github.com/melix99/tdgrand", branch = "main" }
+("rust-tokio" ,rust-tokio-1))))
+;("rust-webp" ,rust-webp-0.2))
+    (home-page "https://github.com/melix99/telegrand")
+    (synopsis "Telegram client for GNOME")
+    (description "This package provides Telegram client optimized for the GNOME
+desktop.  Telegrand is an in-development project and it isn't considered stable
+software yet")
+    (license license:gpl3))))
+
 (define-public tepl
   (package
     (name "tepl")
