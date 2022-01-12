@@ -47,6 +47,7 @@
   #:use-module (gnu packages cross-base)
   #:use-module (gnu packages efi)
   #:use-module (gnu packages elf)
+  ;#:use-module (gnu packages embedded)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages gawk)
   #:use-module (gnu packages gcc)
@@ -55,6 +56,7 @@
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages hardware)
   #:use-module (gnu packages haskell-apps)
+  #:use-module (gnu packages libftdi)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages ncurses)
@@ -184,6 +186,49 @@ Linux-libre.")
 assembler, disassembler, and debugging tools for the Linux kernel b43 wireless
 driver.")
       (license license:gpl2))))
+
+(define-public chrome-ec
+  (package
+    (name "chrome-ec")
+    (version "2.4.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://chromium.googlesource.com/chromiumos/platform/ec")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "05wy7993c7pf0hiypc8la771zh23qbahjqjz8k2vj2w92ry264hk"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list; #:make-flags #~(list (string-a
+	      #:phases
+       #~(modify-phases %standard-phases
+         (delete 'configure))))
+;         (add-after 'unpack 'fix-bin-location
+;           (lambda* _
+;             (substitute* "core/riscv-rv32i/build.mk"
+;               (("/opt/coreboot-sdk") (assoc-ref  "")))
+;             (substitute* "core/riscv-rv32i/build.mk"
+;               (("/opt/coreboot-sdk") (assoc-ref  "")))
+;             (substitute* "core/riscv-rv32i/build.mk"
+;               (("/opt/coreboot-sdk") (assoc-ref  "")))
+;             (substitute* "core/riscv-rv32i/build.mk"
+;               (("/opt/coreboot-sdk") (assoc-ref  "")))
+;             (substitute* "core/riscv-rv32i/build.mk"
+;               (("/opt/coreboot-sdk") (assoc-ref  "")))
+;             )))))
+    (native-inputs (list ;arm-none-eabi-toolchain-7-2018-q2-update
+	perl pkg-config python-2))
+    (inputs (list libftdi inetutils inetutils libusb))
+    (synopsis "Chromium OS Embedded Controller software")
+    (description "This package embedded controllers (EC) used in recent ARM
+and x86 based Chromebooks.  This software includes a lightweight, multitasking
+OS with modules for power sequencing, keyboard control, thermal control,
+battery charging, and verified boot.")
+    (home-page "https://chromium.googlesource.com/chromiumos/platform/ec")
+    (license license:gpl2+)))
 
 (define-public heads
 (package
