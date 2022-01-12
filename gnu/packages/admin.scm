@@ -210,6 +210,29 @@ servers.")
   (home-page "https://github.com/bindle/ldap-utils")
   (license license:bsd-3)))
 
+(define-public kerbrute
+  (package
+    (name "kerbrute")
+    (version "1.0.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/ropnop/kerbrute")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "07hlcbckf6mjm5pkdyl4rsg1gmqv9gs7w5xiznyn923sxl5f4bhw"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/ropnop/kerbrute"))
+	(inputs (list go-github-com-op-go-logging go-github-com-ropnop-gokrb5))
+    (synopsis "Tool to perform Kerberos pre-auth bruteforcing ")
+    (description "This package provides tool to perform Kerberos pre-auth
+bruteforcing.")
+    (home-page "https://github.com/ropnop/kerbrute")
+    (license license:asl2.0)))
+
 ;; This package uses su instead of sudo (because of SpaceFM).
 (define-public ktsuss
   (package
