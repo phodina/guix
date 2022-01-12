@@ -628,6 +628,36 @@
        (("rust-shell-words" ,rust-shell-words-0.1)
         ("rust-tempfile" ,rust-tempfile-3))))))
 
+(define-public rust-gdk4-sys-0.3
+  (package
+    (name "rust-gdk4-sys")
+    (version "0.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "gdk4-sys" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1mf6igl7ziy57qzdkimk42qwcfla60fzwk93wjj9dyv9d7hg964l"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-cairo-sys-rs" ,rust-cairo-sys-rs-0.14)
+         ("rust-gdk-pixbuf-sys" ,rust-gdk-pixbuf-sys-0.14)
+         ("rust-gio-sys" ,rust-gio-sys-0.14)
+         ("rust-glib-sys" ,rust-glib-sys-0.14)
+         ("rust-gobject-sys" ,rust-gobject-sys-0.14)
+         ("rust-graphene-sys" ,rust-graphene-sys-0.14)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-pango-sys" ,rust-pango-sys-0.14)
+         ("rust-system-deps" ,rust-system-deps-5))))
+    (home-page "http://gtk-rs.org/")
+    (synopsis "FFI bindings of GDK 4")
+    (description "FFI bindings of GDK 4")
+    (license license:expat)))
+
 (define-public rust-gdk-sys-0.14
   (package
     (name "rust-gdk-sys")
