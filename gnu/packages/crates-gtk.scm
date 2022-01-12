@@ -1619,6 +1619,35 @@ library.")
     (description "Macros helpers for GTK 4 bindings")
     (license license:expat)))
 
+(define-public rust-gsk4-sys-0.3
+  (package
+    (name "rust-gsk4-sys")
+    (version "0.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "gsk4-sys" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1da56n3zydbpw557mx588vbm7f2sinc9scslk4ps0k93f3757ahk"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-cairo-sys-rs" ,rust-cairo-sys-rs-0.14)
+         ("rust-gdk4-sys" ,rust-gdk4-sys-0.3)
+         ("rust-glib-sys" ,rust-glib-sys-0.14)
+         ("rust-gobject-sys" ,rust-gobject-sys-0.14)
+         ("rust-graphene-sys" ,rust-graphene-sys-0.14)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-pango-sys" ,rust-pango-sys-0.14)
+         ("rust-system-deps" ,rust-system-deps-5))))
+    (home-page "http://gtk-rs.org/")
+    (synopsis "FFI bindings of GSK 4")
+    (description "FFI bindings of GSK 4")
+    (license license:expat)))
+
 (define-public rust-pango-0.14
   (package
     (name "rust-pango")
