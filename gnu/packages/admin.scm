@@ -47,6 +47,7 @@
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 Artyom V. Poptsov <poptsov.artyom@gmail.com>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -181,6 +182,33 @@
 who can take over accounts, machines or the entire domain, and can be used
 to find and show misconfigurations.")
     (license license:gpl3+)))
+
+;; requires git -> create patch
+(define-public ldap-utils
+(package
+  (name "ldap-utils")
+  (version "0.5")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/bindle/ldap-utils")
+             (commit (string-append "v" version))))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "1zn2nxjgv3c6habdjj0mij04g1slh86b8sr7ib4fvwdzsb7wpgh8"))))
+  (build-system gnu-build-system)
+;  (arguments
+;    `(#:phases
+;      (modify-phases %standard-phases
+;       (delete 'configure))))
+  (native-inputs (list autoconf automake intltool pkg-config which))
+  (synopsis "Utilities for managing LDAP data")
+  (description "This package contains miscellaneous utilties to assist
+in fullfilling requests for data and in performing maintenance on LDAP
+servers.")
+  (home-page "https://github.com/bindle/ldap-utils")
+  (license license:bsd-3)))
 
 ;; This package uses su instead of sudo (because of SpaceFM).
 (define-public ktsuss
