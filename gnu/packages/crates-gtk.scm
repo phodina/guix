@@ -1619,6 +1619,35 @@ library.")
     (description "Macros helpers for GTK 4 bindings")
     (license license:expat)))
 
+(define-public rust-gsk4-0.3
+  (package
+    (name "rust-gsk4")
+    (version "0.3.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "gsk4" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0r6pdygqylz8qbi14k62z2a6wjzaf457ghx0sxzhiiagdjj9rxgg"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-bitflags" ,rust-bitflags-1)
+         ("rust-cairo-rs" ,rust-cairo-rs-0.14)
+         ("rust-gdk4" ,rust-gdk4-0.3)
+         ("rust-glib" ,rust-glib-0.14)
+         ("rust-graphene-rs" ,rust-graphene-rs-0.14)
+         ("rust-gsk4-sys" ,rust-gsk4-sys-0.3)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-pango" ,rust-pango-0.14))))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Rust bindings of the GSK 4 library")
+    (description "Rust bindings of the GSK 4 library")
+    (license license:expat)))
+
 (define-public rust-gsk4-sys-0.3
   (package
     (name "rust-gsk4-sys")
