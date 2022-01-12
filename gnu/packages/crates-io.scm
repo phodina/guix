@@ -60235,6 +60235,34 @@ processors, disks, components and networks.")
     (description "Send log messages to syslog.")
     (license license:expat)))
 
+(define-public rust-system-deps-5
+  (package
+    (name "rust-system-deps")
+    (version "5.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "system-deps" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0zkrf58z96y3f5ggglqirc97iy9rvyippkq67vkx0yyvaiaqbnqq"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-cfg-expr" ,rust-cfg-expr-0.9)
+         ("rust-heck" ,rust-heck-0.3)
+         ("rust-pkg-config" ,rust-pkg-config-0.3)
+         ("rust-toml" ,rust-toml-0.5)
+         ("rust-version-compare" ,rust-version-compare-0.0.11))))
+    (home-page "https://github.com/gdesmott/system-deps")
+    (synopsis
+      "Discover and configure system dependencies from declarative dependencies in Cargo.toml")
+    (description
+      "Discover and configure system dependencies from declarative dependencies in Cargo.toml")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-system-deps-3
   (package
     (name "rust-system-deps")
