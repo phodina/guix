@@ -187,6 +187,44 @@ assembler, disassembler, and debugging tools for the Linux kernel b43 wireless
 driver.")
       (license license:gpl2))))
 
+(define-public bios-extract
+  (let ((commit "effb120babde7e351c253f7c485848c8ce455dc0")
+        (revision "1"))
+    (package
+      (name "bios-extract")
+      (version (git-version "0.1-pre" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/coreboot/bios_extract")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "17xs66j77mzb98a8fg83nc3s21xnlkzpad1ifxg0w4ihaq3pjsvf"))))
+      (build-system gnu-build-system)
+      (arguments
+       `(#:tests? #f
+         #:make-flags (list (string-append "CC=" ,(cc-for-target)))
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'configure)
+           (replace 'install
+		   (lambda* (#:key outputs #:allow-other-keys)
+		   (let ((bin (string-append (assoc-ref outputs "out") "/bin")))
+		    (for-each
+			(lambda (file)
+			(install-file file bin)) '("ami_slab" "bcpvpd" "bios_extract"
+			"microcode_extract.py" "change-mcp55-mac.pl" "phoenix_extract.py"
+"csmcoreparse.py" "decap.sh" "dell_inspiron_1100_unpacker.py"
+"hp_6715b_nc6320_unpacker.py"))))))))
+      (native-inputs (list perl pkg-config python-2 python))
+      (synopsis "Collection of scripts to extract files from BIOS images")
+      (description "This package provides collection of scripts to extract files
+  from BIOS images.")
+      (home-page "https://github.com/coreboot/bios_extract")
+      (license license:gpl2+))))
+
 (define-public chrome-ec
   (package
     (name "chrome-ec")
