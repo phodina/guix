@@ -7,7 +7,7 @@
 ;;; Copyright © 2018 Vagrant Cascadian <vagrant@debian.org>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020, 2021, 2022 Marius Bakke <marius@gnu.org>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37,11 +37,14 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu packages assembly)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages busybox)
   #:use-module (gnu packages cmake)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages cross-base)
   #:use-module (gnu packages flex)
+  #:use-module (gnu packages gawk)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
@@ -166,6 +169,40 @@ Linux-libre.")
 assembler, disassembler, and debugging tools for the Linux kernel b43 wireless
 driver.")
       (license license:gpl2))))
+
+(define-public heads
+(package
+  (name "heads")
+  (version "0.2.1")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/osresearch/heads")
+             (commit (string-append "v" version))))
+            (patches (search-patches "heads-remove-make-gawk.patch"))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "04wckgyhqjnq9dnif2gzjqmc0bhkz9lywhmqjb9l7mq1xgrr6fll"))))
+  (build-system gnu-build-system)
+  (arguments
+   (list #:phases
+      #~(modify-phases %standard-phases
+       (delete 'configure))))
+  (native-inputs
+   (list bash
+         busybox
+         gawk
+         gnu-make
+         perl
+         python
+         pkg-config))
+  (synopsis "Firmware for laptops and servers")
+  (description "Heads is an open source custom firmware and OS configuration
+for laptops and servers that aims to provide slightly better physical security
+and protection for data on the system")
+  (home-page "https://osresearch.net/")
+  (license license:gpl2+)))
 
 (define-public openfwwf-firmware
   (package
