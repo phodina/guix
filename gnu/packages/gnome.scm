@@ -2865,6 +2865,33 @@ Specification, the icon naming utility maps the icon names used by the
 GNOME and KDE desktops to the icon names proposed in the specification.")
     (license license:lgpl2.1+)))
 
+(define-public image-roll
+  (package
+    (name "image-roll")
+    (version "1.4.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "image-roll" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1dky76m24fx8pamqqgwp1bh00cr0dld5c8z98aklq25bp0jvm298"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-anyhow" ,rust-anyhow-1)
+         ("rust-approx" ,rust-approx-0.5)
+         ("rust-env-logger" ,rust-env-logger-0.8)
+         ("rust-gtk" ,rust-gtk-0.14)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-trash" ,rust-trash-1))))
+    (home-page "https://github.com/weclaw1/image-roll")
+    (synopsis
+      "Image Roll is a simple and fast GTK image viewer with basic image manipulation tools.")
+    (description
+      "Image Roll is a simple and fast GTK image viewer with basic image manipulation tools.")
+    (license license:expat)))
+
 (define-public gnome-icon-theme
   (package
     (name "gnome-icon-theme")
