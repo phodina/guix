@@ -383,6 +383,28 @@ interface and is based on GNU Guile.")
     (license license:gpl3+)
     (home-page "https://www.gnu.org/software/shepherd/")))
 
+(define-public go-windapsearch
+  (package
+    (name "go-windapsearch")
+    (version "0.3.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/ropnop/go-windapsearch")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "08wraf74k429lf21aqb2yaczwi0x15bh5qaifslaad0cxcfqgxnc"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/ropnop/go-windapsearch"))
+    (home-page "https://github.com/ropnop/go-windapsearch")
+    (synopsis "Enumerate users, groups and computers from a Windows domain")
+    (description "This package provides utility to enumerate users, groups
+and computers from a Windows domain through LDAP queries.")
+    (license license:bsd-3)))
+
 (define-public guile2.2-shepherd
   (package
     (inherit shepherd)
