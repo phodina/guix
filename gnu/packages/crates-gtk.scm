@@ -1255,6 +1255,30 @@
        (("rust-shell-words" ,rust-shell-words-0.1)
         ("rust-tempfile" ,rust-tempfile-3))))))
 
+(define-public rust-graphene-rs-0.14
+  (package
+    (name "rust-graphene-rs")
+    (version "0.14.8")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "graphene-rs" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0qx52x0rfal29wlj0bc995gam403wf0c3fm2w2wrxvrh4l9hyf73"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-glib" ,rust-glib-0.14)
+         ("rust-graphene-sys" ,rust-graphene-sys-0.14)
+         ("rust-libc" ,rust-libc-0.2))))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Rust bindings for the Graphene library")
+    (description "Rust bindings for the Graphene library")
+    (license license:expat)))
+
 (define-public rust-graphene-sys-0.14
   (package
     (name "rust-graphene-sys")
