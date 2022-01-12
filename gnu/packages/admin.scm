@@ -1906,6 +1906,39 @@ features of sudo with a fraction of the codebase.")
     (license (list license:bsd-3        ; libbsd/*
                    license:isc))))      ; everything else
 
+(define-public windapsearch
+  (let ((commit "7724ec4191d72ef6c26f59cf1ba61ea971718dea")
+        (revision "1"))
+    (package
+      (name "windapsearch")
+      (version (git-version "0.1-pre" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/ropnop/windapsearch")
+               (commit commit)))
+         (sha256
+          (base32
+           "0gxnyg8djki6vlrp2b3hwgn75cg4aas1smd1grrv61n1wxv2xqi2"))))
+      (build-system python-build-system)
+      (arguments
+       `(#:use-setuptools? #f
+         #:tests? #f
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'build)
+           (replace 'install
+             (lambda* (#:key outputs #:allow-other-keys)
+               (install-file "windapsearch.py" (string-append (assoc-ref outputs
+                                                                         "out") "/bin")))))))
+      (inputs (list python-pyasn1 python-pyasn1-modules python-ldap))
+      (home-page "https://github.com/ropnop/windapsearch")
+      (synopsis "Enumerate users, groups and computers in Windows domain")
+      (description "This package provides script to enumerate users, groups
+and computers from a Windows domain through LDAP queries.")
+      (license license:gpl3+))))
+
 (define-public wpa-supplicant-minimal
   (package
     (name "wpa-supplicant-minimal")
