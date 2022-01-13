@@ -7139,11 +7139,8 @@ converts it into syntax highlighted HTML, ANSI-coloured text, etc.")
             "0y8a3jxwg1wy71z5bvrkcwx4c7ivs18im6vlak9qw9zv9xbv12gz"))))
     (build-system go-build-system)
     (arguments
-      `(;#:tests? #f
+      `(#:tests? #f
 	#:import-path "github.com/anatol/vmtest"))
-	;#:phases
-	;(modify-phases %standard-phases
-	;	       (delete 'build))))
     (inputs (list qemu go-golang-org-x-sys go-github-com-stretchr-testify))
     (home-page "https://github.com/anatol/vmtest")
     (synopsis "Setup Virtual Machine for tests")
@@ -7609,6 +7606,7 @@ errors (warnings).")
   (build-system go-build-system)
   (arguments
   `(#:import-path "github.com/Foxboron/go-uefi"
+    #:unpack-path "github.com/foxboron/go-uefi"
     #:modules
        (((guix build gnu-build-system) #:prefix gnu:)
         (guix build go-build-system)
@@ -7622,9 +7620,12 @@ errors (warnings).")
        (modify-phases %standard-phases
 	     (add-before 'build 'cwd
 		 (lambda* _
-		  (display (getcwd))))
+		  (display (getenv "GOPATH"))
+		  (chdir "src/github.com/foxboron/go-uefi")))
          (replace 'build 
-           (assoc-ref gnu:%standard-phases 'build)))))
+           (lambda* args
+		   ((assoc-ref gnu:%standard-phases 'build)
+		   #:target "all"))))))
   (inputs (list
         go-github-com-spf13-afero
         go-golang-org-x-text

@@ -170,85 +170,12 @@
             (sha256
              (base32
               "0fnxvaa1g2svx83h76w6hzmk5r1wbmpsmjc6g3bkj8ymgig6nn62"))))
-  (build-system gnu-build-system)
-;  (arguments
-;   `(#:modules
-;      ((guix build gnu-build-system)
-;       ((guix build go-build-system) #:prefix go:)
-;      (guix build utils))
-    ;#:imported-modules ,%go-build-system-modules
-;    #:phases
-;      (modify-phases %standard-phases
-       ;(add-before 'unpack 'setup-go-environment
-       ;        (assoc-ref go:%standard-phases 'setup-go-environment))
-       ;(delete 'configure)
-;       (replace 'build
-;		(lambda _
-;                  (setenv "HOME" "/tmp")
-;		  (display "Fuck them")
-;		   (setenv "GOCACHE" "/tmp/go-cache")
-;		  (invoke "echo")))
-;       (replace 'check
-;                (lambda _
-;                  (setenv "GOPATH" (string-append (getcwd) "./gopath"))
-;                  (setenv "PWD" (string-append (getcwd) "./gopath/src/github.com/Foxboron/sbctl"))
-;;                 (setenv "PWD" #f)
-;                  #t))
-;       (add-after 'install 'remove-go-references
- ;                 (assoc-ref go:%standard-phases 'remove-go-references)))))
-
-  (native-inputs `(("asciidoc" ,asciidoc) ("go" ,go)))
-  (inputs `(("go" ,go)
-	    ("go-github-com-spf13-cobra" ,go-github-com-spf13-cobra)
-	    ("go-golang-org-x-text" ,go-golang-org-x-text)
-	    ("go-golang-org-x-crypto" ,go-golang-org-x-crypto)
-	    ("go-github-com-pkg-errors" ,go-github-com-pkg-errors)
-	    ("go-golang-org-x-sys" ,go-golang-org-x-sys)
-	    ("go-github-com-com-go-uefi" ,go-github-com-go-uefi)))
-;; OLD
-;  (arguments
-;    `(#:modules
-;      ((guix build gnu-build-system)
-;	((guix build go-build-system) #:prefix go:)
-;	(guix build union)
-;	(guix build utils))
-;      #:imported-modules
-;      (,@%gnu-build-system-modules
-;	(guix build union)
-;	(guix build go-build-system))
-;      #:phases
-;      (modify-phases %standard-phases
-;	(add-before 'build 'setup-go-environment
-;	  (assoc-ref go:%standard-phases 'setup-go-environment))
-;	(add-after 'install 'remove-go-references
-;	  (assoc-ref go:%standard-phases 'remove-go-references))
-;	(replace 'configure
-;	  (lambda _
-;	    (setenv "AUTO_GOPATH" "1")
-;	    (setenv "GOCACHE" "/tmp")
-;	    #t))
-;	(replace 'check
-;	  (lambda _
-;	    (setenv "GOPATH" (string-append (getcwd) "/.gopath"))
-;	    #t))
-;	(replace 'build
-;           (lambda* (#:key inputs outputs #:allow-other-keys)
-;             ;; FIXME: Some of the .a files are not bit-reproducible.
-;             (let* ((output (assoc-ref outputs "out")))
-;               (setenv "CC" (which "gcc"))
-;               (setenv "GOOS" "linux")
-;               (setenv "GOROOT" (dirname (getcwd)))
-;               (setenv "GOROOT_FINAL" output)
-;               (setenv "GO14TESTS" "1")
-;               (invoke "make")))))))
-      ;#:make-flags (list "PREFIX=${placeholder "out"}" "GOPATH=${placeholder "out"}/share/go" "GOCACHE=${placeholder "TMPDIR"}/go-cache")
-      ;#:phases (modify-phases %standard-phases
-;		(delete 'configure)
-;		(replace 'install
-;		  (lambda* (#:key outputs #:allow-other-keys)
-;			  (let ((bin (string-append (assoc-ref outputs "out") "/bin")))
-;			    (install-file "sbctl" bin)
-;			    #t))))))
+  (build-system go-build-system)
+  (arguments
+  `(#:import-path "github.com/Foxboron/sbctl"))
+  (inputs (list go-github-com-spf13-cobra go-golang-org-x-text
+  go-golang-org-x-crypto go-github-com-pkg-errors go-golang-org-x-sys
+  go-github-com-foxboron-go-uefi))
   (synopsis "Secure Boot Manager")
   (description "")
   (home-page "https://github.com/Foxboron/sbctl")
@@ -898,59 +825,6 @@ re-executing them as necessary.")
 client and server, a telnet client and server, an rsh client and server, and
 hostname.")
     (license license:gpl3+)))
-
-(define-public sbctl
-(package
-  (name "sbctl")
-  (version "0.6")
-  (source (origin
-            (method git-fetch)
-            (uri
-	      (git-reference
-		(url "https://github.com/Foxboron/sbctl")
-		(commit version)))
-            (sha256
-             (base32
-              "0fnxvaa1g2svx83h76w6hzmk5r1wbmpsmjc6g3bkj8ymgig6nn62"))))
-  (build-system gnu-build-system)
-;  (arguments 
-;   `(#:modules
-;      ((guix build gnu-build-system)
-;       ((guix build go-build-system) #:prefix go:)
-;      (guix build utils))
-    ;#:imported-modules ,%go-build-system-modules
-;    #:phases
-;      (modify-phases %standard-phases
-       ;(add-before 'unpack 'setup-go-environment
-       ;        (assoc-ref go:%standard-phases 'setup-go-environment))
-       ;(delete 'configure)
-;       (replace 'build
-;		(lambda _
-;                  (setenv "HOME" "/tmp")
-;		  (display "Fuck them")
-;		   (setenv "GOCACHE" "/tmp/go-cache")
-;		  (invoke "echo")))
-;       (replace 'check
-;                (lambda _
-;                  (setenv "GOPATH" (string-append (getcwd) "./gopath"))
-;                  (setenv "PWD" (string-append (getcwd) "./gopath/src/github.com/Foxboron/sbctl"))
-;;                 (setenv "PWD" #f)
-;                  #t))
-;       (add-after 'install 'remove-go-references
- ;                 (assoc-ref go:%standard-phases 'remove-go-references)))))
- (native-inputs `(("asciidoc" ,asciidoc) ("go" ,go)))
-  (inputs `(("go" ,go)
-	    ("go-github-com-spf13-cobra" ,go-github-com-spf13-cobra)
-	    ("go-golang-org-x-text" ,go-golang-org-x-text)
-	    ("go-golang-org-x-crypto" ,go-golang-org-x-crypto)
-	    ("go-github-com-pkg-errors" ,go-github-com-pkg-errors)
-	    ("go-golang-org-x-sys" ,go-golang-org-x-sys)
-	    ("go-github-com-com-go-uefi" ,go-github-com-go-uefi)))
-  (synopsis "Secure Boot Manager")
-  (description "")
-  (home-page "https://github.com/Foxboron/sbctl")
-  (license license:expat)))
-
 
 (define-public shadow
   (package
