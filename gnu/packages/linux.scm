@@ -63,7 +63,6 @@
 ;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2022 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;; Copyright © 2022 Rene Saavedra <nanuui@protonmail.com>
-
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -2024,6 +2023,28 @@ block devices, UUIDs, TTYs, and many other tools.")
 The Discordian calendar was made popular by the \"Illuminatus!\" trilogy
 by Robert Shea and Robert Anton Wilson.")
     (license license:public-domain)))
+
+(define-public dislocker
+  (package
+    (name "dislocker")
+    (version "0.7.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/Aorimn/dislocker")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32 "1ak68s1v5dwh8y2dy5zjybmrh0pnqralmyqzis67y21m87g47h2k"))))
+    (build-system cmake-build-system)
+    (arguments '(#:tests? #f))
+    (inputs (list fuse mbedtls-apache))
+    (home-page "https://github.com/bo0ts/ddate")
+    (synopsis "FUSE driver to read/write Windows BitLocker drives")
+    (description
+     "This package provides means to to read BitLocker encrypted
+         partitions. Write functionality is also provided but check the README.")
+    (license license:gpl2+)))
 
 (define-public fbset
   (package
