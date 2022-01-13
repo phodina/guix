@@ -957,6 +957,29 @@ things far stranger and deadlier, and against the others like yourself, that
 want what you have.")
     (license license:cc-by-sa3.0)))
 
+(define-public cave-express
+    (package
+      (name "cave-express")
+      (version "2.5.2")
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/mgerhardy/caveexpress")
+               (commit version)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "1sjgwpzgs15k6rsrznjgaiir0i0lfwzzn2kh4ccyk8wrjm03wyjj"))))
+      (build-system cmake-build-system)
+      (native-inputs
+       (list pkg-config))
+	  (inputs (list box2d lua sdl2 sdl2-mixer sdl2-image sdl2-net sqlite))
+      (home-page "http://www.caveproductions.org/")
+      (synopsis "Classic 2D platformer with physics-based gameplay")
+      (description "")
+      (license license:gpl3+)))
+
 (define-public cockatrice
   (let ((release-date "2021-01-26"))
     (package
