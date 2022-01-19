@@ -1283,6 +1283,58 @@ integrate QML code with JavaScript and C++.")
     (description "The Qt Connectivity modules provides modules for interacting
 with Bluetooth and NFC.")))
 
+(define-public qtcsv
+  (package
+    (name "qtcsv")
+    (version "1.6")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/iamantony/qtcsv")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "109nbspnhaczm85wp1fqazmamdj2bh9wfv3anlslvll606lrfgir"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (replace 'configure
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (invoke "qmake")))
+                  (add-after 'unpack 'fix-install
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out")))
+                        (substitute* "qtcsv.pro"
+                          (("/usr") out)
+                          (("\\$\\$PWD") out)))))
+                  (replace 'install
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out")) (lib (string-append
+                                                                   out "/lib"))
+                             (include (string-append out "/include")))
+                        (mkdir-p include)
+                        (mkdir-p lib)
+                        (chdir "..") ;we were in dir tests
+                        (copy-recursively "include" include)
+                        (for-each (lambda (file)
+                                    (install-file (string-append file) lib))
+                                  '("libqtcsv.so" "libqtcsv.so.1"
+                                    "libqtcsv.so.1.6" "libqtcsv.so.1.6.0")))))
+                  (replace 'check
+                    (lambda* (#:key tests? test-options parallel-tests?
+                              #:allow-other-keys)
+                      (when tests?
+                        (chdir "tests")
+                        (invoke "qmake")))))))
+    (native-inputs (list perl python))
+    (inputs (list qtbase-5))
+    (home-page "https://github.com/iamantony/qtcsv")
+    (synopsis "Library for reading and writing CSV files")
+    (description "This package provides library for reading and writing CSV
+files.")
+    (license license:expat)))
+
 (define-public qtwebsockets-5
   (package (inherit qtsvg-5)
     (name "qtwebsockets")
