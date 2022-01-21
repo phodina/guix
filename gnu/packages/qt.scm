@@ -3731,7 +3731,7 @@ that can be only started once per user.
 (define-public qwt
   (package
     (name "qwt")
-    (version "6.1.5")
+    (version "6.2.0")
     (source
       (origin
         (method url-fetch)
@@ -3739,7 +3739,7 @@ that can be only started once per user.
          (string-append "mirror://sourceforge/qwt/qwt/"
                         version "/qwt-" version ".tar.bz2"))
         (sha256
-         (base32 "0hf0mpca248xlqn7xnzkfj8drf19gdyg5syzklvq8pibxiixwxj0"))))
+         (base32 "0c0mnyqa8rvs2bx946mbmfbh2ik4a0bmhwgn01rzvl2m758zd54i"))))
   (build-system gnu-build-system)
   (inputs
    (list qtbase-5 qtsvg-5 qttools-5))
