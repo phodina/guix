@@ -1,0 +1,80 @@
+From 22b0b5014be7911406b262aeb0864d36f1fbbab5 Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Wed, 19 Jan 2022 14:52:08 +0100
+Subject: [PATCH] Remove code dependent on QSimpleUpdater. Don't include
+ qwt.pri, qtcsv.pri and qmqtt.pri.
+
+
+diff --git a/Serial-Studio.pro b/Serial-Studio.pro
+index 49cbb6e..fb6aeca 100644
+--- a/Serial-Studio.pro
++++ b/Serial-Studio.pro
+@@ -59,7 +59,7 @@ equals(QT_MAJOR_VERSION, 6) {
+     QT += core5compat
+ }
+ 
+-DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x050F00
++DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x050F00 DISABLE_QSU
+ 
+ #-----------------------------------------------------------------------------------------
+ # Compiler options
+diff --git a/libs/Libraries.pri b/libs/Libraries.pri
+index 9a5494c..d2f6f12 100644
+--- a/libs/Libraries.pri
++++ b/libs/Libraries.pri
+@@ -36,12 +36,8 @@ INCLUDEPATH += $$PWD
+ # Include *.pri files
+ #-------------------------------------------------------------------------------
+ 
+-include($$PWD/qwt/qwt.pri)
+-include($$PWD/qtcsv/qtcsv.pri)
+-include($$PWD/qmqtt/qmqtt.pri)
+ include($$PWD/QMapControl/QMapControl.pri)
+ include($$PWD/QRealFourier/QRealFourier.pri)
+-include($$PWD/QSimpleUpdater/QSimpleUpdater.pri)
+ 
+ macx* {
+     DEFINES += KDMACTOUCHBAR_BUILD_KDMACTOUCHBAR_SRC
+diff --git a/src/Misc/ModuleManager.cpp b/src/Misc/ModuleManager.cpp
+index 50ac4c1..bd022f2 100644
+--- a/src/Misc/ModuleManager.cpp
++++ b/src/Misc/ModuleManager.cpp
+@@ -55,7 +55,6 @@
+ #include <Widgets/Terminal.h>
+ 
+ #include <QQuickWindow>
+-#include <QSimpleUpdater.h>
+ 
+ /**
+  * Configures the application font, creates a splash screen and configures
+@@ -120,11 +119,6 @@ void Misc::ModuleManager::configureUpdater()
+ {
+     if (!autoUpdaterEnabled())
+         return;
+-
+-    setSplashScreenMessage(tr("Configuring updater..."));
+-    QSimpleUpdater::getInstance()->setNotifyOnUpdate(APP_UPDATER_URL, true);
+-    QSimpleUpdater::getInstance()->setNotifyOnFinish(APP_UPDATER_URL, false);
+-    QSimpleUpdater::getInstance()->setMandatoryUpdate(APP_UPDATER_URL, false);
+ }
+ 
+ /**
+@@ -170,7 +164,6 @@ void Misc::ModuleManager::initializeQmlInterface()
+     const auto csvPlayer = CSV::Player::getInstance();
+     const auto ioManager = IO::Manager::getInstance();
+     const auto ioConsole = IO::Console::getInstance();
+-    const auto updater = QSimpleUpdater::getInstance();
+     const auto jsonEditor = JSON::Editor::getInstance();
+     const auto mqttClient = MQTT::Client::getInstance();
+     const auto uiDashboard = UI::Dashboard::getInstance();
+@@ -215,7 +208,6 @@ void Misc::ModuleManager::initializeQmlInterface()
+     c->setContextProperty("Cpp_IsWin", isWin);
+     c->setContextProperty("Cpp_IsMac", isMac);
+     c->setContextProperty("Cpp_IsNix", isNix);
+-    c->setContextProperty("Cpp_Updater", updater);
+     c->setContextProperty("Cpp_IO_Serial", ioSerial);
+     c->setContextProperty("Cpp_CSV_Export", csvExport);
+     c->setContextProperty("Cpp_CSV_Player", csvPlayer);
+-- 
+2.34.0
+

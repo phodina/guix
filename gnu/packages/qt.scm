@@ -3017,6 +3017,78 @@ Google services and binaries removed, and adds modular support for using
 system libraries.")
     (license license:lgpl2.1+)))
 
+(define-public serial-studio
+  (package
+    (name "serial-studio")
+    (version "1.1.4")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/Serial-Studio/Serial-Studio")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (patches (search-patches
+                        "serial-studio-remove-qsimple-updater.patch"))
+              (modules '((guix build utils) (ice-9 ftw)
+                         (srfi srfi-1)))
+              (snippet '(begin
+                          (with-directory-excursion "libs"
+                                                    (for-each
+                                                     delete-file-recursively
+                                                     '("qwt" "qtcsv" "qmqtt"
+                                                       "QSimpleUpdater")))))
+              (sha256
+               (base32
+                "0qww2pmbvmq3cjx3xk8rxq0zf54y0b0j8bykn4aq3d2dii44m85y"))))
+    (build-system qt-build-system)
+    (arguments
+     `(#:tests? #f ;no test suite
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key outputs inputs #:allow-other-keys)
+             (substitute* "Serial-Studio.pro"
+               (("/usr") (assoc-ref outputs "out"))
+               (("INCLUDEPATH \\+= src") (string-append "INCLUDEPATH += src
+INCLUDEPATH += "
+                                                        (assoc-ref inputs
+                                                                   "qwt")
+                                                        "/include/qwt
+"
+                                                        "LIBS += -L"
+                                                        (assoc-ref inputs
+                                                                   "qwt")
+                                                        "/lib"
+                                                        " -lqwt
+"
+                                                        "LIBS += -L"
+                                                        (assoc-ref inputs
+                                                                   "qtcsv")
+                                                        "/lib"
+                                                        " -lqtcsv
+"
+                                                        "LIBS += -L"
+                                                        (assoc-ref inputs
+                                                                   "qmqtt")
+                                                        "/lib"
+                                                        " -lQt5Qmqtt")))
+             (invoke "qmake"))))))
+    (native-inputs (list qwt qttools pkg-config))
+    (inputs (list qtcsv
+                  qmqtt
+                  qwt
+                  qtbase-5
+                  qtserialport
+                  qtsvg
+                  qtdeclarative
+                  qtquickcontrols2))
+    (home-page "https://github.com/Serial-Studio/Serial-Studio")
+    (synopsis "Multi-purpose serial data visualization & processing program")
+    (description
+     "This package provides multi-purpose serial data visualization
+and processing GUI program.")
+    (license license:expat)))
+
 (define-public single-application-qt5
   ;; Change in function signature, nheko requires at least this commit
   (let ((commit "dc8042b5db58f36e06ba54f16f38b16c5eea9053"))
