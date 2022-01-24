@@ -104,7 +104,7 @@
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021 Hugo Lecomte <hugo.lecomte@inria.fr>
 ;;; Copyright © 2021 Franck Pérignon <franck.perignon@univ-grenoble-alpes.fr>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 Simon Streit <simon@netpanic.org>
 ;;; Copyright © 2021 Daniel Meißner <daniel.meissner-i4k@ruhr-uni-bochum.de>
 ;;; Copyright © 2021 Pradana Aumars <paumars@courrier.dev>
@@ -23861,8 +23861,28 @@ file-based data structures that are @code{mmap}ped into memory so that many
 processes may share the same data.")
     (license license:asl2.0)))
 
+(define-public python-croniter-1
+  (package
+    (name "python-croniter")
+    (version "1.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "croniter" version))
+        (sha256
+          (base32 "1my2hlh4wyd5zsbij3hids24zzla73x06d9r2ikn9vdrmvv24i09"))))
+    (build-system python-build-system)
+    (propagated-inputs (list python-dateutil))
+    (home-page "https://github.com/kiorky/croniter")
+    (synopsis "Iterate datetime objects with cron-like syntax")
+    (description
+     "@code{croniter} provides iteration for datetime object with cron-like
+format.")
+    (license license:expat)))
+
 (define-public python-croniter
   (package
+  (inherit python-croniter-1)
     (name "python-croniter")
     (version "0.3.34")
     (source (origin
@@ -23871,15 +23891,7 @@ processes may share the same data.")
               (sha256
                (base32
                 "0r79cx4v2dw4hzr0annkkxxis46c8hivq61sr39z6p7lcjsbk1ki"))))
-    (build-system python-build-system)
-    (propagated-inputs
-     (list python-dateutil python-natsort))
-    (home-page "https://github.com/kiorky/croniter")
-    (synopsis "Iterate datetime objects with cron-like syntax")
-    (description
-     "@code{croniter} provides iteration for datetime object with cron-like
-format.")
-    (license license:expat)))
+    (build-system python-build-system)))
 
 (define-public python-crontab
   (package
