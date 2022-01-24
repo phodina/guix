@@ -11969,6 +11969,32 @@ reading and writing MessagePack data.")
                  ((".fromstring\\(") ".frombytes("))
                #t))))))))
 
+(define-public python-msm
+  (package
+    (name "python-msm")
+    (version "0.8.9")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "msm" version))
+       (sha256
+        (base32
+         "00z588imq7q33iv3hn83mf2cyqrbs5f6zzyfa6445ainxvskkzz2"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     (list python-fasteners
+           python-gitpython
+           python-lazy
+           python-pako
+           python-pyxdg
+           python-pyyaml
+           python-requests))
+    (home-page "https://github.com/MycroftAI/mycroft-skills-manager")
+    (synopsis "Mycroft skills manager")
+    (description "This package provides a command line tool for interacting
+with the Mycroft skills repository.")
+    (license license:asl2.0)))
+
 (define-public python-netaddr
   (package
     (name "python-netaddr")
@@ -11978,14 +12004,14 @@ reading and writing MessagePack data.")
        (method url-fetch)
        (uri (pypi-uri "netaddr" version))
        (sha256
-         (base32
-          "0hx2npi0wnhwlcybilgwlddw6qffx1mb7a3sj4p9s7bvl33mgk6n"))))
+        (base32
+         "0hx2npi0wnhwlcybilgwlddw6qffx1mb7a3sj4p9s7bvl33mgk6n"))))
     (build-system python-build-system)
     (arguments `(#:tests? #f)) ;; No tests.
     (home-page "https://github.com/drkjam/netaddr/")
     (synopsis "Pythonic manipulation of  network addresses")
     (description
-      "A Python library for representing and manipulating IPv4, IPv6, CIDR, EUI
+     "A Python library for representing and manipulating IPv4, IPv6, CIDR, EUI
 and MAC network addresses.")
     (license license:bsd-3)))
 
