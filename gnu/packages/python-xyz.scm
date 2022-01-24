@@ -18978,6 +18978,35 @@ numbers, real numbers, mixed types and more, and comes with a shell command
      with an associated set of resolve methods that know how to fetch data.")
     (license license:expat)))
 
+(define-public python-gtts
+  (package
+    (name "python-gtts")
+    (version "2.2.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "gTTS" version))
+       (sha256
+        (base32
+         "0g467h1501kxw4zniym03xkz3766bdp6j2j5l04p11ki4h8smkw8"))))
+    (build-system python-build-system)
+    (native-inputs
+     (list python-flake8
+           python-mock
+           python-pytest
+           python-pytest-cov
+           python-six
+           python-testfixtures))
+    (propagated-inputs
+     (list python-click
+           python-requests
+           python-six))
+    (home-page "https://github.com/pndurette/gTTS")
+    (synopsis "Python interface to Google Translate text-to-speech API")
+    (description "This package provides a Python library and CLI tool to
+interface with Google Translate text-to-speech API.")
+    (license license:expat)))
+
 (define-public python-random2
   (package
     (name "python-random2")
