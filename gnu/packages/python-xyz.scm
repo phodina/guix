@@ -198,6 +198,7 @@
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages llvm)
+  #:use-module (gnu packages machine-learning)
   #:use-module (gnu packages man)
   #:use-module (gnu packages markup)
   #:use-module (gnu packages maths)
@@ -20241,6 +20242,25 @@ cases, factory_boy allows you to use objects customized for the current test,
 while only declaring the test-specific fields.")
     (license license:expat)))
 
+(define-public python-fann2
+  (package
+    (name "python-fann2")
+    (version "1.0.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "fann2" version))
+       (sha256
+        (base32
+         "17zv6hbq26qg9jmsshx3xnnnv203fr4cyjg4v3rgq38a5i5agv2k"))))
+    (build-system python-build-system)
+    (native-inputs (list swig))
+    (propagated-inputs (list fann))
+    (home-page "https://github.com/FutureLinkCorporation/fann2")
+    (synopsis "Fast Artificial Neural Network library (FANN) Python bindings")
+    (description "This package provides Python bindings for Fast Artificial
+Neural Networks (FANN) 2.2.0.")
+    (license license:lgpl2.1)))
 (define-public python-translate-toolkit
   (package
     (name "python-translate-toolkit")
