@@ -155,6 +155,7 @@
   #:use-module (gnu packages lirc)
   #:use-module (gnu packages llvm)
   #:use-module (gnu packages lua)
+  #:use-module (gnu packages m4)
   #:use-module (gnu packages mail)
   #:use-module (gnu packages man)
   #:use-module (gnu packages markup)
@@ -1134,6 +1135,39 @@ tickets, and pops up a dialog when they are about to expire.")
 freedesktop.org desktop notification specification.")
     (home-page "https://wiki.gnome.org/Projects/NotificationDaemon")
     (license license:gpl2+)))
+
+(define-public nvidia-settings
+  (package
+    (name "nvidia-settings")
+    (version "510.39.01")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://github.com/NVIDIA/nvidia-settings")
+	   (commit version)))
+       (sha256
+        (base32
+         "0z69ncwcv955mdd886sabrlh6ds9n27qvl5nprqgn2rhmlvb0m5a"))))
+    (build-system gnu-build-system)
+	(arguments
+	`(#:tests? #f ; no test suite
+	  #:make-flags (list (string-append "PREFIX=" %output) (string-append "CC=" ,(cc-for-target)))
+	  #:phases
+	 (modify-phases %standard-phases
+	  (delete 'configure)
+	  (add-after 'unpack 'gtk-libs-path
+	  (lambda* (#:key outputs #:allow-other-keys)
+	   (substitute* "src/nvidia-settings.c"
+	   (("\"\", index") (string-append "\"" (assoc-ref outputs "out")
+	   "/lib\", index"))))))))
+	(native-inputs (list gtk+-2 gtk+ m4 pkg-config))
+	(inputs (list dbus mesa libxv libxrandr))
+    (synopsis "NVIDIA driver control panel")
+    (description "This package provides NVIDIA driver control panel.")
+    (home-page "https://github.com/NVIDIA/nvidia-settings")
+    (license
+      license:gpl2+)))
 
 (define-public mm-common
   (package
