@@ -4133,6 +4133,46 @@ MPEG-2, MPEG-4, DVD (VOB)...
      "")
 	(license license:expat)))
 
+(define-public nvidia-vaapi-driver
+  (package
+    (name "nvidia-vaapi-driver")
+    (version "0.0.3")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/elFarto/nvidia-vaapi-driver")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32 "1r5n4b4dqxhg0ax3nnxfi5wnxgkrsqfpsrlxq1dnvybgcabw5vpb"))
+       (file-name (git-file-name name version))))
+    (build-system meson-build-system)
+    (native-inputs
+     (list pkg-config))
+    (inputs
+     (list gst-plugins-bad libdrm libva libx11 nv-codec-headers mesa))
+;    (arguments
+;     `(#:phases
+;       (modify-phases %standard-phases
+;         (add-before 'configure 'set-target-directory
+;           (lambda* (#:key outputs #:allow-other-keys)
+;             (let ((out (assoc-ref outputs "out")))
+;               (setenv "LIBVA_DRIVERS_PATH" (string-append out "/lib/dri"))
+;               #t))))))
+;    ;; XXX Because of <https://issues.guix.gnu.org/issue/22138>, we need to add
+;    ;; this to all VA-API back ends instead of once to libva.
+;    (native-search-paths
+;     (list (search-path-specification
+;            (variable "LIBVA_DRIVERS_PATH")
+;            (files '("lib/dri")))))
+    (supported-systems '("i686-linux" "x86_64-linux"))
+    (home-page "https://github.com/elFarto/nvidia-vaapi-driver")
+    (synopsis "VA-API video acceleration driver for NVIDIA graphics devices")
+    (description
+     "This is the @acronym{VA-API, Video Acceleration API} back end required for
+hardware-accelerated video processing on NVIDIA NVDEC Graphics devices.")
+	(license license:expat)))
+
 ;; TODO also have a GUI version available
 (define-public mediainfo
   (package
