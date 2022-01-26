@@ -1031,7 +1031,7 @@ fullscreen) or other display servers.")
 (define-public wayland-protocols
   (package
     (name "wayland-protocols")
-    (version "1.23")
+    (version "1.24")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1039,7 +1039,7 @@ fullscreen) or other display servers.")
                     "wayland-protocols-" version ".tar.xz"))
               (sha256
                (base32
-                "0xizccackgwszjhlq7jjiv2z2gwppljx0w32ga91bxlnby8z22kc"))))
+                "1hlb6gvyqlmsdkv5179ccj07p04cn6xacjkgklakbszczv7xiw5z"))))
     (build-system meson-build-system)
     (inputs
      (list wayland))
