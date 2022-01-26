@@ -4099,6 +4099,40 @@ MPEG-2, MPEG-4, DVD (VOB)...
 @end itemize\n")
     (license license:bsd-2)))
 
+(define-public nv-codec-headers
+  (package
+    (name "nv-codec-headers")
+    (version "11.1.5.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://git.videolan.org/git/ffmpeg/nv-codec-headers.git")
+             (commit (string-append "n" version))))
+       (sha256
+        (base32 "05a6dfv6yackcyx7ysxfzf2h768y63ih8icdkkzi8bwq7hp8lcy9"))
+       (file-name (git-file-name name version))))
+    (build-system gnu-build-system)
+;    (native-inputs
+;     (list pkg-config))
+;    (inputs
+;     (list gst-plugins-bad libdrm libva libx11 mesa))
+    (arguments
+     `(#:tests? #f ; no test suite
+	   #:phases
+       (modify-phases %standard-phases
+	   (delete 'configure)
+	   (add-after 'unpack 'fix-prefix
+	   (lambda* (#:key outputs #:allow-other-keys)
+	    (substitute* "Makefile"
+		(("/usr/local") (assoc-ref outputs "out"))))))))
+    (supported-systems '("i686-linux" "x86_64-linux"))
+    (home-page "https://git.videolan.org/git/ffmpeg/nv-codec-headers.git")
+    (synopsis "FFmpeg headers required to interface with Nvidias codec APIs")
+    (description
+     "")
+	(license license:expat)))
+
 ;; TODO also have a GUI version available
 (define-public mediainfo
   (package
