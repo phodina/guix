@@ -54,6 +54,7 @@
 ;;; Copyright © 2021 jgart <jgart@dismail.de>
 ;;; Copyright © 2022 John Kehayias <john.kehayias@protonmail.com>
 ;;; Copyright © 2022 Jai Vetrivelan <jaivetrivelan@gmail.com>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -623,7 +624,7 @@ rasterisation.")
 (define-public libdrm
   (package
     (name "libdrm")
-    (version "2.4.107")
+    (version "2.4.109")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -631,7 +632,7 @@ rasterisation.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "127qf1rzhaf13vdd75a58v5q34617hvangjlfnlkcdh37gqcwm65"))))
+                "09kzrdsd14zr0i3izvi5mck4vqccl3c9hr84r9i4is0zikh554v2"))))
     (build-system meson-build-system)
     (arguments
      `(#:configure-flags
