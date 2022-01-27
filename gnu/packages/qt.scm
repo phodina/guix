@@ -3042,6 +3042,43 @@ instances.")
     (description "This package provides a widget for editing/viewing code.")
 	(license license:expat))))
 
+(define-public vesc
+(let ((commit "f3cf310baf23038c31b40cf3db17380f013242e0")
+      (revision "1"))
+  (package
+    (name "vesc")
+    (version (git-version "0.1-pre" revision commit))
+    (source (origin
+             (method git-fetch)
+             (uri (git-reference
+			 (url "https://github.com/vedderb/vesc_tool")
+			 (commit commit)))
+         (modules '((guix build utils)
+                    (ice-9 ftw)
+                    (srfi srfi-1)))
+         (snippet
+          `(begin
+             (delete-file-recursively "QCodeEditor")))
+             (sha256
+              (base32
+               "04r9njx5yrq460nmwpl6b8zigcs155h8yyrq7q14zr29l61rarvm"))))
+	(build-system qt-build-system)
+    (arguments
+       `(#:phases
+        (modify-phases %standard-phases
+           (replace 'configure
+             (lambda _
+			   (invoke "qmake"))))))
+    (native-inputs
+     (list qttools))
+    (inputs (list qtbase-5 qtdeclarative qtsvg qtserialport qtquickcontrols2
+	qtconnectivity qtlocation qtgamepad qtcodeeditor))
+	(home-page "vesc-project.com")
+    (synopsis "Configuration tool for the VESC motor controller")
+    (description "This package provides a GUI configurationt ool for the VESC
+motor controller.")
+	(license license:gpl3+))))
+
 (define-public python-sip
   (package
     (name "python-sip")
