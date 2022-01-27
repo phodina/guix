@@ -3019,6 +3019,29 @@ instances and can send data to the primary instance from secondary
 instances.")
       (license license:expat))))
 
+(define-public qtcodeeditor
+(let ((commit "dc644d41b68978ab9a5591ba891a223221570e74")
+      (revision "1"))
+  (package
+    (name "qtcodeeditor")
+    (version (git-version "0.1-pre" revision commit))
+    (source (origin
+             (method git-fetch)
+             (uri (git-reference
+			 (url "https://github.com/Megaxela/QCodeEditor")
+			 (commit commit)))
+             (sha256
+              (base32
+               "1bpvfwbgp275w79dzrd7d9k3md1ch7n88rh59mxdfj8s911n42j8"))))
+	(build-system qt-build-system)
+	(arguments
+	`(#:tests? #f))
+    (inputs (list qtbase-5))
+	(home-page "https://github.com/Megaxela/QCodeEditor")
+    (synopsis "Code Editor widget")
+    (description "This package provides a widget for editing/viewing code.")
+	(license license:expat))))
+
 (define-public python-sip
   (package
     (name "python-sip")
