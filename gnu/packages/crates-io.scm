@@ -53931,6 +53931,30 @@ fragment of code.")
      `(#:skip-build? #t
        #:cargo-inputs (("rust-num" ,rust-num-0.2))))))
 
+(define-public rust-serde-bencode-0.2
+  (package
+    (name "rust-serde-bencode")
+    (version "0.2.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "serde-bencode" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "03f3l6f390mpddn885vpi5hrc7919913724sxbxdl9h1mbdqnkck"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-serde" ,rust-serde-1)
+         ("rust-serde-bytes" ,rust-serde-bytes-0.11))
+        #:cargo-development-inputs
+        (("rust-serde-derive" ,rust-serde-derive-1))))
+    (home-page "https://github.com/toby/serde-bencode")
+    (synopsis "A Serde backed Bencode encoding/decoding library for Rust.")
+    (description
+      "This package provides a Serde backed Bencode encoding/decoding library for Rust.")
+    (license license:expat)))
+
 (define-public rust-serde-big-array-0.3
   (package
     (name "rust-serde-big-array")
