@@ -1218,7 +1218,7 @@ they can refer to each other."
                                     #:opts %auto-compilation-options)))))
                 files)))
 
-    (build-expression->derivation store name builder
+    (gexp->derivation store name builder
                                   #:inputs `(("modules" ,module-dir))
                                   #:system system
                                   #:guile-for-build guile

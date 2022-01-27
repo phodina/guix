@@ -134,7 +134,7 @@ are not recursively applied to dependencies of DRV."
     ((($ <graft> sources source-outputs targets target-outputs) ...)
      (let ((sources (zip sources source-outputs))
            (targets (zip targets target-outputs)))
-       (build-expression->derivation store name build
+       (gexp->derivation store name build
                                      #:system system
                                      #:guile-for-build guile
                                      #:modules '((guix build graft)
