@@ -5894,6 +5894,39 @@ application that locks the keyboard and mouse and instead displays bright
 colors, pictures, and sounds.")
     (license license:gpl3+)))
 
+(define-public moonlight-common
+  (let ((commit "8c55c086d596607041e4394fb62a1bc800b7f37c")
+        (revision "1"))
+(package
+  (name "moonlight-common")
+  (version commit)
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/moonlight-stream/moonlight-common-c")
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0pqm0a2p2sqvazv5gak6gl7d405kaaq6r13l7yhycm0myayqavrp"))))
+  (build-system cmake-build-system)
+  (arguments
+    `(#:tests? #f
+      #:phases
+      (modify-phases %standard-phases
+        (add-after 'unpack 'use-enet-pkg
+          (lambda _
+            (substitute* "CMakeLists.txt"
+              (("add_subdirectory\\(enet\\)") "")))))))
+  (native-inputs `(("pkg-config" ,pkg-config)))
+  (inputs `(("qtbase" ,qtbase-5)
+            ("openssl" ,openssl)
+            ("enet" ,enet)))
+  (synopsis "Core implementation of Nvidia's GameStream protocol")
+  (description "This package provides the code GameStream code shared between @code{Moonlight} clients.")
+  (home-page "https://github.com/moonlight-stream/moonlight-common-c")
+  (license license:gpl3))))
+
 (define-public mrrescue
   (package
     (name "mrrescue")
