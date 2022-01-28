@@ -61,18 +61,18 @@
 (define-public php
   (package
     (name "php")
-    (version "7.4.26")
-    (home-page "https://secure.php.net/")
+    (version "8.1.2")
+    (home-page "https://www.php.net/")
     (source (origin
               (method url-fetch)
               (uri (string-append home-page "distributions/"
                                   "php-" version ".tar.xz"))
               (sha256
                (base32
-                "1y0f1xgfi8cks6npdhrycg8r9g3q0pikqgf5h4xafpy8znmb61g3"))
-              (patches
-               (search-patches "php-bug-74093-test.patch"
-                               "php-openssl_x509_checkpurpose_basic.patch"))
+                "1pcild8vws9vadjm83rb5f7x49fsyfmn6wjv4sgil31nzm184i3b"))
+    ;          (patches
+     ;          (search-patches "php-bug-74093-test.patch"
+      ;                         "php-openssl_x509_checkpurpose_basic.patch"))
               (modules '((guix build utils)))
               (snippet
                '(with-directory-excursion "ext"
@@ -84,8 +84,7 @@
                             ;;"bcmath/libbcmath"
                             ;;"fileinfo/libmagic" ; a patched version of libmagic
                             '("gd/libgd"
-                              "pcre/pcre2lib"
-                              "xmlrpc/libxmlrpc"))))))
+                              "pcre/pcre2lib"))))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
