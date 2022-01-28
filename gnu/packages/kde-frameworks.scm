@@ -382,7 +382,7 @@ documentation.")
 (define-public karchive
   (package
     (name "karchive")
-    (version "5.70.0")
+    (version "5.90.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -391,12 +391,12 @@ documentation.")
                     name "-" version ".tar.xz"))
               (sha256
                (base32
-                "0z8asn357pdbv4g9g0x18p72wskca1qanxljyix7wzc5rsi63wzm"))))
+                "0411rpgr9dy0zf9mmhj7n7ax0afrn7zvkpzpnjvpvvqsrfkz7qm6"))))
     (build-system cmake-build-system)
     (native-inputs
-     (list extra-cmake-modules))
+     (list extra-cmake-modules pkg-config)) ; for zstd
     (inputs
-     (list bzip2 qtbase-5 xz zlib))
+     (list bzip2 qtbase-5 xz zlib zstd))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Qt 5 addon providing access to numerous types of archives")
     (description "KArchive provides classes for easy reading, creation and
