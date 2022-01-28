@@ -888,6 +888,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/bc-fix-cross-compilation.patch		\
   %D%/packages/patches/bdb-5.3-atomics-on-gcc-9.patch		\
   %D%/packages/patches/bind-re-add-attr-constructor-priority.patch	\
+  %D%/packages/patches/breeze-icons-fix-dupe-tests.patch \
   %D%/packages/patches/brightnessctl-elogind-support.patch	\
   %D%/packages/patches/bsd-games-2.17-64bit.patch		\
   %D%/packages/patches/bsd-games-add-configure-config.patch	\
