@@ -7847,6 +7847,29 @@ original.")
     (sha256
      (base32 "05xdikw5ln0yh8p5chsmd8qnndmxg5b5vjlfpdqrjcb1ncqzywkc"))))
 
+(define-public entityx
+(package
+  (name "entityx")
+  (version "1.1.2")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/alecthomas/entityx")
+             (commit version)))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "0x9z5fan99qi9r7mf830520l9hrlbivgmbqissvw0nm5mq5gqk90"))))
+  (build-system cmake-build-system)
+  ;(arguments
+  ;  `(#:tests? #f))
+  ;(native-inputs `(("pkg-config" ,pkg-config)))
+  (synopsis "Fast, type-safe C++ Entity-Component system")
+  (description "@code{EntityX} provides an EC system that uses C++11 features
+for type-safe component management, event delivery, etc.")
+  (home-page "https://github.com/alecthomas/entityx")
+  (license license:expat)))
+
 (define-public rinutils
   (package
     (name "rinutils")
