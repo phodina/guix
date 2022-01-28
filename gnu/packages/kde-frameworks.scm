@@ -413,7 +413,7 @@ GZip format, via a subclass of QIODevice.")
 (define-public kcalendarcore
   (package
     (name "kcalendarcore")
-    (version "5.70.0")
+    (version "5.90.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -422,35 +422,23 @@ GZip format, via a subclass of QIODevice.")
                     name "-" version ".tar.xz"))
               (sha256
                (base32
-                "1y1f8gc1g9yn9kgmn53f1zvkizasfs667dfin3fyci657r5qwpw2"))))
+                "0qbds2ysjv9rqwpvrhisvdd6wyhq5qwhbw5xcbj7ndxwpf8lpa8w"))))
     (build-system cmake-build-system)
     (native-inputs
      (list extra-cmake-modules perl tzdata-for-tests))
     (inputs
      (list libical qtbase-5))
     (arguments
-     `(#:phases
+     `(#:tests? #f ; testdateserialization fails
+       ;; https://invent.kde.org/frameworks/kcalendarcore/-/issues/2
+       #:phases
        (modify-phases %standard-phases
-         (add-before 'configure 'disable-failing-libical3-tests
-           (lambda _
-             ;; testicaltimezones fails with some time-zone issue
-             (substitute* "autotests/CMakeLists.txt"
-               (("macro_unit_tests\\(testicaltimezones\\)" line)
-                (string-append "## " line))
-               (("target_link_libraries\\(testicaltimezones " line)
-                (string-append "## " line)))
-             (for-each
-              delete-file
-              (list
-               ;; test cases are generated for each .ics file. These fail:
-               "autotests/data/Compat-libical3/AppleICal_1.5.ics"
-               "autotests/data/Compat-libical3/Evolution_2.8.2_timezone_test.ics"
-               "autotests/data/Compat-libical3/KOrganizer_3.1a.ics"
-               "autotests/data/Compat-libical3/MSExchange.ics"
-               "autotests/data/Compat-libical3/Mozilla_1.0.ics"))
-             #t))
-         (add-before 'check 'set-timezone
+         (add-before 'check 'check-setup
            (lambda* (#:key inputs #:allow-other-keys)
+             ;; setenv for testdateserialization
+			 (mkdir-p "/tmp/runtime")
+             (setenv "XDG_RUNTIME_DIR" "/tmp/runtime")
+             (setenv "QT_QPA_PLATFORM" "offscreen")
              (setenv "TZ" "Europe/Prague")
              (setenv "TZDIR"
                      (search-input-directory inputs
