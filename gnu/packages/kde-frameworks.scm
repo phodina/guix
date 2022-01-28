@@ -9,6 +9,8 @@
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2021 Alexandros Theodotou <alex@zrythm.org>
+;;; Copyright © 2021 Brendan Tildesley <mail@brendan.scot>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -87,7 +89,7 @@
 (define-public extra-cmake-modules
   (package
     (name "extra-cmake-modules")
-    (version "5.70.0")
+    (version "5.90.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -96,7 +98,7 @@
                     name "-" version ".tar.xz"))
               (sha256
                (base32
-                "10c5xs5shk0dcshpdxg564ay5y8hgmvfvmlhmhjf0dy79kcah3c3"))))
+                "1c5wza7srib3mdkf29ygmyj5b6jq322s6h7k5hlljqm5xhy7q07k"))))
     (build-system cmake-build-system)
     (native-inputs
      ;; Add test dependency, except on armhf where building it is too
@@ -131,11 +133,11 @@
                (("set\\(ECM_MKSPECS_INSTALL_DIR mkspecs/modules")
                 "set(ECM_MKSPECS_INSTALL_DIR lib/qt5/mkspecs/modules"))
              #t))
-         ;; install and check phase are swapped to prevent install from failing
-         ;; after testsuire has run
-         (add-after 'install 'check-post-install
-           (assoc-ref %standard-phases 'check))
-         (delete 'check))))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests? ;; This test fails
+               (invoke "ctest" "-E" "KDEFetchTranslations"))
+             #t)))))
     ;; optional dependencies - to save space, we do not add these inputs.
     ;; Sphinx > 1.2:
     ;;   Required to build Extra CMake Modules documentation in Qt Help format.
