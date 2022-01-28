@@ -275,7 +275,7 @@ http://freedesktop.org/wiki/Specifications/open-collaboration-services/")
 (define-public bluez-qt
   (package
     (name "bluez-qt")
-    (version "5.70.0")
+    (version "5.90.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -284,7 +284,7 @@ http://freedesktop.org/wiki/Specifications/open-collaboration-services/")
                     name "-" version ".tar.xz"))
               (sha256
                (base32
-                "1kqhps4qyvqm0qmk7fb3w41bib898amipchf8csdzacw4bzpri9k"))))
+                "056i5ndrg5fqm1bx49a0plfhlladphha128wi766zdhcm6np11z3"))))
     (build-system cmake-build-system)
     (native-inputs
      (list dbus extra-cmake-modules))
@@ -292,12 +292,16 @@ http://freedesktop.org/wiki/Specifications/open-collaboration-services/")
      ;; TODO: qtdeclarative (yields one failing test)
      (list qtbase-5))
     (arguments
-     (list #:configure-flags
-           #~(list (string-append
-                    "-DUDEV_RULES_INSTALL_DIR=" #$output "/lib/udev/rules.d"))
-           ;; TODO: Make tests pass: DBUS_FATAL_WARNINGS=0 still yields 7/8 tests
-           ;; failing.  When running after install, tests hang.
-           #:tests? #f))
+     `(#:configure-flags
+           (list (string-append
+                    "-DUDEV_RULES_INSTALL_DIR=" %output "/lib/udev/rules.d"))
+           #:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (setenv "DBUS_FATAL_WARNINGS" "0")
+               (invoke "dbus-launch" "ctest" ".")))))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "QML wrapper for BlueZ")
     (description "bluez-qt is a Qt-style library for accessing the bluez
