@@ -5894,6 +5894,30 @@ application that locks the keyboard and mouse and instead displays bright
 colors, pictures, and sounds.")
     (license license:gpl3+)))
 
+(define-public moonlight
+(package
+  (name "moonlight")
+  (version "3.1.4")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/moonlight-stream/moonlight-qt")
+             (commit (string-append "v" version))))
+            (file-name (git-file-name name version))
+            (sha256
+             (base32
+              "02y2rbiiawhj1dvgxdaz8k9kpz6zkv20zsk17fbqj8259m3g5xr5"))))
+  ; TODO: Build using .pro file
+  (build-system qt-build-system)
+  (arguments
+    `(#:tests? #f))
+  (native-inputs `(("pkg-config" ,pkg-config)))
+  (inputs `(("qtbase" ,qtbase-5)))
+  (synopsis "GameStream client for PCs")
+  (description "Moonlight PC is an open source implementation of NVIDIA's GameStream, as used by the NVIDIA Shield.")
+  (home-page "https://moonlight-stream.org")
+  (license license:gpl3)))
+
 (define-public moonlight-common
   (let ((commit "8c55c086d596607041e4394fb62a1bc800b7f37c")
         (revision "1"))
