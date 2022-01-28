@@ -72,6 +72,42 @@
   #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1))
 
+
+(define-public embedded-controller-hx20
+(let ((commit "8109392adb17a2cd7d30a74eee8613a0cb72ee7d")
+      (revision "1"))
+  (package
+    (name "embedded-controller-hx20")
+    (version (git-version "0.1" revision commit))
+    (source
+	(origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/FrameworkComputer/EmbeddedController")
+                    (commit commit)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "16y6v886ci97yxn8q54iwm9clx0kgvszrxp5vjh0hdldc9pamaij"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f
+	   #:make-flags '("BOARD=hx20" "CROSS_COMPILE=arm-none-eabi-")
+	   #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (delete 'install))))
+    (native-inputs (list arm-none-eabi-toolchain-7-2018-q2-update
+	base:coreutils
+	perl pkg-config python python-2))
+    (inputs (list libftdi inetutils inetutils libusb))
+    (synopsis "Embedded Controller firmware for the Framework Laptop")
+    (description "The Embedded Controller on your Framework Laptop handles low
+level functions, including power sequencing the system.  Modifying the EC code
+can cause your system to not power on or boot or cause damage to the mainboard,
+battery, or other parts of the system or devices attached to the system.")
+    (home-page "https://github.com/FrameworkComputer/EmbeddedController")
+    (license license:bsd-3))))
 ;; We must not use the released GCC sources here, because the cross-compiler
 ;; does not produce working binaries.  Instead we take the very same SVN
 ;; revision from the branch that is used for a release of the "GCC ARM
