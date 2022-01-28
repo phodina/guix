@@ -979,6 +979,25 @@ make it easier to work with Git.  The repo command is an executable Python
 script that you can put anywhere in your path.")
     (license license:asl2.0)))
 
+(define-public gplaycli
+  (package
+    (name "gplaycli")
+    (version "3.29")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+	       (url "https://github.com/matlink/gplaycli")
+	       (commit version)))
+        (sha256
+          (base32
+            "10gc1wr259z5hxyk834wyyggvyh82agfq0zp711s4jf334inp45r"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/matlink/gplaycli")
+    (synopsis "Google Play Downloader via Command line")
+    (description "")
+    (license license:gpl3+)))
+
 (define-public abootimg
   (package
     (name "abootimg")
