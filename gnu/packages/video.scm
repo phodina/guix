@@ -336,6 +336,35 @@ efficiency.")
     (supported-systems '("x86_64-linux" "i686-linux"))
     (license (license:non-copyleft "file:///LICENSE.md"))))
 
+(define-public natron
+(package
+  (name "natron")
+  (version "2.4.0")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/NatronGitHub/Natron")
+             (commit (string-append "v" version))))
+            (file-name (git-file-name name version))
+			;; Cleanup the lib dir
+            (sha256
+             (base32
+              "1vg8cj54x49kh7qfvhak6z41p436gw30jl9mxzb4fg114ifr3wk0"))))
+  (build-system qt-build-system)
+  (arguments
+    `(#:tests? #f
+     #:phases (modify-phases %standard-phases
+                  (replace 'configure
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (invoke "qmake"))))))
+  (native-inputs `(("pkg-config" ,pkg-config) ("python" ,python)))
+  (inputs `(("qtbase" ,qtbase-5)))
+  (synopsis "Node graph based video compositing software")
+  (description "Natron is a video compositor, similar in functionality
+to Adobe After Effects, Foundry's Nuke, or Blackmagic Fusion.")
+  (home-page "https://natrongithub.github.io/")
+  (license license:gpl2)))
+
 (define-public mediasdk
   (package
     (name "mediasdk")
