@@ -343,7 +343,7 @@ It is the default icon theme for the KDE Plasma 5 desktop.")
 (define-public kapidox
   (package
     (name "kapidox")
-    (version "5.70.0")
+    (version "5.90.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -352,12 +352,11 @@ It is the default icon theme for the KDE Plasma 5 desktop.")
                     name "-" version ".tar.xz"))
               (sha256
                (base32
-                "1irl25pf60frzrmm1ksgjq6y8kn3rd5snliq69l4c42yznl9qv1j"))))
+                "16jl519sx7pirjp5x57x5gbgv477457063rrbwpvyf2ldb6lc29p"))))
     (build-system cmake-build-system)
     (arguments
-     `(#:tests? #f)) ; has no test target
-    (native-inputs
-     (list extra-cmake-modules))
+     `(#:tests? #f  ; has no test target
+       #:make-flags (list "DESTDIR=/"))) ;; Otherwise it doesn't install anything.
     (propagated-inputs
      ;; kapidox is a python programm
      ;; TODO: check if doxygen has to be installed, the readme does not
