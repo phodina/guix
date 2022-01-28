@@ -25,7 +25,7 @@
 ;;; Copyright © 2021 Gerd Heber <gerd.heber@gmail.com>
 ;;; Copyright © 2021, 2022 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2021 Ivan Gankevich <i.gankevich@spbu.ru>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 Foo Chuan Wei <chuanwei.foo@hotmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -2811,13 +2811,13 @@ GUI.")
 (define-public poke
   (package
     (name "poke")
-    (version "1.4")
+    (version "2.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/poke/poke-" version
                                   ".tar.gz"))
               (sha256
-               (base32 "095a0qal1fwnqxnal0xb4mp0n4zy97j3ww1j04ij3jb0jpr4s1ff"))
+               (base32 "0n4sdfi0lwmva9h47xz32r6mwpaslhq2mcls1ifgpj8jw7rjp0jv"))
               (modules '((guix build utils)))
               (snippet
                '(begin
