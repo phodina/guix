@@ -68,6 +68,7 @@
   #:use-module (guix build-system emacs)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
+  #:use-module (guix build-system trivial)
   #:use-module (guix build-system qt)
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
@@ -104,6 +105,7 @@
   #:use-module (gnu packages graphics)
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages groff)
+  #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages image)
@@ -115,10 +117,11 @@
   #:use-module (gnu packages linux)               ;FIXME: for pcb
   #:use-module (gnu packages lisp)
   #:use-module (gnu packages m4)
-  #:use-module (gnu packages maths)
   #:use-module (gnu packages man)
-  #:use-module (gnu packages multiprecision)
+  #:use-module (gnu packages maths)
+  #:use-module (gnu packages mono)
   #:use-module (gnu packages mpi)
+  #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages parallel)
   #:use-module (gnu packages pcre)
@@ -145,6 +148,7 @@
   #:use-module (gnu packages tls)
   #:use-module (gnu packages tex)
   #:use-module (gnu packages version-control)
+  #:use-module (gnu packages video)
   #:use-module (gnu packages web)
   #:use-module (gnu packages wxwidgets)
   #:use-module (gnu packages xml)
@@ -850,6 +854,40 @@ BXL (@file{.bxl}), IBIS (@file{.ibs}), symdef, LT-Spice (@file{.asc}),
 QUCS (@file{.sch}), and BSDL (@file{.bsd}) symbols and footprints and EggBot
 fonts to gEDA.")
       (license license:gpl2+))))
+
+(define-public uvtools
+  (package
+    (name "uvtools")
+    (version "2.29.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/sn4k3/UVtools")
+               (commit (string-append "v" version))))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32
+            "0z3ck8w5g0q4xslm4j7z4i8k6vqygmjjjq0x84z978k68xig7j57"))))
+    (build-system trivial-build-system)
+    (arguments
+      `(#:modules ((guix build utils))
+        #:builder (begin
+          (use-modules (guix build utils))
+          (let* ((output (assoc-ref %outputs "out"))
+                 (source (assoc-ref %build-inputs "source"))
+                 (bin (string-append output "/bin"))
+                 (executable (string-append bin "/uvtools")))
+		   (mkdir-p bin)
+		   (chdir source)
+           (invoke "xbuild")))))
+	;libavcodec libavformat libswscale - part of ffmpeg
+	(native-inputs (list mono))
+    (inputs (list mono libjpeg-turbo libpng libgeotiff libdc1394 ffmpeg openexr tbb mesa libgdiplus))
+    (home-page "https://github.com/sn4k3/UVtools")
+    (synopsis "MSLA/DLP, file analysis, calibration, repair, conversion and manipulation")
+    (description "MSLA/DLP, file analysis, calibration, repair, conversion and manipulation")
+    (license license:agpl3)))
 
 (define-public libfive
   (let ((commit "8ca1b8685ef3fac7b64e66b10459b8421a3020c6")
