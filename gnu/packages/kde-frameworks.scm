@@ -68,6 +68,7 @@
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages libreoffice)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages messaging)
   #:use-module (gnu packages mp3)
   #:use-module (gnu packages openbox)
   #:use-module (gnu packages pdf)
