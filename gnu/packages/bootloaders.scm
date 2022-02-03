@@ -15,6 +15,8 @@
 ;;; Copyright © 2020, 2021 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2021 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
+;;; Copyright © 2021 Stefan <stefan-guix@vodafonemail.de>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -812,6 +814,9 @@ it fits within common partitioning schemes.")
                  (substitute* "configs/pinebook_defconfig"
                    (("CONFIG_VIDEO_BRIDGE_ANALOGIX_ANX6345=y") "CONFIG_VIDEO_BRIDGE_ANALOGIX_ANX6345=y\nCONFIG_VIDEO_BPP32=y"))
                  #t)))))))))
+
+(define-public u-boot-pinephone
+  (make-u-boot-sunxi64-package "pinephone" "aarch64-linux-gnu"))
 
 (define-public u-boot-bananapi-m2-ultra
   (make-u-boot-package "Bananapi_M2_Ultra" "arm-linux-gnueabihf"))

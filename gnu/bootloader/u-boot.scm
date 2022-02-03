@@ -3,6 +3,7 @@
 ;;; Copyright © 2017, 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -39,6 +40,7 @@
             u-boot-pine64-lts-bootloader
             u-boot-pinebook-bootloader
             u-boot-pinebook-pro-rk3399-bootloader
+            u-boot-pinephone-bootloader
             u-boot-puma-rk3399-bootloader
             u-boot-rock64-rk3328-bootloader
             u-boot-rockpro64-rk3399-bootloader
@@ -228,6 +230,11 @@
   (bootloader
    (inherit u-boot-allwinner64-bootloader)
    (package u-boot-pinebook)))
+
+(define u-boot-pinephone-bootloader
+  (bootloader
+   (inherit u-boot-allwinner64-bootloader)
+   (package u-boot-pinephone)))
 
 (define u-boot-puma-rk3399-bootloader
   (bootloader
