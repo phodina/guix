@@ -35,6 +35,7 @@
 ;;; Copyright © 2021 Simon Tournier <zimon.toutoune@gmail.com>
 ;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021 Ahmad Jarara <git@ajarara.io>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -147,6 +148,28 @@ triple the file size in extreme cases.)  zlib's memory footprint is also
 independent of the input data and can be reduced, if necessary, at some cost
 in compression.")
     (license license:zlib)))
+
+(define-public miniz
+  (package
+    (name "miniz")
+    (version "2.2.0")
+    (source
+     (origin
+      (method git-fetch)
+      (uri (git-reference
+	  (url "https://github.com/richgel999/miniz")
+	  (commit version)))
+      (sha256
+       (base32
+        "09j9ihigfsavgcmk8l36zmbjvdf1x1w7h2v4rkww1qk1sb43y5zf"))))
+    (build-system cmake-build-system)
+	(arguments
+	`(#:tests? #f)) ; test suite is not executed uncomment in CMake
+    (home-page "https://github.com/richgel999/miniz")
+    (synopsis "Single C source file zlib-replacement library")
+    (description
+     "")
+    (license license:expat)))
 
 (define-public minizip
   (package
