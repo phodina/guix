@@ -3244,3 +3244,56 @@ connector pinouts.  It takes plain text, YAML-formatted files as input and
 produces beautiful graphical output thanks to GraphViz.  It handles automatic
 BOM creation and has a lot of extra features.")
     (license license:gpl3)))
+
+(define-public superslicer
+  (package
+    (inherit prusa-slicer)
+    (name "superslicer")
+    (version "2.3.57.9")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/supermerill/SuperSlicer")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256 (base32 "1b6z9g2ppic08bcmcjf4s6gdz9i2i4m0qv6hxviyv2mfgpg3dwxy"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           ;; Prusa slicer bundles a lot of dependencies in src/ directory.
+           ;; Most of them contain prusa-specific modifications (e.g. avrdude),
+           ;; but others do not. Here we replace the latter with Guix packages.
+           ;; Remove bundled libraries that were not modified by Prusa Slicer developers.
+           (delete-file-recursively "src/hidapi")
+           (delete-file-recursively "src/eigen")
+           (delete-file-recursively "src/libigl/igl")
+           (substitute* "src/CMakeLists.txt"
+             (("add_subdirectory\\(libigl\\)" all)
+              (string-append
+               all "\ninclude_directories(libigl INTERFACE libigl::core)"))
+             (("add_subdirectory\\(hidapi\\)")
+              "pkg_check_modules(HIDAPI REQUIRED hidapi-hidraw)")
+             (("include_directories\\(hidapi/include\\)")
+              "include_directories()"))
+           (substitute* "src/slic3r/CMakeLists.txt"
+             (("add_library\\(libslic3r_gui.*" all)
+              (string-append
+               all
+               "\ntarget_include_directories(libslic3r_gui PUBLIC ${HIDAPI_INCLUDE_DIRS})\n"))
+             (("\\bhidapi\\b") "${HIDAPI_LIBRARIES}"))))))
+    (arguments
+     `(#:configure-flags
+       '("-DSLIC3R_FHS=1" ;; Use The Filesystem Hierarchy Standard.
+		 "-DLDFLAGS=-pthread"
+        "-DSLIC3R_GTK=3" ;; Use GTK+
+         ;; Use wxWidgets 3.0.x.x to prevent GUI crashes when adding support enforcers.
+         "-DSLIC3R_WX_STABLE=1")))
+	(inputs (modify-inputs (package-inputs prusa-slicer)
+      (prepend dbus miniz tbb)))
+    (home-page "https://github.com/supermerill/SuperSlicer")
+    (synopsis "G-code generator for 3D printers (Prusa ,Voron, Creality etc.)")
+    (description "SuperSlicer takes 3D models (STL, OBJ, AMF) and converts them into
+G-code instructions for FFF printers or PNG layers for mSLA 3D printers. This
+is a fork of PrusaSlicer with additional features.")))
