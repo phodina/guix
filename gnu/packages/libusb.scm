@@ -52,6 +52,30 @@
   #:use-module (gnu packages tls)
   #:use-module (gnu packages xiph))
 
+(define-public gt
+(let ((commit "7247547a14b2d092dc03fd83218ae65c2f7ff7d6")
+      (revision "1"))
+  (package
+    (name "gt")
+    (version "")
+    (source
+     (origin
+      (method git-fetch)
+      (uri (git-reference
+	  (url "https://github.com/linux-usb-gadgets/gt")
+	  (commit commit)))
+      (sha256
+       (base32 "2amilbi5qncdnrds3ji21vbiz1wvdm1fwp5qrxnk49xkyy2jdzby"))))
+    (build-system cmake-build-system)
+    (native-inputs (list pkg-config))
+    (inputs (list libusbgx))
+    (home-page "https://github.com/linux-usb-gadgets/gt")
+    (synopsis "Gadget tool")
+    (description
+     "This package provides a command line utility for setting USB gadget
+	 using configFS.")
+    (license license:asl2.0))))
+
 (define-public libusbgx
 (let ((commit "060784424609d5a4e3bce8355f788c93f09802a5")
       (revision "1"))
