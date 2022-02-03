@@ -678,3 +678,26 @@ HID-Class devices.")
 
 (define-public python2-hidapi
   (package-with-python2 python-hidapi))
+
+(define-public ptp-gadget
+(let ((commit "be65848ebd0537014ba01475104f1c91fc1a5158")
+      (revision "1"))
+  (package
+    (name "ptp-gadget")
+    (version "")
+    (source
+     (origin
+      (method git-fetch)
+      (uri (git-reference
+	  (url "https://github.com/linux-usb-gadgets/ptp-gadget")
+	  (commit commit)))
+      (sha256
+       (base32 "9amilbi5qncdnrds3ji21vbiz1wvdm1fwp5qrxnk49xkyy2jdzby"))))
+    (build-system gnu-build-system)
+    (inputs (list libusbgx))
+    (home-page "https://github.com/linux-usb-gadgets/ptp-gadget")
+    (synopsis "Device-side implementation of the Picture Transfer Protocol")
+    (description
+     "This package provides a command line utility for setting USB gadget
+	 using configFS.")
+    (license license:gpl3+))))
