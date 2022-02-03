@@ -11,6 +11,7 @@
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2020 Christopher Howard <christopher@librehacker.com>
 ;;; Copyright © 2021 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -50,6 +51,32 @@
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages xiph))
+
+(define-public libusbgx
+(let ((commit "060784424609d5a4e3bce8355f788c93f09802a5")
+      (revision "1"))
+  (package
+    (name "libusbgx")
+    (version "")
+    (source
+     (origin
+      (method git-fetch)
+      (uri (git-reference
+	  (url "https://github.com/linux-usb-gadgets/libusbgx")
+	  (commit commit)))
+      (sha256
+       (base32 "3amilbi5qncdnrds3ji21vbiz1wvdm1fwp5qrxnk49xkyy2jdzby"))))
+    (build-system cmake-build-system)
+;    (native-inputs (list ))
+    (home-page "https://github.com/linux-usb-gadgets/libusbgx")
+    (synopsis "Library encapsulating the USB gadget configFS API")
+    (description
+     "This package provides a C library encapsulating the kernel USB gadget-configfs userspace API functionality.
+
+It provides routines for creating and parsing USB gadget devices using
+the configfs API. Currently, all USB gadget configfs functions that can
+be enabled in kernel release 3.11 (Linux for Workgroups!) are supported.")
+    (license license:gpl2+))))
 
 (define-public libusb
   (package
