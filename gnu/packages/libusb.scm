@@ -41,6 +41,7 @@
   #:use-module (guix build-system glib-or-gtk)
   #:use-module (guix build-system python)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages glib)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages java)
@@ -701,3 +702,27 @@ HID-Class devices.")
      "This package provides a command line utility for setting USB gadget
 	 using configFS.")
     (license license:gpl3+))))
+
+; needs patch for systemd
+(define-public cmtp-responder
+(let ((commit "91d29dadca7d6e3e62339a8d60c043f1addc3b24")
+      (revision "1"))
+  (package
+    (name "cmtp-responder")
+    (version "")
+    (source
+     (origin
+      (method git-fetch)
+      (uri (git-reference
+	  (url "https://github.com/cmtp-responder/cmtp-responder")
+	  (commit commit)))
+      (sha256
+       (base32 "0v37wd2h61wbljc0d9473my9bgvq8h2dm7px7hxw8jxipy1kzmi5"))))
+    (build-system cmake-build-system)
+    (native-inputs (list pkg-config))
+    (inputs (list glib))
+    (home-page "https://github.com/cmtp-responder/cmtp-responder")
+    (synopsis "Device-side implementation of the Media Transfer Protocol")
+    (description
+     "")
+    (license license:asl2.0))))
