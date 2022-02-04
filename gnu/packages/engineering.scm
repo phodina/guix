@@ -115,6 +115,7 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pretty-print)
+  #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-xyz)
@@ -3143,6 +3144,31 @@ perform various useful functions such as:
     (description "This library provides functionality for shape modelling,
 visualization, matrix manipulation.")
     (license (list license:gpl3 license:mpl2.0))))
+
+(define-public libarcus
+  (package
+    (name "libarcus")
+    (version "2.7.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/Ultimaker/libArcus")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256 (base32
+	   "0mhfn1d04b7l4pmmzrd92j6zcirq3887di948v0z9p42yk09z4in"))))
+    (build-system cmake-build-system)
+	(arguments
+	`(#:tests? #f)) ; no test suite
+    (native-inputs
+     (list pkg-config))
+	(inputs (list protobuf python python-sip-4))
+    (home-page "https://github.com/Ultimaker/libArcus")
+    (synopsis "Ultimaker internal communication library")
+    (description "")
+    (license license:lgpl3)))
 
 (define-public prusa-slicer
   (package
