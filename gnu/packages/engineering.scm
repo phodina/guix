@@ -3198,6 +3198,36 @@ visualization, matrix manipulation.")
     (description "")
     (license license:lgpl3)))
 
+(define-public cura
+  (package
+    (name "cura")
+    (version "4.13.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/Ultimaker/Cura")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256 (base32
+	   "0yg17pcrj5gm02aqcjfk40ynvpb9r9aaq9rj108dkpki1is15ks7"))))
+    (build-system cmake-build-system)
+;	(arguments
+;	 `(#:phases
+;	  (modify-phases %standard-phases
+;	  (add-after 'unpack 'fix-cmake
+;	   (lambda* _
+;	    (substitute* "CMakeLists.txt"
+;		(("UraniumTranslationTools") "Uranium")))))))
+    (native-inputs
+     (list pkg-config))
+    (inputs (list python uranium))
+    (home-page "https://github.com/Ultimaker/Cura")
+    (synopsis "3D printer / slicing GUI built on top of the Uranium framework")
+    (description "")
+    (license license:lgpl3)))
+
 (define-public prusa-slicer
   (package
     (name "prusa-slicer")
