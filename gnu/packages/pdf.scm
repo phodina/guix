@@ -81,6 +81,8 @@
   #:use-module (gnu packages linux)
   #:use-module (gnu packages lua)
   #:use-module (gnu packages man)
+  #:use-module (gnu packages mp3)
+  #:use-module (gnu packages xiph)
   #:use-module (gnu packages markup)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
@@ -99,6 +101,7 @@
   #:use-module (gnu packages time)
   #:use-module (gnu packages tcl)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages video)
   #:use-module (gnu packages web)
   #:use-module (gnu packages webkit)
   #:use-module (gnu packages xdisorg)
@@ -220,6 +223,53 @@ times.  If you have a second page, Flyer Composer can arrange it the same way
 
 This package contains only the command line tool.  If you like to use the gui,
 please install the @code{flyer-composer-gui} package.")))
+
+(define-public openboard
+    (package
+      (name "openboard")
+      (version "1.6.1")
+      (source
+       (origin
+         (method git-fetch)
+         (uri
+          (git-reference
+           (url "https://github.com/OpenBoard-org/OpenBoard")
+           (commit (string-append "v" version))))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "1wvkd5zmv7d7ng3basm323zah9gqnj6v57kf31zjk1i0hcc9fl9s"))))
+      (build-system qt-build-system)
+      (arguments
+       `(#:tests? #f                    ; no check target
+         #:phases
+         (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key make-flags inputs #:allow-other-keys)
+		     (substitute* "OpenBoard.pro"
+			 (("-lquazip5") "-lquazip1-qt5")
+			 (("/usr/include/quazip") (string-append
+			(assoc-ref inputs "quazip")
+			"/include/QuaZip-Qt5-1.2/quazip"))
+			 (("/usr/include/poppler") (string-append
+			(assoc-ref inputs "poppler")
+			"/include/poppler")))
+             (invoke "qmake" "-spec" "linux-g++-64")))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+		   (let ((bin (string-append (assoc-ref outputs "out") "/bin")))
+		   (mkdir-p bin)
+		   (install-file "build/linux/release/product/OpenBoard"
+		   bin)))))))
+	  (native-inputs (list grep perl pkg-config qttools))
+      (inputs
+       (list alsa-lib ffmpeg freetype lame libass libfdk libva libvorbis libvpx libtheora libx11 libx264 openssl opus poppler qtbase-5 qtsvg qtmultimedia qtwebkit qtxmlpatterns
+	   quazip sdl))
+      (home-page "https://www.openboard.ch/index.en.html")
+      (synopsis "Interactive whiteboard")
+      (description
+       "OpenBoard is teaching software for interactive whiteboard designed primarily for use in schools and universities. It can be used both with interactive whiteboards or in a dual-screen setup with a pen-tablet display and a beamer")
+      (license license:expat)))
 
 (define-public poppler
   (package
