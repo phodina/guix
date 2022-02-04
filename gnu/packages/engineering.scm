@@ -117,7 +117,9 @@
   #:use-module (gnu packages pretty-print)
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-check)
   #:use-module (gnu packages python-crypto)
+  #:use-module (gnu packages python-science)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages readline)
@@ -3144,6 +3146,32 @@ perform various useful functions such as:
     (description "This library provides functionality for shape modelling,
 visualization, matrix manipulation.")
     (license (list license:gpl3 license:mpl2.0))))
+
+(define-public uranium
+  (package
+    (name "uranium")
+    (version "4.4.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/Ultimaker/Uranium")
+         (commit version)))
+       (file-name (git-file-name name version))
+       (sha256 (base32
+	   "1hy7lhn48mfrmfx6mbqxzc6bfh9ndnvcwjlsb6a71mw62xg6w7c2"))))
+    (build-system cmake-build-system)
+	(arguments
+	`(#:tests? #f)) ; failing pytest-main
+    (native-inputs
+     (list doxygen graphviz pkg-config python-numpy python-pytest python-pytest-qt python-scipy))
+;Pyclipper
+    (inputs (list libarcus python python-qtpy qtbase-5))
+    (home-page "https://github.com/Ultimaker/Uranium")
+    (synopsis "Python framework for building Desktop applications")
+    (description "")
+    (license license:lgpl3)))
 
 (define-public libarcus
   (package
