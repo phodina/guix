@@ -11,6 +11,7 @@
 ;;; Copyright © 2020, 2021 Simon South <simon@simonsouth.net>
 ;;; Copyright © 2021 Morgan Smith <Morgan.J.Smith@outlook.com>
 ;;; Copyright © 2022 Mathieu Othacehe <othacehe@gnu.org>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -366,6 +367,96 @@ usable on embedded products.")
               (variable "CROSS_LIBRARY_PATH")
               (files '("arm-none-eabi/lib"))))))))
 
+(define-public gcc-arm-none-eabi-10.3-2021.10
+  (let ((xgcc (cross-gcc "arm-none-eabi"
+                         #:xgcc gcc-10
+                         #:xbinutils (cross-binutils "arm-none-eabi")))
+        (revision "1")
+        (svn-revision 261907))
+    (package (inherit xgcc)
+      (version (string-append "10.3-2021.10-"
+                              revision "." (number->string svn-revision)))
+      (source
+       (origin
+         (method svn-fetch)
+         (uri (svn-reference
+               (url "svn://gcc.gnu.org/svn/gcc/branches/ARM/embedded-7-branch/")
+               (revision svn-revision)))
+         (file-name (string-append "gcc-arm-embedded-" version "-checkout"))
+         (sha256
+          (base32
+           "192ggs63bixf3irpijgfkjks73yx1r3a4i6grk1y0i0iny76pmx5"))
+         (patches
+          (append
+           (origin-patches (package-source gcc-7))
+           (search-patches "gcc-7-cross-environment-variables.patch")))))
+      (native-inputs
+       (modify-inputs (package-native-inputs xgcc)
+         (delete "isl")
+         (prepend flex isl-0.18)))
+      (arguments
+       (substitute-keyword-arguments (package-arguments xgcc)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             (add-after 'unpack 'expand-version-string
+               (lambda _
+                 (make-file-writable "gcc/DEV-PHASE")
+                 (with-output-to-file "gcc/DEV-PHASE"
+                   (lambda ()
+                     (display "7-2018-q2-update")))
+                 #t))
+             (add-after 'unpack 'fix-genmultilib
+               (lambda _
+                 (substitute* "gcc/genmultilib"
+                   (("#!/bin/sh") (string-append "#!" (which "sh"))))
+                 #t))
+             (add-after 'set-paths 'augment-CPLUS_INCLUDE_PATH
+               (lambda* (#:key inputs #:allow-other-keys)
+                 (let ((gcc (assoc-ref inputs  "gcc")))
+                   ;; Remove the default compiler from CPLUS_INCLUDE_PATH to
+                   ;; prevent header conflict with the GCC from native-inputs.
+                   (setenv "CPLUS_INCLUDE_PATH"
+                           (string-join
+                            (delete (string-append gcc "/include/c++")
+                                    (string-split (getenv "CPLUS_INCLUDE_PATH")
+                                                  #\:))
+                            ":"))
+                   (format #t
+                           "environment variable `CPLUS_INCLUDE_PATH' changed to ~a~%"
+                           (getenv "CPLUS_INCLUDE_PATH"))
+                   #t)))))
+         ((#:configure-flags flags)
+          ;; The configure flags are largely identical to the flags used by the
+          ;; "GCC ARM embedded" project.
+          `(append (list "--enable-multilib"
+                         "--with-newlib"
+                         "--with-multilib-list=rmprofile"
+                         "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"
+                         "--enable-plugins"
+                         "--disable-decimal-float"
+                         "--disable-libffi"
+                         "--disable-libgomp"
+                         "--disable-libmudflap"
+                         "--disable-libquadmath"
+                         "--disable-libssp"
+                         "--disable-libstdcxx-pch"
+                         "--disable-nls"
+                         "--disable-shared"
+                         "--disable-threads"
+                         "--disable-tls")
+                   (delete "--disable-multilib" ,flags)))))
+      (native-search-paths
+       (list (search-path-specification
+              (variable "CROSS_C_INCLUDE_PATH")
+              (files '("arm-none-eabi/include")))
+             (search-path-specification
+              (variable "CROSS_CPLUS_INCLUDE_PATH")
+              (files '("arm-none-eabi/include"
+                       "arm-none-eabi/include/c++"
+                       "arm-none-eabi/include/c++/arm-none-eabi")))
+             (search-path-specification
+              (variable "CROSS_LIBRARY_PATH")
+              (files '("arm-none-eabi/lib"))))))))
 (define-public newlib-arm-none-eabi-7-2018-q2-update
   ;; This is the same commit as used for the 7-2018-q2-update release
   ;; according to the release.txt.
