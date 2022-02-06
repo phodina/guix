@@ -28952,33 +28952,31 @@ data efficiently.")
 (define-public rust-insta-1
   (package
     (name "rust-insta")
-    (version "1.7.1")
+    (version "1.12.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "insta" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0i4jdrr888h0qvfhy2b4vvswlpi2x2ghwg31ljfa9kki54db58f4"))))
+        (base32 "194i5has4k57q8jzfi30jyf4n7m93988fz30nwf3msywyr1w9h7l"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-backtrace" ,rust-backtrace-0.3)
-        ("rust-console" ,rust-console-0.14)
-        ("rust-csv" ,rust-csv-1)
-        ("rust-globset" ,rust-globset-0.4)
-        ("rust-lazy-static" ,rust-lazy-static-1)
-        ("rust-pest" ,rust-pest-2)
-        ("rust-pest-derive" ,rust-pest-derive-2)
-        ("rust-ron" ,rust-ron-0.6)
-        ("rust-serde" ,rust-serde-1)
-        ("rust-serde-json" ,rust-serde-json-1)
-        ("rust-serde-yaml" ,rust-serde-yaml-0.8)
-        ("rust-similar" ,rust-similar-1)
-        ("rust-toml" ,rust-toml-0.5)
-        ("rust-uuid" ,rust-uuid-0.8)
-        ("rust-walkdir" ,rust-walkdir-2))))
+       (("rust-console" ,rust-console-0.15)
+         ("rust-csv" ,rust-csv-1)
+         ("rust-globset" ,rust-globset-0.4)
+         ("rust-once-cell" ,rust-once-cell-1)
+         ("rust-pest" ,rust-pest-2)
+         ("rust-pest-derive" ,rust-pest-derive-2)
+         ("rust-ron" ,rust-ron-0.7)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-json" ,rust-serde-json-1)
+         ("rust-serde-yaml" ,rust-serde-yaml-0.8)
+         ("rust-similar" ,rust-similar-2)
+         ("rust-toml" ,rust-toml-0.5)
+         ("rust-walkdir" ,rust-walkdir-2))))
     (home-page "https://insta.rs/")
     (synopsis "Snapshot testing library for Rust")
     (description
