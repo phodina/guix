@@ -1015,8 +1015,16 @@ files and text.")
        #:cargo-development-inputs
        (("rust-hamcrest2" ,rust-hamcrest2-0.3)
         ("rust-nu-test-support" ,rust-nu-test-support-0.44)
-        ("rust-rstest" ,rust-rstest-0.10)
-        ("rust-serial-test" ,rust-serial-test-0.5))))
+        ("rust-rstest" ,rust-rstest-0.12)
+        ("rust-serial-test" ,rust-serial-test-0.5))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-version-requirements
+           (lambda _
+             (substitute* "Cargo.toml"
+               (("rstest = \"0.10.0")
+                (string-append "rstest = \"" ,(package-version
+                 rust-rstest-0.12)))))))))
     (native-inputs
      (list pkg-config python))
     (inputs
