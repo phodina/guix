@@ -9936,6 +9936,31 @@ security vulnerabilities.")
 by modifying your @file{Cargo.toml} file from the command line.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-cargo-geiger-serde-0.2
+  (package
+    (name "rust-cargo-geiger-serde")
+    (version "0.2.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cargo-geiger-serde" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0jsqdy451yimd7gwn79qhd5qlsksw9c9gwcdslz2kd1q4na7pi2c"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-semver" ,rust-semver-1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-url" ,rust-url-2))))
+    (home-page "https://github.com/rust-secure-code/cargo-geiger")
+    (synopsis "Serde serialization types for cargo-geiger output")
+    (description "This package provides Serde serialization types for
+cargo-geiger output.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-cargo-metadata-0.14
   (package
     (name "rust-cargo-metadata")
