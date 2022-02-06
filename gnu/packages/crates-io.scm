@@ -47916,8 +47916,35 @@ rustc compiler.")
      "This package provides a tool to manipulate rustdoc comments.")
     (license license:asl2.0)))
 
+(define-public rust-rustfix-0.6
+  (package
+    (name "rust-rustfix")
+    (version "0.6.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "rustfix" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0apkjxv3z70vhnyz2kpwsivvndk6qk7kkp0rf7sg8pk7q1gy02vg"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-anyhow" ,rust-anyhow-1)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-json" ,rust-serde-json-1))))
+    (home-page "https://github.com/rust-lang/rustfix")
+    (synopsis "Automatically apply the suggestions made by rustc")
+    (description
+     "Automatically apply the suggestions made by rustc.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-rustfix-0.5
   (package
+    (inherit rust-rustfix-0.6)
     (name "rust-rustfix")
     (version "0.5.1")
     (source
@@ -47929,7 +47956,6 @@ rustc compiler.")
        (sha256
         (base32
          "0kkhfab60747zpmn8jwfdwl9a2s4rqiq7yjjfs7yppfwp9s0pigj"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
@@ -47943,12 +47969,7 @@ rustc compiler.")
         ("rust-env-logger" ,rust-env-logger-0.6)
         ("rust-log" ,rust-log-0.4)
         ("rust-proptest" ,rust-proptest-0.9)
-        ("rust-tempdir" ,rust-tempdir-0.3))))
-    (home-page "https://github.com/rust-lang/rustfix")
-    (synopsis "Automatically apply the suggestions made by rustc")
-    (description
-     "Automatically apply the suggestions made by rustc.")
-    (license (list license:expat license:asl2.0))))
+        ("rust-tempdir" ,rust-tempdir-0.3))))))
 
 (define-public rust-rustfix-0.4
   (package/inherit rust-rustfix-0.5
