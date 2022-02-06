@@ -15668,7 +15668,7 @@ requests")
 (define-public rust-curl-sys-0.4
   (package
     (name "rust-curl-sys")
-    (version "0.4.39+curl-7.74.0")
+    (version "0.4.52+curl-7.81.0")
     (source
       (origin
         (method url-fetch)
@@ -15676,7 +15676,7 @@ requests")
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
-          "0x7qhq7c3b1vmp3740yiigzm09qvkzpdf578jjrs0s3v3s3cxa07"))
+          "0wc9l9345a31cw2nl4i1lhw01xwmir5jx2bvbgnzv99y0b8w5f0l"))
         (modules '((guix build utils)))
         (snippet
          '(begin (delete-file-recursively "curl") #t))))
@@ -15688,6 +15688,7 @@ requests")
         ("rust-libz-sys" ,rust-libz-sys-1)
         ("rust-mesalink" ,rust-mesalink-1)
         ("rust-openssl-sys" ,rust-openssl-sys-0.9)
+        ("rust-rustls-ffi" ,rust-rustls-ffi-0.8)
         ("rust-winapi" ,rust-winapi-0.3)
         ("rust-cc" ,rust-cc-1)
         ("rust-pkg-config" ,rust-pkg-config-0.3)
