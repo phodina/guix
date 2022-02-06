@@ -38383,8 +38383,33 @@ Rust.")
     (description "Numeric syntax extensions in Rust.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-num-enum-0.5
+  (package
+    (name "rust-num-enum")
+    (version "0.5.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "num_enum" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1b96nmbhn2gadlh4hna6mz6w892gzp1zic60q1s4akjy0nhkw3bj"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-num-enum-derive" ,rust-num-enum-derive-0.5))))
+    (home-page "https://github.com/illicitonion/num_enum")
+    (synopsis "Macros easing inter-operation between primitives and enums")
+    (description
+     "This library provides procedural macros to make inter-operation between
+primitives and enums easier.")
+    (license license:bsd-3)))
+
 (define-public rust-num-enum-0.4
   (package
+    (inherit rust-num-enum-0.5)
     (name "rust-num-enum")
     (version "0.4.3")
     (source
@@ -38394,19 +38419,12 @@ Rust.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "1r1nisdzm9m7xm0389nwyi85jhx1bnh5pwllai44ngbgy1ymlmna"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:tests? #false                  ;missing files
        #:cargo-inputs
        (("rust-derivative" ,rust-derivative-2)
         ("rust-num-enum" ,rust-num-enum-0.4)
-        ("rust-num-enum-derive" ,rust-num-enum-derive-0.4))))
-    (home-page "https://github.com/illicitonion/num_enum")
-    (synopsis "Macros easing inter-operation between primitives and enums")
-    (description
-     "This library provides procedural macros to make inter-operation between
-primitives and enums easier.")
-    (license license:bsd-3)))
+        ("rust-num-enum-derive" ,rust-num-enum-derive-0.4))))))
 
 (define-public rust-num-enum-derive-0.5
   (package
