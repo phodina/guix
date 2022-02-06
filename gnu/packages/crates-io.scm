@@ -56198,8 +56198,34 @@ CPUs, as well as raw interfaces to platform-specific instructions.
 extensions.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-similar-2
+  (package
+    (name "rust-similar")
+    (version "2.1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "similar" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1lw33na01r35h09s47jqhjgz3m29wapl20f6ybsla5d1cfgrf91f"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-bstr" ,rust-bstr-0.2) ("rust-serde" ,rust-serde-1)
+        ("rust-unicode-segmentation" ,rust-unicode-segmentation-1))
+       #:cargo-development-inputs
+       (("rust-console" ,rust-console-0.14) ("rust-insta" ,rust-insta-1)
+        ("rust-serde-json" ,rust-serde-json-1))))
+    (home-page "https://github.com/mitsuhiko/similar")
+    (synopsis "Diff library for Rust")
+    (description "This package provides a diff library for Rust.")
+    (license license:asl2.0)))
+
 (define-public rust-similar-1
   (package
+    (inherit rust-similar-2)
     (name "rust-similar")
     (version "1.3.0")
     (source
@@ -56209,17 +56235,11 @@ extensions.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "1v4ara277c2s8gcv821b9392ki5zzw95brfs8vy3bcjpln4d9l8s"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
        (("rust-bstr" ,rust-bstr-0.2)
-        ("rust-unicode-segmentation" ,rust-unicode-segmentation-1))))
-    (home-page
-     "https://github.com/mitsuhiko/similar")
-    (synopsis "Diff library for Rust")
-    (description "This package provides a diff library for Rust.")
-    (license license:asl2.0)))
+        ("rust-unicode-segmentation" ,rust-unicode-segmentation-1))))))
 
 (define-public rust-simplelog-0.11
   (package
