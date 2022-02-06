@@ -36290,6 +36290,33 @@ primitives and enums easier.")
 primitives and enums easier.")
     (license license:bsd-3)))
 
+(define-public rust-num-enum-derive-0.5
+  (package
+    (name "rust-num-enum-derive")
+    (version "0.5.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "num_enum_derive" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "08dvxpa7l5hx5fcdr0bdv9bzajbcbxsbbnc6hl6zxmwhhiv2p68d"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-proc-macro-crate" ,rust-proc-macro-crate-1)
+         ("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/illicitonion/num_enum")
+    (synopsis "Procedural macros to ease operation between primitives and enums")
+    (description
+     "This package provides procedural macros to make inter-operation between
+primitives and enums easier.")
+    (license license:bsd-3)))
+
 (define-public rust-num-enum-derive-0.4
   (package
     (inherit rust-num-enum-derive-0.5)
@@ -36302,7 +36329,6 @@ primitives and enums easier.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "17fvb7xpxq2dsqp5nsz98w1qhkk3gnc56xis53009vnzvlys79gz"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:tests? #f                      ;FIXME: some doc tests fail
        #:cargo-inputs
