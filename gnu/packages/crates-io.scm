@@ -37208,8 +37208,35 @@ the system.")
        (("rust-pathdiff" ,rust-pathdiff-0.2)
         ("rust-winapi" ,rust-winapi-0.3))))))
 
+(define-public rust-opener-0.5
+  (package
+    (name "rust-opener")
+    (version "0.5.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "opener" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0lkrn4fv1h4m8gmp7ll6x7vjvb6kls2ngwa5cgsh2ix5fb6yp8sf"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-bstr" ,rust-bstr-0.2)
+         ("rust-winapi" ,rust-winapi-0.3))
+        #:cargo-development-inputs
+        (("rust-version-sync" ,rust-version-sync-0.9))))
+    (home-page "https://github.com/Seeker14491/opener")
+    (synopsis "Open a file or link using the system default program")
+    (description "This crate provides the ability to open a file or link with
+the default program configured on the system.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-opener-0.4
   (package
+    (inherit rust-opener-0.5)
     (name "rust-opener")
     (version "0.4.1")
     (source
@@ -37221,15 +37248,9 @@ the system.")
        (sha256
         (base32
          "1bpknqvhqkalhmq8n2m97apc0r3y194ppybl1qxay34xr83p848k"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-winapi" ,rust-winapi-0.3))))
-    (home-page "https://github.com/Seeker14491/opener")
-    (synopsis "Open a file or link using the system default program")
-    (description "This crate provides the ability to open a file or link with
-the default program configured on the system.")
-    (license (list license:expat license:asl2.0))))
+       (("rust-winapi" ,rust-winapi-0.3))))))
 
 (define-public rust-openssl-macros-0.1
   (package
