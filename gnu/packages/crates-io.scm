@@ -41796,8 +41796,34 @@ particularly useful for printing structured recursive data like trees.")
 replacements, adding colorful diffs.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-pretty-assertions-1
+  (package
+    (name "rust-pretty-assertions")
+    (version "1.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "pretty_assertions" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0l2xpgqa1a73fkbacn0qxngixwmyp1fb90k496sql095nx4bbmbn"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-ansi-term" ,rust-ansi-term-0.12)
+         ("rust-ctor" ,rust-ctor-0.1)
+         ("rust-diff" ,rust-diff-0.1)
+         ("rust-output-vt100" ,rust-output-vt100-0.1))))
+    (home-page "https://github.com/colin-kiegel/rust-pretty-assertions")
+    (synopsis "Drop-in replacements for assert_eq! and assert_ne!")
+    (description
+     "Overwrite @code{assert_eq!} and @code{assert_ne!} with drop-in
+replacements, adding colorful diffs.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-pretty-assertions-0.7
   (package
+    (inherit rust-pretty-assertions-1)
     (name "rust-pretty-assertions")
     (version "0.7.2")
     (source
@@ -41809,19 +41835,12 @@ replacements, adding colorful diffs.")
        (sha256
         (base32
          "12yris0ni87wvzhj23a5nnz7amskvahhnpikx5snhdyg09y0xaqw"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
        (("rust-ansi-term" ,rust-ansi-term-0.12)
         ("rust-ctor" ,rust-ctor-0.1)
         ("rust-diff" ,rust-diff-0.1)
-        ("rust-output-vt100" ,rust-output-vt100-0.1))))
-    (home-page "https://github.com/colin-kiegel/rust-pretty-assertions")
-    (synopsis "Drop-in replacements for assert_eq! and assert_ne!")
-    (description
-     "Overwrite @code{assert_eq!} and @code{assert_ne!} with drop-in
-replacements, adding colorful diffs.")
-    (license (list license:expat license:asl2.0))))
+        ("rust-output-vt100" ,rust-output-vt100-0.1))))))
 
 (define-public rust-pretty-assertions-0.6
   (package
