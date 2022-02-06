@@ -28787,6 +28787,32 @@ kernel32.")
     (description "Key String provides a Rust package optimized for map keys.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-krates-0.9
+  (package
+    (name "rust-krates")
+    (version "0.9.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "krates" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "02p75v7ln0hl1mjy4bbsqfz9qlbp34ck5q7qdlrfai65nd2dqjc5"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-cargo-metadata" ,rust-cargo-metadata-0.14)
+         ("rust-cfg-expr" ,rust-cfg-expr-0.9)
+         ("rust-petgraph" ,rust-petgraph-0.6)
+         ("rust-semver" ,rust-semver-1))))
+    (home-page "https://github.com/EmbarkStudios/krates")
+    (synopsis "Create graphs of crates gathered from cargo metadata")
+    (description "This package allows you to create graphs of crates gathered
+from cargo metadata.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-kv-log-macro-1
   (package
     (name "rust-kv-log-macro")
