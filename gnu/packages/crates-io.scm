@@ -10139,6 +10139,41 @@ optional dependency graph analysis.")
 supported by Cargo.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-cargo-util-0.1
+  (package
+    (name "rust-cargo-util")
+    (version "0.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cargo-util" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1szsqx6n9lvvpfnppw9xiah0d5mg8x80i5s17kv25q6lg8zn7gzj"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-anyhow" ,rust-anyhow-1)
+         ("rust-core-foundation" ,rust-core-foundation-0.9)
+         ("rust-crypto-hash" ,rust-crypto-hash-0.3)
+         ("rust-filetime" ,rust-filetime-0.2)
+         ("rust-hex" ,rust-hex-0.4)
+         ("rust-jobserver" ,rust-jobserver-0.1)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-miow" ,rust-miow-0.3)
+         ("rust-same-file" ,rust-same-file-1)
+         ("rust-shell-escape" ,rust-shell-escape-0.1)
+         ("rust-tempfile" ,rust-tempfile-3)
+         ("rust-walkdir" ,rust-walkdir-2)
+         ("rust-winapi" ,rust-winapi-0.3))))
+    (home-page "https://github.com/rust-lang/cargo")
+    (synopsis "Miscellaneous support code used by Cargo")
+    (description "Miscellaneous support code used by Cargo.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-cargon-0.0
   (package
     (name "rust-cargon")
