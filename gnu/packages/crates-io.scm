@@ -56279,6 +56279,31 @@ extensions.")
        (("rust-bstr" ,rust-bstr-0.2)
         ("rust-unicode-segmentation" ,rust-unicode-segmentation-1))))))
 
+(define-public rust-similar-asserts-1
+  (package
+    (name "rust-similar-asserts")
+    (version "1.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "similar-asserts" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1789db0fm85p4zvy44b2jwdjgw6h2b51bi133kak2l1pl8qzbjb4"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-console" ,rust-console-0.15)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-similar" ,rust-similar-2))
+        #:cargo-development-inputs
+        (("rust-serde" ,rust-serde-1))))
+    (home-page "https://github.com/mitsuhiko/similar-asserts")
+    (synopsis "Provides @code{assert_eq!} like macros with colors")
+    (description "This package provides @code{assert_eq!} like macros
+with colorized diff output.")
+    (license license:asl2.0)))
+
 (define-public rust-simplelog-0.11
   (package
     (name "rust-simplelog")
