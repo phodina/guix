@@ -15631,14 +15631,14 @@ use with bindgen.")
 (define-public rust-curl-0.4
   (package
     (name "rust-curl")
-    (version "0.4.34")
+    (version "0.4.42")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "curl" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0vkm6fyizf8m9yxpv3n5pm9ag3bwlyqa6nz2ga8qkzm5y4m1cs72"))))
+        (base32 "0fa9v0qxvqxxs1lhb4cs5wpisnxpm5yqvdzqxv65nnyx9s4ppsbx"))))
     (build-system cargo-build-system)
     (arguments
      `(#:tests? #false                  ;require internet access
@@ -15648,7 +15648,7 @@ use with bindgen.")
         ("rust-openssl-probe" ,rust-openssl-probe-0.1)
         ("rust-openssl-sys" ,rust-openssl-sys-0.9)
         ("rust-schannel" ,rust-schannel-0.1)
-        ("rust-socket2" ,rust-socket2-0.3)
+        ("rust-socket2" ,rust-socket2-0.4)
         ("rust-winapi" ,rust-winapi-0.3))
        #:cargo-development-inputs
        (("rust-anyhow" ,rust-anyhow-1)
