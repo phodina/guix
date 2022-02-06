@@ -44870,7 +44870,7 @@ in your code.")
 (define-public rust-proc-macro2-1
   (package
     (name "rust-proc-macro2")
-    (version "1.0.32")
+    (version "1.0.36")
     (source
       (origin
         (method url-fetch)
@@ -44878,7 +44878,7 @@ in your code.")
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
-          "0hqbxlvhiaybakl1gai3mgps1dxsmxricxsr2rfdrh222z0qql5s"))))
+          "0adh6gvs31x6pfwmygypmzrv1jc7kjq568vsqcfaxk7vhdc2sd67"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-test-flags '("--lib")
@@ -44888,7 +44888,7 @@ in your code.")
        (("rust-quote" ,rust-quote-1))))
     (inputs
      (list rust-unicode-xid-0.2))
-    (home-page "https://github.com/alexcrichton/proc-macro2")
+    (home-page "https://github.com/dtolnay/proc-macro2")
     (synopsis "Stable implementation of the upcoming new `proc_macro` API")
     (description "This package provides a stable implementation of the upcoming new
 `proc_macro` API.  Comes with an option, off by default, to also reimplement itself
