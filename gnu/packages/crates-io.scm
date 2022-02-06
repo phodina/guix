@@ -50130,14 +50130,14 @@ macOS and iOS.")
 (define-public rust-semver-1
   (package
     (name "rust-semver")
-    (version "1.0.3")
+    (version "1.0.5")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "semver" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1gna1p10i86sf1pqfqndkwl0wks35x84yvjw77c74ckzxrbsqfjz"))))
+        (base32 "1ivj7z9yp6v46ml40nsr8aqh64fphzv5xfvkxpxni6pcja7731h4"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
