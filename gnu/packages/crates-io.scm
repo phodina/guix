@@ -24167,6 +24167,31 @@ API library @code{gdi32}.")
 suffering from the ABA problem by using generational indices.")
     (license license:mpl2.0)))
 
+(define-public rust-geiger-0.4
+  (package
+    (name "rust-geiger")
+    (version "0.4.8")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "geiger" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1m8gyrgclsmwq582jdq93i1m0xvbsxzp22qxaahy1k6y7wq1g368"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-cargo-geiger-serde" ,rust-cargo-geiger-serde-0.2)
+         ("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/rust-secure-code/cargo-geiger")
+    (synopsis "Library parts of cargo-geiger, decoupled from cargo")
+    (description "This package provides some library parts of cargo-geiger,
+decoupled from cargo.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-generator-0.6
   (package
     (name "rust-generator")
