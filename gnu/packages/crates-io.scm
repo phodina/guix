@@ -9763,8 +9763,90 @@ capabilities.")
         ("rust-error-chain" ,rust-error-chain-0.12)
         ("rust-libc" ,rust-libc-0.2))))))
 
+(define-public rust-cargo-0.58
+  (package
+    (name "rust-cargo")
+    (version "0.58.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cargo" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "011pcmmydmibq2mha19q23mn0yypcpj222fpd9zjj2bvhgm7xdya"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-anyhow" ,rust-anyhow-1)
+         ("rust-atty" ,rust-atty-0.2)
+         ("rust-bytesize" ,rust-bytesize-1)
+         ("rust-cargo-platform" ,rust-cargo-platform-0.1)
+         ("rust-cargo-util" ,rust-cargo-util-0.1)
+         ("rust-clap" ,rust-clap-2)
+         ("rust-crates-io" ,rust-crates-io-0.33)
+         ("rust-crossbeam-utils" ,rust-crossbeam-utils-0.8)
+         ("rust-curl" ,rust-curl-0.4)
+         ("rust-curl-sys" ,rust-curl-sys-0.4)
+         ("rust-env-logger" ,rust-env-logger-0.9)
+         ("rust-filetime" ,rust-filetime-0.2)
+         ("rust-flate2" ,rust-flate2-1)
+         ("rust-flate2" ,rust-flate2-1)
+         ("rust-fwdansi" ,rust-fwdansi-1)
+         ("rust-git2" ,rust-git2-0.13)
+         ("rust-git2-curl" ,rust-git2-curl-0.14)
+         ("rust-glob" ,rust-glob-0.3)
+         ("rust-hex" ,rust-hex-0.4)
+         ("rust-home" ,rust-home-0.5)
+         ("rust-humantime" ,rust-humantime-2)
+         ("rust-ignore" ,rust-ignore-0.4)
+         ("rust-im-rc" ,rust-im-rc-15)
+         ("rust-itertools" ,rust-itertools-0.10)
+         ("rust-jobserver" ,rust-jobserver-0.1)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-lazycell" ,rust-lazycell-1)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-libgit2-sys" ,rust-libgit2-sys-0.12)
+         ("rust-log" ,rust-log-0.4)
+         ("rust-memchr" ,rust-memchr-2)
+         ("rust-num-cpus" ,rust-num-cpus-1)
+         ("rust-opener" ,rust-opener-0.5)
+         ("rust-openssl" ,rust-openssl-0.10)
+         ("rust-os-info" ,rust-os-info-3)
+         ("rust-percent-encoding" ,rust-percent-encoding-2)
+         ("rust-pretty-env-logger" ,rust-pretty-env-logger-0.4)
+         ("rust-rustc-workspace-hack" ,rust-rustc-workspace-hack-1)
+         ("rust-rustfix" ,rust-rustfix-0.6)
+         ("rust-semver" ,rust-semver-1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-ignored" ,rust-serde-ignored-0.1)
+         ("rust-serde-json" ,rust-serde-json-1)
+         ("rust-shell-escape" ,rust-shell-escape-0.1)
+         ("rust-strip-ansi-escapes" ,rust-strip-ansi-escapes-0.1)
+         ("rust-tar" ,rust-tar-0.4)
+         ("rust-tar" ,rust-tar-0.4)
+         ("rust-tempfile" ,rust-tempfile-3)
+         ("rust-termcolor" ,rust-termcolor-1)
+         ("rust-toml" ,rust-toml-0.5)
+         ("rust-unicode-width" ,rust-unicode-width-0.1)
+         ("rust-unicode-xid" ,rust-unicode-xid-0.2)
+         ("rust-url" ,rust-url-2)
+         ("rust-walkdir" ,rust-walkdir-2)
+         ("rust-winapi" ,rust-winapi-0.3))))
+    (native-inputs
+     (list pkg-config))
+    (inputs
+     (list curl libssh2 openssl zlib))
+    (home-page "https://crates.io")
+    (synopsis "Package manager for Rust")
+    (description "Cargo, a package manager for Rust.  This package provides
+the library crate of Cargo.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-cargo-0.53
   (package
+    (inherit rust-cargo-0.58)
     (name "rust-cargo")
     (version "0.53.0")
     (source
@@ -9776,7 +9858,6 @@ capabilities.")
        (sha256
         (base32
          "12ns9v4dd8vnvsaqgd897h2zc19w00i5ii3slda653zbhfzm6zna"))))
-    (build-system cargo-build-system)
     (arguments
      `(;; The test suite is disabled as the internal 'cargo-test-macro' and
        ;; 'cargo-test-support' crates are not included in the release.
@@ -9838,16 +9919,7 @@ capabilities.")
         ("rust-unicode-xid" ,rust-unicode-xid-0.2)
         ("rust-url" ,rust-url-2)
         ("rust-walkdir" ,rust-walkdir-2)
-        ("rust-winapi" ,rust-winapi-0.3))))
-    (native-inputs
-     (list pkg-config))
-    (inputs
-     (list curl libssh2 openssl zlib))
-    (home-page "https://crates.io")
-    (synopsis "Package manager for Rust")
-    (description "Cargo, a package manager for Rust.  This package provides
-the library crate of Cargo.")
-    (license (list license:expat license:asl2.0))))
+        ("rust-winapi" ,rust-winapi-0.3))))))
 
 (define-public rust-cargo-audit-0.16
   (package
