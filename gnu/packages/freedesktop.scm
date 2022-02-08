@@ -202,6 +202,20 @@ application-centers for distributions.")
        ((#:configure-flags flags #~'())
         #~(append '("-Dqt=true") #$flags))))))
 
+(define-public appstream-qt
+  (package/inherit appstream
+    (name "appstream-qt")
+    (native-inputs
+     (cons (list "qttools" qttools)
+           (package-native-inputs appstream)))
+    (inputs
+     (cons (list "qtbase" qtbase-5)
+           (package-inputs appstream)))
+    (arguments
+     (substitute-keyword-arguments (package-arguments appstream)
+       ((#:configure-flags flags)
+        '(list "-Dqt=true"))))))
+
 (define-public farstream
   (package
     (name "farstream")
