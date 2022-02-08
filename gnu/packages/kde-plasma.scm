@@ -31,11 +31,16 @@
   #:use-module (guix build-system qt)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages gcc)
+  #:use-module (gnu packages ghostscript)
+  #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages kde-frameworks)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages qt)
@@ -385,3 +390,191 @@ wayland-server API.")
                    license:lgpl3
                    license:expat
                    license:bsd-3))))
+
+(define-public kwin
+  (package
+    (name "kwin")
+    (version "5.24.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://kde/stable/plasma/" version
+                          "/" name "-" version ".tar.xz"))
+       (sha256
+        (base32 "1qwcd6iw6yvpchiwmvq5nwsr465jmrmscf286mjrc65im4hj6572"))))
+    (native-inputs
+     (list extra-cmake-modules
+           dbus
+           kdoctools
+           pkg-config
+           qttools
+           xorg-server-for-tests))
+    (inputs
+     (list breeze
+           eudev
+           fontconfig
+           freetype
+           hwdata
+           kactivities
+           kcmutils
+           kcompletion
+           kconfig
+           kconfigwidgets
+           kcoreaddons
+           kcrash
+           kdbusaddons
+           kdeclarative
+           kdecoration
+           kglobalaccel
+           ki18n
+           kiconthemes
+           kidletime
+           kio
+           kirigami
+           knewstuff
+           knotifications
+           kpackage
+           krunner
+           kscreenlocker
+           ktextwidgets
+           kwayland
+           kwayland-server
+           kwindowsystem
+           kxmlgui
+           lcms
+           libcap
+           libepoxy
+           libinput
+           libxkbcommon
+           pipewire-0.3
+           plasma-framework
+           plasma-wayland-protocols
+           qtbase-5
+           qtdeclarative
+           qtwayland
+           qtx11extras
+           wayland
+           wayland-protocols
+           xcb-util ; fails at build time without this
+           xcb-util-cursor
+           xcb-util-keysyms
+           xcb-util-wm
+           xcmsdb
+           xinput ;; XXX: Says disabled in configure phase
+           xorg-server-xwayland
+           zlib))
+ ;;     * hwdata, <https://github.com/vcrhonek/hwdata>
+ ;;   Runtime-only dependency needed for mapping monitor hardware vendor IDs to full names
+ ;; * QtQuick.Controls-QMLModule, QML module 'QtQuick.Controls' is a runtime dependency.
+ ;; * QtMultimedia-QMLModule, QML module 'QtMultimedia' is a runtime dependency.
+ ;; * org.kde.kquickcontrolsaddons-QMLModule, QML module 'org.kde.kquickcontrolsaddons' is a runtime dependency.
+ ;; * org.kde.plasma.core-QMLModule, QML module 'org.kde.plasma.core' is a runtime dependency.
+ ;; * org.kde.plasma.components-QMLModule, QML module 'org.kde.plasma.components' is a runtime dependency.
+
+   ;;   * QAccessibilityClient, KDE client-side accessibility library, <https://www.kde.org>
+   ;; Required to enable accessibility features
+
+    (build-system qt-build-system)
+    (arguments
+     `(#:tests? #f ;; Over 50 tests fail inconsistently.
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; Make QDirIterator follow symlinks
+             (substitute* '("src/plugins/kdecorations/aurorae/src/aurorae.cpp")
+               (("(^\\s*QDirIterator it.path, QDirIterator::Subdirectories)(\\);)"
+                 _ a b)
+                (string-append a " | QDirIterator::FollowSymlinks" b)))
+             (substitute* '("src/xwl/xwayland.cpp")
+               (("(m_xwaylandProcess->setProgram.QStringLiteral..)(Xwayland)(...;)"
+                 _ a Xwayland b)
+                (string-append a (which "Xwayland") b)))
+             (substitute* '("cmake/modules/Findhwdata.cmake")
+               (("/usr/share")
+                (string-append (assoc-ref inputs "hwdata") "/share")))
+             #t))
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (setenv "XDG_RUNTIME_DIR" (getcwd))
+               (setenv "HOME"  (getcwd))
+               (setenv "DISPLAY" ":1")
+               (system "Xvfb :1 &")
+               (sleep 5)
+               ;; FIXME: Disable failing tests for now. Many of these tests fail inconsistently.
+               (invoke "ctest" "-E" "(\
+kwin-testActivation|\
+kwin-testActivation-waylandonly|\
+kwin-testDebugConsole|\
+kwin-testDecorationInput-waylandonly|\
+kwin-testDecorationInput|\
+kwin-testDontCrashCursorPhysicalSizeEmpty-waylandonly|\
+kwin-testDontCrashAuroraeDestroyDeco|\
+kwin-testDontCrashNoBorder-waylandonly|\
+kwin-testDontCrashCancelAnimation|\
+kwin-testDontCrashGlxgears|\
+kwin-testDontCrashUseractionsMenu-waylandonly|\
+kwin-testDontCrashUseractionsMenu|\
+kwin-testGlobalShortcuts|\
+kwin-testInternalWindow-waylandonly|\
+kwin-testIdleInhibition-waylandonly|\
+kwin-testInputMethod|\
+kwin-testInputStackingOrder-waylandonly|\
+kwin-testKeyboardLayout-waylandonly|\
+kwin-testKWinBindings|\
+kwin-testLayerShellV1Client-waylandonly|\
+kwin-testLibinputDevice|\
+kwin-testLockScreen|\
+kwin-testMaximized-waylandonly|\
+kwin-testMaximized|\
+kwin-testModiferOnlyShortcut|\
+kwin-testNightColor-waylandonly|\
+kwin-testNightColor|\
+kwin-testNoGlobalShortcuts|\
+kwin-testOutputManagement|\
+kwin-testOutputManagement-waylandonly|\
+kwin-testPlacement-waylandonly|\
+kwin-testPlasmaSurface|\
+kwin-testPlasmaSurface-waylandonly|\
+kwin-testPlasmaWindow|\
+kwin-testPlatformCursor|\
+kwin-testPointerConstraints-waylandonly|\
+kwin-testPointerInput|\
+kwin-testQuickTiling|\
+kwin-testSceneOpenGL-waylandonly|\
+kwin-testSceneOpenGLES-waylandonly|\
+kwin-testSceneOpenGLES|\
+kwin-testSceneQPainter|\
+kwin-testScreenChanges-waylandonly|\
+kwin-testScreens|\
+kwin-testShade|\
+kwin-testShowingDesktop-waylandonly|\
+kwin-testStruts|\
+kwin-testTabBox-waylandonly|\
+kwin-testTouchInput|\
+kwin-testTouchInput-waylandonly|\
+kwin-testVirtualDesktop-waylandonly|\
+kwin-testVirtualKeyboardDBus-waylandonly|\
+kwin-testWindowSelection-waylandonly|\
+kwin-testX11Client|\
+kwin-testXdgShellClient-waylandonly|\
+kwin-testXdgShellClient|\
+kwin-testXwaylandSelections)")))))))
+    (home-page "https://userbase.kde.org/KWin")
+    (synopsis "KDE Plasma Window Manager")
+    (description
+     "KWin is an easy to use, but flexible, composited Window Manager for
+Xorg windowing systems (Wayland, X11) on Linux.  Its primary usage is in
+conjunction with the KDE Plasma Desktop.")
+    (license (list license:bsd-2
+                   license:bsd-3
+                   license:expat
+                   license:gpl2
+                   license:gpl2+
+                   license:gpl3
+                   license:gpl3+
+                   license:lgpl2.0
+                   license:lgpl2.0+
+                   license:lgpl2.1
+                   license:lgpl3))))
