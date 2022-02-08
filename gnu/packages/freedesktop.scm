@@ -198,6 +198,20 @@ application-centers for distributions.")
     ;;      there are also some (irrelevant) wtfpl2 examples
     (license (list license:gpl2+ license:lgpl2.1+))))
 
+(define-public appstream-qt
+  (package/inherit appstream
+    (name "appstream-qt")
+    (native-inputs
+     (cons (list "qttools" qttools)
+           (package-native-inputs appstream)))
+    (inputs
+     (cons (list "qtbase" qtbase-5)
+           (package-inputs appstream)))
+    (arguments
+     (substitute-keyword-arguments (package-arguments appstream)
+       ((#:configure-flags flags)
+        '(list "-Dqt=true"))))))
+
 (define-public farstream
   (package
     (name "farstream")
