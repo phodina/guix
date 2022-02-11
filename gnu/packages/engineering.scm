@@ -78,6 +78,7 @@
   #:use-module (gnu packages digest)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages documentation)
+  #:use-module (gnu packages embedded)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages fpga)
@@ -1339,6 +1340,48 @@ replacement for the OpenDWG libraries.")
     (synopsis "Serial terminal emulator")
     (description "@code{minicom} is a serial terminal emulator.")
     (license license:gpl2+)))
+
+(define-public pinetime-flasher
+  (package
+    (name "pinetime-flasher")
+    (version "0.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/arteeh/pinetime-flasher")
+                    (commit version)))
+              (sha256
+               (base32
+                "1n5isqi2s4y69w80ymfwndyqxzqgp5aycimm27dpmsxnx3rxsx48"))
+              (file-name (git-file-name name version))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (add-before 'build 'chdir
+           (lambda* _
+             (chdir "build")))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out")) (share (string-append out
+                                                            "/share"))
+                    (applications (string-append share "/applications"))
+                    (icons (string-append share "/icons")))
+               (install-file "com.arteeh.Flasher.desktop" applications)
+               (install-file "icon.png"
+                             (string-append icons "/hicolor/48x48/apps"))
+               (install-file "icon.svg"
+                             (string-append icons "/scalable/apps"))
+               (install-file "pinetime-flasher"
+                             (string-append out "/bin"))))))))
+    (native-inputs (list `(,glib "bin") pkg-config libxml2-xpath0)) ;glib-compile-schemas, etc.
+    (inputs (list curl glib gtk+ libhandy openocd))
+    (home-page "https://github.com/arteeh/pinetime-flasher")
+    (synopsis "Pinetime flasher")
+    (description "This package provides GUI tool to flash PineTime.")
+    (license license:expat)))
 
 (define-public sterm
   (package
