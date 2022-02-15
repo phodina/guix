@@ -15502,6 +15502,23 @@ interface to the Amazon Web Services (AWS) API.")
 in pure Python.")
     (license license:expat)))
 
+(define-public python-xdg
+  (package
+    (name "python-xdg")
+    (version "5.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "xdg" version))
+        (sha256
+          (base32 "0v6hmhjqlc6km284lr14kc4h5rl6xva231q1lsr8hq7crhk9yqda"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/srstevenson/xdg")
+    (synopsis "Implementation of the XDG Base Directory Specification")
+    (description "This package provides implementation of the XDG Base Directory
+Specification.")
+    (license license:isc)))
+
 (define-public python-xdo
   (package
     (name "python-xdo")
