@@ -448,7 +448,7 @@ Akonadi PIM data server.  It uses Xapian for indexing and querying.")
            kxmlgui
            libkdepim
            libkleo
-           oxygen-icons ; default icon set, required for tests
+           breeze-icons ; default icon set, required for tests
            prison
            qgpgme
            qtbase-5))
@@ -607,7 +607,7 @@ calendaring applications.")
            kpimtextedit
            ktextwidgets
            kwidgetsaddons
-           oxygen-icons ; default icon set, required for tests
+           breeze-icons ; default icon set, required for tests
            qtbase-5))
     (arguments
      `(#:tests? #f)) ;; TODO: seem to pull in some wrong theme
@@ -811,7 +811,7 @@ package.")
            kwidgetsaddons
            kwindowsystem
            kxmlgui
-           oxygen-icons ;; default icon set
+           breeze-icons ;; default icon set
            qtbase-5))
     (home-page "https://apps.kde.org/utilities/org.kde.kgpg/")
     (synopsis "Graphical front end for GNU Privacy Guard")
@@ -951,7 +951,7 @@ protocol for querying and modifying directory services running over TCP/IP.")
            kxmlgui
            libassuan
            libkleo
-           oxygen-icons ;; default icon set
+           breeze-icons ;; default icon set
            qgpgme
            qtbase-5))
     (arguments
@@ -1035,7 +1035,7 @@ and retrieving certificates from LDAP servers.")
            libkdepim
            libkleo
            libksieve
-           oxygen-icons ; default icon set, required for tests
+           breeze-icons ; default icon set, required for tests
            qgpgme
            qtbase-5
            qtdeclarative-5
@@ -1419,7 +1419,7 @@ information in non-ASCII character sets.")
            kxmlgui
            kxmlgui
            libkdepim
-           oxygen-icons ; default icon set, required for tests
+           breeze-icons ; default icon set, required for tests
            qtbase-5
            qtx11extras))
     (home-page "https://apps.kde.org/knotes/")
@@ -1525,7 +1525,7 @@ application \"Parts\" to be embedded as a Kontact component (or plugin).")
            kwindowsystem
            kxmlgui
            libkdepim
-           oxygen-icons ; default icon set, required for tests
+           breeze-icons ; default icon set, required for tests
            phonon
            qtbase-5))
     (arguments
