@@ -33,6 +33,7 @@
   #:use-module (guix build-system qt)
   #:use-module (guix build-system trivial)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
@@ -83,6 +84,7 @@
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
+  #:use-module (gnu packages speech)
   #:use-module (gnu packages textutils)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages text-editors)
@@ -94,6 +96,45 @@
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1))
+
+(define-public mycroft-gui
+  (package
+    (name "mycroft-gui")
+    (version "1.0.1")
+    (source (origin
+              (method git-fetch)
+              (uri
+               (git-reference
+                (url "https://github.com/MycroftAI/mycroft-gui")
+                (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0q7kf02i56sxzinpmhj5x5zlw4fzklwnxk6rxrb9dhgp0nx9fv89"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f))
+;	   #:phases
+;       (modify-phases %standard-phases
+;         (add-before 'check 'check-setup
+;           (lambda _
+;             (setenv "HOME" (getcwd))
+;             (setenv "TMPDIR" (getcwd))
+;             #t))
+;         (replace 'check
+;           (lambda _
+;             (setenv "QT_QPA_PLATFORM" "offscreen")
+;             (invoke "dbus-launch" "ctest" "."))))))
+    (native-inputs
+     (list dbus pkg-config extra-cmake-modules
+           xorg-server-for-tests)) ; for the tests
+	(inputs (list mycroft-core plasma-framework kwindowsystem kio kdbusaddons ki18n qtbase-5
+	qtdeclarative-5 qtwebsockets-5 qtwebview qtquickcontrols2-5
+	qtgraphicaleffects))
+    (synopsis "GUI used by Mycroft Mark II")
+    (description "")
+    (home-page "https://github.com/MycroftAI/mycroft-gui")
+    (license license:asl2.0)))
 
 (define-public extra-cmake-modules
   (package
