@@ -143,6 +143,25 @@
     (description "This package provides a Qt wrapper for Polkit")
     (license (list license:bsd-3 license:gpl2+ license:lgpl2.0+))))
 
+(define-public yamlcpp
+  (package
+    (name "yamlcpp")
+    (version "0.7.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+              (url "https://github.com/jbeder/yaml-cpp")
+              (commit (string-append "yaml-cpp-" version))))
+        (file-name (git-file-name name version))
+        (sha256
+         (base32 "1nb8mwkj8ksr6abw1iv3i03fnlfqc1ixbm2gjlv4g7wzr1qmdlfs"))))
+    (build-system cmake-build-system)
+    (home-page "https://github.com/jbeder/yaml-cpp")
+    (synopsis "YAML parser and emitter for C++")
+    (description "This package provides a YAML parser and emitter for C++")
+    (license license:expat)))
+
 (define-public qite
   (let ((commit "75fb3b6bbd5c6a5a8fc35e08a6efbfb588ed546a")
         (revision "74"))
