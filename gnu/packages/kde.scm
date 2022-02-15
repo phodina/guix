@@ -339,7 +339,7 @@ projects.")
                   kwindowsystem
                   kxmlgui
                   libkomparediff2
-                  oxygen-icons
+                  breeze-icons
                   qtbase-5
                   qtdeclarative
                   qtquickcontrols ;; not checked as requirement
