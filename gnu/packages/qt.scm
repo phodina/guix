@@ -162,6 +162,31 @@
     (description "This package provides a YAML parser and emitter for C++")
     (license license:expat)))
 
+(define-public calamares
+  (package
+    (name "calamares")
+    (version "3.2.51")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+              (url "https://github.com/calamares/calamares")
+              (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+         (base32 "0n2r5v6wwvzqisc8smjn7clav5gxqv4nbzfyxf3vn0z2wij4frh7"))))
+	(native-inputs
+	 (list qttools))
+    (inputs
+     (list polkitqt qtbase-5 qtdeclarative qtscript qtsvg yamlcpp))
+    (build-system cmake-build-system)
+    (home-page "https://calamares.io/")
+    (synopsis "Installer framework")
+    (description "This package provides system installer with an advanced partitioning feature for both manual and automated partitioning operations.")
+	;; Multiple
+	;; https://github.com/calamares/calamares/tree/db51e813fbf0f0d286aaa429df157deb7834462e/LICENSES
+    (license (list license:lgpl2.1+))))
+
 (define-public qite
   (let ((commit "75fb3b6bbd5c6a5a8fc35e08a6efbfb588ed546a")
         (revision "74"))
