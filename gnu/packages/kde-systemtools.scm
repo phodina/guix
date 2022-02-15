@@ -73,7 +73,7 @@
            ktextwidgets
            kuserfeedback
            kwindowsystem
-           oxygen-icons ;; default icon set
+           breeze-icons ;; default icon set
            phonon
            qtbase-5
            solid))
@@ -116,7 +116,7 @@ The main features of Dolphin are:
            ktexteditor
            ksyntaxhighlighting
            kxmlgui
-           oxygen-icons ;; default icon set
+           breeze-icons ;; default icon set
            qtbase-5))
     (home-page "http://www.kde.org/")
     (synopsis "VCS-Plugins for Dolphin")
@@ -155,7 +155,7 @@ Dolphin with the version control systems: Bzr, Git, Mercurial, Subversion.")
            kservice
            kwindowsystem
            libxml2
-           oxygen-icons ;; default icon set
+           breeze-icons ;; default icon set
            qtbase-5
            xapian))
     (arguments
@@ -221,7 +221,7 @@ document meta data file.")
            kwidgetsaddons
            kwindowsystem
            kxmlgui
-           oxygen-icons ;; default icon set
+           breeze-icons ;; default icon set
            qtbase-5
            qtscript))
     (arguments
@@ -268,7 +268,7 @@ This package is part of the KDE base applications module.")
            libvnc
            libxcb
            libxtst
-           oxygen-icons ;; default icon set
+           breeze-icons ;; default icon set
            pipewire-0.3
            plasma-wayland-protocols
            qtbase-5
@@ -318,7 +318,7 @@ This package is part of the KDE networking module.")
            ktextwidgets
            kwidgetsaddons
            kxmlgui
-           oxygen-icons ;; default icon set
+           breeze-icons ;; default icon set
            qtbase-5))
     (home-page "https://kde.org/applications/system/org.kde.ksystemlog")
     (synopsis "System log viewer")

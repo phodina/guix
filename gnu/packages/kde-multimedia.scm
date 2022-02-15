@@ -119,7 +119,7 @@ This package is part of the KDE multimedia module.")
            kwidgetsaddons
            kwindowsystem
            kxmlgui
-           oxygen-icons ; default icon set
+           breeze-icons ; default icon set
            phonon
            phonon-backend-gstreamer
            gst-plugins-base
@@ -182,7 +182,7 @@ This package is part of the KDE multimedia module.")
            kpackage
            kwidgetsaddons
            kxmlgui
-           oxygen-icons ; default icon set
+           breeze-icons ; default icon set
            phonon
            qtbase-5
            qtdeclarative
@@ -279,7 +279,7 @@ This package is part of the KDE multimedia module.")
            kwidgetsaddons
            kwindowsystem
            kxmlgui
-           oxygen-icons ; default icon set
+           breeze-icons ; default icon set
            phonon
            phonon-backend-gstreamer
            qtbase-5
@@ -432,7 +432,7 @@ variety of formats.")
            libsamplerate
            libsndfile
            libvorbis
-           oxygen-icons ; default icon set
+           breeze-icons ; default icon set
            qtbase-5
            shared-mime-info
            solid
@@ -475,7 +475,7 @@ available CD drives.")
            kwindowsystem
            kxmlgui
            libxscrnsaver
-           oxygen-icons ; default icon set
+           breeze-icons ; default icon set
            qtbase-5
            qtx11extras
            solid
@@ -528,7 +528,7 @@ autoloading of subtitle files for use while playing video.")
            kirigami
            knotifications
            kparts
-           oxygen-icons ; default icon set
+           breeze-icons ; default icon set
            purpose
            qtbase-5
            qtdeclarative
@@ -577,7 +577,7 @@ camera.  Use it to take pictures and make videos to share.")
            kwindowsystem
            kxmlgui
            libcanberra
-           oxygen-icons ; default icon set
+           breeze-icons ; default icon set
            plasma-framework
            pulseaudio
            qtbase-5
@@ -619,7 +619,7 @@ This package is part of the KDE multimedia module.")
            kmediaplayer
            kwidgetsaddons
            libxcb ;; FIXME: why does cmake not find XEVIE and XPRINT?
-           oxygen-icons ; default icon set
+           breeze-icons ; default icon set
            phonon
            qtbase-5
            cairo
@@ -693,7 +693,7 @@ Some features:
            libsamplerate
            libvorbis
            opus
-           oxygen-icons ; default icon set
+           breeze-icons ; default icon set
            pulseaudio
            qtbase-5
            qtmultimedia
