@@ -55,6 +55,7 @@
 ;;; Copyright © 2021 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2021 Denis 'GNUtoo' Carikli <GNUtoo@cyberdimension.org>
 ;;; Copyright © 2021 Vinicius Monego <monego@posteo.net>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -8118,3 +8119,22 @@ provided by a TLS reverse proxy (e.g. tlstunnel, hitch or stunnel).")
       ;; "cpe:2.3:a:comelz:quark" package.  The proper fix is for (guix cve)
       ;; to account for "vendor names".
       (properties '((lint-hidden-cve . ("CVE-2019-15520")))))))
+
+(define-public yaml-cpp
+  (package
+    (name "yaml-cpp")
+    (version "0.7.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+              (url "https://github.com/jbeder/yaml-cpp")
+              (commit (string-append "yaml-cpp-" version))))
+        (file-name (git-file-name name version))
+        (sha256
+         (base32 "1nb8mwkj8ksr6abw1iv3i03fnlfqc1ixbm2gjlv4g7wzr1qmdlfs"))))
+    (build-system cmake-build-system)
+    (home-page "https://github.com/jbeder/yaml-cpp")
+    (synopsis "YAML parser and emitter for C++")
+    (description "This package provides a YAML parser and emitter for C++")
+    (license license:expat)))
