@@ -91,6 +91,7 @@
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages polkit)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
@@ -111,6 +112,36 @@
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages xml)
   #:use-module (srfi srfi-1))
+
+;; Fix check and install
+(define-public polkitqt
+  (package
+    (name "polkitqt")
+    (version "0.114.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+              (url "https://github.com/KDE/polkit-qt-1")
+              (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+         (base32 "15i31h5v3b80fvh0p2nil6s52n7llg23sns2981l8hpmi7px8ylf"))))
+    (build-system cmake-build-system)
+	(arguments
+     `(#:phases
+	   (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key source #:allow-other-keys) 
+		     (chdir (string-append source "/test"))
+             (setenv "QT_QPA_PLATFORM" "offscreen")
+             (invoke "dbus-launch" "ctest" "."))))))
+	(native-inputs (list dbus pkg-config))
+	(inputs (list polkit qtbase-5))
+    (home-page "https://github.com/KDE/polkit-qt-1")
+    (synopsis "Qt wrapper for Polkit")
+    (description "This package provides a Qt wrapper for Polkit")
+    (license (list license:bsd-3 license:gpl2+ license:lgpl2.0+))))
 
 (define-public qite
   (let ((commit "75fb3b6bbd5c6a5a8fc35e08a6efbfb588ed546a")
