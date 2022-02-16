@@ -8,6 +8,7 @@
 ;;; Copyright © 2020 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2021 qblade <qblade@protonmail.com>
+;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -30,12 +31,14 @@
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix utils)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (gnu packages)
   #:use-module (gnu packages audio)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)            ;for 'which'
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages boost)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages emacs)
@@ -646,3 +649,27 @@ manipulating acoustic feature and audio files.")
 large vocabulary, speaker-independent continuous speech recognition
 engine.")
     (license license:bsd-2)))
+
+(define-public kenlm
+  (let ((commit "0c4dd4e8a29a9bcaf22d971a83f4974f1a16d6d9") (revision "1"))
+    (package
+      (name "kenlm")
+      (version (git-version "0.1" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/kpu/kenlm")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "1afzr3qggxcm263172zw74vzcw0cw86wqhx9ikg47sn5p0cvbmh6"))))
+      (build-system cmake-build-system)
+      (arguments
+       `(#:configure-flags (list "-DCOMPILE_TESTS=ON")))
+      (inputs (list boost))
+      (home-page "https://kheafield.com/code/kenlm/")
+      (synopsis "Faster and Smaller Language Model Queries")
+      (description "This package provides faster and smaller language model
+queries.")
+      (license license:lgpl2.1+))))
