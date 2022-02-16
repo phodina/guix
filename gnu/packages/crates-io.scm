@@ -32394,6 +32394,28 @@ use with the `log` crate.")
 logging implementation for the `log` facade.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-logos-0.12
+  (package
+    (name "rust-logos")
+    (version "0.12.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "logos" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0idklzd8afh87c82n3yp3l0djjmkwrsginxgm5ni64xylny2lzj2"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-logos-derive" ,rust-logos-derive-0.12))))
+    (home-page "https://github.com/maciejhirsz/logos")
+    (synopsis "Generate fast Lexers")
+    (description "This package provides easy way to generate fast
+Lexers.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-logos-derive-0.12
   (package
     (name "rust-logos-derive")
