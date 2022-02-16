@@ -7,7 +7,7 @@
 ;;; Copyright © 2018 Vagrant Cascadian <vagrant@debian.org>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020, 2021, 2022 Marius Bakke <marius@gnu.org>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -45,11 +45,13 @@
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
+  #:use-module (gnu packages inkscape)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages python)
-  #:use-module (gnu packages pkg-config))
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages qt))
 
 (define-public ath9k-htc-firmware
   (package
@@ -196,6 +198,76 @@ driver.")
 Broadcom/AirForce chipset BCM43xx with Wireless-Core Revision 5.  It is used
 by the b43-open driver of Linux-libre.")
     (license license:gpl2)))
+
+(define-public nvramtool
+  (package
+    (name "nvramtool")
+    (version "4.9")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://review.coreboot.org/coreboot.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0jidj29jh6p65d17k304wlzhxvp4p3c2namgcdwg2sxq8jfr0zlm"))))
+    (build-system gnu-build-system)
+	(arguments
+	`(#:tests? #f ; no test suite
+	  #:make-flags (list (string-append "PREFIX="(assoc-ref %outputs "out")))
+	  #:phases
+	  (modify-phases %standard-phases
+	   (delete 'configure)
+	   (add-after 'unpack 'chdir-nvramtool
+	   (lambda* _
+	    (chdir "util/nvramtool")
+		(substitute* "Makefile"
+		(("sbin") "bin")
+		(("/usr/bin/env install") "install")))))))
+    (synopsis "Utility for interfacing with CMOS/NVRAM on Coreboot systems")
+    (description
+     "This package provides a utility for interfacing with CMOS/NVRAM on
+Coreboot systems.") 
+    (home-page "https://doc.coreboot.org/util.html")
+    (license license:gpl2+)))
+
+(define-public coreboot-configurator
+  (package
+    (name "coreboot-configurator")
+    (version "8")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url
+                     "https://github.com/StarLabsLtd/coreboot-configurator")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0dzrvdsc3zcng5s0hflq16lfaw2b6716c03b6rd5xpp4aw88skv1"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'nvramtool-path
+                    (lambda* (#:key inputs #:allow-other-keys)
+                      (substitute* "src/application/NvramToolCli.cpp"
+                        (("/usr/sbin/nvramtool") (string-append (assoc-ref
+                                                                 inputs
+                                                                 "nvramtool")
+                                                  "/bin/nvramtool")))
+                      (substitute* "src/resources/org.coreboot.nvramtool.policy"
+                        (("/usr/sbin/nvramtool") (string-append (assoc-ref
+                                                                 inputs
+                                                                 "nvramtool")
+                                                  "/bin/nvramtool"))))))))
+    (native-inputs (list pkg-config inkscape))
+    (inputs (list nvramtool qtbase-5 qtsvg yaml-cpp))
+    (synopsis "GUI to configure coreboot's CBFS")
+    (description
+     "This package provides a GUI tool to configure coreboot's CBFS.")
+    (home-page "https://github.com/StarLabsLtd/coreboot-configurator")
+    (license license:gpl2+)))
 
 (define-public eg25-manager
   (package
