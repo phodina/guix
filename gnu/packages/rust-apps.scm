@@ -12,7 +12,7 @@
 ;;; Copyright © 2021, 2022 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2021 Alexandru-Sergiu Marton <brown121407@posteo.ro>
 ;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 jgart <jgart@dismail.de>
 ;;; Copyright © 2021 Nicolas Graves <ngraves@ngraves.fr>
 ;;; Copyright © 2022 Aleksandr Vityazev <avityazev@posteo.org>
@@ -705,6 +705,50 @@ replacement for i3status, written in pure Rust.  It provides a way to display
 @code{blocks} of system information (time, battery status, volume, etc) on the i3
 bar.  It is also compatible with sway.")
     (license license:gpl3)))
+
+(define-public jless
+  (package
+    (name "jless")
+    (version "0.7.1")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "jless" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0sz93gvingvxj68sxfbl8a0p8rmx46bdnw0a2hbm0fh38jx3xdzr"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs (("rust-atty" ,rust-atty-0.2)
+                       ("rust-lazy-static" ,rust-lazy-static-1)
+                       ("rust-libc" ,rust-libc-0.2)
+                       ("rust-logos" ,rust-logos-0.12)
+                       ("rust-regex" ,rust-regex-1)
+                       ("rust-rustyline" ,rust-rustyline-9)
+                       ("rust-signal-hook" ,rust-signal-hook-0.3)
+                       ("rust-structopt" ,rust-structopt-0.3)
+                       ("rust-termion" ,rust-termion-1)
+                       ("rust-unicode-segmentation" ,rust-unicode-segmentation-1)
+                       ("rust-unicode-width" ,rust-unicode-width-0.1))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-version-requirements
+           (lambda _
+             ;; isatty crate is deprecated use atty instead
+             (substitute* "src/main.rs"
+               (("isatty::stdout_isatty\\(") "atty::is(atty::Stream::Stdout")
+               (("isatty::stdin_isatty\\(") "atty::is(atty::Stream::Stdin"))
+             ;; fix requirement versions
+             (substitute* "Cargo.toml"
+               (("isatty") "atty")
+               (("1.5.6") ,(package-version rust-termion-1))
+               (("\"0.1\"") (string-append "\""
+                                           ,(package-version rust-atty-0.2)
+                                           "\""))) #t)))))
+    (home-page "https://github.com/PaulJuliusMartinez/jless")
+    (synopsis "Command-line JSON viewer")
+    (description "This package provides a command-line JSON viewer.")
+    (license license:expat)))
 
 (define-public ripgrep
   (package
