@@ -33,6 +33,7 @@
   #:use-module (guix utils)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system python)
   #:use-module (gnu packages)
   #:use-module (gnu packages audio)
   #:use-module (gnu packages autotools)
@@ -42,16 +43,21 @@
   #:use-module (gnu packages compression)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages emacs)
+  #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages machine-learning)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-science)
+  #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages python-web)
   #:use-module (gnu packages swig)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages textutils))
@@ -673,3 +679,40 @@ engine.")
       (description "This package provides faster and smaller language model
 queries.")
       (license license:lgpl2.1+))))
+
+(define-public deepspeech
+  (package
+    (name "deepspeech")
+    (version "0.9.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/mozilla/DeepSpeech")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1rpb0cayn2ip45m7kln3pr3z390wwmhfzwjh83yh0gqab89cgcg0"))))
+    (build-system python-build-system)
+    (inputs (list tensorflow kenlm))
+	(propagated-inputs (list
+	python-absl-py
+       python-attrdict
+       python-beautifulsoup4
+       python-numpy
+       python-optuna
+       python-opuslib
+       python-pandas
+       python-progressbar2
+       python-pyogg
+       python-pyxdg
+       python-resampy
+       python-requests
+       python-semver
+       python-six
+       python-sox
+       python-soundfile))
+    (home-page "https://deepspeech.readthedocs.io")
+    (synopsis "Offline on-device speech-to-text engine")
+    (description "")
+    (license license:mpl2.0)))
