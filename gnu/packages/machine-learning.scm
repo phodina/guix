@@ -353,6 +353,40 @@ classification.")
   (description "Bayesian Optimization in PyTorch")
   (license license:expat)))
 
+(define-public python-catalyst
+(package
+  (name "python-catalyst")
+  (version "22.2")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "catalyst" version))
+      (sha256
+        (base32 "1bz1jl0d3a4v46gwlxhj91jrj6icmycrhmqk21d5wy7mdd7qplsm"))))
+  (build-system python-build-system)
+  (propagated-inputs
+    (list python-accelerate
+          python-hydra-slayer
+          python-numpy
+          python-tensorboardx
+          python-torch
+          python-tqdm))
+  (native-inputs
+    (list python-black
+          python-catalyst-codestyle
+          python-catalyst-sphinx-theme
+          python-docutils
+          python-mock
+          python-path
+          python-pre-commit
+          python-pytest
+          python-sphinx
+          python-tomlkit))
+  (home-page "https://github.com/catalyst-team/catalyst")
+  (synopsis "Catalyst. Accelerated deep learning R&D with PyTorch.")
+  (description "Catalyst.  Accelerated deep learning R&D with PyTorch.")
+  (license #f)))
+
 (define-public python-libsvm
   (package (inherit libsvm)
     (name "python-libsvm")
