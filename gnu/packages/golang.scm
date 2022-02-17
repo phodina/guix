@@ -1235,6 +1235,27 @@ standardized in RFC 7539.")
       (description "InterConv converts interfaces into any data type.")
       (license license:expat))))
 
+(define-public go-github-com-mvdan-lint
+  (package
+    (name "go-github-com-mvdan-lint")
+    (version "0.0.0-20170908181259-adc824a0674b")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/mvdan/lint")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "17mi2rvkg9kzv1shxcyawzcj4jj3v738d1j82fp4yygx859yvr8r"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/mvdan/lint"))
+    (home-page "https://github.com/mvdan/lint")
+    (synopsis "lint")
+    (description
+      "Package lint defines common interfaces for Go code checkers.")
+    (license license:bsd-3)))
+
 (define-public go-github-com-opentracing-opentracing-go
   (package
     (name "go-github-com-opentracing-opentracing-go")
