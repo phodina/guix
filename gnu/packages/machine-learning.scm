@@ -178,6 +178,36 @@ multiplication.")
        "")
       (license license:bsd-2)))
 
+(define-public incubator-mxnet
+(package
+      (name "incubator-mxnet")
+      (version "1.9.0")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/apache/incubator-mxnet")
+                      (commit version)))
+                (file-name (string-append name "-" version ))
+                (sha256
+                 (base32
+                  "0cbkbbl9imra3j96374432g4ci8azmb2qx48k08vc5y3q6ivh0ia"))))
+      (build-system cmake-build-system)
+	  (arguments
+	  `(#:configure-flags (list "-DUSE_CUDA=OFF")
+	    #:phases
+		(modify-phases %standard-phases
+		 (add-after 'unpack 'remove-gtest-src
+		 (lambda* _
+		  (substitute* "CMakeLists.txt"
+		  (("add_subdirectory\\(\\$\\{GTEST_ROOT\\}\\)") "")))))))
+	  (native-inputs (list googletest))
+	  (inputs (list intgemm openblas opencv))
+      (home-page "https://mxnet.apache.org/")
+      (synopsis "Lightweight, Portable, Flexible Distributed Deep Learning")
+      (description
+       "")
+      (license license:asl2.0)))
+
 (define-public fann
   ;; The last release is >100 commits behind, so we package from git.
   (let ((commit "d71d54788bee56ba4cf7522801270152da5209d7"))
