@@ -148,6 +148,36 @@
 multiplication.")
       (license license:expat))))
 
+(define-public mkldnn
+(package
+      (name "mkldnn")
+      (version "0.10")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/rsdubtso/mkl-dnn")
+                      (commit (string-append "v" version))))
+                (file-name (string-append name "-" version ))
+                (sha256
+                 (base32
+                  "02gmlar9hq47gyhnlhpkfwhbx0y6h2g7rrv7lrslv01mcsih4gzx"))))
+	  (native-inputs (list googletest))
+      (build-system cmake-build-system)
+	  (arguments
+	  `(#:tests? #f ; failing
+	    #:phases
+	  (modify-phases %standard-phases
+	   (add-after 'unpack 'remove-gtests
+	    (lambda* _
+		 (substitute* "tests/gtests/CMakeLists.txt"
+		  (("mkldnn_gtest") "gtest")
+		  (("add_subdirectory \\(gtest\\)") "")))))))
+      (home-page "https://github.com/rsdubtso/mkl-dnn")
+      (synopsis "Intel Math Kernel Library for Deep Neural Networks")
+      (description
+       "")
+      (license license:bsd-2)))
+
 (define-public fann
   ;; The last release is >100 commits behind, so we package from git.
   (let ((commit "d71d54788bee56ba4cf7522801270152da5209d7"))
