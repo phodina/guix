@@ -27364,6 +27364,22 @@ as both traits and pure functions acting on String types.")
     (description "Safe wrapper for initializing fixed-size arrays")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-array-init-0.0.4
+  (package
+    (inherit rust-array-init-2)
+    (name "rust-array-init")
+    (version "0.0.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "array-init" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0wndg0qry887r61bk898irz61316a13q6y0j1wx0sikbhv5rwn13"))))
+    (arguments
+      `(#:skip-build? #t #:cargo-inputs (("rust-nodrop"
+	  ,rust-nodrop-0.1))))))
+
 (define-public rust-inotify-0.9
   (package
     (name "rust-inotify")
