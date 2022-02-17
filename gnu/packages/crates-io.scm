@@ -6463,6 +6463,34 @@ bindings to C and C++ libraries.")
         ("rust-diff" ,rust-diff-0.1)
         ("rust-shlex" ,rust-shlex-0.1))))))
 
+(define-public rust-binread-2
+  (package
+    (name "rust-binread")
+    (version "2.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "binread" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "13s1wrmrsd1cv4yx9cglr5fkh61nwyi0p4frjysyjy35ivy8sn8n"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-array-init" ,rust-array-init-2)
+         ("rust-binread-derive" ,rust-binread-derive-2)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-rustversion" ,rust-rustversion-1))))
+    (home-page "https://github.com/jam1garner/binread")
+    (synopsis
+      "A Rust crate for helping read structs from binary data using â\x9c¨macro magicâ\x9c¨")
+    (description
+      "This package provides a Rust crate for helping read structs from binary data
+using â\x9c¨macro magicâ\x9c¨")
+    (license license:expat)))
+
 (define-public rust-bio-types-0.12
   (package
     (name "rust-bio-types")
