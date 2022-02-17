@@ -30395,6 +30395,29 @@ suite of tools for the rapid, accurate and memory-frugal processing
 single-cell and single-nucleus sequencing data.")
     (license license:bsd-3)))
 
+(define-public rust-libudev-0.2
+  (package
+    (name "rust-libudev")
+    (version "0.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "libudev" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1znwjh088qrar0sckzm8h26sw34p4q4g9m5wwfpcb8a0vwxnsqpa"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-libc" ,rust-libc-0.2)
+         ("rust-libudev-sys" ,rust-libudev-sys-0.1))))
+    (home-page "https://github.com/dcuddeback/libudev-rs")
+    (synopsis "Rust wrapper for libudev")
+    (description "Rust wrapper for libudev")
+    (license license:expat)))
+
 (define-public rust-libsqlite3-sys-0.23
   (package
     (name "rust-libsqlite3-sys")
