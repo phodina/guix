@@ -23173,6 +23173,28 @@ that is accessible to other projects developed in Cython.")
 pure-Python.")
     (license license:asl2.0)))
 
+(define-public python-sox
+(package
+  (name "python-sox")
+  (version "1.4.1")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "sox" version))
+      (sha256
+        (base32 "0m8hszh51lfzacbb4nxc5bn446c0dzljfqgnsff8h2s5j8vd3wmh"))))
+  (build-system python-build-system)
+  (propagated-inputs (list python-numpy))
+  (native-inputs
+    (list python-pysoundfile
+          python-pytest
+          python-pytest-cov
+          python-pytest-pep8))
+  (home-page "https://github.com/rabitt/pysox")
+  (synopsis "Python wrapper around SoX.")
+  (description "Python wrapper around SoX.")
+  (license #f)))
+
 (define-public python2-sortedcontainers
   (package-with-python2 python-sortedcontainers))
 
