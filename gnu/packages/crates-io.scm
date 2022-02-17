@@ -38084,6 +38084,28 @@ platform-native strings.")
      "This package provides a macro to simplify operator overloading.")
     (license license:expat)))
 
+(define-public rust-owo-colors-3
+  (package
+    (name "rust-owo-colors")
+    (version "3.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "owo-colors" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1x7b8kf3854zlix6cpai065fjrdgfil4gq5v2pmfc17cg3b8yi10"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-supports-color" ,rust-supports-color-1))))
+    (home-page "https://github.com/jam1garner/owo-colors")
+    (synopsis "Zero-allocation terminal colors that'll make people go owo")
+    (description "Zero-allocation terminal colors that'll make people go owo")
+    (license license:expat)))
+
 (define-public rust-owo-colors-2
   (package
     (name "rust-owo-colors")
