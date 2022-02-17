@@ -58409,8 +58409,40 @@ unstable language features.")
     (description "This package provides a newtypes for text offsets")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-textwrap-0.14
+  (package
+    (name "rust-textwrap")
+    (version "0.14.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "textwrap" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "106xjfzfpk3nj51fx9slf9kyir7xjwvpqm003v9ardgq5b8whrh0"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-hyphenation" ,rust-hyphenation-0.8)
+         ("rust-smawk" ,rust-smawk-0.3)
+         ("rust-terminal-size" ,rust-terminal-size-0.1)
+         ("rust-unicode-linebreak" ,rust-unicode-linebreak-0.1)
+         ("rust-unicode-width" ,rust-unicode-width-0.1))))
+    (home-page
+     "https://github.com/mgeisler/textwrap")
+    (synopsis "Library for word wrapping, indenting, and dedenting strings")
+    (description
+     "Textwrap is a small library for word wrapping, indenting, and dedenting
+strings.  You can use it to format strings (such as help and error messages)
+for display in commandline applications.  It is designed to be efficient and
+handle Unicode characters correctly.")
+    (license license:expat)))
+
 (define-public rust-textwrap-0.12
   (package
+    (inherit rust-textwrap-0.14)
     (name "rust-textwrap")
     (version "0.12.1")
     (source
@@ -58428,16 +58460,7 @@ unstable language features.")
        #:cargo-inputs
        (("rust-hyphenation" ,rust-hyphenation-0.8)
         ("rust-terminal-size" ,rust-terminal-size-0.1)
-        ("rust-unicode-width" ,rust-unicode-width-0.1))))
-    (home-page
-     "https://github.com/mgeisler/textwrap")
-    (synopsis "Library for word wrapping, indenting, and dedenting strings")
-    (description
-     "Textwrap is a small library for word wrapping, indenting, and dedenting
-strings.  You can use it to format strings (such as help and error messages)
-for display in commandline applications.  It is designed to be efficient and
-handle Unicode characters correctly.")
-    (license license:expat)))
+        ("rust-unicode-width" ,rust-unicode-width-0.1))))))
 
 (define-public rust-textwrap-0.11
   (package
