@@ -1311,6 +1311,33 @@ suggestions, so its usefulness in real code is limited.  This tool will remain
 available as a proof of concept, and for others to examine and learn from.")
     (license license:bsd-3)))
 
+(define-public go-github-com-mvdan-unparam
+  (package
+    (name "go-github-com-mvdan-unparam")
+    (version "0.0.0-20211214103731-d0ef000c54e5")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/mvdan/unparam")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "1c81d7w2d1wcbsgfkwi6jy5qwbhykr6p8fgl2na4yfk9r1rcnzvw"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/mvdan/unparam"))
+    (propagated-inputs
+      `(("go-gopkg-in-check-v1" ,go-gopkg-in-check-v1)
+        ("go-golang-org-x-tools" ,go-golang-org-x-tools)
+        ("go-golang-org-x-sys" ,go-golang-org-x-sys)
+        ("go-github-com-rogpeppe-go-internal"
+         ,go-github-com-rogpeppe-go-internal)))
+    (home-page "https://github.com/mvdan/unparam")
+    (synopsis "unparam")
+    (description
+      "Reports unused function parameters and results in your code.")
+    (license license:bsd-3)))
+
 (define-public go-github-com-opentracing-opentracing-go
   (package
     (name "go-github-com-opentracing-opentracing-go")
