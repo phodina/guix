@@ -1288,6 +1288,29 @@ That is, @code{gofumpt} is happy with a subset of the formats that @code{gofmt}
 is happy with.")
     (license #f)))
 
+(define-public go-github-com-mvdan-interfacer
+  (package
+    (name "go-github-com-mvdan-interfacer")
+    (version "0.0.0-20180901003855-c20040233aed")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/mvdan/interfacer")
+               (commit (go-version->git-ref version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0cx4m74mvn200360pmsqxx4z0apk9fcknwwqh8r94zd3jfv4akq2"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/mvdan/interfacer"))
+    (home-page "https://github.com/mvdan/interfacer")
+    (synopsis "interfacer")
+    (description
+      "@strong{Deprecated}: A tool that suggests interfaces is prone to bad
+suggestions, so its usefulness in real code is limited.  This tool will remain
+available as a proof of concept, and for others to examine and learn from.")
+    (license license:bsd-3)))
+
 (define-public go-github-com-opentracing-opentracing-go
   (package
     (name "go-github-com-opentracing-opentracing-go")
