@@ -20264,6 +20264,22 @@ functionality like full case-folding for case-insensitive matches in Unicode.")
 (define-public python2-regex
   (package-with-python2 python-regex))
 
+(define-public python-pyogg
+(package
+  (name "python-pyogg")
+  (version "0.6.14a1")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "PyOgg" version))
+      (sha256
+        (base32 "0qj2x5cf6nvskl35v3hy2h4p4h44bd5crhih8q62144wlm5b7542"))))
+  (build-system python-build-system)
+  (home-page "https://github.com/Zuzu-Typ/PyOgg")
+  (synopsis "Xiph.org's Ogg Vorbis, Opus and FLAC for Python")
+  (description "Xiph.org's Ogg Vorbis, Opus and FLAC for Python")
+  (license #f)))
+
 (define-public python-pyopengl
   (package
     (name "python-pyopengl")
