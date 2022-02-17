@@ -51768,6 +51768,37 @@ Unix.")
 Windows.")
     (license license:expat)))
 
+(define-public rust-serialport-4
+  (package
+    (name "rust-serialport")
+    (version "4.0.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "serialport" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0mf6qamknhnwwljaj22n7lay9jn1dzx0jw2504nfx412yb0dg32x"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-bitflags" ,rust-bitflags-1)
+         ("rust-cfg-if" ,rust-cfg-if-0.1)
+         ("rust-corefoundation-sys" ,rust-corefoundation-sys-0.1)
+         ("rust-iokit-sys" ,rust-iokit-sys-0.1)
+         ("rust-libudev" ,rust-libudev-0.2)
+         ("rust-mach" ,rust-mach-0.2)
+         ("rust-nix" ,rust-nix-0.16)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-winapi" ,rust-winapi-0.3))))
+    (home-page "https://gitlab.com/susurrus/serialport-rs")
+    (synopsis "A cross-platform low-level serial port library")
+    (description
+      "This package provides a cross-platform low-level serial port library")
+    (license license:mpl2.0)))
+
 (define-public rust-servo-arc-0.1
   (package
     (name "rust-servo-arc")
