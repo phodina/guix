@@ -2487,6 +2487,22 @@ standard.")
   (description "This package provides a hyperparameter optimization framework")
   (license #f)))
 
+(define-public python-opuslib
+(package
+  (name "python-opuslib")
+  (version "3.0.1")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "opuslib" version))
+      (sha256
+        (base32 "15sc0jdbdprj3v2i074nypcdppfx0hs1whzyzq6wazryn3jlbc1c"))))
+  (build-system python-build-system)
+  (home-page "https://github.com/onbeep/opuslib")
+  (synopsis "Python bindings to the libopus, IETF low-delay audio codec")
+  (description "Python bindings to the libopus, IETF low-delay audio codec")
+  (license #f)))
+
 (define-public python2-openpyxl
   (let ((base (package-with-python2
                (strip-python2-variant python-openpyxl))))
