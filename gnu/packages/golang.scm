@@ -1256,6 +1256,38 @@ standardized in RFC 7539.")
       "Package lint defines common interfaces for Go code checkers.")
     (license license:bsd-3)))
 
+(define-public go-github-com-mvdan-gofumpt
+  (package
+    (name "go-github-com-mvdan-gofumpt")
+    (version "0.2.1")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/mvdan/gofumpt")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32 "0rczlicfvvhvx8l3ngcd04mjam80mb5ay0vrim9w2max04kyairn"))))
+    (build-system go-build-system)
+    (arguments '(#:import-path "github.com/mvdan/gofumpt"))
+    (propagated-inputs
+      `(("go-golang-org-x-tools" ,go-golang-org-x-tools)
+        ("go-golang-org-x-sys" ,go-golang-org-x-sys)
+        ("go-golang-org-x-mod" ,go-golang-org-x-mod)
+        ("go-github-com-rogpeppe-go-internal"
+         ,go-github-com-rogpeppe-go-internal)
+        ("go-github-com-google-go-cmp" ,go-github-com-google-go-cmp)
+        ("go-github-com-frankban-quicktest"
+         ,go-github-com-frankban-quicktest)))
+    (home-page "https://github.com/mvdan/gofumpt")
+    (synopsis "gofumpt")
+    (description
+      "Enforce a stricter format than @code{gofmt}, while being backwards compatible.
+That is, @code{gofumpt} is happy with a subset of the formats that @code{gofmt}
+is happy with.")
+    (license #f)))
+
 (define-public go-github-com-opentracing-opentracing-go
   (package
     (name "go-github-com-opentracing-opentracing-go")
