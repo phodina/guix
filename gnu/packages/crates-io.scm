@@ -27223,6 +27223,24 @@ deordinalize, demodulize, foreign key, and pluralize/singularize are supported
 as both traits and pure functions acting on String types.")
     (license license:bsd-2)))
 
+(define-public rust-array-init-2
+  (package
+    (name "rust-array-init")
+    (version "2.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "array-init" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1ilfd4hja0i8gjm4n2p29ydcsaicin3w54750bkcavqp49acqib9"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://github.com/Manishearth/array-init/")
+    (synopsis "Safe wrapper for initializing fixed-size arrays")
+    (description "Safe wrapper for initializing fixed-size arrays")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-inotify-0.9
   (package
     (name "rust-inotify")
