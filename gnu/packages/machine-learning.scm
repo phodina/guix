@@ -285,6 +285,50 @@ distribution estimation (one-class SVM).  It supports multi-class
 classification.")
     (license license:bsd-3)))
 
+(define-public python-allennlp
+(package
+  (name "python-allennlp")
+  (version "2.9.0")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "allennlp" version))
+      (sha256
+        (base32 "08iibmivw6clinzscmgfiafznhgkyms0019v0ivr62n368dj05v9"))))
+  (build-system python-build-system)
+  (propagated-inputs
+    (list python-base58
+          python-cached-path
+          python-checklist
+          python-dataclasses
+          python-dill
+          python-fairscale
+          python-filelock
+          python-h5py
+          python-huggingface-hub
+          python-jsonnet
+          python-lmdb
+          python-more-itertools
+          python-nltk
+          python-numpy
+          python-pytest
+          python-requests
+          python-scikit-learn
+          python-scipy
+          python-sentencepiece
+          python-spacy
+          python-tensorboardx
+          python-termcolor
+          python-torch
+          python-torchvision
+          python-tqdm
+          python-transformers
+          python-wandb))
+  (home-page "https://github.com/allenai/allennlp")
+  (synopsis "An open-source NLP research library, built on PyTorch.")
+  (description "An open-source NLP research library, built on PyTorch.")
+  (license #f)))
+
 (define-public python-libsvm
   (package (inherit libsvm)
     (name "python-libsvm")
