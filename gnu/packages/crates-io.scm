@@ -55924,8 +55924,33 @@ struct.")
      "Parse command line argument by defining a struct, derive crate.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-strum-0.23
+  (package
+    (name "rust-strum")
+    (version "0.23.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "strum" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1fvhkg7di4psfw289v2flv19i28rcflq1g1z3n2rl76iqy8lpqfa"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-strum-macros" ,rust-strum-macros-0.23))))
+    (home-page "https://github.com/Peternator7/strum")
+    (synopsis "Set of traits for working with enums and strings")
+    (description
+     "Strum is a set of macros and traits for working with enums and strings
+easier in Rust.")
+    (license license:expat)))
+
 (define-public rust-strum-0.22
   (package
+    (inherit rust-strum-0.23)
     (name "rust-strum")
     (version "0.22.0")
     (source
@@ -55939,13 +55964,7 @@ struct.")
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-strum-macros" ,rust-strum-macros-0.21))))
-    (home-page "https://github.com/Peternator7/strum")
-    (synopsis "Set of traits for working with enums and strings")
-    (description
-     "Strum is a set of macros and traits for working with enums and strings
-easier in Rust.")
-    (license license:expat)))
+       (("rust-strum-macros" ,rust-strum-macros-0.21))))))
 
 (define-public rust-strum-0.21
   (package
