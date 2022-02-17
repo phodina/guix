@@ -18733,6 +18733,23 @@ multitouch applications.")
 (define-public python2-constantly
   (package-with-python2 python-constantly))
 
+(define-public python-attrdict
+  (package
+    (name "python-attrdict")
+    (version "2.0.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "attrdict" version))
+        (sha256
+          (base32 "0w3vsz64j9npxfgh83hghsh161wwkrx1fxqi1533js2wnnc0dj9m"))))
+    (build-system python-build-system)
+    (propagated-inputs (list python-six))
+    (home-page "https://github.com/bcj/AttrDict")
+    (synopsis "Dict with attribute-style access")
+    (description "This package provides a dict with attribute-style access")
+    (license license:expat)))
+
 (define-public python-attrs
   (package
     (name "python-attrs")
