@@ -50993,6 +50993,30 @@ standard formatting APIs.")
 @code{Deserializer} for the INI format.")
     (license license:expat)))
 
+(define-public rust-serde-hex-0.1
+  (package
+    (name "rust-serde-hex")
+    (version "0.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "serde-hex" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0vf2dplp1i27z9xphha8vzysv1dfxx3ykr0yy5zzv6mks7jf6dya"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-array-init" ,rust-array-init-0.0.4)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-smallvec" ,rust-smallvec-0.6))))
+    (home-page "https://github.com/forrest-marshall/serde-hex.git")
+    (synopsis "Hexadecimal encoding/decoding with serde.")
+    (description "Hexadecimal encoding/decoding with serde.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-serde-hjson-0.9
   (package
     (name "rust-serde-hjson")
