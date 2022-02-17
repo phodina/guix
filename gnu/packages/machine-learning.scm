@@ -417,6 +417,25 @@ classification.")
   (description "This package provides a flexible framework of neural networks")
   (license license:expat)))
 
+(define-public python-cma
+(package
+  (name "python-cma")
+  (version "3.1.0")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "cma" version))
+      (sha256
+        (base32 "1ip32lnilbhmv1fyvmmdn5rcf084c0ps4q9dr3cf2ax5wdzhg0rv"))))
+  (build-system python-build-system)
+  (home-page "https://github.com/CMA-ES/pycma")
+  (synopsis
+    "CMA-ES, Covariance Matrix Adaptation Evolution Strategy for non-linear numerical optimization in Python")
+  (description
+    "CMA-ES, Covariance Matrix Adaptation Evolution Strategy for non-linear numerical
+optimization in Python")
+  (license license:bsd-3)))
+
 (define-public python-libsvm
   (package (inherit libsvm)
     (name "python-libsvm")
