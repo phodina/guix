@@ -329,6 +329,30 @@ classification.")
   (description "An open-source NLP research library, built on PyTorch.")
   (license #f)))
 
+(define-public python-botorch
+(package
+  (name "python-botorch")
+  (version "0.6.0")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "botorch" version))
+      (sha256
+        (base32 "11r9z52zgvdvgsxvha6arpc1wcffcjwr3dzpa4ib283w333w5m78"))))
+  (build-system python-build-system)
+  (propagated-inputs (list python-gpytorch python-scipy python-torch))
+  (native-inputs
+    (list python-black
+          python-flake8
+          python-pytest
+          python-pytest-cov
+          python-sphinx
+          python-usort))
+  (home-page "https://botorch.org")
+  (synopsis "Bayesian Optimization in PyTorch")
+  (description "Bayesian Optimization in PyTorch")
+  (license license:expat)))
+
 (define-public python-libsvm
   (package (inherit libsvm)
     (name "python-libsvm")
