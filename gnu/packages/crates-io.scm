@@ -6491,6 +6491,31 @@ bindings to C and C++ libraries.")
 using â\x9c¨macro magicâ\x9c¨")
     (license license:expat)))
 
+(define-public rust-binread-derive-2
+  (package
+    (name "rust-binread-derive")
+    (version "2.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "binread_derive" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1v8zxycf337qfbsaq1vs3w5skclfikvd9x5i0kl4wwgiklh755hx"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-either" ,rust-either-1)
+         ("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/jam1garner/binread")
+    (synopsis "Derive macro for binread")
+    (description "Derive macro for binread")
+    (license license:expat)))
+
 (define-public rust-bio-types-0.12
   (package
     (name "rust-bio-types")
