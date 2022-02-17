@@ -53390,6 +53390,30 @@ implementations.")
      "This package provides a double-ended queue that Deref's into a slice.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-slip-codec-0.3
+  (package
+    (name "rust-slip-codec")
+    (version "0.3.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "slip-codec" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1l33q9fj1x28w6rl9ha3xxrwhpbfb8mr9axgwcwf3krvab1nqqkm"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-asynchronous-codec" ,rust-asynchronous-codec-0.6)
+         ("rust-bytes" ,rust-bytes-1)
+         ("rust-tokio-util" ,rust-tokio-util-0.6))))
+    (home-page "https://github.com/jmaygarden/slip-codec")
+    (synopsis "Serial Line Internet Protocol (SLIP) encoder/decoder")
+    (description "Serial Line Internet Protocol (SLIP) encoder/decoder")
+    (license license:expat)))
+
 (define-public rust-slog-2
   (package
     (name "rust-slog")
