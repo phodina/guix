@@ -32830,6 +32830,41 @@ quality, high performance hash algorithm.")
      "This package provides a simple math expression parser and evaluator.")
     (license (list license:unlicense license:expat))))
 
+(define-public rust-miette-3
+  (package
+    (name "rust-miette")
+    (version "3.3.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "miette" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1v9mdl4vbj98xqzkiw9xgzsk2cmrwlmahn59j2zjbmnmrvydqand"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-atty" ,rust-atty-0.2)
+         ("rust-backtrace" ,rust-backtrace-0.3)
+         ("rust-miette-derive" ,rust-miette-derive-3)
+         ("rust-once-cell" ,rust-once-cell-1)
+         ("rust-owo-colors" ,rust-owo-colors-3)
+         ("rust-supports-color" ,rust-supports-color-1)
+         ("rust-supports-hyperlinks" ,rust-supports-hyperlinks-1)
+         ("rust-supports-unicode" ,rust-supports-unicode-1)
+         ("rust-terminal-size" ,rust-terminal-size-0.1)
+         ("rust-textwrap" ,rust-textwrap-0.14)
+         ("rust-thiserror" ,rust-thiserror-1))))
+    (home-page "https://github.com/zkat/miette")
+    (synopsis
+      "Fancy diagnostic reporting library and protocol for us mere mortals who aren't compiler hackers.")
+    (description
+      "Fancy diagnostic reporting library and protocol for us mere mortals who aren't
+compiler hackers.")
+    (license license:asl2.0)))
+
 (define-public rust-miette-derive-3
   (package
     (name "rust-miette-derive")
