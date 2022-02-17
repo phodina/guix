@@ -3988,6 +3988,30 @@ addon modules.")
     (native-inputs
      (list python-pytest python-pytest-timeout))))
 
+(define-public python-bokeh
+(package
+  (name "python-bokeh")
+  (version "2.4.2")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "bokeh" version))
+      (sha256
+        (base32 "0g83b04l2n848bpsiq3s9hwrwdij857imjy56swpwfzdchrvb97h"))))
+  (build-system python-build-system)
+  (propagated-inputs
+    (list python-jinja2
+          python-numpy
+          python-packaging
+          python-pillow
+          python-pyyaml
+          python-tornado
+          python-typing-extensions))
+  (home-page "https://github.com/bokeh/bokeh")
+  (synopsis "Interactive plots and applications in the browser from Python")
+  (description "Interactive plots and applications in the browser from Python")
+  (license #f)))
+
 (define-public python-bottle
   (package
     (name "python-bottle")
