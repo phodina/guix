@@ -16764,6 +16764,76 @@ procedural macros.")
 example.")
     (license license:bsd-3)))
 
+(define-public rust-dialoguer-0.9
+  (package
+    (name "rust-dialoguer")
+    (version "0.9.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "dialoguer" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1sxy4nd9kd9wslxnjdjyxgmsg5fil3dnzy63z8f07in09vd9lmv1"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-console" ,rust-console-0.15)
+         ("rust-fuzzy-matcher" ,rust-fuzzy-matcher-0.3)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-tempfile" ,rust-tempfile-3)
+         ("rust-zeroize" ,rust-zeroize-1))))
+    (home-page "https://github.com/mitsuhiko/dialoguer")
+    (synopsis "Library for command line prompts")
+    (description
+     "This package provides a library for command line prompts and the like.")
+    (license license:expat)))
+
+(define-public rust-dialoguer-0.6
+  (package
+    (inherit rust-dialoguer-0.9)
+    (name "rust-dialoguer")
+    (version "0.6.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "dialoguer" version))
+        (file-name
+         (string-append name "-" version ".tar.gz"))
+        (sha256
+         (base32
+          "0f31ahy6myg2vz9xrdmp0vx0m7x427a1wxpgrgwhxd0rgfpqdapl"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+       (("rust-console" ,rust-console-0.11)
+        ("rust-lazy-static" ,rust-lazy-static-1)
+        ("rust-tempfile" ,rust-tempfile-3))))))
+
+(define-public rust-dialoguer-0.3
+  (package
+    (inherit rust-dialoguer-0.6)
+    (name "rust-dialoguer")
+    (version "0.3.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "dialoguer" version))
+        (file-name
+         (string-append name "-" version ".tar.gz"))
+        (sha256
+         (base32
+          "1a9gqvqp83gg4jbm286q5ab3l44zyyzlsdaiqmw8x4k80fdc5l8s"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-test-flags '("--lib")
+       #:cargo-inputs
+       (("rust-console" ,rust-console-0.11)
+        ("rust-lazy-static" ,rust-lazy-static-1)
+        ("rust-tempfile" ,rust-tempfile-2))))))
+
 (define-public rust-diesel-1
   (package
     (name "rust-diesel")
