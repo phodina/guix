@@ -17,6 +17,7 @@
 ;;; Copyright © 2020 Edouard Klein <edk@beaver-labs.com>
 ;;; Copyright © 2020, 2021, 2022 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2020, 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -104,6 +105,48 @@
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (ice-9 match))
+
+(define-public intgemm
+(let ((commit "baa6bdf18ff0ee649977c40dd2e9fe8e10c550ef")
+      (revision "1"))
+(package
+      (name "intgemm")
+      (version "")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/kpu/intgemm")
+                      (commit version)))
+                (file-name (string-append name "-" version))
+                (sha256
+                 (base32
+                  "16gsc4x55iw27w9q9p0x6ny9cazi97b6k1js8i0vl1ig0w1dv5fw"))))
+      (build-system cmake-build-system)
+	  (arguments
+	  `(#:phases
+	   (modify-phases %standard-phases
+	    (replace 'install
+		 (lambda* (#:key outputs #:allow-other-keys)
+		 (let* ((out (string-append (assoc-ref outputs "out")))
+		       (bin (string-append out "/bin"))
+		 (include (string-append out "/include/intgemm"))
+		 (lib (string-append out "/bin")))
+
+		 (mkdir-p bin)
+		 (mkdir-p include)
+		 (mkdir-p lib)
+		 (install-file "benchmark" bin)
+		 (install-file "benchmark_quantizer" bin)
+		 (install-file "biasmultiply" bin)
+		 (install-file "example" bin)
+		 (install-file "intgemm/intgemm_config.h" include)
+		 (install-file "libintgemm.a" lib)))))))
+      (home-page "https://github.com/kpu/intgemm")
+      (synopsis "Implementation of 8-bit and 16-bit matrix multiply")
+      (description
+       "This package provides implemention of 8-bit and 16-bit matrix
+multiplication.")
+      (license license:expat))))
 
 (define-public fann
   ;; The last release is >100 commits behind, so we package from git.
