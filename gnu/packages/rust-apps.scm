@@ -365,6 +365,53 @@ Features include:
 @end enumerate\n")
     (license license:gpl3)))
 
+(define-public espflash
+  (package
+    (name "espflash")
+    (version "1.6.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "espflash" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1b894lhs52fnkn9swxskx9b2gsjw68mnqpykvn3j941jwgr16f75"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-binread" ,rust-binread-2)
+         ("rust-bytemuck" ,rust-bytemuck-1)
+         ("rust-clap" ,rust-clap-3)
+		 ("rust-comfy-table" ,rust-comfy-table-6)
+         ("rust-crossterm" ,rust-crossterm-0.24)
+         ("rust-csv" ,rust-csv-1)
+         ("rust-dialoguer" ,rust-dialoguer-0.10)
+         ("rust-directories-next" ,rust-directories-next-2)
+		 ("rust-espmonitor" ,rust-espmonitor-0.10)
+         ("rust-flate2" ,rust-flate2-1)
+         ("rust-indicatif" ,rust-indicatif-0.16)
+		 ("rust-maplit" ,rust-maplit-1)
+         ("rust-md5" ,rust-md5-0.7)
+         ("rust-miette" ,rust-miette-5)
+		 ("rust-parse-int" ,rust-parse-int-0.6)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-hex" ,rust-serde-hex-0.1)
+         ("rust-serde-plain" ,rust-serde-plain-1)
+         ("rust-serialport" ,rust-serialport-4)
+         ("rust-sha2" ,rust-sha2-0.10)
+         ("rust-slip-codec" ,rust-slip-codec-0.3)
+         ("rust-strum" ,rust-strum-0.24)
+         ("rust-strum-macros" ,rust-strum-macros-0.24)
+         ("rust-thiserror" ,rust-thiserror-1)
+         ("rust-toml" ,rust-toml-0.5)
+         ("rust-xmas-elf" ,rust-xmas-elf-0.8))))
+    (home-page "https://github.com/esp-rs/espflash")
+    (synopsis "Command-line tool for flashing Espressif devices over serial")
+    (description "This package provides a command-line tool for flashing Espressif devices over
+serial")
+    (license license:gpl2)))
+
 (define-public exa
   (package
     (name "exa")
