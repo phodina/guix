@@ -12544,6 +12544,28 @@ in @code{no_std}.  Alloc support is optional.")
        (("rust-env-logger" ,rust-env-logger-0.7)
         ("rust-pretty-assertions" ,rust-pretty-assertions-0.6))))))
 
+(define-public rust-corefoundation-sys-0.1
+  (package
+    (name "rust-corefoundation-sys")
+    (version "0.1.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "CoreFoundation-sys" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "02y2lpp1n52mbzwbbvqbd2jp7nb4x782hiyqi2fx865idng8isfh"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-libc" ,rust-libc-0.2) ("rust-mach" ,rust-mach-0.1))))
+    (home-page "https://github.com/dcuddeback/core-foundation-sys")
+    (synopsis "FFI bindings for CoreFoundation")
+    (description "FFI bindings for CoreFoundation")
+    (license license:expat)))
+
 (define-public rust-core-affinity-0.5
   (package
     (name "rust-core-affinity")
