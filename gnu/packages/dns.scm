@@ -52,6 +52,7 @@
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages glib)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages groff)
   #:use-module (gnu packages groff)
   #:use-module (gnu packages gtk)
@@ -86,6 +87,7 @@
   #:use-module (guix utils)
   #:use-module (guix build-system copy)
   #:use-module (guix build-system glib-or-gtk)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system trivial))
@@ -136,6 +138,196 @@ such as updating dynamic DNS records or updating DNS records for the ACME DNS-01
 protocol.")
       (home-page "https://github.com/earlchew/cloudflare-cli")
       (license license:expat))))
+
+(define-public dnscrypt-proxy2
+  (package
+    (name "dnscrypt-proxy2")
+    (version "0.0.0-20220215191748-ac6abfb9854d")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/DNSCrypt/dnscrypt-proxy")
+                    (commit (go-version->git-ref version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1i5hagh533mi8qff99al335szsmzpqwz5vz6n32z4c55ar2q1qmr"))))
+    (build-system go-build-system)
+    (arguments
+     '(#:import-path "github.com/DNSCrypt/dnscrypt-proxy"))
+    (propagated-inputs (list go-github-com-mvdan-unparam
+                        go-github-com-mvdan-lint
+                        go-github-com-mvdan-interfacer
+                        go-github-com-mvdan-gofumpt
+                        go-honnef-co-go-tools
+                        go-gopkg-in-yaml-v3
+                        go-gopkg-in-yaml-v2
+                        go-gopkg-in-ini-v1
+                        go-github-com-gogo-protobuf
+             ;   use ^^        go-google-golang-org-protobuf
+                        go-google-golang-org-grpc
+                        go-google-golang-org-genproto
+                        go-golang-org-x-xerrors
+                        go-golang-org-x-tools
+                        go-golang-org-x-text
+                        go-golang-org-x-mod
+                        go-github-com-yeya24-promlinter
+                        go-github-com-uudashr-gocognit
+                        go-github-com-ultraware-whitespace
+                        go-github-com-ultraware-funlen
+                        go-github-com-tommy-muehle-go-mnd-v2
+                        go-github-com-tomarrell-wrapcheck-v2
+                        go-github-com-timakin-bodyclose
+                        go-github-com-tetafro-godot
+                        go-github-com-tdakkota-asciicheck
+                        go-github-com-subosito-gotenv
+                        go-github-com-stretchr-testify
+                        go-github-com-stretchr-objx
+                        go-github-com-ssgreg-nlreturn-v2
+                        go-github-com-spf13-viper
+                        go-github-com-spf13-pflag
+                        go-github-com-spf13-jwalterweatherman
+                        go-github-com-spf13-cobra
+                        go-github-com-spf13-cast
+                        go-github-com-spf13-afero
+                        go-github-com-sourcegraph-go-diff
+                        go-github-com-sonatard-noctx
+                        go-github-com-smartystreets-goconvey
+                        go-github-com-sirupsen-logrus
+                        go-github-com-shazow-go-diff
+                        go-github-com-securego-gosec-v2
+                        go-github-com-sanposhiho-wastedassign-v2
+                        go-github-com-ryanrolds-sqlclosecheck
+                        go-github-com-ryancurrah-gomodguard
+                        go-github-com-quasilyte-regex-syntax
+                        go-github-com-quasilyte-go-ruleguard
+                        go-github-com-prometheus-procfs
+                        go-github-com-prometheus-common
+                        go-github-com-prometheus-client-model
+                        go-github-com-prometheus-client-golang
+                        go-github-com-powerman-deepequal
+                        go-github-com-polyfloyd-go-errorlint
+                        go-github-com-pmezard-go-difflib
+                        go-github-com-pkg-errors
+                        go-github-com-phayes-checkstyle
+                        go-github-com-pelletier-go-toml
+                        go-github-com-olekukonko-tablewriter
+                        go-github-com-nishanths-predeclared
+                        go-github-com-nishanths-exhaustive
+                        go-github-com-nbutton23-zxcvbn-go
+                        go-github-com-nakabonne-nestif
+                        go-github-com-moricho-tparallel
+                        go-github-com-mitchellh-mapstructure
+                        go-github-com-mitchellh-go-homedir
+                        go-github-com-mgechev-revive
+                        go-github-com-mgechev-dots
+                        go-github-com-mbilski-exhaustivestruct
+                        go-github-com-matttproud-golang-protobuf-extensions
+                        go-github-com-mattn-goveralls
+                        go-github-com-mattn-go-runewidth
+                        go-github-com-mattn-go-isatty
+                        go-github-com-mattn-go-colorable
+                        go-github-com-matoous-godox
+                        go-github-com-maratori-testpackage
+                        go-github-com-magiconair-properties
+                        go-github-com-ldez-tagliatelle
+                        go-github-com-ldez-gomoddirectives
+                        go-github-com-kyoh86-exportloopref
+                        go-github-com-kunwardeep-paralleltest
+                        go-github-com-kulti-thelper
+                        go-github-com-kisielk-gotool
+                        go-github-com-kisielk-errcheck
+                        go-github-com-julz-importas
+                        go-github-com-jirfag-go-printf-func-name
+                        go-github-com-jingyugao-rowserrcheck
+                        go-github-com-jgautheron-goconst
+                        go-github-com-inconshreveable-mousetrap
+                        go-github-com-hashicorp-hcl
+                        go-github-com-hashicorp-go-syslog
+                        go-github-com-hashicorp-go-multierror
+                        go-github-com-hashicorp-errwrap
+                        go-github-com-gostaticanalysis-nilerr
+                        go-github-com-gostaticanalysis-forcetypeassert
+                        go-github-com-gostaticanalysis-comment
+                        go-github-com-gostaticanalysis-analysisutil
+                        go-github-com-gordonklaus-ineffassign
+                        go-github-com-google-go-cmp
+                        go-github-com-golangci-unconvert
+                        go-github-com-golangci-revgrep
+                        go-github-com-golangci-misspell
+                        go-github-com-golangci-maligned
+                        go-github-com-golangci-lint-1
+                        go-github-com-golangci-golangci-lint
+                        go-github-com-golangci-gofmt
+                        go-github-com-golangci-go-misc
+                        go-github-com-golangci-dupl
+                        go-github-com-golangci-check
+                        go-github-com-golang-protobuf
+                        go-github-com-gofrs-flock
+                        go-github-com-gobwas-glob
+                        go-github-com-go-xmlfmt-xmlfmt
+                        go-github-com-go-toolsmith-typep
+                        go-github-com-go-toolsmith-strparse
+                        go-github-com-go-toolsmith-astp
+                        go-github-com-go-toolsmith-astfmt
+                        go-github-com-go-toolsmith-astequal
+                        go-github-com-go-toolsmith-astcopy
+                        go-github-com-go-toolsmith-astcast
+                        go-github-com-go-critic-go-critic
+                        go-github-com-fzipp-gocyclo
+                        go-github-com-fsnotify-fsnotify
+                        go-github-com-fatih-structtag
+                        go-github-com-fatih-color
+                        go-github-com-ettle-strcase
+                        go-github-com-esimonov-ifshort
+                        go-github-com-denis-tingajkin-go-header
+                        go-github-com-davecgh-go-spew
+                        go-github-com-daixiang0-gci
+                        go-github-com-chavacava-garif
+                        go-github-com-charithe-durationcheck
+                        go-github-com-cespare-xxhash-v2
+                        go-github-com-bombsimon-wsl-v3
+                        go-github-com-bkielbasa-cyclop
+                        go-github-com-beorn7-perks
+                        go-github-com-ashanbrown-makezero
+                        go-github-com-ashanbrown-forbidigo
+                        go-github-com-alexkohler-prealloc
+                        go-github-com-openpeedeep-depguard
+                        go-github-com-masterminds-semver
+                        go-github-com-djarvur-go-err113
+                        go-4d63-com-gochecknoglobals
+                        go-gopkg-in-natefinch-lumberjack-v2
+                        go-golang-org-x-sys
+                        go-golang-org-x-net
+                        go-golang-org-x-crypto
+                        go-github-com-powerman-check
+                        go-github-com-miekg-dns
+                        go-github-com-kardianos-service
+                        go-github-com-k-sone-critbitgo
+                        go-github-com-jedisct1-xsecretbox
+                        go-github-com-jedisct1-go-minisign
+                        go-github-com-jedisct1-go-hpke-compact
+                        go-github-com-jedisct1-go-dnsstamps
+                        go-github-com-jedisct1-go-clocksmith
+                        go-github-com-jedisct1-dlog
+                        go-github-com-hectane-go-acl
+                        go-github-com-hashicorp-golang-lru
+                        go-github-com-hashicorp-go-immutable-radix
+                        go-github-com-dchest-safefile
+                        go-github-com-coreos-go-systemd
+                        go-github-com-vividcortex-ewma
+                        go-github-com-burntsushi-toml))
+    (home-page "https://github.com/DNSCrypt/dnscrypt-proxy")
+    (synopsis #f)
+    (description
+     "This package provides a flexible DNS proxy, with support for modern encrypted
+DNS protocols such as @url{https://dnscrypt.info/protocol,DNSCrypt v2},
+@url{https://www.rfc-editor.org/rfc/rfc8484.txt,DNS-over-HTTPS},
+@url{https://github.com/DNSCrypt/dnscrypt-protocol/raw/master/ANONYMIZED-DNSCRYPT.txt,Anonymized
+DNSCrypt} and
+@url{https://github.com/DNSCrypt/dnscrypt-resolvers/raw/master/v3/odoh.md,ODoH
+(Oblivious DoH)}.")
+    (license license:isc)))
 
 (define-public ldns
   (package
