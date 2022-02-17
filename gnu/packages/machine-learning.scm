@@ -436,6 +436,62 @@ classification.")
 optimization in Python")
   (license license:bsd-3)))
 
+(define-public python-fastai
+(package
+  (name "python-fastai")
+  (version "2.5.3")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "fastai" version))
+      (sha256
+        (base32 "1dzfx0swj2ap614cy0r2g5mk9vhld0780dvkxpq55c3rg5hm1bhc"))))
+  (build-system python-build-system)
+  (propagated-inputs
+    (list python-fastcore
+          python-fastdownload
+          python-fastprogress
+          python-matplotlib
+          python-packaging
+          python-pandas
+          python-pillow
+          python-pip
+          python-pyyaml
+          python-requests
+          python-scikit-learn
+          python-scipy
+          python-spacy
+          python-torch
+          python-torchvision))
+  (native-inputs
+    (list python-albumentations
+          python-azureml-sdk
+          python-captum
+          python-catalyst
+          python-flask
+          python-ipywidgets
+          python-kornia
+          python-nbdev
+          python-neptune-client
+          python-ninja
+          python-opencv-python
+          python-pyarrow
+          python-pydicom
+          python-pytorch-ignite
+          python-pytorch-lightning
+          python-scikit-image
+          python-sentencepiece
+          python-tensorboard
+          python-transformers
+          python-wandb))
+  (home-page "https://github.com/fastai/fastai/tree/master/")
+  (synopsis
+    "fastai simplifies training fast and accurate neural nets using modern best practices")
+  (description
+    "fastai simplifies training fast and accurate neural nets using modern best
+practices")
+  (license #f)))
+
 (define-public python-libsvm
   (package (inherit libsvm)
     (name "python-libsvm")
