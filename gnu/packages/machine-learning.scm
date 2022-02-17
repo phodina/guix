@@ -542,6 +542,46 @@ practices")
   (description "LightGBM Python Package")
   (license #f)))
 
+(define-public python-mlflow
+(package
+  (name "python-mlflow")
+  (version "1.23.1")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "mlflow" version))
+      (sha256
+        (base32 "03rfyhli7vbb1pz0zw75mdwj9pz3awxi3dadxn5glpwn953w6r5y"))))
+  (build-system python-build-system)
+  (propagated-inputs
+    (list python-alembic
+          python-click
+          python-cloudpickle
+          python-databricks-cli
+          python-docker
+          python-entrypoints
+          python-flask
+          python-gitpython
+          python-gunicorn
+          python-importlib-metadata
+          python-numpy
+          python-packaging
+          python-pandas
+          python-prometheus-flask-exporter
+          python-protobuf
+          python-pytz
+          python-pyyaml
+          python-querystring-parser
+          python-requests
+          python-scipy
+          python-sqlalchemy
+          python-sqlparse
+          python-waitress))
+  (home-page "https://mlflow.org/")
+  (synopsis "MLflow: A Platform for ML Development and Productionization")
+  (description "MLflow: A Platform for ML Development and Productionization")
+  (license #f)))
+
 (define-public ghmm
   ;; The latest release candidate is several years and a couple of fixes have
   ;; been published since.  This is why we download the sources from the SVN
