@@ -524,6 +524,24 @@ practices")
      (list python))
     (synopsis "Python bindings of libSVM")))
 
+(define-public python-lightgbm
+(package
+  (name "python-lightgbm")
+  (version "3.3.2")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "lightgbm" version))
+      (sha256
+        (base32 "0r4bqrx2cx33j444335dr31rn4sifvsls172xjbw4i68fxpd29ax"))))
+  (build-system python-build-system)
+  (propagated-inputs
+    (list python-numpy python-scikit-learn python-scipy python-wheel))
+  (home-page "https://github.com/microsoft/LightGBM")
+  (synopsis "LightGBM Python Package")
+  (description "LightGBM Python Package")
+  (license #f)))
+
 (define-public ghmm
   ;; The latest release candidate is several years and a couple of fixes have
   ;; been published since.  This is why we download the sources from the SVN
