@@ -27179,23 +27179,23 @@ removals, and it allows lookup of its elements by either hash table key
 or numerical index.  A corresponding hash set type is also provided.")
     (license (list license:asl2.0 license:expat))))
 
-(define-public rust-indicatif-0.15
+(define-public rust-indicatif-0.16
   (package
     (name "rust-indicatif")
-    (version "0.15.0")
+    (version "0.16.2")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "indicatif" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1r4n50mclyi4c7b9c9mlma1rhchjamw71r3z8vgqcmp24mhvbakv"))))
+        (base32 "06xyjs0kzqiqkjn60n1miwm2l87sa9p2lmzz0ymq18y72z37s81d"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-console" ,rust-console-0.13)
+       (("rust-console" ,rust-console-0.15)
         ("rust-lazy-static" ,rust-lazy-static-1)
-        ("rust-number-prefix" ,rust-number-prefix-0.3)
+        ("rust-number-prefix" ,rust-number-prefix-0.4)
         ("rust-rayon" ,rust-rayon-1)
         ("rust-regex" ,rust-regex-1)
         ("rust-unicode-segmentation" ,rust-unicode-segmentation-1)
