@@ -177,10 +177,12 @@
   #:use-module (gnu packages libidn)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages llvm)
+  #:use-module (gnu packages machine-learning)
   #:use-module (gnu packages man)
   #:use-module (gnu packages markup)
   #:use-module (gnu packages maths)
   #:use-module (gnu packages monitoring)
+  #:use-module (gnu packages mpi)
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages networking)
   #:use-module (gnu packages ncurses)
@@ -2429,6 +2431,61 @@ XLTX and XLTM file formats that are defined by the Office Open XML (OOXML)
 standard.")
     (properties  `((python2-variant . ,(delay python2-openpyxl))))
     (license license:expat)))
+
+(define-public python-optuna
+(package
+  (name "python-optuna")
+  (version "2.10.0")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "optuna" version))
+      (sha256
+        (base32 "13bad002nqv85f9szzl4r2hckdwxxh88m7gnfbf732p89w511hq4"))))
+  (build-system python-build-system)
+  (propagated-inputs
+    (list python-alembic
+          python-cliff
+          python-cmaes
+          python-colorlog
+          python-numpy
+          python-packaging
+          python-pyyaml
+          python-scipy
+          python-sqlalchemy
+          python-tqdm))
+  (native-inputs
+    (list python-allennlp
+          python-bokeh
+          python-botorch
+          python-catalyst
+          python-chainer
+          python-cma
+          python-fakeredis
+          python-fastai
+          python-lightgbm
+          python-matplotlib
+          python-mlflow
+          python-mpi4py
+          python-mxnet
+          python-pandas
+          python-plotly
+          python-pytest
+          python-pytorch-ignite
+          python-pytorch-lightning
+          python-scikit-learn
+          python-scikit-optimize
+          python-skorch
+          python-tensorflow
+          python-tensorflow-datasets
+          python-torch
+          python-torchaudio
+          python-torchvision
+          python-xgboost))
+  (home-page "https://optuna.org/")
+  (synopsis "A hyperparameter optimization framework")
+  (description "This package provides a hyperparameter optimization framework")
+  (license #f)))
 
 (define-public python2-openpyxl
   (let ((base (package-with-python2
