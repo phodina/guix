@@ -387,6 +387,36 @@ classification.")
   (description "Catalyst.  Accelerated deep learning R&D with PyTorch.")
   (license #f)))
 
+(define-public python-chainer
+(package
+  (name "python-chainer")
+  (version "7.8.1")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (pypi-uri "chainer" version))
+      (sha256
+        (base32 "1s0dyxpjp7hv960m03z3rw9q5rh4vdb1k0f7bcw44ylddwbhd7qp"))))
+  (build-system python-build-system)
+  (propagated-inputs
+    (list python-filelock
+          python-numpy
+          python-protobuf
+          python-setuptools
+          python-six
+          python-typing-extensions))
+  (native-inputs
+    (list python-attrs
+          python-matplotlib
+          python-mock
+          python-pytest
+          python-sphinx
+          python-theano))
+  (home-page "https://chainer.org/")
+  (synopsis "A flexible framework of neural networks")
+  (description "This package provides a flexible framework of neural networks")
+  (license license:expat)))
+
 (define-public python-libsvm
   (package (inherit libsvm)
     (name "python-libsvm")
