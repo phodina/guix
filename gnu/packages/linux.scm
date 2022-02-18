@@ -1246,23 +1246,23 @@ of 'uname -r' behind the Linux version numbers."
      (substitute-keyword-arguments
          (package-arguments linux)
        ((#:imported-modules imported-modules %gnu-build-system-modules)
-        `((guix build kconfig) ,@imported-modules))
+        #~((guix build kconfig) #$@imported-modules))
        ((#:modules modules)
-        `((guix build kconfig) ,@modules))
+        #~((guix build kconfig) #$@modules))
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (replace 'configure
              (lambda* (#:key inputs #:allow-other-keys #:rest arguments)
                (let* ((srcarch
-                       ,(system->linux-srcarch (or (%current-target-system)
+                       #$(system->linux-srcarch (or (%current-target-system)
                                                    (%current-system))))
                       (configs (string-append "arch/" srcarch "/configs/"))
                       (guix_defconfig (string-append configs "guix_defconfig")))
-                 ,(cond
+                 #$(cond
                    ((not defconfig)
-                    `(begin
+                    #~(begin
                        ;; Call the original 'configure phase.
-                       (apply (assoc-ref ,phases 'configure) arguments)
+                       (apply (assoc-ref #$phases 'configure) arguments)
                        ;; Save a defconfig file.
                        (invoke "make" "savedefconfig")
                        ;; Move the saved defconfig to the proper location.
@@ -1270,25 +1270,24 @@ of 'uname -r' behind the Linux version numbers."
                                     guix_defconfig)))
                    ((string? defconfig)
                     ;; Use another existing defconfig from the Linux sources.
-                    `(rename-file (string-append configs ,defconfig)
+                    #~(rename-file (string-append configs #$defconfig)
                                   guix_defconfig))
                    (else
                     ;; Copy the defconfig input to the proper location.
                     '(copy-file (assoc-ref inputs "guix_defconfig")
                                 guix_defconfig)))
                  (modify-defconfig guix_defconfig ',configs)
-                 ,@(if extra-version
-                       `((setenv "EXTRAVERSION"
-                                 ,(string-append "-" extra-version)))
+                 #$@(if extra-version
+                       #~((setenv "EXTRAVERSION"
+                                 #$(string-append "-" extra-version)))
                        '())
-                 (invoke "make" "guix_defconfig"))
-               #t))))))
+                 (invoke "make" "guix_defconfig"))))))))
     (native-inputs
      (append (if (or (not defconfig)
                      (string? defconfig))
                  '()
                  ;; The defconfig should be a package or file-like object.
-                 `(("guix_defconfig" ,defconfig)))
+                 #~(("guix_defconfig" ,defconfig)))
              (package-native-inputs linux)))))
 
 (define-public (make-defconfig uri sha256-as-base32)
