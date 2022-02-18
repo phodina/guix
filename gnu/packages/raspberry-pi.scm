@@ -30,6 +30,7 @@
   #:use-module (gnu packages file)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages linux)
+  #:use-module (guix build-system copy)
   #:use-module (guix build-system gnu)
   #:use-module (guix download)
   #:use-module (guix git-download)
@@ -290,6 +291,26 @@ character.  Alternatively CONTENT can be a string with the full file content."
 CONTENT can be a list of strings, which are concatenated with a newline
 character.  Alternatively CONTENT can be a string with the full file content."
   (raspi-config-file "custom.txt" content))
+
+(define-public (make-raspi-bcm28-dtbs linux)
+  "Make a package with the device-tree files for Raspberry Pi models from the
+kernel LINUX."
+  (package
+    (inherit linux)
+    (name "raspi-bcm28-dtbs")
+    (source #f)
+    (build-system copy-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases (delete 'unpack))
+       #:install-plan
+       (list (list (string-append (assoc-ref %build-inputs "linux")
+                                  "/lib/dtbs/broadcom/")
+                   "." #:include-regexp '("/bcm....-rpi.*\\.dtb")))))
+    (inputs `(("linux" ,linux)))
+    (synopsis "Device-tree files for a Raspberry Pi")
+    (description
+     (simple-format #f "The device-tree files for Raspberry Pi models from ~a."
+             (package-name linux)))))
 
 (define (make-raspi-defconfig arch defconfig sha256-as-base32)
   "Make for the architecture ARCH a file-like object from the DEFCONFIG file
