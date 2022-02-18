@@ -31,6 +31,7 @@
   #:use-module (guix gexp)
   #:use-module (guix utils)
   #:use-module (guix git-download)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system meson)
   #:use-module (gnu packages)
@@ -231,6 +232,51 @@ by the b43-open driver of Linux-libre.")
 Coreboot systems.") 
     (home-page "https://doc.coreboot.org/util.html")
     (license license:gpl2+)))
+
+(define (corevantage target)
+  (package
+    (name (string-append "corevantage-" target))
+    (version "1.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/JaGoLi/corevantage")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1x3nb2axpvyk9lv1kv4ras7235jqsmkf9l9w324skgb36xr193hw"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f ;no test suite
+       #:make-flags
+       (list target)
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'nvramtool-path
+           (lambda* (#:key inputs #:allow-other-keys)
+             (for-each (lambda (file)
+                         (substitute* file
+                           (("/usr/sbin/nvramtool") (string-append (assoc-ref
+                                                                    inputs
+                                                                    "nvramtool")
+                                                     "/bin/nvramtool"))))
+                       (list "src/x201/corevantage.cpp"
+                             "src/x201/corevantage.cpp"
+                             "src/t420/corevantage.cpp"
+                             "src/x230/corevantage.cpp"
+                             "src/x220/corevantage.cpp"
+                             "src/x200/corevantage.cpp"
+                             "polkit/org.jagoli.nvramtool.policy")))))))
+    (inputs (list nvramtool qtbase))
+    (synopsis "GUI to set options on devices with coreboot firmware")
+    (description
+     "This package provides to set options on devices with coreboot firmware.")
+    (home-page "https://github.com/JaGoLi/corevantage")
+    (license license:gpl3+)))
+
+(define-public corevantage-x230
+ (corevantage "x230"))
 
 (define-public coreboot-configurator
   (package
