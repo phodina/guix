@@ -1,5 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2020 Danny Milosavljevic <dannym@scratchpost.org>
+;;; Copyright © 2021 Stefan <stefan-guix@vodafonemail.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -25,9 +26,10 @@
   #:use-module (gnu packages commencement)
   #:use-module (gnu packages cross-base)
   #:use-module (gnu packages documentation)
+  #:use-module (gnu packages embedded)
   #:use-module (gnu packages file)
   #:use-module (gnu packages gcc)
-  #:use-module (gnu packages embedded)
+  #:use-module (gnu packages linux)
   #:use-module (guix build-system gnu)
   #:use-module (guix download)
   #:use-module (guix git-download)
@@ -235,3 +237,43 @@ Raspberry Pi.  Note: It does not work on Raspberry Pi 1.")
                (install-file "arm64.bin" libexec)
                #t))))))))
     (supported-systems '("aarch64-linux"))))
+
+(define (make-raspi-defconfig arch defconfig sha256-as-base32)
+  "Make for the architecture ARCH a file-like object from the DEFCONFIG file
+with the hash SHA256-AS-BASE32.  This object can be used as the #:defconfig
+argument of the function (modify-linux)."
+  (make-defconfig
+   (string-append
+    "https://raw.githubusercontent.com/raspberrypi/linux/raspberrypi-kernel_1.20210430-1/arch/"
+    arch "/configs/" defconfig)
+   sha256-as-base32))
+
+(define-public %bcm2709-defconfig
+  (make-raspi-defconfig
+   "arm" "bcm2709_defconfig"
+   "0yvrmid2jakl929d1mv00gidnqbf91ffhj61c9gl75f7km48811c"))
+
+(define-public %bcm2711-defconfig
+  (make-raspi-defconfig
+   "arm" "bcm2711_defconfig"
+   "19hb6nwna7sk3b4rn5yjfhldrs3c1lv24q08w4gpa4xzh1byv7jj"))
+
+(define-public %bcm2835-defconfig
+  (make-raspi-defconfig
+   "arm" "bcm2835_defconfig"
+   "17dmvabqvxwqn6lgv1x8rfh2wqf1r2xmm10nkdnrgwkmgv8bh2d5"))
+
+(define-public %bcmrpi-defconfig
+  (make-raspi-defconfig
+   "arm" "bcmrpi_defconfig"
+   "0lcmr6nxdd53m3k8hqb5k6c5b7vbdgmfvcliqyl95snp45rxjjkw"))
+
+(define-public %bcm2711-defconfig-64
+  (make-raspi-defconfig
+   "arm64" "bcm2711_defconfig"
+   "0xf38nczwinr0j8vhsn8nd8h4ysjn77xphg7xnssz04gclb7fndr"))
+
+(define-public %bcmrpi3-defconfig
+  (make-raspi-defconfig
+   "arm64" "bcmrpi3_defconfig"
+   "01k098snd7kbmhz68j93mj2fwp39c56g9r8rgaw17js5r0w0zbhy"))
