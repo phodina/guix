@@ -744,17 +744,30 @@ def test_ctrl_c"))
 also initializes the boards (RAM etc).  This package provides its
 board-independent tools.")))
 
-(define*-public (make-u-boot-package board triplet #:key defconfig configs)
+(define*-public (make-u-boot-package board
+                                     triplet
+                                     #:key
+                                     defconfig
+                                     configs
+                                     name
+                                     description)
   "Returns a u-boot package for BOARD cross-compiled for TRIPLET with the
-optional DEFCONFIG file and optional configuration changes from CONFIGS."
+optional DEFCONFIG file and optional configuration changes from CONFIGS.
+Either NAME, if used, or otherwise BOARD will be part of the package name.
+DESCRIPTION will be appended to the package description."
   (let ((same-arch? (lambda ()
                       (string=? (%current-system)
                                 (gnu-triplet->nix-system triplet)))))
     (package
       (inherit u-boot)
       (name (string-append "u-boot-"
-                           (string-replace-substring (string-downcase board)
-                                                     "_" "-")))
+                           (string-replace-substring
+                            (string-downcase (or name board))
+                            "_" "-")))
+      (description (if description
+                       (string-append (package-description u-boot)
+                                      "\n" description)
+                       (package-description u-boot)))
       (native-inputs
        `(,@(if (not (same-arch?))
              `(("cross-gcc" ,(cross-gcc triplet))
@@ -1088,6 +1101,157 @@ to Novena upstream, does not load u-boot.img from the first partition."))))
       (native-inputs
        `(("firmware" ,arm-trusted-firmware-rk3399)
          ,@(package-native-inputs base))))))
+
+(define*-public (make-preinstalled-u-boot-package board
+                                                  triplet
+                                                  #:key
+                                                  defconfig
+                                                  configs
+                                                  name
+                                                  description
+                                                  (u-boot-file "u-boot.bin"))
+  "Returns a package with a single U-BOOT-FILE for BOARD cross-compiled for
+TRIPLET with the optional DEFCONFIG file and optional configuration changes
+from CONFIGS.  Either NAME, if used, or otherwise BOARD will be part of the
+package name.  DESCRIPTION will be appended to the package description."
+  (let* ((name-suffix "-complete")
+         (u-boot-package (make-u-boot-package board
+                                              triplet
+                                              #:defconfig defconfig
+                                              #:configs configs
+                                              #:name (string-append
+                                                      (or name board)
+                                                      name-suffix)
+                                              #:description description)))
+    (package
+      (name (string-drop-right (package-name u-boot-package)
+                               (string-length name-suffix)))
+      (version (package-version u-boot-package))
+      (source #f)
+      (build-system trivial-build-system)
+      (arguments
+       `(#:builder
+         (begin
+           (let ((out (assoc-ref %outputs "out")))
+             (mkdir out)
+             (symlink (string-append (assoc-ref %build-inputs "u-boot")
+                                   "/libexec/"
+                                   ,u-boot-file)
+                      (string-append out "/" ,u-boot-file))))))
+      (inputs `(("u-boot" ,u-boot-package)))
+      (home-page (package-home-page u-boot-package))
+      (synopsis (package-synopsis u-boot-package))
+      (description (package-description u-boot-package))
+      (license (package-license u-boot-package)))))
+
+(define-public %u-boot-rpi-efi-configs
+  '("CONFIG_OF_EMBED="
+    "CONFIG_OF_BOARD=y"
+    "CONFIG_BOOTDELAY=0"))
+
+(define %u-boot-rpi-description-32-bit
+  "This is a 32-bit build of U-Boot.")
+
+(define %u-boot-rpi-description-64-bit
+  "This is a common 64-bit build of U-Boot for all 64-bit capable Raspberry Pi
+variants.")
+
+(define %u-boot-rpi-efi-description
+  "It allows network booting and uses the device-tree from the firmware,
+allowing the usage of overlays.  It can act as an EFI firmware for the
+grub-efi-netboot-removable-bootloader.")
+
+(define %u-boot-rpi-efi-description-32-bit
+  (string-append %u-boot-rpi-efi-description "  "
+                 %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-0-w
+  (make-preinstalled-u-boot-package
+   "rpi_0_w"
+   "arm-linux-gnueabihf"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi
+  (make-preinstalled-u-boot-package
+   "rpi"
+   "arm-linux-gnueabihf"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-2
+  (make-preinstalled-u-boot-package
+   "rpi_2"
+   "arm-linux-gnueabihf"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-3
+  (make-preinstalled-u-boot-package
+   "rpi_3_32b"
+   "arm-linux-gnueabihf"
+   #:name "rpi-3"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-4
+  (make-preinstalled-u-boot-package
+   "rpi_4_32b"
+   "arm-linux-gnueabihf"
+   #:name "rpi-4"
+   #:description %u-boot-rpi-description-32-bit))
+
+(define-public u-boot-rpi-64
+  (make-preinstalled-u-boot-package
+   "rpi_arm64"
+   "aarch64-linux-gnu"
+   #:name "rpi-64"
+   #:description %u-boot-rpi-description-64-bit))
+
+(define-public u-boot-rpi-0-w-efi
+  (make-preinstalled-u-boot-package
+   "rpi_0_w"
+   "arm-linux-gnueabihf"
+   #:name "rpi-0-w-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-efi
+  (make-preinstalled-u-boot-package
+   "rpi"
+   "arm-linux-gnueabihf"
+   #:name "rpi-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-2-efi
+  (make-preinstalled-u-boot-package
+   "rpi_2"
+   "arm-linux-gnueabihf"
+   #:name "rpi-2-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-3-efi
+  (make-preinstalled-u-boot-package
+   "rpi_3_32b"
+   "arm-linux-gnueabihf"
+   #:name "rpi-3-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-4-efi
+  (make-preinstalled-u-boot-package
+   "rpi_4_32b"
+   "arm-linux-gnueabihf"
+   #:name "rpi-4-efi"
+   #:configs %u-boot-rpi-efi-configs
+   #:description %u-boot-rpi-efi-description-32-bit))
+
+(define-public u-boot-rpi-efi-64
+  (make-preinstalled-u-boot-package
+   "rpi_arm64"
+   "aarch64-linux-gnu"
+   #:name "rpi-efi-64"
+   #:configs %u-boot-rpi-efi-configs
+   #:description (string-append %u-boot-rpi-efi-description "  "
+                                %u-boot-rpi-description-64-bit)))
 
 (define-public vboot-utils
   (package
