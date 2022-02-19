@@ -16654,8 +16654,33 @@ the Debug trait manually.")
 thread.")
     (license license:mpl2.0)))
 
+(define-public rust-deflate-1
+  (package
+    (name "rust-deflate")
+    (version "1.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "deflate" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0bs319wa9wl7pn9j6jrrxg1gaqbak581rkx210cbix0qyljpwvy8"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-adler32" ,rust-adler32-1)
+         ("rust-gzip-header" ,rust-gzip-header-1))))
+    (home-page "https://github.com/image-rs/deflate-rs")
+    (synopsis "DEFLATE, zlib and gzip encoder written in rust")
+    (description "This package provides a DEFLATE, zlib and gzip encoder
+written in rust.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-deflate-0.9
   (package
+    (inherit rust-deflate-1)
     (name "rust-deflate")
     (version "0.9.1")
     (source
@@ -16673,12 +16698,7 @@ thread.")
        (("rust-adler32" ,rust-adler32-1)
         ("rust-gzip-header" ,rust-gzip-header-0.3))
        #:cargo-development-inputs
-       (("rust-miniz-oxide" ,rust-miniz-oxide-0.3))))
-    (home-page "https://github.com/image-rs/deflate-rs")
-    (synopsis "DEFLATE, zlib and gzip encoder written in rust")
-    (description "This package provides a DEFLATE, zlib and gzip encoder
-written in rust.")
-    (license (list license:expat license:asl2.0))))
+       (("rust-miniz-oxide" ,rust-miniz-oxide-0.3))))))
 
 (define-public rust-deflate-0.8
   (package
