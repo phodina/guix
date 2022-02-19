@@ -1843,7 +1843,7 @@ checksum, used in the zlib compression format.")
 (define-public rust-adler32-1
   (package
     (name "rust-adler32")
-    (version "1.1.0")
+    (version "1.2.0")
     (source
       (origin
         (method url-fetch)
@@ -1852,7 +1852,7 @@ checksum, used in the zlib compression format.")
           (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
-          "0bgks405vz823bphgwhj4l9h6vpfh900s0phfk4qqijyh9xhfysn"))))
+          "0d7jq7jsjyhsgbhnfq5fvrlh9j0i9g1fqrl2735ibv5f75yjgqda"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
