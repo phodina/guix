@@ -71498,23 +71498,23 @@ library.")
     (description "proc-macros for zbus")
     (license license:expat)))
 
-(define-public rust-zerocopy-0.3
+(define-public rust-zerocopy-0.6
   (package
     (name "rust-zerocopy")
-    (version "0.3.1")
+    (version "0.6.1")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "zerocopy" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "00nbb6yal8f74bkpn7msjcnhisimw8s5777a63206rfnn3br45zh"))))
+        (base32 "0dpj4nd9v56wy93ahjkp95znjzj91waqvidqch8gxwdwq661hbrk"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
        (("rust-byteorder" ,rust-byteorder-1)
-        ("rust-zerocopy-derive" ,rust-zerocopy-derive-0.2))))
+        ("rust-zerocopy-derive" ,rust-zerocopy-derive-0.3))))
     (home-page "https://fuchsia.googlesource.com/fuchsia/+/HEAD/src/lib/zerocopy")
     (synopsis "Utilities for zero-copy parsing and serialization")
     (description
