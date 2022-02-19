@@ -615,6 +615,35 @@ and iOS.")
 conversion.")
     (license license:expat)))
 
+(define-public rust-exr-1
+  (package
+    (name "rust-exr")
+    (version "1.4.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "exr" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0002bzfwah2vkpd13b0jzkbfr37x1c7z1wasalncnrd4i6adpfnl"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-bit-field" ,rust-bit-field-0.10)
+         ("rust-deflate" ,rust-deflate-1)
+         ("rust-flume" ,rust-flume-0.10)
+         ("rust-half" ,rust-half-1)
+         ("rust-inflate" ,rust-inflate-0.4)
+         ("rust-lebe" ,rust-lebe-0.5)
+         ("rust-smallvec" ,rust-smallvec-1)
+         ("rust-threadpool" ,rust-threadpool-1))))
+    (home-page "https://github.com/johannesvollmer/exrs")
+    (synopsis "Read and write OpenEXR files without any unsafe code")
+    (description "Read and write OpenEXR files without any unsafe code")
+    (license license:bsd-3)))
+
 (define-public rust-euclid-0.22
   (package
     (name "rust-euclid")
