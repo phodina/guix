@@ -68440,23 +68440,23 @@ updated when the crate version changes.")
         ("rust-toml" ,rust-toml-0.4)
         ("rust-url" ,rust-url-1))))))
 
-(define-public rust-versions-3
+(define-public rust-versions-4
   (package
     (name "rust-versions")
-    (version "3.0.2")
+    (version "4.0.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "versions" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1ffjw6mbsm3nrgg03b76jfc41lg44yz1pyqmv6zj37q88i6y4wri"))))
+        (base32 "1m04qvig0av1fz36082kyaln5rlndzrj70g0az6f3pck2wanq9ym"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
        (("rust-itertools" ,rust-itertools-0.10)
-        ("rust-nom" ,rust-nom-6)
+        ("rust-nom" ,rust-nom-7)
         ("rust-serde" ,rust-serde-1))))
     (home-page "https://github.com/fosskers/rs-versions")
     (synopsis "Library for parsing and comparing software version numbers")
