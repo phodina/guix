@@ -12,6 +12,7 @@
 ;;; Copyright © 2019 Pierre-Moana Levesque <pierre.moana.levesque@gmail.com>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2021 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -40,6 +41,7 @@
   #:use-module (guix build-system emacs)
   #:use-module (gnu packages)
   #:use-module (gnu packages backup)
+  #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
@@ -48,12 +50,55 @@
   #:use-module (gnu packages kde-frameworks)
   #:use-module (gnu packages libevent)
   #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages python)
+  #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages serialization)
   #:use-module (gnu packages sphinx)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages xml)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1))
+
+(define-public catkin
+    (package
+      (name "catkin")
+      (version "0.8.10")
+      (source
+       (origin
+         (method git-fetch)
+         (uri
+          (git-reference
+           (url "https://github.com/ros/catkin")
+           (commit version)))
+         (file-name
+          (git-file-name name version))
+         (modules '((guix build utils)
+                    (ice-9 ftw)
+                    (srfi srfi-1)))
+         (snippet
+          `(begin
+             (delete-file-recursively "cmake/em")))
+         (sha256
+          (base32
+		  "08jj9i3cxh56iphjbvfwk7axrs1z0lpmsrp3qg0ry2n4xq6xwmda"))))
+      (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f
+	   #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'set-python-path
+           (lambda* _
+               (setenv "PYTHONPATH"
+                       (string-append (getcwd) "/python:"
+                                      (getenv
+									  "GUIX_PYTHONPATH"))))))))
+	  (native-inputs (list googletest python-nose))
+	  (inputs (list python python-empy))
+      (synopsis "CMake-based build system for ROS")
+      (description "This package provides a CMake-based build system that is
+	  used to build all packages in ROS.")
+      (home-page "https://github.com/ros/catkin")
+      (license license:bsd-3)))
 
 (define-public cmake-shared
   (let ((commit "8122f2b96c8da38ea41b653cf69958e75fe2129d")
