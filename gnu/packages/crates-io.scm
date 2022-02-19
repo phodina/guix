@@ -19987,22 +19987,22 @@ implement enum_primitive.")
 convert enum to u8 slice ref.")
     (license license:bsd-3)))
 
-(define-public rust-enumflags2-0.6
+(define-public rust-enumflags2-0.7
   (package
     (name "rust-enumflags2")
-    (version "0.6.4")
+    (version "0.7.3")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "enumflags2" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "182xd6cxxmadx1axnz6x73d12pzgwkc712zq2lxd4z1k48lxij43"))))
+        (base32 "1vsdy8aw6cqm39z0akv7kaz0nfhdxzfvwg0qrw8l3y5kasq90p52"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-enumflags2-derive" ,rust-enumflags2-derive-0.6)
+       (("rust-enumflags2-derive" ,rust-enumflags2-derive-0.7)
         ("rust-serde" ,rust-serde-1))))
     (home-page "https://github.com/NieDzejkob/enumflags2")
     (synopsis "Enum-based bit flags")
