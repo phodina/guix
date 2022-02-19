@@ -20009,17 +20009,17 @@ convert enum to u8 slice ref.")
     (description "Enumflags2 is an Enum-based bit flags library.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-enumflags2-derive-0.6
+(define-public rust-enumflags2-derive-0.7
   (package
     (name "rust-enumflags2-derive")
-    (version "0.6.4")
+    (version "0.7.3")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "enumflags2_derive" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1kkcwi4n76bi1c16ms00dyk4d393gdf29kpr4k9zsn5z7m7fjvll"))))
+        (base32 "194d20akzhyraj2dla4axcifyji6x5xwcp8jza26zaybjsacfkhl"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
