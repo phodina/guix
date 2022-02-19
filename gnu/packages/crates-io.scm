@@ -67767,17 +67767,17 @@ type-safe zero-cost dimensional analysis.")
         ("rust-rustc-test" ,rust-rustc-test-0.3)
         ("rust-serde-json" ,rust-serde-json-1))))))
 
-(define-public rust-urlencoding-1
+(define-public rust-urlencoding-2
   (package
     (name "rust-urlencoding")
-    (version "1.1.1")
+    (version "2.1.1")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "urlencoding" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "14sm5c8idb5jzib8dwf85p5yhd65vxjh946p80p49d2j6fsjw8y9"))))
+        (base32 "08cq5w84imxrpyifhmx719026dzjih29gdq0ncsb1fcs08qhkfb8"))))
     (build-system cargo-build-system)
     (arguments `(#:skip-build? #t))
     (home-page "https://lib.rs/urlencoding")
@@ -68317,6 +68317,7 @@ designed for reexporting.")
     (description
      "Generate version related functions.")
     (license (list license:expat license:asl2.0))))
+
 
 (define-public rust-version-check-0.9
   (package
