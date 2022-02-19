@@ -22319,7 +22319,7 @@ crate.")
 (define-public rust-flume-0.10
   (package
     (name "rust-flume")
-    (version "0.10.0")
+    (version "0.10.11")
     (source
      (origin
        (method url-fetch)
@@ -22333,8 +22333,9 @@ crate.")
        #:cargo-inputs
        (("rust-futures-core" ,rust-futures-core-0.3)
         ("rust-futures-sink" ,rust-futures-sink-0.3)
-        ("rust-nanorand" ,rust-nanorand-0.5)
-        ("rust-spinning-top" ,rust-spinning-top-0.2))
+        ("rust-nanorand" ,rust-nanorand-0.6)
+        ("rust-spin" ,rust-spin-0.9)
+        ("rust-pin-project" ,rust-pin-project-1))
        #:cargo-development-inputs
        (;("rust-async-std" ,rust-async-std-1)
         ("rust-criterion" ,rust-criterion-0.3)
