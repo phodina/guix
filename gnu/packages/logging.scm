@@ -8,6 +8,7 @@
 ;;; Copyright © 2019 Meiyo Peng <meiyo@riseup.net>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2021 Guillaume Le Vaillant <glv@posteo.net>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37,6 +38,7 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages c)
+  #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages cyrus-sasl)
@@ -88,6 +90,28 @@ IDSA and other destinations.  It is modeled after the Log4j Java library,
 staying as close to their API as is reasonable.")
     (home-page "http://log4cpp.sourceforge.net/")
     (license license:lgpl2.1+)))
+
+(define-public easylogging++
+  (package
+    (name "easylogging++")
+    (version "9.97.0")
+    (home-page "https://github.com/amrayn/easyloggingpp")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference (url home-page)
+                                  (commit (string-append "v" version))))
+              (sha256
+               (base32
+                "12rrmhdwlgivsm3lkiyv7n44lvcb4y6bmwq0lypwnw7fr5jacmdh"))
+              (file-name (git-file-name name version))))
+    (build-system cmake-build-system)
+	(arguments
+	`(#:configure-flags (list "-Dtest=ON")))
+	(native-inputs (list googletest))
+    (synopsis "Powerful, extendable, light-weight type safe logging library")
+    (description
+     "")
+    (license license:expat)))
 
 (define-public glog
   (package
