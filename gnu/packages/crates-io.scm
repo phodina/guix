@@ -25899,10 +25899,10 @@ support.")
         ("rust-quote" ,rust-quote-1)
         ("rust-syn" ,rust-syn-1))))))
 
-(define-public rust-gzip-header-0.3
+(define-public rust-gzip-header-1
   (package
     (name "rust-gzip-header")
-    (version "0.3.0")
+    (version "1.0.0")
     (source
      (origin
        (method url-fetch)
@@ -25911,7 +25911,7 @@ support.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0fg6vm8sgsm69szwqyz7abfbyziv6pv0jkcailimlamvsfrzwc81"))))
+         "18lm2y96mahkmcd76pzyam2sl3v6lsl9mn8ajri9l0p6j9xm5k4m"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
