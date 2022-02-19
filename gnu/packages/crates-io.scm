@@ -4234,14 +4234,14 @@ Rust.")
 (define-public rust-async-channel-1
   (package
     (name "rust-async-channel")
-    (version "1.5.1")
+    (version "1.6.1")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "async-channel" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1ffn42ig82az8ndgjb545imifarcavwxs9dff6psbdkdjj1hsx2r"))))
+        (base32 "06b3sq2hd8qwl2xxlc4qalg6xw3l9b41w4sym9g0q70mf93dc511"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
