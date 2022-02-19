@@ -13913,7 +13913,7 @@ final xor value.  It has many built-in CRC functions.")
 (define-public rust-crc32fast-1
   (package
     (name "rust-crc32fast")
-    (version "1.2.0")
+    (version "1.3.2")
     (source
      (origin
        (method url-fetch)
@@ -13922,7 +13922,7 @@ final xor value.  It has many built-in CRC functions.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1c9dhkvf3brrzzplcijaywxi2w8wv5578i0ryhcm7x8dmzi5s4ms"))))
+         "03c8f29yx293yf43xar946xbls1g60c207m9drf8ilqhr25vsh5m"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
