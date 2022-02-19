@@ -71156,6 +71156,30 @@ library.")
     (description "This package provides an implementation of zbase32.")
     (license license:lgpl3+)))
 
+(define-public rust-zbus-names-2
+  (package
+    (name "rust-zbus-names")
+    (version "2.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "zbus_names" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1qdpqkyw3nzr927n8df4s6v692mqnyqjgk1hbm8as7dphz7wvps5"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-serde" ,rust-serde-1)
+         ("rust-static-assertions" ,rust-static-assertions-1)
+         ("rust-zvariant" ,rust-zvariant-3))))
+    (home-page "https://gitlab.freedesktop.org/dbus/zbus/")
+    (synopsis "A collection of D-Bus bus names types")
+    (description "This package provides a collection of D-Bus bus names types")
+    (license license:expat)))
+
 (define-public rust-zerocopy-0.3
   (package
     (name "rust-zerocopy")
