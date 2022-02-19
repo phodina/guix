@@ -34971,10 +34971,10 @@ IOCP and Async I/O abstractions.")
        #:cargo-development-inputs
        (("rust-rand" ,rust-rand-0.3))))))
 
-(define-public rust-mockall-0.10
+(define-public rust-mockall-0.11
   (package
     (name "rust-mockall")
-    (version "0.10.2")
+    (version "0.11.0")
     (source
      (origin
        (method url-fetch)
@@ -34987,10 +34987,10 @@ IOCP and Async I/O abstractions.")
      `(#:skip-build? #t
        #:cargo-inputs
        (("rust-cfg-if" ,rust-cfg-if-1)
-        ("rust-downcast" ,rust-downcast-0.10)
+        ("rust-downcast" ,rust-downcast-0.11)
         ("rust-fragile" ,rust-fragile-1)
         ("rust-lazy-static" ,rust-lazy-static-1)
-        ("rust-mockall-derive" ,rust-mockall-derive-0.10)
+        ("rust-mockall-derive" ,rust-mockall-derive-0.11)
         ("rust-predicates" ,rust-predicates-1)
         ("rust-predicates-tree" ,rust-predicates-tree-1))
        #:cargo-development-inputs
