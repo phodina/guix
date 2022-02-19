@@ -58983,8 +58983,35 @@ easier in Rust.")
      `(#:cargo-inputs
        (("rust-strum-macros" ,rust-strum-macros-0.18))))))
 
+(define-public rust-strum-macros-0.22
+  (package
+    (name "rust-strum-macros")
+    (version "0.22.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "strum_macros" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1yz9ia03p3xbndhjbcmxjifh1r43cchynzxcqx23g7jliffpk7rk"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-heck" ,rust-heck-0.3)
+         ("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/Peternator7/strum")
+    (synopsis "Set of macros for working with enums and strings")
+    (description
+     "This crate provides helpful macros for working with enums and strings.")
+    (license license:expat)))
+
 (define-public rust-strum-macros-0.21
   (package
+    (inherit rust-strum-macros-0.22)
     (name "rust-strum-macros")
     (version "0.21.1")
     (source
@@ -58994,19 +59021,13 @@ easier in Rust.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "1v55b1in7dn07s6vxr8dajqpvxkxjbfq6qamnjgcbnq9x3pawsnh"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
        (("rust-heck" ,rust-heck-0.3)
         ("rust-proc-macro2" ,rust-proc-macro2-1)
         ("rust-quote" ,rust-quote-1)
-        ("rust-syn" ,rust-syn-1))))
-    (home-page "https://github.com/Peternator7/strum")
-    (synopsis "Set of macros for working with enums and strings")
-    (description
-     "This crate provides helpful macros for working with enums and strings.")
-    (license license:expat)))
+        ("rust-syn" ,rust-syn-1)))))
 
 (define-public rust-strum-macros-0.20
   (package
