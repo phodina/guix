@@ -1943,8 +1943,35 @@ interactive applications.")
      "This package provides a library for window abstraction.")
     (license license:expat)))
 
+(define-public rust-png-0.17
+  (package
+    (name "rust-png")
+    (version "0.17.3")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "png" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "14zkc73d1y51h5kp1vqdra9dpx6b1s8zal9sqf7cj5vv2y11i3wf"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-bitflags" ,rust-bitflags-1)
+         ("rust-crc32fast" ,rust-crc32fast-1)
+         ("rust-deflate" ,rust-deflate-1)
+         ("rust-miniz-oxide" ,rust-miniz-oxide-0.5))))
+    (home-page "https://github.com/image-rs/image-png.git")
+    (synopsis "PNG decoding and encoding library in pure Rust")
+    (description
+     "This package is a PNG decoding and encoding library in pure Rust.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-png-0.16
   (package
+    (inherit rust-png-0.17)
     (name "rust-png")
     (version "0.16.8")
     (source
@@ -1954,19 +1981,13 @@ interactive applications.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "1ipl44q3vy4kvx6j296vk7d4v8gvcg203lrkvvixwixq1j98fciw"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
        (("rust-bitflags" ,rust-bitflags-1)
         ("rust-crc32fast" ,rust-crc32fast-1)
         ("rust-deflate" ,rust-deflate-0.8)
-        ("rust-miniz-oxide" ,rust-miniz-oxide-0.3))))
-    (home-page "https://github.com/image-rs/image-png.git")
-    (synopsis "PNG decoding and encoding library in pure Rust")
-    (description
-     "This package is a PNG decoding and encoding library in pure Rust.")
-    (license (list license:expat license:asl2.0))))
+        ("rust-miniz-oxide" ,rust-miniz-oxide-0.3))))))
 
 (define-public rust-png-0.15
   (package
