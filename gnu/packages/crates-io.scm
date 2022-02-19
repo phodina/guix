@@ -71522,17 +71522,17 @@ library.")
 serialization.")
     (license license:bsd-3)))
 
-(define-public rust-zerocopy-derive-0.2
+(define-public rust-zerocopy-derive-0.3
   (package
     (name "rust-zerocopy-derive")
-    (version "0.2.1")
+    (version "0.3.1")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "zerocopy-derive" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1594sf9wwgpbavl1hb1avyz6n7km9apm8afc03x9y8h3spk3k76w"))))
+        (base32 "17rab2i1vwmxcr7c6r6xv55nhy41wlay0lpfcyl4vqpgh8mwiyx0"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
