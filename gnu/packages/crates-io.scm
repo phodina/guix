@@ -56848,7 +56848,7 @@ I/O programming.")
 (define-public rust-smallvec-1
   (package
     (name "rust-smallvec")
-    (version "1.6.1")
+    (version "1.8.0")
     (source
      (origin
        (method url-fetch)
@@ -56857,7 +56857,7 @@ I/O programming.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0kk08axr0ybfbjzk65a41k84mb6sfhyajmfndaka9igkx34kf3zy"))))
+         "10zf4fn63p2d6sx8qap3jvyarcfw563308x3431hd4c34r35gpgj"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
