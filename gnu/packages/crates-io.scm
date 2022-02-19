@@ -71203,6 +71203,58 @@ library.")
     (description "This package provides an implementation of zbase32.")
     (license license:lgpl3+)))
 
+(define-public rust-zbus-2
+  (package
+    (name "rust-zbus")
+    (version "2.1.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "zbus" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "16jy4z8qbq9y32c0vqmxiqiyd2jgr6p455vin946mqlj8lynzf3v"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-async-broadcast" ,rust-async-broadcast-0.3)
+         ("rust-async-channel" ,rust-async-channel-1)
+         ("rust-async-executor" ,rust-async-executor-1)
+         ("rust-async-io" ,rust-async-io-1)
+         ("rust-async-lock" ,rust-async-lock-2)
+         ("rust-async-recursion" ,rust-async-recursion-0.3)
+         ("rust-async-task" ,rust-async-task-4)
+         ("rust-async-trait" ,rust-async-trait-0.1)
+         ("rust-byteorder" ,rust-byteorder-1)
+         ("rust-derivative" ,rust-derivative-2)
+         ("rust-enumflags2" ,rust-enumflags2-0.7)
+         ("rust-event-listener" ,rust-event-listener-2)
+         ("rust-futures-core" ,rust-futures-core-0.3)
+         ("rust-futures-sink" ,rust-futures-sink-0.3)
+         ("rust-futures-util" ,rust-futures-util-0.3)
+         ("rust-hex" ,rust-hex-0.4)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-nix" ,rust-nix-0.23)
+         ("rust-once-cell" ,rust-once-cell-1)
+         ("rust-ordered-stream" ,rust-ordered-stream-0.0.1)
+         ("rust-rand" ,rust-rand-0.8)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-serde-xml-rs" ,rust-serde-xml-rs-0.4)
+         ("rust-serde-repr" ,rust-serde-repr-0.1)
+         ("rust-sha1" ,rust-sha1-0.6)
+         ("rust-static-assertions" ,rust-static-assertions-1)
+         ("rust-tokio" ,rust-tokio-1)
+         ("rust-winapi" ,rust-winapi-0.3)
+         ("rust-zbus-macros" ,rust-zbus-macros-2)
+         ("rust-zbus-names" ,rust-zbus-names-2)
+         ("rust-zvariant" ,rust-zvariant-3))))
+    (home-page "https://gitlab.freedesktop.org/dbus/zbus/")
+    (synopsis "API for D-Bus communication")
+    (description "API for D-Bus communication")
+    (license license:expat)))
+
 (define-public rust-zbus-names-2
   (package
     (name "rust-zbus-names")
