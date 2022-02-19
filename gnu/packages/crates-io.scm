@@ -35251,17 +35251,17 @@ checking.")
         ("rust-serde-json" ,rust-serde-json-1)
         ("rust-thiserror" ,rust-thiserror-1))))))
 
-(define-public rust-mp4parse-0.11
+(define-public rust-mp4parse-0.12
   (package
     (name "rust-mp4parse")
-    (version "0.11.6")
+    (version "0.12.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "mp4parse" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0rd35ml4mm4xmz3n95wn5b4sgrj80q9i300759hzx1wiy2rrgsk0"))))
+        (base32 "1ppqv60qiyrnbb996gb1sik08c0j2i317llv3rrcwb1cjg3bdlk7"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
