@@ -62343,7 +62343,7 @@ contention between workers when delivering jobs.")
 (define-public rust-threadpool-1
   (package
     (name "rust-threadpool")
-    (version "1.7.1")
+    (version "1.8.1")
     (source
       (origin
         (method url-fetch)
@@ -62351,7 +62351,7 @@ contention between workers when delivering jobs.")
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
-          "0rd89n1q7vy47w4c32cnynibffv9kj3jy3dwr0536n9lbw5ckw72"))))
+          "1amgfyzvynbm8pacniivzq9r0fh3chhs7kijic81j76l6c5ycl6h"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
