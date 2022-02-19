@@ -69128,10 +69128,10 @@ result.")
     (description "Warp is a composable, web server framework.")
     (license license:expat)))
 
-(define-public rust-wasi-0.9
+(define-public rust-wasi-0.10
   (package
     (name "rust-wasi")
-    (version "0.9.0+wasi-snapshot-preview1")
+    (version "0.10.0+wasi-snapshot-preview1")
     (source
      (origin
        (method url-fetch)
@@ -69140,7 +69140,7 @@ result.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "06g5v3vrdapfzvfq662cij7v8a1flwr2my45nnncdv2galrdzkfc"))))
+         "03iw4kid8y2nmshd793bsnpp2nqp24aak1rpak3v0w7ilf2f78j6"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
