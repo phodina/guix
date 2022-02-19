@@ -30376,6 +30376,25 @@ kernel32.")
     (description "This package provides a kqueue interface for BSDs.")
     (license license:expat)))
 
+(define-public rust-kstring-1
+  (package
+    (name "rust-kstring")
+    (version "1.0.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "kstring" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "09j5xb3rnjd3kmc2v667wzsc4mz4c1hl1vkzszbj30fyxb60qccb"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t #:cargo-inputs (("rust-serde" ,rust-serde-1))))
+    (home-page "https://github.com/cobalt-org/kstring")
+    (synopsis "Key String: optimized for map keys")
+    (description "Key String: optimized for map keys")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-kv-log-macro-1
   (package
     (name "rust-kv-log-macro")
