@@ -55970,6 +55970,31 @@ CPUs, as well as raw interfaces to platform-specific instructions.
        #:cargo-development-inputs
        (("rust-cfg-if" ,rust-cfg-if-0.1))))))
 
+(define-public rust-adler-1
+  (package
+    (name "rust-adler")
+    (version "1.0.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "adler" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1zim79cvzd5yrkzl3nyfx0avijwgk9fqv3yrscdy1cc79ih02qpj"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-compiler-builtins" ,rust-compiler-builtins-0.1)
+         ("rust-rustc-std-workspace-core" ,rust-rustc-std-workspace-core-1))))
+    (home-page "https://github.com/jonas-schievink/adler.git")
+    (synopsis "A simple clean-room implementation of the Adler-32 checksum")
+    (description
+      "This package provides a simple clean-room implementation of the Adler-32
+checksum")
+    (license (list license:bsd-0 license:expat license:asl2.0))))
+
 (define-public rust-simd-adler32-0.3
   (package
     (name "rust-simd-adler32")
