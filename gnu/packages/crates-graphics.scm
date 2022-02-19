@@ -2297,8 +2297,34 @@ applications.")
     (inputs
      (list wayland))))
 
+(define-public rust-tiff-0.7
+  (package
+    (name "rust-tiff")
+    (version "0.7.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "tiff" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1cp0ivmahzi2l57d5rjjbcgff71na1na3x68vwwwxdlck6760iq2"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-flate2" ,rust-flate2-1)
+         ("rust-jpeg-decoder" ,rust-jpeg-decoder-0.1)
+         ("rust-weezl" ,rust-weezl-0.1))))
+    (home-page "https://github.com/image-rs/image-tiff")
+    (synopsis "TIFF decoding and encoding library in pure Rust")
+    (description
+     "This package provides TIFF decoding and encoding library in pure Rust.")
+    (license license:expat)))
+
 (define-public rust-tiff-0.6
   (package
+    (inherit rust-tiff-0.7)
     (name "rust-tiff")
     (version "0.6.1")
     (source
@@ -2308,18 +2334,12 @@ applications.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "0ds48vs919ccxa3fv1www7788pzkvpg434ilqkq7sjb5dmqg8lws"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
        (("rust-jpeg-decoder" ,rust-jpeg-decoder-0.1)
         ("rust-miniz-oxide" ,rust-miniz-oxide-0.4)
-        ("rust-weezl" ,rust-weezl-0.1))))
-    (home-page "https://github.com/image-rs/image-tiff")
-    (synopsis "TIFF decoding and encoding library in pure Rust")
-    (description
-     "This package provides TIFF decoding and encoding library in pure Rust.")
-    (license license:expat)))
+        ("rust-weezl" ,rust-weezl-0.1)))))
 
 (define-public rust-tiff-0.5
   (package
