@@ -2054,21 +2054,21 @@ interactive applications.")
         ("rust-glob" ,rust-glob-0.2)
         ("rust-term" ,rust-term-0.4))))))
 
-(define-public rust-ravif-0.6
+(define-public rust-ravif-0.8
   (package
     (name "rust-ravif")
-    (version "0.6.4")
+    (version "0.8.9")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "ravif" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1gyc7w1fz3qdk95cdpkj185dm6lskxfp329xm69waxc565fcz9rx"))))
+        (base32 "03rzxy32gwb5j83yafnbkv6a7fwjam965ipigwinwnnbfq4wrmqy"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-avif-serialize" ,rust-avif-serialize-0.6)
+       (("rust-avif-serialize" ,rust-avif-serialize-0.7)
         ("rust-imgref" ,rust-imgref-1)
         ("rust-loop9" ,rust-loop9-0.1)
         ("rust-num-cpus" ,rust-num-cpus-1)
