@@ -19428,6 +19428,27 @@ Emacs' support for dynamic modules.")
      "This crate provides an implementation of RFC 5322 email messages.")
     (license license:expat)))
 
+(define-public rust-lebe-0.5
+  (package
+    (name "rust-lebe")
+    (version "0.5.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "lebe" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1zr6g3d35h349j0dsx6722lrjws00x2d8z0sy5p9wxdhimlivzby"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://github.com/johannesvollmer/lebe")
+    (synopsis
+      "Tiny, dead simple, high performance endianness conversions with a generic API")
+    (description
+      "Tiny, dead simple, high performance endianness conversions with a generic API")
+	;; TODO: Not really sure
+    (license license:expat)))
+
 (define-public rust-lettre-email-0.9
   (package
     (name "rust-lettre-email")
