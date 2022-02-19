@@ -279,19 +279,19 @@ untrusted data.")
 (define-public rust-avif-serialize-0.6
   (package
     (name "rust-avif-serialize")
-    (version "0.6.5")
+    (version "0.7.5")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "avif-serialize" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "130wq838lslkcqcp2kjci7q3aq9qpir07pvxndc81xqbn63wvdjg"))))
+        (base32 "16fnqqgnjlrw5cin8zq6hrwaqpgzylyq9aivcwgb7cf3jxr8l0dw"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-arrayvec" ,rust-arrayvec-0.5))))
+       (("rust-arrayvec" ,rust-arrayvec-0.7))))
     (home-page "https://lib.rs/avif-serialize")
     (synopsis "Writer for AVIF header structure (MPEG/HEIF/MIAF/ISO-BMFF)")
     (description
