@@ -4231,6 +4231,30 @@ objects are the same.")
 Rust.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-async-broadcast-0.3
+  (package
+    (name "rust-async-broadcast")
+    (version "0.3.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "async-broadcast" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0fs7zb66aqqmaja3vryymmmiz0x035gppja6p0php3i1l6c2cqlh"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-easy-parallel" ,rust-easy-parallel-3)
+         ("rust-event-listener" ,rust-event-listener-2)
+         ("rust-futures-core" ,rust-futures-core-0.3))))
+    (home-page "https://github.com/smol-rs/async-broadcast")
+    (synopsis "Async broadcast channels")
+    (description "Async broadcast channels")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-async-channel-1
   (package
     (name "rust-async-channel")
