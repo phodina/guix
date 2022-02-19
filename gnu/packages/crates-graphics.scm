@@ -1379,10 +1379,10 @@ filters and decoders for the most common image formats.")
 pixel buffers with width, height and stride.")
     (license license:cc0)))
 
-(define-public rust-jpeg-decoder-0.1
+(define-public rust-jpeg-decoder-0.2
   (package
     (name "rust-jpeg-decoder")
-    (version "0.1.22")
+    (version "0.2.2")
     (source
      (origin
        (method url-fetch)
@@ -1390,7 +1390,7 @@ pixel buffers with width, height and stride.")
        (file-name
         (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1wnh0bmmswpgwhgmlizz545x8334nlbmkq8imy9k224ri3am7792"))))
+        (base32 "1wf6vzgcjxlz3wzr1bv4qr81fxqz4ds9mxc78l3h08afss1b0pqh"))))
     (build-system cargo-build-system)
     (arguments
      `(#:tests? #f      ; Some test files missing.
