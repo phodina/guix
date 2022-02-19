@@ -35007,10 +35007,10 @@ IOCP and Async I/O abstractions.")
 Rust.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-mockall-derive-0.10
+(define-public rust-mockall-derive-0.11
   (package
     (name "rust-mockall-derive")
-    (version "0.10.2")
+    (version "0.11.0")
     (source
      (origin
        (method url-fetch)
@@ -35018,7 +35018,7 @@ Rust.")
        (file-name
         (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0cwhcfsc16b8p4yrsrxnhfxfdn0n89cmjja13wb6kxik8hhmpqp7"))))
+        (base32 "0sxavgqr9m6xh68fibfrh7jb4vfw9j86xqi14bvs7pm012121vvr"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
