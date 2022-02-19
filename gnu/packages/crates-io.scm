@@ -67283,7 +67283,7 @@ described in Unicode Standard Annex #15.")
 (define-public rust-unicode-segmentation-1
   (package
     (name "rust-unicode-segmentation")
-    (version "1.8.0")
+    (version "1.9.0")
     (source
      (origin
        (method url-fetch)
@@ -67291,7 +67291,7 @@ described in Unicode Standard Annex #15.")
        (file-name
         (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0nrqfgxkh00wb5dhl0874z20789i2yjimp6ndgh4ay4yjjd895c8"))))
+        (base32 "16gxxda9aya0arcqs9aa9lb31b3i54i34dmyqi6j5xkpszsj123y"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-development-inputs
