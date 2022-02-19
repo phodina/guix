@@ -34,6 +34,7 @@
 ;;; Copyright © 2022 Aleksandr Vityazev <avityazev@posteo.org>
 ;;; Copyright © 2022 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2022 Jai Vetrivelan <jaivetrivelan@gmail.com>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -243,6 +244,37 @@ XMPP-based sessions.")
 Its design goals are simplicity and stability.")
     (home-page "https://psi-im.org")
     (license license:gpl2+)))
+
+(define-public ros-comm
+  (package
+    (name "ros-comm")
+    (version "1.14.13")
+    (source
+     (origin
+       (method git-fetch)
+       (uri
+        (git-reference
+		(url "https://github.com/ros/ros_comm")
+        (commit version )))
+       (sha256
+        (base32 "0dxmm1d1zr0pfs51lba732ipm6hm2357jlfb934lvarzsh7karri"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(;#:tests? #f                      ; No target
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'enter-cmake-dir
+           (lambda _
+		    (chdir "ros_comm"))))))
+    (native-inputs
+     (list catkin))
+    (synopsis "ROS communications-related package")
+    (description "This package provides ROS communication related graph
+	introspection tools
+	(rostopic, rosnode, rosservice, rosparam) and core client
+	libraries (roscpp, rospy, roslisp)")
+    (home-page "http://wiki.ros.org/ros_comm")
+    (license license:lgpl2.1+)))
 
 (define-public libgnt
   (package
