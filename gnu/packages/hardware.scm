@@ -770,29 +770,40 @@ supported by the Linux kernel.")
     (license license:gpl3+)))
 
 (define-public rkdeveloptool
-  (let ((commit "6e92ebcf8b1812da02663494a68972f956e490d3")
-        (revision "0"))
+  (let ((commit "46bb4c073624226c3f05b37b9ecc50bbcf543f5a")
+        (revision "1"))
     (package
       (name "rkdeveloptool")
-      (version (git-version "1.3" revision commit))
+      (version (git-version "1.32" revision commit))
       (source
        (origin
          (method git-fetch)
          (uri (git-reference
                (url "https://github.com/rockchip-linux/rkdeveloptool")
                (commit commit)))
+         ;; https://github.com/rockchip-linux/rkdeveloptool/pull/62
+         (patches (search-patches "rkdeveloptool-fix-format-truncation.patch"))
          (file-name (git-file-name name version))
          (sha256
-          (base32 "0zwrkqfxd671iy69v3q0844gfdpm1yk51i9qh2rqc969bd8glxga"))))
+          (base32 "0kb2ylsrqqrdf4np66yxmk96kdc5g8nvjx13gifpm5rshv5770bq"))))
       (build-system gnu-build-system)
+	  (arguments
+	  `(#:phases
+	   (modify-phases %standard-phases
+	    (add-after 'install 'install-udev-rules
+		 (lambda* (#:key outputs #:allow-other-keys)
+		  (let ((udev (string-append (assoc-ref outputs "out")
+		  "/lib/udev/rules.d")))
+		  (mkdir-p udev)
+		  (install-file "99-rk-rockusb.rules" udev)))))))
       (native-inputs
        (list autoconf automake pkg-config))
       (inputs
        (list libusb))
       (home-page "https://github.com/rockchip-linux/rkdeveloptool")
-      (synopsis "Read from and write to RockChicp devices over USB")
+      (synopsis "Read/write to rockchip devices over USB")
       (description
-       "Rkdeveloptool can read from and write to RockChip devices over USB, such
+       "Rkdeveloptool can read from and write to rockchip devices over USB, such
 as the Pinebook Pro.")
       (license license:gpl2+))))
 
