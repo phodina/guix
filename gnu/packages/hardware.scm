@@ -807,6 +807,43 @@ supported by the Linux kernel.")
 as the Pinebook Pro.")
       (license license:gpl2+))))
 
+(define-public rkdeveloptool-pine64
+  (package
+    (name "rkdeveloptool-pine64")
+    (version "1.1.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url
+                     "https://gitlab.com/pine64-org/quartz-bsp/rkdeveloptool")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (patches (search-patches
+			  "rkdeveloptool-pine64-dump-over-2gib.patch"))
+              (sha256
+               (base32
+                "0nh9592mllygycnxbw91vg58wwais7w3w62rl9gcvc4m3i909b1z"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:tests? #f ;no test suite
+       #:phases
+       (modify-phases %standard-phases
+         ;; attempts to place the file into the udev pkg read-only path
+         (add-after 'unpack 'fix-udev-path
+           (lambda* _
+             (substitute* "meson.build"
+               (("udev_rules_dir,") (string-append "'" %output
+                                                   "/lib/udev/rules.d',"))))))))
+    (native-inputs (list pkg-config))
+    (inputs (list eudev libusb))
+    (synopsis "Read from and write to RockChicp devices over USB")
+    (description
+     "Rkdeveloptool is a fastboot-like CLI tool to read from and
+write to RockChip devices over USB.  Supports PineNote and Quartz64 as well
+as other Pine64 RK devices.")
+    (home-page "https://gitlab.com/pine64-org/quartz-bsp/rkdeveloptool")
+    (license license:gpl2+)))
+
 (define-public libqb
   (package
     (name "libqb")
