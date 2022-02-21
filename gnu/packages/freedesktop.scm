@@ -1049,6 +1049,21 @@ protocol either in Wayland core, or some other protocol in wayland-protocols.")
         . "https://wayland.freedesktop.org/releases.html")))
     (license license:expat)))
 
+;;; This is just a temporary package that should be deleted
+(define-public wayland-protocols-next
+  (package
+    (inherit wayland-protocols)
+    (name "wayland-protocols")
+    (version "1.25")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://wayland.freedesktop.org/releases/"
+                    "wayland-protocols-" version ".tar.xz"))
+              (sha256
+               (base32
+                "0q0laxdvf8p8b7ks2cbpqf6q0rwrjycqrp8pf8rxm86hk5qhzzzi"))))))
+
 (define-public waylandpp
   (package
     (name "waylandpp")
