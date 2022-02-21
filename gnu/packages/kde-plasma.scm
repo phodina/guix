@@ -38,8 +38,12 @@
   #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages iso-codes)
+  #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages maths)
+  #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
@@ -578,3 +582,135 @@ conjunction with the KDE Plasma Desktop.")
                    license:lgpl2.0+
                    license:lgpl2.1
                    license:lgpl3))))
+
+(define-public plasma-workspace
+  (package
+    (name "plasma-workspace")
+    (version "5.24.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://kde/stable/plasma/" version
+                    "/" name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1d1a8k75q0rdbbwkx8p1i38hc6xv9kggvfm6973lh3q0pc75qk0h"))))
+    (build-system qt-build-system)
+    (native-inputs
+     (list extra-cmake-modules
+           pkg-config
+           qtsvg
+           qttools))
+    (inputs
+     (list ;kplasma
+           ;kplasmaquick
+           ;packagekit-qt
+           appstream-qt
+           baloo
+           breeze
+           breeze-icons
+           fontconfig
+           iso-codes
+           kactivities
+           kactivities-stats
+           karchive
+           kcmutils
+           kcoreaddons
+           kcrash
+           kdbusaddons
+           kdeclarative
+           kded
+           kdesu
+           kdoctools
+           kglobalaccel
+           kguiaddons
+           kholidays
+           ki18n
+           kiconthemes
+           kidletime
+           kinit
+           kio
+           kirigami
+           kitemmodels
+           knewstuff
+           knotifications
+           knotifyconfig
+           kpackage
+           kpeople
+           kqtquickcharts ;; XXX: not found?
+           krunner
+           kscreenlocker
+           ktexteditor
+           ktextwidgets
+           kunitconversion
+           kuserfeedback
+           kwallet
+           kwayland
+           kwin
+           layer-shell-qt
+           libkscreen
+           libksysguard
+           libqalculate gmp mpfr
+           libsm
+           libxft
+           libxkbcommon
+           libxrender
+           libxtst
+           networkmanager-qt
+           phonon
+           pipewire-0.3
+           plasma-wayland-protocols
+           prison
+           qtbase-5
+           qtdeclarative
+           qtwayland
+           qtx11extras
+           wayland
+           wayland-protocols-next
+
+           xcb-util
+           xcb-util-image))
+    ;;     -- The following RUNTIME packages have not been found:
+    ;;  * KF5QuickCharts (required version >= 5.89), Used for rendering charts
+    ;;  * KIOExtras, Common KIO slaves for operations.
+    ;;    Show thumbnails in wallpaper selection.
+    ;;  * KIOFuse, Provide KIO support to legacy applications.
+    ;;  * org.kde.prison-QMLModule, QML module 'org.kde.prison' is a runtime dependency.
+    ;;  * org.kde.plasma.core-QMLModule, QML module 'org.kde.plasma.core' is a runtime dependency.
+    ;;  * IsoCodes, ISO language, territory, currency, script codes and their translations, <https://salsa.debian.org/iso-codes-team/iso-codes>
+    ;;    Translation of country names in digital clock applet
+    ;;  * AppMenuGtkModule, Application Menu GTK+ Module, <https://github.com/rilian-la-te/vala-panel-appmenu/tree/master/subprojects/appmenu-gtk-module>
+    ;; -- The following OPTIONAL packages have not been found:
+    ;;  * PackageKitQt5, Software Manager integration
+    ;;    Used to install additional language packages on demand
+    ;; kf.package: Invalid metadata for package structure "Plasma/LookAndFeel"
+    ;; Package type "Plasma/LookAndFeel" not found
+    ;; TODO: startkde patch, xsetroot, xrdb, xmessage, ...
+    (arguments
+     (list #:phases
+           #~(modify-phases %standard-phases
+               (add-after 'unpack 'patch-wallpaper
+                 (lambda _
+                   (substitute* "sddm-theme/theme.conf.cmake"
+                     (("background=..KDE_INSTALL_FULL_WALLPAPERDIR.")
+                      (string-append "background=" #$breeze "/share/wallpapers")))))
+               (replace 'check
+                 (lambda* (#:key tests? #:allow-other-keys)
+                   (when tests?
+                     (setenv "HOME" (getcwd))
+                     (setenv "XDG_RUNTIME_DIR" (getcwd))
+                     (setenv "XDG_CACHE_HOME" (getcwd))
+                     (setenv "QT_QPA_PLATFORM" "offscreen")
+                     ;; Disable failing tests for now.
+                     (invoke "ctest" "-E" "lookandfeel-kcmTest|locationsrunnertest|\
+tst_triangleFilter|systemtraymodeltest|testdesktop")))))))
+    (home-page "https://kde.org/plasma-desktop/")
+    (synopsis "Plasma for the Desktop")
+    (description "Plasma Desktop offers a beautiful looking desktop that takes
+complete advantage of modern computing technology. Through the use of visual
+effects and scalable graphics, the desktop experience is not only smooth but
+also pleasant to the eye. The looks of Plasma Desktop not only provide
+beauty, they are also used to support and improve your computer
+activities effectively, without being distracting.")
+    (license (list license:bsd-3 license:gpl2+ license:gpl3 license:lgpl2.1+
+license:lgpl3))))
