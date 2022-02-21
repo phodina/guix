@@ -1811,6 +1811,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/restic-0.9.6-fix-tests-for-go1.15.patch	\
   %D%/packages/patches/retroarch-LIBRETRO_DIRECTORY.patch	\
   %D%/packages/patches/r-mixedpower-r2power.patch		\
+  %D%/packages/patches/rkdeveloptool-fix-format-truncation.patch \
   %D%/packages/patches/rnp-add-version.cmake.patch		\
   %D%/packages/patches/rnp-disable-ruby-rnp-tests.patch		\
   %D%/packages/patches/rnp-unbundle-googletest.patch		\

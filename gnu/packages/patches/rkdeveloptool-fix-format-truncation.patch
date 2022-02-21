@@ -1,0 +1,22 @@
+From bc9e5f03d71b3dd4360721f4df3524c1dcba9bc8 Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Mon, 21 Feb 2022 13:00:53 +0100
+Subject: [PATCH] Fix format truncation for GCC >7.1.
+
+
+diff --git a/main.cpp b/main.cpp
+index 72bd94b..800db0b 100644
+--- a/main.cpp
++++ b/main.cpp
+@@ -1490,7 +1490,7 @@ static bool saveEntry(FILE* outFile, char* path, rk_entry_type type,
+ static inline uint32_t convertChipType(const char* chip) {
+ 	char buffer[5];
+ 	memset(buffer, 0, sizeof(buffer));
+-	snprintf(buffer, sizeof(buffer), "%s", chip);
++	memcpy(buffer, chip, 4);
+ 	return buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3];
+ }
+ 
+-- 
+2.34.0
+
