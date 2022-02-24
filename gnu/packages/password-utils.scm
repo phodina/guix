@@ -38,6 +38,7 @@
 ;;; Copyright © 2022 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2022 ( <paren@disroot.org>
 ;;; Copyright © 2022 Nicolas Graves <ngraves@ngraves.fr>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -67,6 +68,7 @@
   #:use-module (guix gexp)
   #:use-module (guix git-download)
   #:use-module (guix packages)
+  #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages aidc)
@@ -103,6 +105,7 @@
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
+  #:use-module (gnu packages rdesktop)
   #:use-module (gnu packages readline)
   #:use-module (gnu packages ruby)
   #:use-module (gnu packages security-token)
@@ -1350,6 +1353,32 @@ binaries.  All of these utils are designed to execute only one specific
 function.  Since they all work with @code{STDIN} and @code{STDOUT} you can
 group them into chains.")
     (license license:expat)))
+
+(define-public hydra
+  (package
+    (name "hydra")
+    (version "9.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://salsa.debian.org/pkg-security-team/hydra/-/archive/upstream/"
+                    version "/hydra-upstream-" version ".tar.gz"))
+              (sha256
+               (base32
+                "12m5w2rf2821gl8libbsd7pfz4dqn3g4jxh3mcg4qd2hk1c19qns"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ;no test suite
+       #:make-flags (list (string-append "CC="
+                                         ,(cc-for-target)))))
+    (native-inputs (list pkg-config))
+    (inputs (list freerdp gtk+ openssl zlib))
+    (home-page "https://salsa.debian.org/pkg-security-team/hydra")
+    (synopsis "Tool to gain unauthorized access from remote to a system")
+    (description
+     "This package provides a tool to gain unauthorized
+access from remote to a system.  This tool is only for LEGAL purposes!")
+    (license license:agpl3+)))
 
 (define-public bruteforce-luks
   (package
