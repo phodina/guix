@@ -54552,6 +54552,34 @@ to the same address.")
     (license (list license:asl2.0
                    license:expat))))
 
+(define-public rust-stable-vec-0.4
+  (package
+    (name "rust-stable-vec")
+    (version "0.4.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "stable-vec" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1jnqj3ssj3k1f60bwm1iahwgjcrvcffk94v7ar8gmlpk52xvgpw0"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-no-std-compat" ,rust-no-std-compat-0.2))
+        #:cargo-development-inputs
+        (("rust-criterion" ,rust-criterion-0.2)
+         ("rust-quickcheck" ,rust-quickcheck-0.8)
+         ("rust-quickcheck-macros" ,rust-quickcheck-macros-0.8))))
+    (home-page "https://github.com/LukasKalbertodt/stable-vec")
+    (synopsis
+      "Vec-like collection which guarantees stable indices and features O(1)")
+    (description
+      "This package provides a Vec-like collection which guarantees stable indices and
+features O(1) element deletion (semantically similar to `Vec<Option<T>>`).
+Useful for allocations in graphs or similar data structures.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-stacker-0.1
   (package
     (name "rust-stacker")
