@@ -13831,6 +13831,27 @@ number ``crunching``.")
         (sha256
           (base32 "1nnbh2k3pv1diyd0i0p3a08kd4afqc17yz0b43hn5xn9qlqs9x52"))))))
 
+(define-public rust-robust-0.1
+  (package
+    (name "rust-robust")
+    (version "0.1.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "robust" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "13ppwbnb28gc8iq343mn4v95df51ib8gppnwmw093g8aapjma892"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://github.com/georust/robust")
+    (synopsis
+      "Adaptive floating-point predicates for computational geometry")
+    (description
+      "This package provides robust adaptive floating-point predicates for
+computational geometry.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-roxmltree-0.14
   (package
     (name "rust-roxmltree")
