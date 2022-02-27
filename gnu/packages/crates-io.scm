@@ -22949,6 +22949,34 @@ Rust.")
      "This package provides geospatial primitives and algorithms.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-geo-booleanop-0.3
+  (package
+    (name "rust-geo-booleanop")
+    (version "0.3.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "geo-booleanop" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0nzlq7ydh1vf13q9a2l714dzfdzbynyl3vly1rhrd4l1gkqqzdnl"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-float-next-after" ,rust-float-next-after-0.1)
+         ("rust-geo-types" ,rust-geo-types-0.6)
+         ("rust-num-traits" ,rust-num-traits-0.2)
+         ("rust-robust" ,rust-robust-0.1))
+        #:cargo-development-inputs
+        (("rust-rand" ,rust-rand-0.3))))
+    (home-page "https://github.com/21re/rust-geo-booleanop")
+    (synopsis
+      "Implementation of the Martinez-Rueda Polygon Clipping Algorithm")
+    (description
+      "This package provides implementation of the Martinez-Rueda Polygon
+Clipping Algorithm.")
+    (license license:expat)))
+
 (define-public rust-geo-types-0.7
   (package
     (name "rust-geo-types")
