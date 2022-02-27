@@ -35304,6 +35304,31 @@ environment variable is set.")
 prove a function can't ever panic.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-no-std-compat-0.2
+  (package
+    (name "rust-no-std-compat")
+    (version "0.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "no-std-compat" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1d3n0a9hjjjp4dw974icn5flswcjnzn91n20j92n4kghlw4h49yz"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-hashbrown" ,rust-hashbrown-0.6))))
+    (home-page "https://gitlab.com/jD91mZM2/no-std-compat")
+    (synopsis
+      "Compatibility layer to ease porting crates to no_std *easy*")
+    (description
+      "This package provides a `#![no_std]` compatibility layer that will make
+porting your crate to no_std *easy*.")
+    (license license:expat)))
+
 (define-public rust-no-std-net-0.5
   (package
     (name "rust-no-std-net")
