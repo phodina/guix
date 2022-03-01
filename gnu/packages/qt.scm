@@ -48,6 +48,7 @@
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system trivial)
+  #:use-module (guix build-system meson)
   #:use-module (guix build-system python)
   #:use-module (guix build-system qt)
   #:use-module (guix gexp)
@@ -58,6 +59,7 @@
   #:use-module (gnu packages bash)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages check)
   #:use-module (gnu packages cmake)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cups)
@@ -4135,3 +4137,57 @@ and import their menus over DBus.")
 services using the XML based SOAP protocol and without the need for a dedicated
 web server.")
     (license (list license:gpl2 license:gpl3))))
+
+(define-public libaccounts-glib
+  (package
+    (name "libaccounts-glib")
+    (version "1.25")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/accounts-sso/libaccounts-glib")
+                    (commit (string-append version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "19rhk9f97m736d5ia26vfcbjp5kgi454558yhf9mrwm4iw5d9pk4"))))
+    (build-system meson-build-system)
+    (native-inputs
+     (list dbus `(,glib "bin") gobject-introspection gtk-doc pkg-config vala))
+    (inputs (list check
+                  libxml2
+                  python
+                  python-pygobject
+                  sqlite))
+    (propagated-inputs
+     (list glib))
+    (arguments
+     (list
+      #:tests? #f ; one test fails.
+      #:imported-modules `((guix build python-build-system)
+                          ,@%meson-build-system-modules)
+      #:modules '(((guix build python-build-system) #:select
+                   (python-version))
+                  (guix build meson-build-system)
+                  (guix build utils))
+      ;; don't try installing to python store path.
+      #:configure-flags
+      #~(list (string-append
+               "-Dpy-overrides-dir=" #$output "/lib/python"
+               (python-version #$(this-package-input "python"))
+               "/site-packages/gi/overrides"))
+      #:phases
+      #~(modify-phases %standard-phases
+          (replace 'check
+            (lambda* (#:key tests? #:allow-other-keys)
+              (when tests?
+                (invoke "dbus-run-session" "--" "meson" "test"
+                        "--print-errorlogs")))))))
+    (home-page "https://accounts-sso.gitlab.io/")
+    (synopsis "Accounts SSO (Single Sign-On) management library for GLib
+applications")
+    (description "Accounts SSO is a framework for application developers who
+wish to acquire, use and store web account details and credentials.  It
+handles the authentication process of an account and securely stores the
+credentials and service-specific settings.")
+    (license license:lgpl2.1+)))
