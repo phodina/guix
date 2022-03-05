@@ -48,6 +48,7 @@
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages ibus)
   #:use-module (gnu packages iso-codes)
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
@@ -57,7 +58,6 @@
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pkg-config)
-  #:use-module (gnu packages polkit)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
   #:use-module (gnu packages video)
@@ -1904,6 +1904,165 @@ sensors, process information and other system resources.")
     (description
      "Workspaces provide support for KDE Plasma Widgets,
 +integrated search, hardware management and a high degree of customizability")
+    (license (list license:bsd-3 license:gpl2+ license:gpl3 license:lgpl2.1+
+license:lgpl3))))
+
+(define-public plasma-desktop
+  (package
+    (name "plasma-desktop")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1jkjc412n1wn17qrmx0sv91pzv5xjsljms3bsln6bbxj5fkhmkfm"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules
+                         dbus
+                         kdoctools
+                         intltool
+                         pkg-config
+                         qtsvg-5
+                         qttools-5))
+    (inputs (list ;; packagekit-qt
+                  signon-plugin-oauth2
+                  signond
+
+                  attica
+                  appstream-qt
+                  baloo
+                  breeze
+                  breeze-icons
+                  eudev
+                  fontconfig
+                  glib
+                  ibus
+                  kaccounts-integration
+                  kactivities
+                  kactivities-stats
+                  kauth
+                  karchive
+                  kcmutils
+                  kconfig
+                  kcoreaddons
+                  kcrash
+                  kdbusaddons
+                  kdeclarative
+                  kded
+                  kdesu
+                  kdelibs4support
+                  kglobalaccel
+                  kguiaddons
+                  kholidays
+                  ki18n
+                  kiconthemes
+                  kidletime
+                  kinit
+                  kio
+                  kitemmodels
+                  knewstuff
+                  knotifications
+                  knotifyconfig
+                  kpackage
+                  kpeople
+                  krunner
+                  kscreenlocker
+                  ktexteditor
+                  ktextwidgets
+                  kunitconversion
+                  kuserfeedback
+                  kwallet
+                  kwayland
+                  kwin
+                  layer-shell-qt
+                  libaccounts-qt
+                  libcanberra
+                  libkscreen
+                  libksysguard
+                  libqalculate
+                  gmp
+                  mpfr
+                  libsm
+                  libxi
+                  libxft
+                  libxkbcommon
+                  libxrender
+                  libxtst
+                  networkmanager-qt
+                  phonon
+                  pipewire-0.3
+                  plasma-framework
+                  plasma-wayland-protocols
+                  pulseaudio
+                  prison
+                  qqc2-desktop-style
+                  qtbase-5
+                  qtdeclarative-5
+                  qtquickcontrols2-5
+                  qtwayland
+                  qtx11extras
+                  wayland
+                  wayland-protocols
+                  xcb-util
+                  xcb-util-image
+                  xcb-util-keysyms
+
+                  ;; These are needed for Xserver
+                  xf86-input-libinput
+                  xf86-input-evdev
+                  xorg-server
+                  xf86-input-synaptics
+                  xkeyboard-config
+                  libxkbfile
+                  libxcursor
+                  libxkbcommon))
+    (propagated-inputs (list iso-codes kirigami plasma-workspace))
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (add-after `unpack `fix-paths
+                          (lambda* (#:key inputs #:allow-other-keys)
+                            (substitute* "kcms/keyboard/iso_codes.h"
+                              (("\"/usr/share/xml/iso-codes\"")
+                               (string-append "\""
+                                              #$iso-codes
+                                              "/share/xml/iso-codes\"")))))
+                        (add-after 'unpack 'patch-qml-import-path
+                          (lambda _
+                            (substitute* '("applets/pager/package/contents/ui/main.qml"
+                                           "containments/desktop/package/contents/ui/FolderView.qml"
+                                           "containments/desktop/package/contents/ui/main.qml"
+                                           "containments/panel/contents/ui/main.qml")
+                              (("^import \"(utils|FolderTools|LayoutManager).js\" as "
+                                line mod)
+                               (string-append "import \"../code/" mod
+                                              ".js\" as ")))))
+                        (replace 'check
+                          (lambda* (#:key tests? #:allow-other-keys)
+                            (when tests?
+                              (setenv "HOME"
+                                      (getcwd))
+                              (setenv "XDG_RUNTIME_DIR"
+                                      (getcwd))
+                              (setenv "XDG_CACHE_HOME"
+                                      (getcwd))
+                              (setenv "QT_QPA_PLATFORM" "offscreen")
+                              (invoke "ctest" "-E" "foldermodeltest")))))))
+    (home-page "https://kde.org/plasma-desktop/")
+    (synopsis "Plasma for the Desktop")
+    (description
+     "Plasma Desktop offers a beautiful looking desktop that takes
+complete advantage of modern computing technology.  Through the use of visual
+effects and scalable graphics, the desktop experience is not only smooth but
+also pleasant to the eye.  The looks of Plasma Desktop not only provide
+beauty, they are also used to support and improve your computer
+activities effectively, without being distracting.")
     (license (list license:bsd-3 license:gpl2+ license:gpl3 license:lgpl2.1+
                    license:lgpl3))))
 
