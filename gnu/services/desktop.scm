@@ -158,6 +158,11 @@
 
             polkit-wheel-service
 
+            plasma-desktop-configuration
+            plasma-desktop-configuration?
+            plasma-desktop-service
+            plasma-desktop-service-type
+
             gnome-keyring-configuration
             gnome-keyring-configuration?
             gnome-keyring-service-type
@@ -1434,6 +1439,29 @@ with the administrator's password."
   (service xfce-desktop-service-type config))
 
 +
+
+;;;
+;;; KDE Plasma desktop service.
+;;;
+
+(define-record-type* <plasma-desktop-configuration> plasma-desktop-configuration
+  make-plasma-desktop-configuration
+  plasma-desktop-configuration?
+  (plasma plasma-package
+          (default plasma-desktop)))
+
+(define plasma-desktop-service-type
+  (service-type
+   (name 'plasma-desktop)
+   (extensions
+    (list ;; (service-extension polkit-service-type
+          ;;                    plasma-polkit-settings)
+          (service-extension profile-service-type
+                             (compose list plasma-package))))
+   (default-value (plasma-desktop-configuration))
+   (description "Run Plasma desktop environment.")))
+
+
 ;;;
 ;;; Lxqt desktop service.
 ;;;
