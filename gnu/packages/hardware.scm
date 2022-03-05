@@ -545,6 +545,41 @@ using Qt.  It provide a dynamic way to inspect and configure external monitors
 through the Display Data Channel Command Interface (@dfn{DDC/CI}) protocol.")
     (license (list license:gpl2+))))
 
+(define-public dmrconfig
+(let ((commit "9e65be7ab704297ccb12dc6f6300a28039abc3a6")
+      (revision "1"))
+  (package
+    (name "dmrconfig")
+    (version "1.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://github.com/OpenRTX/dmrconfig")
+	   (commit commit)))
+       (sha256
+        (base32
+         "1f3pgiic6hpy1a77sfjwl8rkhmpimd14vwif9w8fx6z4najqryli"))))
+    (build-system gnu-build-system)
+	(arguments
+	`(#:make-flags (list (string-append "CC=" ,(cc-for-target)))
+	  #:phases
+	 (modify-phases %standard-phases
+	  (add-after 'unpack 'replace-git
+	  (lambda* _
+	  (substitute* "Makefile"
+	  (("^VERSION.*") (string-append "VERSION=1.1\n"))
+	  (("^GITCOUNT.*") (string-append "GITCOUNT=0\n"))))) (delete 'configure))))
+	(native-inputs (list pkg-config))
+	(inputs (list eudev libusb python qtbase-5))
+    (home-page
+     "https://github.com/OpenRTX/dmrconfig")
+    (synopsis
+     "Configuration utility for DMR radios")
+    (description
+     "")
+    (license license:bsd-3))))
+
 (define-public edid-decode
   (let ((commit "74b64180d67bb009d8d9ea1b6f18ad41aaa16396") ; 2020-04-22
         (revision "1"))
