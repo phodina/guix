@@ -1766,6 +1766,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/rct-add-missing-headers.patch		\
   %D%/packages/patches/readline-link-ncurses.patch		\
   %D%/packages/patches/readline-6.2-CVE-2014-2524.patch		\
+  %D%/packages/patches/renderdoc-swig-unbundle.patch		\
   %D%/packages/patches/renpy-use-system-fribidi.patch		\
   %D%/packages/patches/reposurgeon-add-missing-docbook-files.patch	\
   %D%/packages/patches/r-httpuv-1.5.5-unvendor-libuv.patch	\

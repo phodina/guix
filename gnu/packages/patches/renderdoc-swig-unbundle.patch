@@ -1,0 +1,50 @@
+From 94faf51745a4ea8a926d3fccbc44b6d28d862678 Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Sat, 5 Mar 2022 02:05:30 +0100
+Subject: [PATCH] Unbundle swig.
+
+
+diff --git a/qrenderdoc/CMakeLists.txt b/qrenderdoc/CMakeLists.txt
+index 486832594..e8f127496 100644
+--- a/qrenderdoc/CMakeLists.txt
++++ b/qrenderdoc/CMakeLists.txt
+@@ -10,7 +10,6 @@ if( NOT DEFINED QT_QMAKE_EXECUTABLE )
+ endif()
+ 
+ set(QMAKE_QT5_COMMAND ${QT_QMAKE_EXECUTABLE} CACHE STRING "Command to run to invoke Qt5's qmake. Normally this is qmake, possibly with qtchooser, but might be qmake-qt5")
+-set(RENDERDOC_SWIG_PACKAGE https://github.com/baldurk/swig/archive/renderdoc-modified-7.zip CACHE STRING "The location where RenderDoc's swig fork source can be found. By default points to the URL on github but can be pointed to a local file.")
+ 
+ # Only check qt version if we're building qrenderdoc
+ if(ENABLE_QRENDERDOC)
+@@ -144,16 +143,8 @@ if(APPLE AND CMAKE_GENERATOR STREQUAL "Xcode")
+     set(SET_SYSTEM_PATH_COMMAND ${CMAKE_COMMAND} -E env PATH=${SHELL_CAPTURED_PATH})
+ endif()
+ 
+-# Compile our custom SWIG that will do scoped/strong enum classes
+-ExternalProject_Add(custom_swig
+-    # using an URL to a zip directly so we don't clone the history etc
+-    URL ${RENDERDOC_SWIG_PACKAGE}
+-    BUILD_IN_SOURCE 1
+-    CONFIGURE_COMMAND ${SET_SYSTEM_PATH_COMMAND} ./autogen.sh > /dev/null 2>&1
+-    COMMAND CC=${SWIG_CONFIGURE_CC} CXX=${SWIG_CONFIGURE_CXX} CFLAGS=-fPIC CXXFLAGS=-fPIC ${SET_SYSTEM_PATH_COMMAND} ./configure --with-pcre=yes --prefix=${CMAKE_BINARY_DIR} > /dev/null
+-    BUILD_COMMAND ${GENERATOR_MAKE} ${GENERATOR_MAKE_PARAMS} > /dev/null 2>&1
+-    INSTALL_COMMAND ${GENERATOR_MAKE} install > /dev/null 2>&1)
+ 
++find_package(swig QUIET)
+ find_package(Shiboken2 QUIET)
+ find_package(PySide2 QUIET)
+ 
+@@ -303,9 +294,8 @@ foreach(in ${swig_interfaces})
+     get_filename_component(swig_file ${in} NAME_WE)
+ 
+     add_custom_command(OUTPUT ${swig_file}_python.cxx ${swig_file}.py
+-            COMMAND ${CMAKE_BINARY_DIR}/bin/swig -v -Wextra -Werror ${SWIG_FLAGS} -O -c++ -python -modern -interface ${swig_file} -modernargs -enumclass -fastunpack -py3 -builtin -I${CMAKE_CURRENT_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/renderdoc/api/replay -outdir ${CMAKE_CURRENT_BINARY_DIR} -o ${CMAKE_CURRENT_BINARY_DIR}/${swig_file}_python.cxx ${CMAKE_CURRENT_SOURCE_DIR}/${in}
++            COMMAND ${CMAKE_BINARY_DIR}/bin/swig -v -Wextra -Werror ${SWIG_FLAGS} -O -c++ -python -modern -interface ${swig_file} -modernargs -fastunpack -py3 -builtin -I${CMAKE_CURRENT_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/renderdoc/api/replay -outdir ${CMAKE_CURRENT_BINARY_DIR} -o ${CMAKE_CURRENT_BINARY_DIR}/${swig_file}_python.cxx ${CMAKE_CURRENT_SOURCE_DIR}/${in}
+             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${in}
+-            DEPENDS custom_swig
+             DEPENDS ${RDOC_REPLAY_FILES}
+             DEPENDS ${QRD_INTERFACE_FILES})
+ 
+-- 
+2.34.0
+

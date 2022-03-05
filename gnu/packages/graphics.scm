@@ -111,6 +111,7 @@
   #:use-module (gnu packages stb)
   #:use-module (gnu packages swig)
   #:use-module (gnu packages tbb)
+  #:use-module (gnu packages text-editors)
   #:use-module (gnu packages toolkits)
   #:use-module (gnu packages upnp)
   #:use-module (gnu packages video)
@@ -927,6 +928,47 @@ other vector formats such as:
 @item Any format supported by ImageMagick
 @end itemize")
     (license license:gpl2+)))
+
+(define-public renderdoc
+  (package
+    (name "renderdoc")
+    (version "1.18")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://github.com/baldurk/renderdoc")
+	   (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+	   (patches (search-patches "renderdoc-swig-unbundle.patch"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           (with-directory-excursion "qrenderdoc/3rdparty"
+           (for-each delete-file-recursively '("pyside" "python" "qt"
+		   "scintilla" "swig")))))
+       (sha256
+        (base32
+         "11pdq6c5svvn8f8j9csxjc6dc714xf8w2rdrfx2qsqahsg0i20cz"))))
+    (build-system cmake-build-system)
+	(arguments
+	`(#:phases
+	  (modify-phases %standard-phases
+	   (add-after 'unpack 'fix-swig-command
+	    (lambda*  (#:key inputs #:allow-other-keys)
+		 (substitute* "qrenderdoc/CMakeLists.txt"
+		 (("\\$\\{CMAKE_BINARY_DIR\\}/bin/swig") (string-append (assoc-ref inputs
+		 "swig") "/bin/swig"))))))))
+	(native-inputs (list pkg-config swig))
+	(inputs (list python python-pyside-2 qtbase-5 scintilla xcb-util-keysyms xorg-server))
+    (home-page
+     "https://renderdoc.org")
+    (synopsis
+     "Stand-alone graphics debugging tool")
+    (description
+     "This package provides a frame-capture based graphics debugger, currently
+available for Vulkan, D3D11, D3D12, OpenGL, and OpenGL ES.")
+    (license license:expat)))
 
 (define-public alembic
   (package
