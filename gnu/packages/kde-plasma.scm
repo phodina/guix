@@ -38,6 +38,7 @@
   #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages ibus)
   #:use-module (gnu packages iso-codes)
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
@@ -714,3 +715,137 @@ beauty, they are also used to support and improve your computer
 activities effectively, without being distracting.")
     (license (list license:bsd-3 license:gpl2+ license:gpl3 license:lgpl2.1+
 license:lgpl3))))
+
+(define-public plasma-desktop
+  (package
+    (name "plasma-desktop")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1jkjc412n1wn17qrmx0sv91pzv5xjsljms3bsln6bbxj5fkhmkfm"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules
+                         kdoctools
+                         intltool
+                         pkg-config
+                         qtsvg-5
+                         qttools-5))
+    (inputs (list ;kplasma
+                  ;; kplasmaquick
+                  ;; packagekit-qt
+                  ;; signon-oauth2plugin
+                  signond
+
+                  kdelibs4support
+                  plasma-workspace
+
+                  appstream-qt
+                  baloo
+                  breeze
+                  breeze-icons
+                  eudev
+                  fontconfig
+                  glib
+                  iso-codes
+                  ibus
+                  kaccounts-integration
+                  kactivities
+                  kactivities-stats
+                  karchive
+                  kcmutils
+                  kcoreaddons
+                  kcrash
+                  kdbusaddons
+                  kdeclarative
+                  kded
+                  kdesu
+                  kglobalaccel
+                  kguiaddons
+                  kholidays
+                  ki18n
+                  kiconthemes
+                  kidletime
+                  kinit
+                  kio
+                  kirigami
+                  kitemmodels
+                  knewstuff
+                  knotifications
+                  knotifyconfig
+                  kqqc2-desktop-style
+                  kpackage
+                  kpeople
+                  kqtquickcharts ;XXX: not found?
+                  krunner
+                  kscreenlocker
+                  ktexteditor
+                  ktextwidgets
+                  kunitconversion
+                  kuserfeedback
+                  kwallet
+                  kwayland
+                  kwin
+                  layer-shell-qt
+                  libaccounts-qt
+                  libkscreen
+                  libksysguard
+                  libqalculate
+                  gmp
+                  mpfr
+                  libsm
+                  libxft
+                  libxkbcommon
+                  libxrender
+                  libxtst
+                  networkmanager-qt
+                  phonon
+                  pipewire-0.3
+                  plasma-wayland-protocols
+                  prison
+                  qtbase-5
+                  qtdeclarative-5
+                  qtwayland
+                  qtx11extras
+                  wayland
+                  wayland-protocols
+                  xcb-util
+                  xcb-util-image
+                  xcb-util-keysyms
+
+                  ;; These are needed for Xserver
+                  xf86-input-libinput
+                  xf86-input-evdev
+                  xorg-server
+                  xf86-input-synaptics
+                  xkeyboard-config
+                  libxkbfile
+                  libxcursor
+                  libxkbcommon))
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (replace 'check
+                          (lambda* (#:key tests? #:allow-other-keys)
+                            (when tests?
+                              (setenv "HOME"
+                                      (getcwd))
+                              (setenv "XDG_RUNTIME_DIR"
+                                      (getcwd))
+                              (setenv "XDG_CACHE_HOME"
+                                      (getcwd))
+                              (setenv "QT_QPA_PLATFORM" "offscreen")
+                              (invoke "ctest" "-E"
+                               "(foldermodeltest|kcm-keyboard-iso_codes)")))))))
+    (home-page "https://kde.org/plasma-desktop/")
+    (synopsis "")
+    (description "")
+    (license (list license:bsd-3 license:gpl2+ license:gpl3 license:lgpl2.1+
+                   license:lgpl3))))
