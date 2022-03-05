@@ -1239,3 +1239,39 @@ telemetry and targeted surveys")
 @item A management and analytics application.
 @end itemize")
     (license license:expat)))
+
+(define-public kaccounts-integration
+  (package
+    (name "kaccounts-integration")
+    (version "22.04.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://kde/stable/release-service/" version
+                           "/src/" name "-" version ".tar.xz"))
+       (sha256
+        (base32 "16v12l56wix9sarxyi0qvjrkj6g3hnac6s13x99zj05hhj4rpnqy"))))
+    (build-system qt-build-system)
+    (native-inputs
+     (list extra-cmake-modules))
+    (inputs
+     (list kcmutils
+           kcoreaddons
+           kdbusaddons
+           kdeclarative
+           ki18n
+           kio
+           kwallet
+           libaccounts-qt
+           qtbase-5
+           signond))
+    (home-page "https://invent.kde.org/network/kaccounts-integration")
+    (synopsis "Online account management system and Plasma Integration")
+    (description "KAccounts Integration provides a way to share accounts data
+such as login tokens and general user information (like usernames and such)
+between various applications.
+
+The KAccounts library is a KDE Frameworks style abstraction layer on top of
+the Accounts-SSO and SignOnD libraries, which uses a combination of models and
+jobs to expose the functionality of those.")
+    (license (list license:gpl2+ license:gpl3+ license:lgpl2.0+))))
