@@ -53,6 +53,7 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu packages cups)
   #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages kde-plasma)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages xfce)
   #:use-module (gnu packages avahi)
