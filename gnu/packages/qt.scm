@@ -4234,6 +4234,42 @@ services using the XML based SOAP protocol and without the need for a dedicated
 web server.")
     (license (list license:gpl2 license:gpl3))))
 
+(define-public libaccounts-qt
+  (package
+    (name "libaccounts-qt")
+    (version "1.16")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/accounts-sso/libaccounts-qt")
+                    (commit (string-append "VERSION_" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1vmpjvysm0ld8dqnx8msa15hlhrkny02cqycsh4k2azrnijg0xjz"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list #:tests? #f
+           #:phases #~(modify-phases %standard-phases
+                        (replace 'configure
+                          (lambda _
+                            (substitute* "tests/tst_libaccounts.pro"
+                              (("QMAKE_RPATHDIR = \\$\\$\\{QMAKE_LIBDIR\\}")
+                               (string-append "QMAKE_RPATHDIR ="
+                                              #$output "/lib")))
+                            (invoke "qmake"
+                                    (string-append "PREFIX="
+                                                   #$output)
+                                    (string-append "LIBDIR="
+                                                   #$output "/lib")))))))
+    ;; * SignOnQt5 (required version >= 8.55), D-Bus service which performs user authentication on behalf of its clients, <https://gitlab.com/accounts-sso/signond>
+    (native-inputs (list doxygen pkg-config qtbase-5 qttools-5))
+    (inputs (list glib signond libaccounts-glib))
+    (home-page "https://accounts-sso.gitlab.io/")
+    (synopsis "Qt5 bindings for libaccounts-glib")
+    (description #~(package-description libaccounts-glib))
+    (license license:lgpl2.1+)))
+
 (define-public signond
   (package
     (name "signond")
