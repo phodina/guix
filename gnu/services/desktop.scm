@@ -14,6 +14,7 @@
 ;;; Copyright © 2020 Reza Alizadeh Majd <r.majd@pantherx.org>
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2021, 2022 muradm <mail@muradm.net>
+;;; Copyright © 2022 phodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -54,6 +55,7 @@
   #:use-module (gnu packages cups)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gnome)
+  #:use-module (gnu packages kde-plasma)
   #:use-module (gnu packages xfce)
   #:use-module (gnu packages avahi)
   #:use-module (gnu packages xdisorg)
@@ -159,6 +161,11 @@
             inputattach-service-type
 
             polkit-wheel-service
+
+            plasma-desktop-configuration
+            plasma-desktop-configuration?
+            plasma-desktop-service
+            plasma-desktop-service-type
 
             gnome-keyring-configuration
             gnome-keyring-configuration?
@@ -1460,6 +1467,37 @@ with the administrator's password."
   (service xfce-desktop-service-type config))
 
 +
+
+;;;
+;;; KDE Plasma desktop service.
+;;;
+
+(define-record-type* <plasma-desktop-configuration> plasma-desktop-configuration
+  make-plasma-desktop-configuration
+  plasma-desktop-configuration?
+  (plasma plasma-package
+          (default plasma)))
+
+(define (plasma-polkit-settings config)
+  "Return the list of Plasma dependencies that provide polkit actions and
+rules."
+  (let ((plasma (plasma-package config)))
+    (map (lambda (name)
+           ((package-direct-input-selector name) plasma))
+         '("powerdevil"))))
+
+(define plasma-desktop-service-type
+  (service-type
+   (name 'plasma-desktop)
+   (extensions
+    (list (service-extension polkit-service-type
+                              plasma-polkit-settings)
+          (service-extension profile-service-type
+                             (compose list plasma-package))))
+   (default-value (plasma-desktop-configuration))
+   (description "Run Plasma desktop environment.")))
+
+
 ;;;
 ;;; Lxqt desktop service.
 ;;;
