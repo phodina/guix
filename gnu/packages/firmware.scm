@@ -50,7 +50,8 @@
   #:use-module (gnu packages linux)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages python)
-  #:use-module (gnu packages pkg-config))
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages sdl))
 
 (define-public ath9k-htc-firmware
   (package
@@ -276,6 +277,41 @@ for platform-specific firmwares executing in M-mode.")
 
 (define-public opensbi-generic
   (make-opensbi-package "generic" "opensbi-generic"))
+
+(define-public openrtx
+  (package
+    (name "openrtx")
+    (version "0.3.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (recursive? #t)
+	   (url "https://github.com/OpenRTX/OpenRTX")
+	   (commit (string-append "v" version))))
+	   (patches (search-patches "openrtx-remove-git.patch"))
+       (sha256
+        (base32
+         "0bbnnc366g45x0h29jxhp03ljsdwdykwa7y6j24jjhlf9c3418jf"))))
+    (build-system meson-build-system)
+	(arguments
+	`(#:phases
+	(modify-phases %standard-phases
+	(add-after 'unpack 'fix-git-version
+	(lambda* _
+	(substitute* "openrtx/src/ui/ui_menu.c"
+	(("GIT_VERSION") (string-append "\"" ,version "\"")))
+	(substitute* "meson.build"
+	(("git_version") (string-append "'" ,version "'"))))))))
+	(native-inputs (list python pkg-config))
+	(inputs (list radio-tool sdl2))
+    (home-page
+     "https://openrtx.org/")
+    (synopsis
+     "Modular Open Source Radio Firmware")
+    (description
+     "")
+    (license license:gpl3+)))
 
 (define-public seabios
   (package

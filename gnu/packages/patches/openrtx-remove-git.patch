@@ -1,0 +1,25 @@
+From 2583bfc0c3a3dd4ce17e0f6ef85354393321c264 Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Sat, 5 Mar 2022 04:36:20 +0100
+Subject: [PATCH] remove git
+
+
+diff --git a/meson.build b/meson.build
+index c307ba6..cde14fc 100644
+--- a/meson.build
++++ b/meson.build
+@@ -74,11 +74,6 @@ inc = openrtx_inc + rtos_inc + minmea_inc + qdec_inc
+ def = {'DONT_USE_CMSIS_INIT': ''}
+ 
+ ## Add git commit or tag to print in OpenRTX
+-r = run_command('git', 'describe', '--tags', '--dirty')
+-if r.returncode() != 0
+-  # it failed
+-endif
+-git_version = '"'+r.stdout().strip()+'"'
+ def = def + {'GIT_VERSION': git_version}
+ 
+ ##
+-- 
+2.34.0
+
