@@ -4191,3 +4191,43 @@ wish to acquire, use and store web account details and credentials.  It
 handles the authentication process of an account and securely stores the
 credentials and service-specific settings.")
     (license license:lgpl2.1+)))
+
+(define-public libaccounts-qt
+  (package
+    (name "libaccounts-qt")
+    (version "1.16")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/accounts-sso/libaccounts-qt")
+                    (commit (string-append "VERSION_" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1vmpjvysm0ld8dqnx8msa15hlhrkny02cqycsh4k2azrnijg0xjz"))))
+    (build-system gnu-build-system)
+    (native-inputs (list doxygen pkg-config qtbase-5 strace qttools))
+    (inputs (list glib
+                  libaccounts-glib))
+    (arguments
+     (list
+      #:tests? #f
+      #:phases
+      #~(modify-phases %standard-phases
+          ;(delete 'configure)
+          (replace 'configure
+            (lambda _ (invoke "qmake")))
+          ;; (replace 'build
+          ;;   (lambda _
+          ;;     (with-directory-excursion "Accounts"
+          ;;         (invoke "strace" "qmake" "-o" "Makefile" "Accounts.pro")
+          ;;         (system "make" "-f" "Makefile"))
+          ;;     ;; (invoke ;"strace"
+          ;;     ;;         "make")
+          ;;     ))
+          )))
+    (home-page "https://accounts-sso.gitlab.io/")
+    (synopsis "Qt5 bindings for libaccounts-glib")
+    (description (package-description libaccounts-glib))
+    ; * SignOnQt5 (required version >= 8.55), D-Bus service which performs user authentication on behalf of its clients, <https://gitlab.com/accounts-sso/signond>
+    (license license:lgpl2.1+)))
