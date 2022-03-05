@@ -32,6 +32,7 @@
   #:use-module (guix gexp)
   #:use-module (guix utils)
   #:use-module (guix git-download)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system meson)
   #:use-module (gnu packages)
@@ -309,6 +310,41 @@ for platform-specific firmwares executing in M-mode.")
      "https://openrtx.org/")
     (synopsis
      "Modular Open Source Radio Firmware")
+    (description
+     "")
+    (license license:gpl3+)))
+
+(define-public radio-tool
+  (package
+    (name "radio-tool")
+    (version "0.1.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://github.com/v0l/radio_tool")
+	   (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "00j1dfahsiglc5yzf0d1x3b3knw8xws9hjh3pa4f4yml0ycl7xk3"))))
+    (build-system cmake-build-system)
+	(arguments
+	`(#:tests? #f)) ; download proprietary firmware
+	  ;#:configure-flags (list "-DBUILD_TESTING=ON")))
+	(native-inputs (list pkg-config))
+	(inputs (list libusb))
+;	`("fw038787d" ,(origin
+;	                (method url-fetch)
+;					(uri
+;					"https://v0l.io/radio_tool/firmware/SHA256/705facf8a0877a745128f223ae17b4f5ab623694824664ea69942cba9b09690b"
+;					)
+ ;      (sha256
+  ;      (base32
+;         "10j1dfahsiglc5yzf0d1x3b3knw8xws9hjh3pa4f4yml0ycl7xk3"))))))
+    (home-page
+     "https://github.com/v0l/radio_tool")
+    (synopsis
+     "TYT/BaoFeng Firmware tool")
     (description
      "")
     (license license:gpl3+)))
