@@ -714,3 +714,114 @@ beauty, they are also used to support and improve your computer
 activities effectively, without being distracting.")
     (license (list license:bsd-3 license:gpl2+ license:gpl3 license:lgpl2.1+
 license:lgpl3))))
+
+(define-public plasma-desktop
+  (package
+    (name "plasma-desktop")
+    (version "5.24.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://kde/stable/plasma/" version
+                    "/" name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1lwizprs6nk6nibydwkwmpi9c7c50lvg2k188pb6ddz2sb7pwgjq"))))
+    (build-system qt-build-system)
+    (native-inputs
+     (list extra-cmake-modules
+           kdoctools
+           pkg-config
+           qtsvg
+           qttools))
+    (inputs
+     (list ;kplasma
+           ;kplasmaquick
+           ;packagekit-qt
+
+      kdelibs4support
+      ;kaccounts
+      plasma-workspace
+
+           appstream-qt
+           baloo
+           breeze
+           breeze-icons
+           fontconfig
+           iso-codes
+           kactivities
+           kactivities-stats
+           karchive
+           kcmutils
+           kcoreaddons
+           kcrash
+           kdbusaddons
+           kdeclarative
+           kded
+           kdesu
+           kglobalaccel
+           kguiaddons
+           kholidays
+           ki18n
+           kiconthemes
+           kidletime
+           kinit
+           kio
+           kirigami
+           kitemmodels
+           knewstuff
+           knotifications
+           knotifyconfig
+           kpackage
+           kpeople
+           kqtquickcharts ;; XXX: not found?
+           krunner
+           kscreenlocker
+           ktexteditor
+           ktextwidgets
+           kunitconversion
+           kuserfeedback
+           kwallet
+           kwayland
+           kwin
+           layer-shell-qt
+           libkscreen
+           libksysguard
+           libqalculate gmp mpfr
+           libsm
+           libxft
+           libxkbcommon
+           libxrender
+           libxtst
+           networkmanager-qt
+           phonon
+           pipewire-0.3
+           plasma-wayland-protocols
+           prison
+           qtbase-5
+           qtdeclarative
+           qtwayland
+           qtx11extras
+           wayland
+           wayland-protocols
+           xcb-util
+           xcb-util-image))
+    (arguments
+     (list #:phases
+           #~(modify-phases %standard-phases
+
+               (replace 'check
+                 (lambda* (#:key tests? #:allow-other-keys)
+                   (when tests?
+                     (setenv "HOME" (getcwd))
+                     (setenv "XDG_RUNTIME_DIR" (getcwd))
+                     (setenv "XDG_CACHE_HOME" (getcwd))
+                     (setenv "QT_QPA_PLATFORM" "offscreen")
+                     ;; Disable failing tests for now.
+                     (invoke "ctest"))
+                   #t)))))
+    (home-page "https://kde.org/plasma-desktop/")
+    (synopsis "")
+    (description "")
+    (license (list license:bsd-3 license:gpl2+ license:gpl3 license:lgpl2.1+
+license:lgpl3))))
