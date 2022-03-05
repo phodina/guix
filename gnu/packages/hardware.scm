@@ -75,6 +75,7 @@
   #:use-module (gnu packages qt)
   #:use-module (gnu packages scanner)
   #:use-module (gnu packages security-token)
+  #:use-module (gnu packages serialization)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages video)
   #:use-module (gnu packages virtualization)
@@ -1049,6 +1050,50 @@ Features:
 @end itemize")
     (home-page "https://openrgb.org/")
     (license license:gpl2))) ; Included libccmmk is lgpl3+, CRC is bsd-3
+
+(define-public qdmr
+  (package
+    (name "qdmr")
+    (version "0.10.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://github.com/hmatuschek/qdmr")
+	   (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "1bym2jmx5jzkm11ajd38asmfh65z4c4adkxs4jha5f41w3kxk4qs"))))
+    (build-system cmake-build-system)
+	(arguments
+	`(;#:configure-flags (list "-DBUILD_TESTS=ON")
+	  #:tests? #f
+	  #:phases
+	 (modify-phases %standard-phases
+	  ;(replace 'check
+	  ;(lambda* (#:key tests? build-inputs #:allow-other-keys)
+	  ;(when tests?
+	  ; (chdir (string-append (assoc-ref %build-inputs "source") "/test"))
+	  ; (invoke "cmake" "CMakeLists.txt"))))
+	  (replace 'install
+	   (lambda* (#:key outputs #:allow-other-keys)
+	   (let ((bin (string-append (assoc-ref outputs "out") "/bin"))
+	         (lib (string-append (assoc-ref outputs "out") "/lib")))
+			 (mkdir-p bin)
+			 (mkdir-p lib)
+	   (install-file "cli/dmrconf" bin)
+	   (for-each 
+	    (lambda (x) install-file x lib)
+	    (find-files "lib" "\\.so\\."))))))))
+	(native-inputs (list pkg-config qttools qtbase-5))
+	(inputs (list libusb python qtbase-5 qtlocation qtserialport yaml-cpp))
+    (home-page
+     "https://dm3mat.darc.de/qdmr/")
+    (synopsis
+     "GUI application for configuring and programming cheap DMR radios")
+    (description
+     "")
+    (license license:gpl3+)))
 
 (define-public wavemon
   (package
