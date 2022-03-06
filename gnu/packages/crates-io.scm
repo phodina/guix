@@ -12737,6 +12737,28 @@ intrinsics.")
      "This package provides a counts the number of live instances of types.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-cpp-0.5
+  (package
+    (name "rust-cpp")
+    (version "0.5.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cpp" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1s2hpy068k8461mdxpl4a7lm41ry9887zq3frg4xqj5y023a0xa8"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-cpp-macros" ,rust-cpp-macros-0.5))
+        #:cargo-development-inputs
+        (("rust-cpp-build" ,rust-cpp-build-0.5))))
+    (home-page "https://github.com/mystor/rust-cpp")
+    (synopsis "Inline C++ code closures")
+    (description "This package provides inline C++ code closures.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-cpp-build-0.5
   (package
     (name "rust-cpp-build")
