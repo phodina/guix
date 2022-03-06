@@ -12737,6 +12737,34 @@ intrinsics.")
      "This package provides a counts the number of live instances of types.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-cpp-build-0.5
+  (package
+    (name "rust-cpp-build")
+    (version "0.5.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cpp_build" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "0393w44dbscvl96g0n97r8jcfw47y5mygq4d2ijmp32a3yvha9vn"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-cc" ,rust-cc-1)
+         ("rust-cpp-common" ,rust-cpp-common-0.5)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-regex" ,rust-regex-1)
+         ("rust-syn" ,rust-syn-1)
+         ("rust-unicode-xid" ,rust-unicode-xid-0.2))))
+    (home-page "https://github.com/mystor/rust-cpp")
+    (synopsis "Cargo build script for the `cpp` crate")
+    (description "This package provides cargo build script for the `cpp` crate.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-cpp-common-0.5
   (package
     (name "rust-cpp-common")
