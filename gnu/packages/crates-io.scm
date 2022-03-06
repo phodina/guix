@@ -26840,6 +26840,26 @@ floating-point numbers.")
 let} expressions.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-if-rust-version-1
+  (package
+    (name "rust-if-rust-version")
+    (version "1.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "if_rust_version" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1v6mj3vqy5g0x7gpyg5kiivm42qqgras69cxb0hrg4w67qrwpns6"))))
+    (build-system cargo-build-system)
+    (arguments `(#:skip-build? #t))
+    (home-page "https://github.com/ogoffart/if_rust_version")
+    (synopsis "Macro to enable or disable code depending on the rust version")
+    (description
+      "This package provides macro to enable or disable code depending
+on the rust version.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-ignore-0.4
   (package
     (name "rust-ignore")
