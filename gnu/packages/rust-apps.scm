@@ -998,6 +998,55 @@ by modifying your @file{Cargo.toml} file from the command line.")
 rebase.")
     (license license:gpl3+)))
 
+(define-public gyroflow
+  (package
+    (name "gyroflow")
+    (version "1.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://github.com/gyroflow/gyroflow")
+	   (commit (string-append "v" version "-rc2"))))
+       (sha256
+        (base32
+         "01alprf4mg5in8vhddfn1ba7q2xjaycqv0f9xnsjzkn2i1anm125"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs
+	   (("rust-cstr-core" ,rust-cstr-core-0.2)
+        ("rust-cpp" ,rust-cpp-0.5)
+        ("rust-serde-json" ,rust-serde-json-1)
+        ("rust-bytebuck" ,rust-bytemuck-1)
+        ("rust-nalgebra" ,rust-nalgebra-0.30)
+        ("rust-semver" ,rust-semver-1)
+        ("rust-breakpad-sys" ,rust-breakpad-sys-0.1)
+;;qmetaobject = { version = "*", git = "https://github.com/AdrianEddy/qmetaobject-rs.git", default-features = false, features = ["log"] }
+;;qttypes     = { version = "*", git = "https://github.com/AdrianEddy/qmetaobject-rs.git", default-features = false, features = ["required", "qtquick", "qtquickcontrols2"]}
+;;qml-video-rs = { git = "https://github.com/AdrianEddy/qml-video-rs.git" }
+;;#qml-video-rs = { path = "../qml-video-rs" }
+;
+;;ffmpeg-next = { version = "5.0.2", default-features = false, features = ["codec", "filter", "format", "software-resampling", "software-scaling"] }
+("rust-lazy-static" ,rust-lazy-static-1)
+("rust-parking-lot" ,rust-parking-lot-0.12)
+("rust-winapi" ,rust-winapi-0.3)
+("rust-simplelog" ,rust-simplelog-0.11)
+("rust-log" ,rust-log-0.4)
+;
+("rust-ureq" ,rust-ureq-2)
+("rust-whoami" ,rust-whoami-1))
+#:cargo-development-inputs
+(("rust-cpp-build" ,rust-cpp-build-0.5)
+("rust-winres" ,rust-winres-0.1))))
+
+    (home-page
+     "https://github.com/gyroflow/gyroflow")
+    (synopsis
+     "Gyro flow")
+    (description
+     "")
+    (license license:gpl3+)))
+
 (define-public rust-cbindgen
   (package
     (name "rust-cbindgen")
