@@ -1927,6 +1927,10 @@ dist_patch_DATA =						\
   %D%/packages/patches/twinkle-bcg729.patch			\
   %D%/packages/patches/u-boot-allow-disabling-openssl.patch	\
   %D%/packages/patches/u-boot-nintendo-nes-serial.patch		\
+  %D%/packages/patches/u-boot-pinebookpro-arch-arm-dts-sync.patch \
+  %D%/packages/patches/u-boot-pinebookpro-fix-panel-reset.patch \
+  %D%/packages/patches/u-boot-pinebookpro-power-and-stanby-leds.patch \
+  %D%/packages/patches/u-boot-pinebookpro-rk3399-support-spi-flash-boot.patch \
   %D%/packages/patches/u-boot-pinephonepro-adc-rockchip-saradc.patch \
   %D%/packages/patches/u-boot-pinephonepro-device-enablement.patch \
   %D%/packages/patches/u-boot-pinephonepro-hack-do-not-honor.patch \

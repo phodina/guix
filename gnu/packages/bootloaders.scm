@@ -531,6 +531,18 @@ tree binary files.  These are board description files used by Linux and BSD.")
 (define %u-boot-pinephonepro-rk8xx-poweroff-support-patch
   (search-patch "u-boot-pinephonepro-rk8xx-poweroff-support.patch"))
 
+(define %u-boot-pinebookpro-arch-arm-dts-sync-patch
+  (search-patch "u-boot-pinebookpro-arch-arm-dts-sync.patch"))
+
+(define %u-boot-pinebookpro-fix-panel-reset-patch
+  (search-patch   "u-boot-pinebookpro-fix-panel-reset.patch"))
+
+(define %u-boot-pinebookpro-power-and-standby-leds-patch
+  (search-patch "u-boot-pinebookpro-power-and-stanby-leds.patch"))
+
+(define %u-boot-pinebookpro-rk3399-support-spi-flash-boot-patch
+  (search-patch "u-boot-pinebookpro-rk3399-support-spi-flash-boot.patch"))
+
 (define %u-boot-rockchip-inno-usb-patch
   ;; Fix regression in 2020.10 causing freezes on boot with USB boot enabled.
   ;; See https://gitlab.manjaro.org/manjaro-arm/packages/core/uboot-rockpro64/-/issues/4
@@ -560,6 +572,10 @@ tree binary files.  These are board description files used by Linux and BSD.")
     (source (origin
 	      (patches
                (list %u-boot-rockchip-inno-usb-patch
+                     %u-boot-pinebookpro-arch-arm-dts-sync-patch
+                     %u-boot-pinebookpro-fix-panel-reset-patch
+                     %u-boot-pinebookpro-power-and-standby-leds-patch
+                     %u-boot-pinebookpro-rk3399-support-spi-flash-boot-patch
                      %u-boot-pinephonepro-adc-rockchip-saradc-patch
                      %u-boot-pinephonepro-device-enablement-patch
                      %u-boot-pinephonepro-hack-do-not-honor-patch
