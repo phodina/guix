@@ -12836,6 +12836,35 @@ the `cpp` crate.")
      "This package provides a crate for demangling C++ symbols.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-cpp-macros-0.5
+  (package
+    (name "rust-cpp-macros")
+    (version "0.5.6")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "cpp_macros" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "09gwm3j61y2y5ma1s55qd12pl7rfjnjzyqxv9v4an44cc4ga54sg"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build?
+        #t
+        #:cargo-inputs
+        (("rust-aho-corasick" ,rust-aho-corasick-0.7)
+         ("rust-byteorder" ,rust-byteorder-1)
+         ("rust-cpp-common" ,rust-cpp-common-0.5)
+         ("rust-if-rust-version" ,rust-if-rust-version-1)
+         ("rust-lazy-static" ,rust-lazy-static-1)
+         ("rust-proc-macro2" ,rust-proc-macro2-1)
+         ("rust-quote" ,rust-quote-1)
+         ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/mystor/rust-cpp")
+    (synopsis "Procedural macro implementation for the `cpp` crate")
+    (description "Procedural macro implementation for the `cpp` crate")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-cpufeatures-0.2
   (package
     (name "rust-cpufeatures")
