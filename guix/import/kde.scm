@@ -51,7 +51,7 @@
 
 (define %kde-file-list-uri
   ;; URI of the file list (ls -lR format) for download.kde.org.
-  (string->uri "https://download.kde.org/ls-lR.bz2"))
+  (string->uri "https://mirrors.ocf.berkeley.edu/kde/ls-lR.bz2"))
 
 (define (download.kde.org-files)
   ;;"Return the list of files available at download.kde.org."
