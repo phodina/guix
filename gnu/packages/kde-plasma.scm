@@ -735,7 +735,6 @@ tst_triangleFilter|systemtraymodeltest|testdesktop"))
            kio
            kirigami
            kitemmodels
-           kitemmodels
            knewstuff
            knotifications
            knotifyconfig
