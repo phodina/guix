@@ -603,7 +603,6 @@ conjunction with the KDE Plasma Desktop.")
            kio
            kirigami
            kitemmodels
-           kitemmodels
            knewstuff
            knotifications
            knotifyconfig
