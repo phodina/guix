@@ -3197,17 +3197,19 @@ web server.")
                 "19rhk9f97m736d5ia26vfcbjp5kgi454558yhf9mrwm4iw5d9pk4"))))
     (build-system meson-build-system)
     (native-inputs
-     (list dbus pkg-config))
+     (list dbus
+           gtk-doc
+           pkg-config
+           vala))
     (inputs (list check
                   gobject-introspection
-                  gtk-doc
                   libxml2
                   python
                   python-pygobject
                   sqlite
-                  glib
-                  `(,glib "bin")
-                  vala))
+                  `(,glib "bin")))
+    (propagated-inputs
+     (list glib))
     (arguments
      (list
       #:tests? #f ; one test fails.
@@ -3253,9 +3255,8 @@ credentials and service-specific settings.")
                (base32
                 "1vmpjvysm0ld8dqnx8msa15hlhrkny02cqycsh4k2azrnijg0xjz"))))
     (build-system gnu-build-system)
-    (native-inputs (list pkg-config qtbase-5 strace qttools))
+    (native-inputs (list pkg-config qtbase-5 qttools))
     (inputs (list doxygen
-                  glib
                   libaccounts-glib))
     (arguments
      (list
