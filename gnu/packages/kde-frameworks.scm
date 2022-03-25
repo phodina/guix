@@ -10,6 +10,7 @@
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2021 Alexandros Theodotou <alex@zrythm.org>
 ;;; Copyright © 2022 Brendan Tildesley <mail@brendan.scot>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,6 +33,7 @@
   #:use-module (guix build-system qt)
   #:use-module (guix build-system trivial)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
@@ -49,6 +51,7 @@
   #:use-module (gnu packages calendar)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages databases)
+  #:use-module (gnu packages documentation)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages freedesktop)
@@ -86,6 +89,7 @@
   #:use-module (gnu packages video)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
+  #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1))
 
@@ -1163,6 +1167,29 @@ lower level classes for interaction with the X Windowing System.")
     ;; Some source files mention lgpl2.0+, but the included license is
     ;; the lgpl2.1. Some source files are under non-copyleft licenses.
     (license license:lgpl2.1+)))
+
+(define-public maliit-framework
+  (package
+    (name "maliit-framework")
+    (version "2.2.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+			  (url "https://github.com/maliit/framework")
+			  (commit version)))
+              (sha256
+               (base32
+                "0xfb0csc6njdp67wz265i16imzqxkz8s776c803x294mxw4jwnzd"))))
+    (build-system cmake-build-system)
+	(native-inputs (list extra-cmake-modules wayland-protocols pkg-config
+	doxygen graphviz `(,glib "bin"))) ; for gdbus-codegen))
+	(inputs (list qtbase-5 qtdeclarative qtwayland wayland libxkbcommon dbus
+	eudev glib))
+;	ki18n plasma-framework knotifications networkmanager-qt kwin))
+    (home-page "https://github.com/maliit/framework")
+    (synopsis "Core libraries of Maliit")
+    (description "")
+    (license license:lgpl2.1)))
 
 (define-public modemmanager-qt
   (package
