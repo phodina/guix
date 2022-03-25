@@ -53,6 +53,8 @@
   #:use-module (gnu packages databases)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages docbook)
+  #:use-module (gnu packages documentation)
+  #:use-module (gnu packages fcitx)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gettext)
@@ -65,9 +67,11 @@
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages image)
+  #:use-module (gnu packages ibus)
   #:use-module (gnu packages iso-codes)
   #:use-module (gnu packages kerberos)
   #:use-module (gnu packages kde-plasma)
+  #:use-module (gnu packages language)
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages libreoffice)
   #:use-module (gnu packages linux)
@@ -1206,6 +1210,50 @@ lower level classes for interaction with the X Windowing System.")
     (description "This package provides Maliit provides a flexible input
 method framework.")
     (license license:lgpl2.1)))
+
+(define-public maliit-keyboard
+  (package
+    (name "maliit-keyboard")
+    (version "2.3.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/maliit/keyboard")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0g89lckl4wzwamc89hs8871fbiyrsjwzk5b6ic4vhc4d1clyqzaw"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f
+       #:phases (modify-phases %standard-phases
+                  (add-after 'install 'install-gschema
+                    (lambda* (#:key source outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out"))
+                             (schemas (string-append out
+                                       "/share/glib-2.0/schemas")))
+					  ;; TODO: No GSettings schemas
+                        (install-file (string-append source
+                                       "/data/schemas/org.maliit.keyboard.maliit.gschema.xml")
+                                      schemas)))))))
+    (native-inputs (list extra-cmake-modules gsettings-desktop-schemas pkg-config gettext-minimal
+                         `(,glib "bin")))
+    (inputs (list hunspell
+                  glib
+                  libchewing
+                  libpinyin
+                  maliit-framework
+                  presage
+                  qtbase-5
+                  qtdeclarative
+                  qtmultimedia
+                  qtquickcontrols2))
+    (home-page "https://github.com/maliit/keyboard")
+    (synopsis "Maliit Keyboard")
+    (description "This package provides virtual keyboard for Wayland and X11
+display servers.  It supports many different languages and emoji.")
+    (license license:gpl3+)))
 
 (define-public modemmanager-qt
   (package
