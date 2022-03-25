@@ -702,6 +702,26 @@ customizable platform for mobile devices.")
 and customizable platform for mobile devices.")
     (license (list license:gpl3+ license:lgpl2.1+))))
 
+(define-public plasma-mobile-sounds
+  (package
+    (name "plasma-mobile-sounds")
+    (version "0.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://kde/stable/plasma-mobile-sounds/"
+                    version "/plasma-mobile-sounds-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1br6kzicrr45vgg0ciqczxlcid21n5lfjm6zc06rw86ys7fx7bpi"))))
+    (build-system cmake-build-system)
+    (native-inputs (list extra-cmake-modules pkg-config))
+    (home-page "https://plasma-mobile.org/")
+    (synopsis "Sounds for Plasma Mobile devices")
+    (description "")
+    ;; TODO: Multiple
+    (license (list license:gpl3+ license:lgpl2.1+))))
+
 (define-public plasma-workspace
   (package
     (name "plasma-workspace")
