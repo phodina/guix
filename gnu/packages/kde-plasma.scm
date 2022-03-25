@@ -30,6 +30,7 @@
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system qt)
   #:use-module (gnu packages admin)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
@@ -583,6 +584,46 @@ conjunction with the KDE Plasma Desktop.")
                    license:lgpl2.0+
                    license:lgpl2.1
                    license:lgpl3))))
+
+(define-public plasma-mobile
+  (package
+    (name "plasma-mobile")
+    (version "5.24.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://download.kde.org/stable/plasma/"
+                                  version "/plasma-mobile-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1bwmy7xvd8wmh0snqqjh9jjgawib8ks2g30w48sqxwhplhf3da58"))))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (add-after 'install 'wrap-script
+                          (lambda* (#:key inputs outputs #:allow-other-keys)
+                            (wrap-program (string-append #$output
+                                                         "/bin/kwinwrapper")
+                                          `("PATH" ":" prefix
+                                            (,(string-append #$plasma-framework
+                                                             "/bin")))))))))
+    (native-inputs (list extra-cmake-modules pkg-config qttools))
+    (inputs (list bash-minimal
+                  kdeclarative
+                  ki18n
+                  kio
+                  knotifications
+                  kwayland
+                  kwin
+                  modemmanager-qt
+                  networkmanager-qt
+                  plasma-framework
+                  qtbase-5))
+    (home-page "https://plasma-mobile.org/")
+    (synopsis
+     "General UI components for Plasma Phone including shell, containment and applets")
+    (description "This package provides user-friendly, privacy-enabling and
+customizable platform for mobile devices.")
+    (license (list license:gpl3+ license:lgpl2.1+))))
 
 (define-public plasma-phone-components
   (package
