@@ -53,6 +53,8 @@
   #:use-module (gnu packages databases)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages docbook)
+  #:use-module (gnu packages documentation)
+  #:use-module (gnu packages fcitx)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gettext)
@@ -65,9 +67,11 @@
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages image)
+  #:use-module (gnu packages ibus)
   #:use-module (gnu packages iso-codes)
   #:use-module (gnu packages kerberos)
   #:use-module (gnu packages kde-plasma)
+  #:use-module (gnu packages language)
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages libreoffice)
   #:use-module (gnu packages linux)
@@ -1190,6 +1194,39 @@ lower level classes for interaction with the X Windowing System.")
     (synopsis "Core libraries of Maliit")
     (description "")
     (license license:lgpl2.1)))
+
+; TODO: Gschema
+(define-public maliit-keyboard
+  (package
+    (name "maliit-keyboard")
+    (version "2.2.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+			  (url "https://github.com/maliit/keyboard")
+			  (commit version)))
+              (sha256
+               (base32
+                "1d9ybc7nza7n85gd00ksafm3rqcpl1630xcdq93kvl8kc3m57zp2"))))
+    (build-system cmake-build-system)
+	(arguments
+	`(#:tests? #f
+	  #:phases
+	   (modify-phases %standard-phases
+         (add-after 'install 'install-gschema
+           (lambda* (#:key source outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (schemas (string-append out "/share/glib-2.0/schemas")))
+               (install-file (string-append source
+			   "/data/schemas/org.maliit.keyboard.maliit.gschema.xml")
+			   schemas)))))))
+	(native-inputs (list extra-cmake-modules pkg-config gettext-minimal
+	`(,glib "bin")))
+	(inputs (list qtbase-5 qtdeclarative qtmultimedia hunspell glib libpinyin presage libchewing maliit-framework))
+    (home-page "https://github.com/maliit/keyboard")
+    (synopsis "Maliit Keyboard")
+    (description "")
+    (license license:gpl3+)))
 
 (define-public modemmanager-qt
   (package
