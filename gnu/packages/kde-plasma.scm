@@ -555,6 +555,28 @@ conjunction with the KDE Plasma Desktop.")
                    license:lgpl2.1
                    license:lgpl3))))
 
+(define-public plasma-mobile
+  (package
+    (name "plasma-mobile")
+    (version "5.24.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+			  "https://download.kde.org/stable/plasma/" version
+			  "/plasma-mobile-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1bwmy7xvd8wmh0snqqjh9jjgawib8ks2g30w48sqxwhplhf3da58"))))
+    (build-system cmake-build-system)
+	(native-inputs (list extra-cmake-modules pkg-config qttools))
+	(inputs (list qtbase-5 kdeclarative kwayland modemmanager-qt kio
+	ki18n plasma-framework knotifications networkmanager-qt kwin))
+    (home-page "https://www.plasma-mobile.org/")
+    (synopsis "General UI components for Plasma Phone including shell, containment and applets.")
+    (description "This package provides user-friendly, privacy-enabling and
+	customizable platform for mobile devices.")
+    (license (list license:gpl3+ license:lgpl2.1+))))
+
 (define-public plasma-phone-components
   (package
     (name "plasma-phone-components")
