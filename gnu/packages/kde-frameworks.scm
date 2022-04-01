@@ -1502,7 +1502,6 @@ ASpell and HUNSPELL.")
 uses a job-based interface to queue tasks and execute them in an efficient way.")
     (license license:lgpl2.1+)))
 
-
 ;; Tier 2
 ;;
 ;; Tier 2 frameworks additionally depend on tier 1 frameworks, but still have

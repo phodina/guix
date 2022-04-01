@@ -1349,6 +1349,35 @@ Xorg windowing systems (Wayland, X11) on Linux.  Its primary usage is in
 conjunction with the KDE Plasma Desktop.")
     (license license:gpl2+)))
 
+(define-public kwin-effects-yet-another-magic-lamp
+  (package
+    (name "kwin-effects-yet-another-magic-lamp")
+    (version "5.24.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                     "https://github.com/zzag/kwin-effects-yet-another-magic-lamp/archive/refs/tags/"
+					 version ".tar.gz"))
+              (sha256
+               (base32
+                "0li4cr18fhdmqfbmj48iqrxhxhlnm35qwfbfv9wck7wz1aqlwhz9"))))
+    (build-system cmake-build-system)
+    (native-inputs (list extra-cmake-modules pkg-config))
+    (inputs (list qtbase-5
+                  kwindowsystem
+                  kconfigwidgets
+                  kcoreaddons
+                  kconfig
+                  kwin
+                  libepoxy))
+    (home-page "https://github.com/zzag/kwin-effects-yet-another-magic-lamp")
+    (synopsis "Just Yet Another Magic Lamp Kwin plugin")
+    (description "This package provides a window minimization effect
+for KWin.  Whenever a window is minimized, it'll get sucked down into
+the dock/panel.")
+    (license license:gpl2+)))
+
+
 (define-public kwrited
   (package
     (name "kwrited")
