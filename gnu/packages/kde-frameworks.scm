@@ -1499,6 +1499,26 @@ ASpell and HUNSPELL.")
 uses a job-based interface to queue tasks and execute them in an efficient way.")
     (license license:lgpl2.1+)))
 
+(define-public kwin-effects-yet-another-magic-lamp
+  (package
+    (name "kwin-effects-yet-another-magic-lamp")
+    (version "5.24.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+               (url "https://github.com/zzag/kwin-effects-yet-another-magic-lamp")
+			   (commit version)))
+              (sha256
+               (base32
+                "0aggi3p10kaa8lann0j7cp2g76qh83s1r7akjcjc2y4anv0asz68"))))
+    (build-system cmake-build-system)
+       (native-inputs (list extra-cmake-modules pkg-config))
+       (inputs (list qtbase-5 kwindowsystem kconfigwidgets kcoreaddons kconfig
+	   kwin libepoxy))
+    (home-page "https://github.com/zzag/kwin-effects-yet-another-magic-lamp")
+    (synopsis "Just Yet Another Magic Lamp Kwin plugin")
+    (description "")
+    (license license:gpl2+)))
 
 ;; Tier 2
 ;;
