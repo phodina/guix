@@ -621,6 +621,26 @@ kwin	kcodecs kcompletion kconfig kconfigwidgets kcoreaddons kdbusaddons kdeclara
 	customizable platform for mobile devices.")
     (license (list license:gpl3+ license:lgpl2.1+))))
 
+(define-public plasma-phonebook
+  (package
+    (name "plasma-phonebook")
+    (version "0.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+			  "https://download.kde.org/stable/plasma-phonebook/" version
+			  "/plasma-phonebook-" version ".tar.xz"))
+              (sha256
+               (base32
+                "13nnzdzpganlp319sc9dm9w5hsjhw4f3w8rb80q3nd8q6nyrpky8"))))
+    (build-system cmake-build-system)
+	(native-inputs (list extra-cmake-modules pkg-config))
+	(inputs (list kpeoplevcard kirigami kpeople kcoreaddons kcontacts qtbase-5 qtdeclarative qtquickcontrols2 qtsvg))
+    (home-page "https://www.plasma-mobile.org/")
+    (synopsis "Phonebook for Plasma Mobile devices")
+    (description "")
+    (license (list license:gpl3+ license:lgpl2.1+))))
+
 (define-public plasma-mobile-sounds
   (package
     (name "plasma-mobile-sounds")
