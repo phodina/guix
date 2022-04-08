@@ -2986,6 +2986,41 @@ providing QML and Qt Widgets components.  The sources are plugin-based, allowing
 to easily extend the contacts collection.")
     (license license:lgpl2.1+)))
 
+(define-public kpeoplevcard
+(package
+(name "kpeoplevcard")
+(version "0.1")
+(source (origin
+		  (method url-fetch)
+		  (uri (string-append
+				"mirror://kde/stable/kpeoplevcard/"
+				(version-major+minor version) "/"
+				name "-" version ".tar.xz"))
+		  (sha256
+		   (base32
+			"1hv3fq5k0pps1wdvq9r1zjnr0nxf8qc3vwsnzh9jpvdy79ddzrcd"))))
+(build-system qt-build-system)
+(native-inputs
+ (list extra-cmake-modules))
+(inputs
+ (list kconfig
+	   kcoreaddons
+	   kitemviews
+	   ki18n
+	   kpeople
+	   kcontacts
+	   kservice
+	   kwidgetsaddons
+	   qtbase-5
+	   qtdeclarative))
+(arguments
+ `(#:tests? #f))
+(home-page "https://community.kde.org/Frameworks")
+(synopsis "")
+(description "")
+;; Multiple
+(license license:lgpl2.1+)))
+
 (define-public krunner
   (package
     (name "krunner")
