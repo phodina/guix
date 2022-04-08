@@ -43,6 +43,7 @@
   #:use-module (gnu packages iso-codes)
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
+  #:use-module (gnu packages kde-pim)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages maths)
   #:use-module (gnu packages messaging)
@@ -701,6 +702,35 @@ customizable platform for mobile devices.")
     (synopsis "Modules providing phone functionality for Plasma")
     (description "This package provides user-friendly, privacy-enabling
 and customizable platform for mobile devices.")
+    (license (list license:gpl3+ license:lgpl2.1+))))
+
+(define-public plasma-phonebook
+  (package
+    (name "plasma-phonebook")
+    (version "0.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma-phonebook/"
+                                  version "/plasma-phonebook-" version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "13nnzdzpganlp319sc9dm9w5hsjhw4f3w8rb80q3nd8q6nyrpky8"))))
+    (build-system cmake-build-system)
+    (native-inputs (list extra-cmake-modules pkg-config))
+    (inputs (list kpeople
+                  kirigami
+                  kpeoplevcard
+                  kcoreaddons
+                  kcontacts
+                  qtbase-5
+                  qtdeclarative-5
+                  qtquickcontrols2-5
+                  qtsvg-5))
+    (home-page "https://plasma-mobile.org/")
+    (synopsis "Phonebook for Plasma Mobile devices")
+    (description "This package provides contacts application which allows
+adding, modifying and removing contacts.")
     (license (list license:gpl3+ license:lgpl2.1+))))
 
 (define-public plasma-mobile-sounds
