@@ -1774,6 +1774,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/rustc-1.39.0-src.patch			\
   %D%/packages/patches/rust-adblock-ignore-live-tests.patch		\
   %D%/packages/patches/i3status-rust-enable-unstable-features.patch	\
+  %D%/packages/patches/rust-glutin-remove-windows-ios.patch \
   %D%/packages/patches/rust-ndarray-remove-blas-src-dep.patch	\
   %D%/packages/patches/rust-ndarray-0.13-remove-blas-src.patch	\
   %D%/packages/patches/rust-ndarray-0.14-remove-blas-src.patch	\

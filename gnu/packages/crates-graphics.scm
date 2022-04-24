@@ -967,48 +967,50 @@ EUI-64, also known as MAC-48 media access control addresses.")
      "Generated OpenGL bindings and wrapper for Servo.")
     (license (list license:asl2.0 license:expat))))
 
-(define-public rust-glutin-0.26
+(define-public rust-glutin-0.28
   (package
     (name "rust-glutin")
-    (version "0.26.0")
+    (version "0.28.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "glutin" version))
        (file-name (string-append name "-" version ".tar.gz"))
+       (patches (search-patches "rust-glutin-remove-windows-ios.patch"))
        (sha256
-        (base32 "18szbh4dixcr7pmymvbrpv21hv0wrpii5w03rv2534bb2ywwpq8s"))))
+        (base32 "1lpnf61x4jbm55bpdr10k1a1pl3cs719i9y4qibsdj2bajz9vsh0"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-android-glue" ,rust-android-glue-0.2)
-        ("rust-cgl" ,rust-cgl-0.3)
-        ("rust-cocoa" ,rust-cocoa-0.23)
-        ("rust-core-foundation" ,rust-core-foundation-0.9)
-        ("rust-glutin-egl-sys" ,rust-glutin-egl-sys-0.1)
+       (("rust-glutin-egl-sys" ,rust-glutin-egl-sys-0.1)
         ("rust-glutin-emscripten-sys" ,rust-glutin-emscripten-sys-0.1)
         ("rust-glutin-gles2-sys" ,rust-glutin-gles2-sys-0.1)
         ("rust-glutin-glx-sys" ,rust-glutin-glx-sys-0.1)
         ("rust-glutin-wgl-sys" ,rust-glutin-wgl-sys-0.1)
         ("rust-lazy-static" ,rust-lazy-static-1)
-        ("rust-libloading" ,rust-libloading-0.6)
+        ("rust-libloading" ,rust-libloading-0.7)
         ("rust-log" ,rust-log-0.4)
-        ("rust-objc" ,rust-objc-0.2)
         ("rust-osmesa-sys" ,rust-osmesa-sys-0.1)
         ("rust-parking-lot" ,rust-parking-lot-0.11)
-        ("rust-wayland-egl" ,rust-wayland-egl-0.28)
-        ("rust-winapi" ,rust-winapi-0.3)
-        ("rust-winit" ,rust-winit-0.24))))
+        ("rust-wayland-egl" ,rust-wayland-egl-0.29)
+        ("rust-winit" ,rust-winit-0.26))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-version-requirements
+           (lambda _
+             ;; Remove windows and ios, the patch applies to Cargo.toml.orig
+             (delete-file "Cargo.toml")
+             (rename-file "Cargo.toml.orig" "Cargo.toml"))))))
     (inputs
-     (list rust-wayland-client-0.28 rust-wayland-egl-0.28))
-    (home-page "https://github.com/tomaka/glutin")
+     (list rust-wayland-client-0.29 rust-wayland-egl-0.29))
+    (home-page "https://github.com/rust-windowing/glutin")
     (synopsis "Cross-platform OpenGL context provider")
     (description "This package provides an OpenGL context provider.")
     (license license:asl2.0)))
 
 (define-public rust-glutin-0.22
   (package
-    (inherit rust-glutin-0.26)
+    (inherit rust-glutin-0.28)
     (name "rust-glutin")
     (version "0.22.0-alpha5")
     (source
