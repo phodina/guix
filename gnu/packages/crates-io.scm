@@ -34821,7 +34821,7 @@ drop-in replacement for miniz.")
 (define-public rust-mint-0.5
   (package
     (name "rust-mint")
-    (version "0.5.4")
+    (version "0.5.9")
     (source
      (origin
        (method url-fetch)
@@ -34830,8 +34830,11 @@ drop-in replacement for miniz.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0c4190gr348fkfijij7vm19iagwl36mssj1irc9f6m448hbhgn68"))))
+         "1zw5glv8z2d99c82jy2za97hh9p6377xmf4rbwz7jynsdfxfngg5"))))
     (build-system cargo-build-system)
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs (("rust-serde" ,rust-serde-1))))
     (home-page "https://github.com/kvark/mint")
     (synopsis "Math interoperability standard types")
     (description
