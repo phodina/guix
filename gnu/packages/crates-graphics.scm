@@ -2389,24 +2389,25 @@ applications.")
         ("rust-num-derive" ,rust-num-derive-0.2)
         ("rust-num-traits" ,rust-num-traits-0.2))))))
 
-(define-public rust-wayland-client-0.28
+(define-public rust-wayland-client-0.29
   (package
     (name "rust-wayland-client")
-    (version "0.28.3")
+    (version "0.29.4")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "wayland-client" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1mxnflzv9s3qpcp0z7kqvrzki5bknfar9n9yky06f8ivs00vxgdx"))))
+        (base32 "13s5sj9344izk2g48yizk81kcg8jg4940gg2v6bzcmrjwxh388li"))))
     (build-system cargo-build-system)
     (arguments
-     `(#:cargo-inputs
+     `(#:tests? #f
+       #:cargo-inputs
        (("rust-bitflags" ,rust-bitflags-1)
         ("rust-downcast-rs" ,rust-downcast-rs-1)
         ("rust-libc" ,rust-libc-0.2)
-        ("rust-nix" ,rust-nix-0.18)
+        ("rust-nix" ,rust-nix-0.22)
         ("rust-scoped-tls" ,rust-scoped-tls-1))
        #:cargo-development-inputs
        (("rust-tempfile" ,rust-tempfile-3))))
@@ -2414,11 +2415,11 @@ applications.")
      (list rust-bitflags-1
            rust-downcast-rs-1
            rust-libc-0.2
-           rust-nix-0.18
+           rust-nix-0.22
            rust-scoped-tls-1
-           rust-wayland-commons-0.28
-           rust-wayland-scanner-0.28
-           rust-wayland-sys-0.28))
+           rust-wayland-commons-0.29
+           rust-wayland-scanner-0.29
+           rust-wayland-sys-0.29))
     (home-page "https://github.com/smithay/wayland-rs")
     (synopsis
      "Rust bindings to the standard C implementation of the wayland protocol")
@@ -2429,7 +2430,7 @@ the wayland protocol, client side.")
 
 (define-public rust-wayland-client-0.23
   (package
-    (inherit rust-wayland-client-0.28)
+    (inherit rust-wayland-client-0.29)
     (name "rust-wayland-client")
     (version "0.23.6")
     (source
