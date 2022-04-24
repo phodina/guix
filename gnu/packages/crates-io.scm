@@ -38290,24 +38290,28 @@ Rust.")
     (description "Numeric syntax extensions in Rust.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-num-enum-0.4
+(define-public rust-num-enum-0.5
   (package
     (name "rust-num-enum")
-    (version "0.4.3")
+    (version "0.5.7")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "num_enum" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1r1nisdzm9m7xm0389nwyi85jhx1bnh5pwllai44ngbgy1ymlmna"))))
+        (base32 "1j8rq7i4xnbzy72z82k41469xlj1bmn4ixagd9wlbvv2ark9alyg"))))
     (build-system cargo-build-system)
     (arguments
      `(#:tests? #false                  ;missing files
        #:cargo-inputs
-       (("rust-derivative" ,rust-derivative-2)
-        ("rust-num-enum" ,rust-num-enum-0.4)
-        ("rust-num-enum-derive" ,rust-num-enum-derive-0.4))))
+       (("rust-num-enum-derive" ,rust-num-enum-derive-0.5))
+       #:cargo-development-inputs
+       (("rust-rustversion" ,rust-rustversion-1)
+        ("rust-trybuild" ,rust-trybuild-1)
+        ("rust-walkdir" ,rust-walkdir-2)
+        ("rust-proc-macro-crate" ,rust-proc-macro-crate-1)
+        ("rust-anyhow" ,rust-anyhow-1))))
     (home-page "https://github.com/illicitonion/num_enum")
     (synopsis "Macros easing inter-operation between primitives and enums")
     (description
