@@ -2833,23 +2833,24 @@ the wayland protocol, server side.")
         ("rust-wayland-sys" ,rust-wayland-sys-0.21)
         ("rust-wayland-scanner" ,rust-wayland-scanner-0.21))))))
 
-(define-public rust-wayland-sys-0.28
+(define-public rust-wayland-sys-0.29
   (package
     (name "rust-wayland-sys")
-    (version "0.28.3")
+    (version "0.29.4")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "wayland-sys" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "16f03jsy7q6p2wpaazc4w4kycyyk0fz7lacpdbcizl9m1i7874v7"))))
+        (base32 "1m2jwk5q36jidwbdmdicmi27r9dzi4wanzg3i28nfxc9kbvisd6r"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-dlib" ,rust-dlib-0.4)
+       (("rust-dlib" ,rust-dlib-0.5)
         ("rust-lazy-static" ,rust-lazy-static-1)
         ("rust-libc" ,rust-libc-0.2)
+        ("rust-memoffset" ,rust-memoffset-0.6)
         ("rust-pkg-config" ,rust-pkg-config-0.3))
        #:phases
        (modify-phases %standard-phases
@@ -2861,7 +2862,10 @@ the wayland protocol, server side.")
                   (string-append libwayland "/lib/" shared-lib)))
                #t))))))
     (inputs
-     (list rust-dlib-0.4 rust-lazy-static-1 rust-libc-0.2
+     (list rust-dlib-0.5
+           rust-lazy-static-1
+           rust-libc-0.2
+           rust-memoffset-0.6
            rust-pkg-config-0.3))
     (propagated-inputs
      (list wayland))
@@ -2876,7 +2880,7 @@ crate @code{rust-wayland-client} for usable bindings.")
 
 (define-public rust-wayland-sys-0.23
   (package
-    (inherit rust-wayland-sys-0.28)
+    (inherit rust-wayland-sys-0.29)
     (name "rust-wayland-sys")
     (version "0.23.6")
     (source
