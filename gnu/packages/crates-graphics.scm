@@ -2924,17 +2924,18 @@ crate @code{rust-wayland-client} for usable bindings.")
         (base32
          "0a0ndgkg98pvmkv44yya4f7mxzjaxylknqh64bpa05w0azyv02jj"))))))
 
-(define-public rust-winit-0.24
+(define-public rust-winit-0.26
   (package
     (name "rust-winit")
-    (version "0.24.0")
+    (version "0.26.1")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "winit" version))
        (file-name (string-append name "-" version ".tar.gz"))
+       (patches (search-patches "rust-winit-remove-windows-and-ios.patch"))
        (sha256
-        (base32 "15zmpx5ip6ziqhds7md1s0ri0blhxfa8fg1ylg84pf0frrpxlkns"))))
+        (base32 "0fp7cdh7llbqmm6ga8f6bzk9785jmkbyy1w631hr9faq3n9wqhwv"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
@@ -2949,24 +2950,32 @@ crate @code{rust-wayland-client} for usable bindings.")
         ("rust-lazy-static" ,rust-lazy-static-1)
         ("rust-libc" ,rust-libc-0.2)
         ("rust-log" ,rust-log-0.4)
-        ("rust-mio" ,rust-mio-0.6)
+        ("rust-mint" ,rust-mint-0.5)
+        ("rust-mio" ,rust-mio-0.8)
         ("rust-mio-extras" ,rust-mio-extras-2)
-        ("rust-ndk" ,rust-ndk-0.2)
-        ("rust-ndk-glue" ,rust-ndk-glue-0.2)
-        ("rust-ndk-sys" ,rust-ndk-sys-0.2)
         ("rust-objc" ,rust-objc-0.2)
         ("rust-parking-lot" ,rust-parking-lot-0.11)
         ("rust-percent-encoding" ,rust-percent-encoding-2)
-        ("rust-raw-window-handle" ,rust-raw-window-handle-0.3)
+        ("rust-raw-window-handle" ,rust-raw-window-handle-0.4)
         ("rust-serde" ,rust-serde-1)
-        ("rust-smithay-client-toolkit" ,rust-smithay-client-toolkit-0.12)
+        ("rust-smithay-client-toolkit" ,rust-smithay-client-toolkit-0.15)
         ("rust-stdweb" ,rust-stdweb-0.4)
         ("rust-wasm-bindgen" ,rust-wasm-bindgen-0.2)
-        ("rust-web-sys" ,rust-web-sys-0.3)
         ("rust-winapi" ,rust-winapi-0.3)
-        ("rust-x11-dl" ,rust-x11-dl-2))))
+        ("rust-x11-dl" ,rust-x11-dl-2))
+       #:cargo-development-inputs
+       (("rust-console-log" ,rust-console-log-0.2)
+        ("rust-image" ,rust-image-0.23)
+        ("rust-simple-logger" ,rust-simple-logger-1))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-version-requirements
+           (lambda _
+             ;; Remove windows and ios, the patch applies to Cargo.toml.orig
+             (delete-file "Cargo.toml")
+             (rename-file "Cargo.toml.orig" "Cargo.toml"))))))
     (inputs
-     (list rust-wayland-client-0.28))
+     (list rust-wayland-client-0.29 rust-wayland-protocols-0.29))
     (home-page "https://github.com/rust-windowing/winit")
     (synopsis "Window creation library")
     (description
@@ -2982,7 +2991,7 @@ the platform-specific getters provided by winit, or another library.")
 
 (define-public rust-winit-0.20
   (package
-    (inherit rust-winit-0.24)
+    (inherit rust-winit-0.26)
     (name "rust-winit")
     (version "0.20.0-alpha6")
     (source
