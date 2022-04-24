@@ -999,7 +999,7 @@ EUI-64, also known as MAC-48 media access control addresses.")
         ("rust-winapi" ,rust-winapi-0.3)
         ("rust-winit" ,rust-winit-0.24))))
     (inputs
-     (list rust-wayland-client-0.28 rust-wayland-egl-0.28))
+     (list rust-wayland-client-0.29 rust-wayland-egl-0.29))
     (home-page "https://github.com/tomaka/glutin")
     (synopsis "Cross-platform OpenGL context provider")
     (description "This package provides an OpenGL context provider.")
@@ -2584,20 +2584,20 @@ and load them into WlBuffers as well as obtain the necessary metadata to
 properly display animated cursors.")
     (license license:expat)))
 
-(define-public rust-wayland-egl-0.28
+(define-public rust-wayland-egl-0.29
   (package
     (name "rust-wayland-egl")
-    (version "0.28.3")
+    (version "0.29.4")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "wayland-egl" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1xd7iap0x4sidmy9dv02cdnxjhnbk9li7r7f39x9cg0i8xs50ly6"))))
+        (base32 "0flslbp8q4nv3hcw941vapn3jh6y7glqaqv63h1mjaqnxrlisa43"))))
     (build-system cargo-build-system)
     (inputs
-     (list rust-wayland-client-0.28 rust-wayland-sys-0.28))
+     (list rust-nix-0.22 rust-wayland-client-0.29 rust-wayland-sys-0.29))
     ;; For the PKG_CONFIG_PATH environment variable.
     (native-inputs
      (list pkg-config))
