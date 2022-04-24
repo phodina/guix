@@ -2407,7 +2407,7 @@ applications.")
     (arguments
      `(#:tests? #f
        #:cargo-inputs
-       (("rust-bitflags" ,rust-bitflags-1)
+       (("rust-bitflags" ,rust-bitflags-1.2)
         ("rust-downcast-rs" ,rust-downcast-rs-1)
         ("rust-libc" ,rust-libc-0.2)
         ("rust-nix" ,rust-nix-0.22)
@@ -2415,7 +2415,7 @@ applications.")
        #:cargo-development-inputs
        (("rust-tempfile" ,rust-tempfile-3))))
     (inputs
-     (list rust-bitflags-1
+     (list rust-bitflags-1.2
            rust-downcast-rs-1
            rust-libc-0.2
            rust-nix-0.22
