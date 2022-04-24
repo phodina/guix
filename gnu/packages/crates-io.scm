@@ -12726,8 +12726,33 @@ this to write Rust programs which can be customized by end users easily.")
 that logs panics to @code{console.error}.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-console-log-0.2
+  (package
+    (name "rust-console-log")
+    (version "0.2.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "console-log" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "150li8pznpfpn4q0f7g9jwq2hnd5wik0w8378zaa1wffc5ckf6jh"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:cargo-inputs
+        (("rust-log" ,rust-log-0.4)
+         ("rust-wasm-bindgen" ,rust-wasm-bindgen-0.2)
+         ("rust-web-sys" ,rust-web-sys-0.3))))
+    (home-page "https://github.com/iamcodemaker/console_log")
+    (synopsis "Route Rust log messages to the browser's console")
+    (description
+     "This package provides a logging facility that routes Rust log messages to
+the browser's console.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-console-log-0.1
   (package
+    (inherit rust-console-log-0.2)
     (name "rust-console-log")
     (version "0.1.2")
     (source
@@ -12743,13 +12768,7 @@ that logs panics to @code{console.error}.")
     (arguments
      `(#:cargo-inputs
        (("rust-log" ,rust-log-0.4)
-        ("rust-web-sys" ,rust-web-sys-0.3))))
-    (home-page "https://github.com/iamcodemaker/console_log")
-    (synopsis "Route Rust log messages to the browser's console")
-    (description
-     "This package provides a logging facility that routes Rust log messages to
-the browser's console.")
-    (license (list license:expat license:asl2.0))))
+        ("rust-web-sys" ,rust-web-sys-0.3))))))
 
 (define-public rust-const-fn-0.4
   (package
