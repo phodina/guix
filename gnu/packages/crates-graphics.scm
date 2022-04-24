@@ -2607,25 +2607,30 @@ WlSurface, which can then play the role of the base surface for
 initializing an OpenGL or Vulkan context.")
     (license license:expat)))
 
-(define-public rust-wayland-protocols-0.28
+(define-public rust-wayland-protocols-0.29
   (package
     (name "rust-wayland-protocols")
-    (version "0.28.3")
+    (version "0.29.4")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "wayland-protocols" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0c0sw13qssrvf3jgygwqpiimpaagz3haxn9jridd4k85sfs856ii"))))
+        (base32 "0hap8vky2fwsq05c98c8xs00gb9m5kxp8kq3zr0jwh036gi7l530"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-bitflags" ,rust-bitflags-1))))
+       (("rust-bitflags" ,rust-bitflags-1))
+       #:cargo-development-inputs
+       (("rust-autocfg" ,rust-autocfg-1)
+        ("rust-cfg-if" ,rust-cfg-if-1))))
     (inputs
-     (list rust-bitflags-1 rust-wayland-client-0.28
-           rust-wayland-commons-0.28 rust-wayland-scanner-0.28
-           rust-wayland-server-0.28))
+     (list rust-bitflags-1.2
+           rust-wayland-client-0.29
+           rust-wayland-commons-0.29
+           rust-wayland-scanner-0.29
+           rust-wayland-server-0.29))
     (home-page "https://github.com/smithay/wayland-rs")
     (synopsis "Generated API for the officials Wayland protocol extensions")
     (description
@@ -2635,7 +2640,7 @@ extensions.")
 
 (define-public rust-wayland-protocols-0.23
   (package
-    (inherit rust-wayland-protocols-0.28)
+    (inherit rust-wayland-protocols-0.29)
     (name "rust-wayland-protocols")
     (version "0.23.6")
     (source

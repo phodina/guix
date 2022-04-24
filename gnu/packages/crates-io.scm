@@ -7128,9 +7128,10 @@ behave like a set of bitflags.")
     (license (list license:asl2.0
                    license:expat))))
 
-;; XXX: The package below is meant to fix rust-nix-0.22, which has the
-;; following requirements for bitflags version: ">=1.1.0 <1.3.0", and every
-;; package using the latter as a dependency (e.g., nushell 0.43).
+;; XXX: The package below is meant to fix rust-nix-0.22 and
+;; rust-wayland-protocols, which has the  following requirements for bitflags
+;; version: ">=1.1.0 <1.3.0", and every package using the latter as a dependency
+;; (e.g., nushell 0.43).
 (define-public rust-bitflags-1.2
   (package
     (inherit rust-bitflags-1)
