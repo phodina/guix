@@ -2259,20 +2259,20 @@ first-class Rust objects.")
 (define-public rust-smithay-clipboard-0.6
   (package
     (name "rust-smithay-clipboard")
-    (version "0.6.2")
+    (version "0.6.5")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "smithay-clipboard" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "14dwisd56cbr80zf719l3fh0n8pm1fjmvry9lsbhdbccf8cv525b"))))
+        (base32 "0mfx96cqws3h1yp4f354yvrfh9ylhfyzr877p39byy2ks8dma2v1"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-smithay-client-toolkit" ,rust-smithay-client-toolkit-0.12)
-        ("rust-wayland-client" ,rust-wayland-client-0.28))))
+       (("rust-smithay-client-toolkit" ,rust-smithay-client-toolkit-0.15)
+        ("rust-wayland-client" ,rust-wayland-client-0.29))))
     (home-page "https://github.com/smithay/smithay-clipboard")
     (synopsis "Access to the Wayland clipboard for client applications")
     (description
