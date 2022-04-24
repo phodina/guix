@@ -994,7 +994,7 @@ EUI-64, also known as MAC-48 media access control addresses.")
         ("rust-osmesa-sys" ,rust-osmesa-sys-0.1)
         ("rust-parking-lot" ,rust-parking-lot-0.11)
         ("rust-wayland-egl" ,rust-wayland-egl-0.29)
-        ("rust-winit" ,rust-winit-0.24))))
+        ("rust-winit" ,rust-winit-0.26))))
     (inputs
      (list rust-wayland-client-0.29 rust-wayland-egl-0.29))
     (home-page "https://github.com/tomaka/glutin")
