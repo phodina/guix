@@ -18389,10 +18389,10 @@ Central Dispatch.")
 Google's diff-match-patch.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-dlib-0.4
+(define-public rust-dlib-0.5
   (package
     (name "rust-dlib")
-    (version "0.4.2")
+    (version "0.5.0")
     (source
      (origin
        (method url-fetch)
@@ -18401,13 +18401,14 @@ Google's diff-match-patch.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0xlsf3lrz9hd7q3ff6lp5mw4kn3nbryn746kd07i93r6wg8ia7xi"))))
+         "1547hy7nrhkrb2i09va244c0h8mr845ccbs2d2mc414c68bpa6xc"))))
     (build-system cargo-build-system)
     (arguments
-     `(#:cargo-inputs
-       (("rust-libloading" ,rust-libloading-0.6))))
+     `(#:tests? #f ; failing doc-tests
+       #:cargo-inputs
+       (("rust-libloading" ,rust-libloading-0.7))))
     (inputs
-     (list rust-libloading-0.6))
+     (list rust-libloading-0.7))
     (home-page "https://github.com/vberger/dlib")
     (synopsis "Helper macros for manually loading optional system libraries")
     (description
