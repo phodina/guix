@@ -1,0 +1,60 @@
+This patch is tailor to GNU Guix and removes crates for Windows and IOS
+since there is currently no support.
+--- winit-0.26.1/Cargo.toml.orig	1973-11-29 22:33:09.000000000 +0100
++++ winit-0.26.1/Cargo.toml.orig	2022-04-24 08:46:19.456166934 +0200
+@@ -35,55 +35,6 @@
+ image = "0.23.12"
+ simple_logger = "1.9"
+ 
+-[target.'cfg(target_os = "android")'.dependencies]
+-ndk = "0.5"
+-ndk-sys = "0.2.0"
+-ndk-glue = "0.5"
+-
+-[target.'cfg(any(target_os = "ios", target_os = "macos"))'.dependencies]
+-objc = "0.2.7"
+-
+-[target.'cfg(target_os = "macos")'.dependencies]
+-cocoa = "0.24"
+-core-foundation = "0.9"
+-core-graphics = "0.22"
+-dispatch = "0.2.0"
+-
+-[target.'cfg(target_os = "macos")'.dependencies.core-video-sys]
+-version = "0.1.4"
+-default_features = false
+-features = ["display_link"]
+-
+-[target.'cfg(target_os = "windows")'.dependencies]
+-parking_lot = "0.11"
+-
+-[target.'cfg(target_os = "windows")'.dependencies.winapi]
+-version = "0.3.9"
+-features = [
+-    "combaseapi",
+-    "commctrl",
+-    "dwmapi",
+-    "errhandlingapi",
+-    "imm",
+-    "hidusage",
+-    "libloaderapi",
+-    "objbase",
+-    "ole2",
+-    "processthreadsapi",
+-    "shellapi",
+-    "shellscalingapi",
+-    "shobjidl_core",
+-    "unknwnbase",
+-    "winbase",
+-    "windowsx",
+-    "winerror",
+-    "wingdi",
+-    "winnt",
+-    "winuser",
+-    "mmsystem",
+-    "timeapi"
+-]
+-
+ [target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
+ wayland-client = { version = "0.29", default_features = false,  features = ["use_system_lib"], optional = true }
+ wayland-protocols = { version = "0.29", features = [ "staging_protocols"], optional = true }
