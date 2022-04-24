@@ -1439,14 +1439,14 @@ basic input/output.")
                (("0.22.0") "^0.23.0"))))
          (add-after 'configure 'add-absolute-library-references
            (lambda* (#:key inputs cargo-inputs vendor-dir #:allow-other-keys)
-             (let* ((glutin-name ,(package-name rust-glutin-0.26))
-                    (glutin-version ,(package-version rust-glutin-0.26))
+             (let* ((glutin-name ,(package-name rust-glutin-0.28))
+                    (glutin-version ,(package-version rust-glutin-0.28))
                     (glutin-api (string-append glutin-name "-" glutin-version
                                                ".tar.gz/src/api/"))
                     (smithay-client-toolkit-name
-                     ,(package-name rust-smithay-client-toolkit-0.12))
+                     ,(package-name rust-smithay-client-toolkit-0.15))
                     (smithay-client-toolkit-version
-                     ,(package-version rust-smithay-client-toolkit-0.12))
+                     ,(package-version rust-smithay-client-toolkit-0.15))
                     (smithay-client-toolkit-src
                      (string-append smithay-client-toolkit-name "-"
                                     smithay-client-toolkit-version ".tar.gz/src"))
@@ -1531,7 +1531,7 @@ basic input/output.")
            rust-dirs-3
            rust-libc-0.2
            rust-unicode-width-0.1
-           rust-wayland-client-0.28
+           rust-wayland-client-0.29
            rust-winapi-0.3
            wayland))
     (native-search-paths
