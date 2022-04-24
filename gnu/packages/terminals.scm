@@ -1389,7 +1389,7 @@ basic input/output.")
 (define-public alacritty
   (package
     (name "alacritty")
-    (version "0.9.0")
+    (version "0.10.1")
     (source
      (origin
        ;; XXX: The crate at "crates.io" has limited contents.  In particular,
@@ -1400,35 +1400,35 @@ basic input/output.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "068y0b1a0m33r7a3j2xf6k602sc8062gm4d5568ynfx6w5n481lj"))))
+        (base32 "168y0b1a0m33r7a3j2xf6k602sc8062gm4d5568ynfx6w5n481lj"))))
     (build-system cargo-build-system)
     (arguments
      `(#:install-source? #f     ; virtual manifest
        #:cargo-test-flags '("--release" "--" "--skip=config_read_eof")
        #:cargo-inputs
        (("rust-alacritty-config-derive" ,rust-alacritty-config-derive-0.1)
-        ("rust-alacritty-terminal" ,rust-alacritty-terminal-0.15)
-        ("rust-clap" ,rust-clap-2)
+        ("rust-alacritty-terminal" ,rust-alacritty-terminal-0.16)
         ("rust-cocoa" ,rust-cocoa-0.24)
         ("rust-copypasta" ,rust-copypasta-0.7)
         ("rust-crossfont" ,rust-crossfont-0.3)
+        ("rust-dirs" ,rust-dirs-3)
         ("rust-embed-resource" ,rust-embed-resource-1)
         ("rust-fnv" ,rust-fnv-1)
         ("rust-gl-generator" ,rust-gl-generator-0.14)
         ;; XXX: Adjust `add-absolute-library-references' phase when updating
         ;; glutin input.
-        ("rust-glutin" ,rust-glutin-0.26)
+        ("rust-glutin" ,rust-glutin-0.28)
         ("rust-log" ,rust-log-0.4)
         ("rust-notify" ,rust-notify-4)
         ("rust-objc" ,rust-objc-0.2)
         ("rust-parking-lot" ,rust-parking-lot-0.11)
         ("rust-png" ,rust-png-0.16)
-        ("rust-raw-window-handle" ,rust-raw-window-handle-0.3)
+        ("rust-raw-window-handle" ,rust-raw-window-handle-0.4)
         ("rust-serde" ,rust-serde-1)
         ("rust-serde-json" ,rust-serde-json-1)
         ("rust-serde-yaml" ,rust-serde-yaml-0.8)
-        ("rust-time" ,rust-time-0.1)
-        ("rust-urlocator" ,rust-urlocator-0.1)
+        ("rust-structopt" ,rust-structopt-0.3)
+        ("rust-unicode-width" ,rust-unicode-width-0.1)
         ("rust-x11-dl" ,rust-x11-dl-2)
         ("rust-xdg" ,rust-xdg-2))
        #:phases
