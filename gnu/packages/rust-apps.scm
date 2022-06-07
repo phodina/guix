@@ -12,7 +12,7 @@
 ;;; Copyright © 2021, 2022 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2021 Alexandru-Sergiu Marton <brown121407@posteo.ro>
 ;;; Copyright © 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 jgart <jgart@dismail.de>
 ;;; Copyright © 2021 Nicolas Graves <ngraves@ngraves.fr>
 ;;; Copyright © 2022 Aleksandr Vityazev <avityazev@posteo.org>
@@ -685,22 +685,22 @@ characters, ASCII whitespace characters, other ASCII characters and non-ASCII.")
     (native-inputs
      (list pkg-config))
     (inputs
-     `(("alsa-utils" ,alsa-utils)
-       ("bash-minimal" ,bash-minimal)
-       ("coreutils" ,coreutils)
-       ("curl" ,curl)
-       ("dbus" ,dbus)
-       ("ibus" ,ibus)
-       ("iproute" ,iproute)
-       ("kdeconnect" ,kdeconnect)
-       ("lm-sensors" ,lm-sensors)
-       ("pulseaudio" ,pulseaudio)
-       ("openssl" ,openssl)
-       ("setxkbmap" ,setxkbmap)
-       ("speedtest-cli" ,speedtest-cli)
-       ("xdg-utils" ,xdg-utils)
-       ("xrandr" ,xrandr)
-       ("zlib" ,zlib)))
+     (list alsa-utils
+       bash-minimal
+       coreutils
+       curl
+       dbus
+       ibus
+       iproute
+       kdeconnect
+       lm-sensors
+       pulseaudio
+       openssl
+       setxkbmap
+       speedtest-cli
+       xdg-utils
+       xrandr
+       zlib))
     (home-page "https://github.com/greshake/i3status-rust")
     (synopsis "i3status, written in pure Rust")
     (description "@code{i3status-rs} is a feature-rich and resource-friendly
