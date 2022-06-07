@@ -615,7 +615,7 @@ characters, ASCII whitespace characters, other ASCII characters and non-ASCII.")
 (define-public i3status-rust
   (package
     (name "i3status-rust")
-    (version "0.20.1")
+    (version "0.21.10")
     (source
      (origin
        (method git-fetch)
@@ -625,7 +625,7 @@ characters, ASCII whitespace characters, other ASCII characters and non-ASCII.")
        (file-name (git-file-name name version))
        (patches (search-patches "i3status-rust-enable-unstable-features.patch"))
        (sha256
-        (base32 "00gzm3g297s9bfp13vnb623p7dfac3g6cdhz2b3lc6l0kmnnqs1s"))))
+        (base32 "0dh0qwygh4lsq73kn7x90453lmq4ia3ykx3yap14zc5jknby1lqy"))))
     (build-system cargo-build-system)
     (arguments
      `(#:features '("pulseaudio" "libpulse-binding")
