@@ -1,0 +1,122 @@
+From: =?utf-8?q?Rapha=C3=ABl_Hertzog?= <hertzog@debian.org>
+Date: Wed, 28 Aug 2019 11:47:34 +0200
+Subject: Use stricter autoconf syntax imposed by newer versions
+
+Bug: https://github.com/nmap/ncrack/pull/28
+
+This allows the Debian packaging to use "autoreconf" with a recent
+version of autoconf.
+---
+ nbase/acinclude.m4 | 24 ++++++++++++------------
+ nbase/configure.ac |  2 +-
+ 2 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/nbase/acinclude.m4 b/nbase/acinclude.m4
+index 8bc7f68..d962d6a 100644
+--- a/nbase/acinclude.m4
++++ b/nbase/acinclude.m4
+@@ -11,7 +11,7 @@ dnl Note that if the system doesn't have gai_strerror(), we
+ dnl can't use getaddrinfo() because we can't get strings
+ dnl describing the error codes.
+ dnl
+-AC_DEFUN(APR_CHECK_WORKING_GETADDRINFO,[
++AC_DEFUN([APR_CHECK_WORKING_GETADDRINFO],[
+   AC_CACHE_CHECK(for working getaddrinfo, ac_cv_working_getaddrinfo,[
+   AC_TRY_RUN( [
+ #ifdef HAVE_NETDB_H
+@@ -54,7 +54,7 @@ if test "$ac_cv_working_getaddrinfo" = "yes"; then
+   if test "$ac_cv_func_gai_strerror" != "yes"; then
+     ac_cv_working_getaddrinfo="no"
+   else
+-    AC_DEFINE(HAVE_GETADDRINFO, 1, [Define if getaddrinfo exists and works well enough for APR])
++    AC_DEFINE([HAVE_GETADDRINFO], [1], [Define if getaddrinfo exists and works well enough for APR])
+   fi
+ fi
+ ])
+@@ -62,7 +62,7 @@ fi
+ dnl
+ dnl check for working getnameinfo() -- from Apache 2.0.40
+ dnl
+-AC_DEFUN(APR_CHECK_WORKING_GETNAMEINFO,[
++AC_DEFUN([APR_CHECK_WORKING_GETNAMEINFO],[
+   AC_CACHE_CHECK(for working getnameinfo, ac_cv_working_getnameinfo,[
+   AC_TRY_RUN( [
+ #ifdef HAVE_NETDB_H
+@@ -113,11 +113,11 @@ int main(void) {
+   ac_cv_working_getnameinfo="yes"
+ ])])
+ if test "$ac_cv_working_getnameinfo" = "yes"; then
+-  AC_DEFINE(HAVE_GETNAMEINFO, 1, [Define if getnameinfo exists])
++  AC_DEFINE([HAVE_GETNAMEINFO], [1], [Define if getnameinfo exists])
+ fi
+ ])
+ 
+-AC_DEFUN(APR_CHECK_SOCKADDR_IN6,[
++AC_DEFUN([APR_CHECK_SOCKADDR_IN6],[
+ AC_CACHE_CHECK(for sockaddr_in6, ac_cv_define_sockaddr_in6,[
+ AC_TRY_COMPILE([
+ #ifdef HAVE_SYS_TYPES_H
+@@ -143,7 +143,7 @@ else
+ fi
+ ])
+ 
+-AC_DEFUN(CHECK_AF_INET6_DEFINE,[
++AC_DEFUN([CHECK_AF_INET6_DEFINE],[
+ AC_CACHE_CHECK(for AF_INET6 definition, ac_cv_define_af_inet6,[
+ AC_TRY_COMPILE([
+ #ifdef HAVE_SYS_TYPES_H
+@@ -166,13 +166,13 @@ int af = AF_INET6;
+ 
+ if test "$ac_cv_define_af_inet6" = "yes"; then
+   have_af_inet6=1
+-  AC_DEFINE(HAVE_AF_INET6, 1, [Define if AF_INET6 is defined])
++  AC_DEFINE([HAVE_AF_INET6], [1], [AF_INET6 macro is defined])
+ else
+   have_af_inet6=0
+ fi
+ ])
+ 
+-AC_DEFUN(APR_CHECK_SOCKADDR_STORAGE,[
++AC_DEFUN([APR_CHECK_SOCKADDR_STORAGE],[
+ AC_CACHE_CHECK(for sockaddr_storage, ac_cv_define_sockaddr_storage,[
+ AC_TRY_COMPILE([
+ #ifdef HAVE_SYS_TYPES_H
+@@ -195,21 +195,21 @@ struct sockaddr_storage sa;
+ 
+ if test "$ac_cv_define_sockaddr_storage" = "yes"; then
+   have_sockaddr_storage=1
+-  AC_DEFINE(HAVE_SOCKADDR_STORAGE, 1, [Define if struct sockaddr_storage exists])
++  AC_DEFINE([HAVE_SOCKADDR_STORAGE], [1], [struct sockaddr_storage is available])
+ else
+   have_sockaddr_storage=0
+ fi
+ ])
+ 
+ dnl This test taken from GCC libjava.
+-AC_DEFUN(CHECK_PROC_SELF_EXE,[
++AC_DEFUN([CHECK_PROC_SELF_EXE],[
+   if test x"$cross_compiling" = x"no"; then
+     AC_CHECK_FILES(/proc/self/exe, [
+-      AC_DEFINE(HAVE_PROC_SELF_EXE, 1, [Define if you have /proc/self/exe])])
++      AC_DEFINE([HAVE_PROC_SELF_EXE], [1], [Define if you have /proc/self/exe])])
+   else
+     case $host in
+       *-linux*)
+-      AC_DEFINE(HAVE_PROC_SELF_EXE, 1, [Define if you have /proc/self/exe])
++      AC_DEFINE([HAVE_PROC_SELF_EXE], [1], [Define if you have /proc/self/exe])
+       ;;
+     esac
+   fi
+diff --git a/nbase/configure.ac b/nbase/configure.ac
+index eb28fa4..375d0f9 100644
+--- a/nbase/configure.ac
++++ b/nbase/configure.ac
+@@ -60,7 +60,7 @@ AC_C_INLINE
+ case "$host" in
+   *-sgi-irix5* | *-sgi-irix6*)
+     if test -z "$GCC"; then
+-      AC_DEFINE(inline, )
++      AC_DEFINE([inline], [], [Disable inline keyword])
+     fi
+     ;;
+ esac

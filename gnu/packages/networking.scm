@@ -786,6 +786,35 @@ an ethernet or PPP interface, looking for special \"knock\" sequences of @dfn{po
 at the link-layer level.")
     (license license:gpl2+)))
 
+(define-public ncrack
+  (package
+    (name "ncrack")
+    (version "0.7")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/nmap/ncrack/archive/refs/tags/"
+                    version ".tar.gz"))
+              (patches (search-patches "ncrack-nullcheck.patch"
+                                       "ncrack-fix-gcc-10-build.patch"
+                                       "ncrack-fix-autotools-compat.patch"
+                                       "ncrack-fix-spelling-errors.patch"))
+              (sha256
+               (base32
+                "0jnif319rjykiphi211v1c2hblw1ql190dnbd030qjkwcz6p3ygk"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list #:tests? #f)) ;no test suite
+    (native-inputs (list pkg-config))
+    (inputs (list openssl zlib))
+    (home-page "https://nmap.org/ncrack/man.html")
+    (synopsis "Network authentication cracking tool")
+    (description
+     "@code{Ncrack} is a tool for network authentication cracking.  It was
+designed for high-speed parallel cracking using a dynamic engine that can
+adapt to different network situations.")
+    (license license:gpl2+)))
+
 (define-public nng
   (package
     (name "nng")

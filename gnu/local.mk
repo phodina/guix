@@ -1566,6 +1566,11 @@ dist_patch_DATA =						\
   %D%/packages/patches/m4-gnulib-libio.patch			\
   %D%/packages/patches/nautilus-extension-search-path.patch	\
   %D%/packages/patches/ncompress-fix-softlinks.patch		\
+  %D%/packages/patches/ncrack-fix-autotools-compat.patch \
+  %D%/packages/patches/ncrack-fix-gcc-10-build.patch \
+  %D%/packages/patches/ncrack-fix-spelling-errors.patch \
+  %D%/packages/patches/ncrack-nullcheck.patch \
+  %D%/packages/patches/ncrack-unbundle-opensshlib.patch \
   %D%/packages/patches/ncftp-reproducible.patch			\
   %D%/packages/patches/netcdf-date-time.patch			\
   %D%/packages/patches/netpbm-CVE-2017-2586.patch		\

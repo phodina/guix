@@ -1,0 +1,78 @@
+From 04cfc2f21c280d02b701148d93c5632c2ea80ed8 Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Tue, 7 Jun 2022 12:33:01 +0200
+Subject: [PATCH] Unbundle opensshlib.
+
+
+diff --git a/Makefile.in b/Makefile.in
+index 876159c..2098298 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -14,7 +14,6 @@ ncrackdatadir = @datadir@/ncrack
+ 
+ export NBASEDIR = @NBASEDIR@
+ export NSOCKDIR = @NSOCKDIR@
+-export OPENSSHLIB_DIR = @OPENSSHLIB_DIR@
+ 
+ DEFS = @DEFS@ -DNCRACK_NAME=\"$(NCRACK_NAME)\" -DNCRACK_URL=\"$(NCRACK_URL)\" \
+ -DNCRACK_PLATFORM=\"$(NCRACK_PLATFORM)\" -DNCRACKDATADIR=\"$(ncrackdatadir)\"
+@@ -60,7 +59,7 @@ ncrack_input.o ncrack_resume.o crypto.o http.o http_digest.o xml.o ntlmssp.o
+ .cc.o :
+ 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $< -o $@
+ 
+-all: @NBASE_BUILD@ @NSOCK_BUILD@ @OPENSSHLIB_BUILD@ @MODULES_BUILD@
++all: @NBASE_BUILD@ @NSOCK_BUILD@ @MODULES_BUILD@
+ 	$(MAKE) $(TARGET)
+ 
+ $(TARGET): $(NSOCKDIR)/src/libnsock.a $(NBASEDIR)/libnbase.a $(OBJS) $(MOD_OBJS)
+@@ -82,12 +81,6 @@ nsock_build: $(NSOCKDIR)/src/Makefile nbase_build
+ 	@echo Compiling libnsock;
+ 	cd $(NSOCKDIR)/src && $(MAKE)
+ 
+-opensshlib_build: $(OPENSSHLIB_DIR)/Makefile
+-	@echo Compiling openssh lib;
+-	cd $(OPENSSHLIB_DIR) && $(MAKE)
+-
+-
+-
+ install: install-ncrack
+ 	@echo "NCRACK SUCCESSFULLY INSTALLED"
+ 
+@@ -112,7 +105,7 @@ uninstall-ncrack:
+ 
+ # cleaning stuff
+ 
+-clean: nsock_clean nbase_clean opensshlib_clean modules_clean my_clean 
++clean: nsock_clean nbase_clean clean modules_clean my_clean
+ 
+ my_clean:
+ 	rm -f dependencies.mk makefile.dep
+@@ -121,8 +114,6 @@ nbase_clean:
+ 	-cd $(NBASEDIR) && $(MAKE) clean
+ nsock_clean:
+ 	-cd $(NSOCKDIR)/src && $(MAKE) clean
+-opensshlib_clean:
+-	-cd $(OPENSSHLIB_DIR) && $(MAKE) clean
+ modules_clean:
+ 	-cd modules && $(MAKE) clean
+ 
+diff --git a/modules/ncrack_ssh.cc b/modules/ncrack_ssh.cc
+index 88f02f5..7c08462 100644
+--- a/modules/ncrack_ssh.cc
++++ b/modules/ncrack_ssh.cc
+@@ -136,9 +136,8 @@
+ #include <list>
+ 
+ /* OpenSSH include-files */
+-#include "opensshlib.h"
++#include <libssh2.h>
+ 
+-#include "ssh2.h"
+ #include "openssl/dh.h"
+ #include "buffer.h"
+ #include "sshbuf.h"
+
+base-commit: 7fab46addcb99326cbf60f41dbde22a1e87aebad
+-- 
+2.35.1
+
