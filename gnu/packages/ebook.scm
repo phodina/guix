@@ -9,7 +9,7 @@
 ;;; Copyright © 2020, 2021, 2022 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2020 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2021 la snesne <lasnesne@lagunposprasihopre.org>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021 Mathieu Laparie <mlaparie@disr.it>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -42,6 +42,7 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages bash)
+  #:use-module (gnu packages backup)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages databases)
@@ -62,6 +63,7 @@
   #:use-module (gnu packages language)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages libreoffice)
+  #:use-module (gnu packages nettle)
   #:use-module (gnu packages music)
   #:use-module (gnu packages pantheon)
   #:use-module (gnu packages pdf)
@@ -418,6 +420,38 @@ accessing and converting various ebook file formats.")
     (synopsis "EBook reader")
     (description "This package provides InkBox eBook reader.")
     (license license:gpl3)))
+
+(define-public kindle-tool
+  ;; last release from 2018
+  (let ((commit "ad7300390b0e641d2d6c158f1bd7109bedb14425") (revision "1"))
+    (package
+      (name "kindle-tool")
+      (version "1.6.5")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/NiLuJe/KindleTool")
+                      (commit commit)))
+                (sha256
+                 (base32
+                  "0qywyrb6l5a5xhm2n2m4zjp13dmvz41xbpxijy0938j32c6nnlfl"))))
+      (build-system gnu-build-system)
+      (arguments
+       (list #:tests? #f
+             #:make-flags
+             #~(list (string-append "DESTDIR="
+                                    #$output)
+                     (string-append "CC="
+                                    #$(cc-for-target)))
+             #:phases
+             #~(modify-phases %standard-phases
+                 (delete 'configure))))
+      (inputs (list zlib libarchive nettle))
+      (home-page "https://github.com/NiLuJe/KindleTool")
+      (synopsis "Tool for creating and extracting Kindle updates")
+      (description "This package provides tools for creating and extracting
+Kindle updates.")
+      (license license:gpl3+))))
 
 (define-public liblinebreak
   (package
