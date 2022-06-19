@@ -473,6 +473,32 @@ accessing and converting various ebook file formats.")
 Kindle updates.")
       (license license:gpl3+))))
 
+(define-public knock
+  (package
+    (name "knock")
+    (version "1.1.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://github.com/BentonEdmondson/knock")
+	   (commit (string-append version "-alpha"))))
+       (sha256
+        (base32
+         "034ikm7vcl1gck73cbpl38133gyjvn8v69nlzp1pvvn2akmnhndv"))))
+    (build-system python-build-system)
+	(arguments
+	(list #:use-setuptools? #f
+	      #:phases
+          #~(modify-phases %standard-phases
+		     (delete 'build))))
+    (home-page
+	"https://github.com/BentonEdmondson/knock")
+    (synopsis "Convert ACSM files to DRM-free EPUB files")
+    (description "This package provides tools to convert ACSM files to DRM-free
+EPUB files.")
+    (license license:gpl3+)))
+
 (define-public liblinebreak
   (package
     (name "liblinebreak")
