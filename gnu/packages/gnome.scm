@@ -2614,6 +2614,7 @@ forgotten when the session ends.")
     (source (origin
               (method url-fetch)
               (uri "mirror://gnome/sources/evince/42/evince-42.3.tar.xz")
+			  (patches (search-patches "evince-purism-mobile-ui.patch"))
               (sha256
                (base32
                 "0pk42icnf4kdcaqaj17mcf4sxi82h1fdg2ds2zdrcv4lbj2czbj9"))))

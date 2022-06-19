@@ -1,0 +1,722 @@
+diff --git a/debian/patches/purism/0001-toolbar-Allow-to-toggle-the-sidebar-button.patch b/debian/patches/purism/0001-toolbar-Allow-to-toggle-the-sidebar-button.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..06cab4fc4d98f517f18d2e883806bf1f5aa3fa97
+--- /dev/null
++++ b/debian/patches/purism/0001-toolbar-Allow-to-toggle-the-sidebar-button.patch
+@@ -0,0 +1,45 @@
++From: Adrien Plazas <kekun.plazas@laposte.net>
++Date: Wed, 11 Dec 2019 16:24:31 +0100
++Subject: toolbar: Allow to toggle the sidebar button
++
++This will allow updating the button's state when gestures will allow
++closing the sidebar in the next commit.
++---
++ shell/ev-toolbar.c | 14 ++++++++++++++
++ shell/ev-toolbar.h |  3 +++
++ 2 files changed, 17 insertions(+)
++
++diff --git a/shell/ev-toolbar.c b/shell/ev-toolbar.c
++index 75306a7..633102d 100644
++--- a/shell/ev-toolbar.c
+++++ b/shell/ev-toolbar.c
++@@ -392,3 +392,17 @@ ev_toolbar_get_mode (EvToolbar *ev_toolbar)
++ 
++         return priv->toolbar_mode;
++ }
+++
+++void
+++ev_toolbar_set_sidebar_visible (EvToolbar *ev_toolbar,
+++                                gboolean   visible)
+++{
+++	EvToolbarPrivate *priv;
+++
+++	g_return_if_fail (EV_IS_TOOLBAR (ev_toolbar));
+++
+++	priv = GET_PRIVATE (ev_toolbar);
+++	visible = !!visible;
+++
+++	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->sidebar_button), visible);
+++}
++diff --git a/shell/ev-toolbar.h b/shell/ev-toolbar.h
++index 432563e..66414f9 100644
++--- a/shell/ev-toolbar.h
+++++ b/shell/ev-toolbar.h
++@@ -58,4 +58,7 @@ void          ev_toolbar_set_mode           (EvToolbar     *ev_toolbar,
++ 					     EvToolbarMode  mode);
++ EvToolbarMode ev_toolbar_get_mode           (EvToolbar     *ev_toolbar);
++ 
+++void ev_toolbar_set_sidebar_visible (EvToolbar *ev_toolbar,
+++                                     gboolean   visible);
+++
++ G_END_DECLS
+diff --git a/debian/patches/purism/0002-toolbar-Allow-hiding-zoom-annotation-and-page-widgets.patch b/debian/patches/purism/0002-toolbar-Allow-hiding-zoom-annotation-and-page-widgets.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..6726a9d0e151859c2d54dfaf924fc83a17da356f
+--- /dev/null
++++ b/debian/patches/purism/0002-toolbar-Allow-hiding-zoom-annotation-and-page-widgets.patch
+@@ -0,0 +1,150 @@
++From: Alexander Mikhaylenko <alexm@gnome.org>
++Date: Thu, 15 Apr 2021 12:28:10 +0500
++Subject: toolbar: Allow hiding zoom, annotation and page widgets
++
++This will be useful to make it adaptive.
++---
++ shell/ev-toolbar.c | 58 ++++++++++++++++++++++++++++++++++++++++++++----------
++ shell/ev-toolbar.h |  2 ++
++ 2 files changed, 50 insertions(+), 10 deletions(-)
++
++diff --git a/shell/ev-toolbar.c b/shell/ev-toolbar.c
++index 633102d..e18df20 100644
++--- a/shell/ev-toolbar.c
+++++ b/shell/ev-toolbar.c
++@@ -50,6 +50,8 @@ typedef struct {
++         GtkWidget *open_button;
++         GtkWidget *annots_button;
++         GtkWidget *sidebar_button;
+++        GtkWidget *zoom_revealer;
+++        GtkWidget *page_annots_revealer;
++ 
++         EvToolbarMode toolbar_mode;
++ } EvToolbarPrivate;
++@@ -191,6 +193,7 @@ ev_toolbar_constructed (GObject *object)
++         GtkBuilder     *builder;
++         GtkWidget      *tool_item;
++         GtkWidget      *vbox;
+++        GtkWidget      *hbox;
++         GtkWidget      *button;
++         GMenuModel     *menu;
++ 
++@@ -212,6 +215,16 @@ ev_toolbar_constructed (GObject *object)
++         priv->sidebar_button = button;
++         hdy_header_bar_pack_start (HDY_HEADER_BAR (ev_toolbar), button);
++ 
+++        priv->page_annots_revealer = gtk_revealer_new ();
+++        gtk_revealer_set_reveal_child (GTK_REVEALER (priv->page_annots_revealer), TRUE);
+++        gtk_revealer_set_transition_type (GTK_REVEALER (priv->page_annots_revealer),
+++                                          GTK_REVEALER_TRANSITION_TYPE_SLIDE_RIGHT);
+++        hdy_header_bar_pack_start (HDY_HEADER_BAR (ev_toolbar), priv->page_annots_revealer);
+++
+++        hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+++        gtk_container_add (GTK_CONTAINER (priv->page_annots_revealer), hbox);
+++        gtk_widget_show (hbox);
+++
++         /* Page selector */
++         /* Use EvPageActionWidget for now, since the page selector action is also used by the previewer */
++         tool_item = GTK_WIDGET (g_object_new (EV_TYPE_PAGE_ACTION_WIDGET, NULL));
++@@ -220,14 +233,16 @@ ev_toolbar_constructed (GObject *object)
++         priv->page_selector = tool_item;
++         ev_page_action_widget_set_model (EV_PAGE_ACTION_WIDGET (tool_item),
++                                          ev_window_get_document_model (priv->window));
++-        hdy_header_bar_pack_start (HDY_HEADER_BAR (ev_toolbar), tool_item);
+++        gtk_container_add (GTK_CONTAINER (hbox), tool_item);
+++        gtk_widget_show (tool_item);
++ 
++         /* Edit Annots */
++         button = ev_toolbar_create_toggle_button (ev_toolbar, "win.toggle-edit-annots", "document-edit-symbolic",
++                                                   _("Annotate the document"));
++         atk_object_set_name (gtk_widget_get_accessible (button), _("Annotate document"));
++         priv->annots_button = button;
++-        hdy_header_bar_pack_start (HDY_HEADER_BAR (ev_toolbar), button);
+++        gtk_container_add (GTK_CONTAINER (hbox), button);
+++        gtk_widget_show (button);
++ 
++         /* Action Menu */
++         menu = G_MENU_MODEL (gtk_builder_get_object (builder, "action-menu"));
++@@ -250,7 +265,13 @@ ev_toolbar_constructed (GObject *object)
++                           ev_toolbar);
++ 
++         /* Zoom selector */
++-        vbox = ev_zoom_action_new (ev_window_get_document_model (priv->window),
+++	priv->zoom_revealer = gtk_revealer_new ();
+++	gtk_revealer_set_reveal_child (GTK_REVEALER (priv->zoom_revealer), TRUE);
+++	gtk_revealer_set_transition_type (GTK_REVEALER (priv->zoom_revealer),
+++	                                  GTK_REVEALER_TRANSITION_TYPE_SLIDE_LEFT);
+++        hdy_header_bar_pack_end (HDY_HEADER_BAR (ev_toolbar), priv->zoom_revealer);
+++
+++	vbox = ev_zoom_action_new (ev_window_get_document_model (priv->window),
++                                    G_MENU (gtk_builder_get_object (builder, "zoom-menu")));
++         priv->zoom_action = vbox;
++         gtk_widget_set_tooltip_text (vbox, _("Select or set the zoom level of the document"));
++@@ -258,7 +279,8 @@ ev_toolbar_constructed (GObject *object)
++         g_signal_connect (vbox, "activated",
++                           G_CALLBACK (zoom_selector_activated),
++                           ev_toolbar);
++-        hdy_header_bar_pack_end (HDY_HEADER_BAR (ev_toolbar), vbox);
+++        gtk_container_add (GTK_CONTAINER (priv->zoom_revealer), vbox);
+++	gtk_widget_show (priv->zoom_action);
++ 
++         g_object_unref (builder);
++ }
++@@ -363,19 +385,17 @@ ev_toolbar_set_mode (EvToolbar     *ev_toolbar,
++         case EV_TOOLBAR_MODE_FULLSCREEN:
++                 gtk_widget_show (priv->sidebar_button);
++                 gtk_widget_show (priv->action_menu_button);
++-                gtk_widget_show (priv->zoom_action);
++-                gtk_widget_show (priv->page_selector);
+++                gtk_widget_show (priv->zoom_revealer);
+++                gtk_widget_show (priv->page_annots_revealer);
++                 gtk_widget_show (priv->find_button);
++-                gtk_widget_show (priv->annots_button);
++                 gtk_widget_hide (priv->open_button);
++                 break;
++ 	case EV_TOOLBAR_MODE_RECENT_VIEW:
++                 gtk_widget_hide (priv->sidebar_button);
++                 gtk_widget_hide (priv->action_menu_button);
++-                gtk_widget_hide (priv->zoom_action);
++-                gtk_widget_hide (priv->page_selector);
+++                gtk_widget_hide (priv->zoom_revealer);
+++                gtk_widget_hide (priv->page_annots_revealer);
++                 gtk_widget_hide (priv->find_button);
++-                gtk_widget_hide (priv->annots_button);
++                 gtk_widget_show (priv->open_button);
++                 break;
++         }
++@@ -406,3 +426,21 @@ ev_toolbar_set_sidebar_visible (EvToolbar *ev_toolbar,
++ 
++ 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->sidebar_button), visible);
++ }
+++
+++void
+++ev_toolbar_set_mobile (EvToolbar *ev_toolbar,
+++                       gboolean   mobile)
+++{
+++	EvToolbarPrivate *priv;
+++
+++	g_return_if_fail (EV_IS_TOOLBAR (ev_toolbar));
+++
+++	priv = GET_PRIVATE (ev_toolbar);
+++	mobile = !!mobile;
+++
+++	gtk_revealer_set_reveal_child (GTK_REVEALER (priv->zoom_revealer), !mobile);
+++	gtk_revealer_set_reveal_child (GTK_REVEALER (priv->page_annots_revealer), !mobile);
+++
+++	if (mobile)
+++		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->annots_button), FALSE);
+++}
++diff --git a/shell/ev-toolbar.h b/shell/ev-toolbar.h
++index 66414f9..7f53f46 100644
++--- a/shell/ev-toolbar.h
+++++ b/shell/ev-toolbar.h
++@@ -60,5 +60,7 @@ EvToolbarMode ev_toolbar_get_mode           (EvToolbar     *ev_toolbar);
++ 
++ void ev_toolbar_set_sidebar_visible (EvToolbar *ev_toolbar,
++                                      gboolean   visible);
+++void ev_toolbar_set_mobile          (EvToolbar *ev_toolbar,
+++                                     gboolean   mobile);
++ 
++ G_END_DECLS
+diff --git a/debian/patches/purism/0003-properties-view-Reduce-the-label-width-chars.patch b/debian/patches/purism/0003-properties-view-Reduce-the-label-width-chars.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..4318ccaedf4ec0fc636cccd23989b74ec81a5d0e
+--- /dev/null
++++ b/debian/patches/purism/0003-properties-view-Reduce-the-label-width-chars.patch
+@@ -0,0 +1,22 @@
++From: Adrien Plazas <kekun.plazas@laposte.net>
++Date: Wed, 11 Dec 2019 14:48:15 +0100
++Subject: properties-view: Reduce the label width chars
++
++This allows the window to fit phones.
++---
++ properties/ev-properties-view.c | 2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++diff --git a/properties/ev-properties-view.c b/properties/ev-properties-view.c
++index 8d5a962..b808a69 100644
++--- a/properties/ev-properties-view.c
+++++ b/properties/ev-properties-view.c
++@@ -211,7 +211,7 @@ set_property (EvPropertiesView *properties,
++ 
++ 		g_object_set (G_OBJECT (value_label),
++ 			      "xalign", 0.0,
++-			      "width_chars", 25,
+++			      "width_chars", 20,
++ 			      "selectable", TRUE,
++ 			      "ellipsize", PANGO_ELLIPSIZE_END,
++ 			      "hexpand", TRUE,
+diff --git a/debian/patches/purism/0004-window-Port-it-to-phones.patch b/debian/patches/purism/0004-window-Port-it-to-phones.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..f9de866aecb655548bda809b042a23bdc3a0a04c
+--- /dev/null
++++ b/debian/patches/purism/0004-window-Port-it-to-phones.patch
+@@ -0,0 +1,471 @@
++From: Adrien Plazas <kekun.plazas@laposte.net>
++Date: Tue, 10 Dec 2019 10:04:30 +0100
++Subject: window: Port it to phones
++
++Fixes https://source.puri.sm/Librem5/Apps_Issues/issues/150.
++---
++ shell/ev-window.c | 193 ++++++++++++++++++++++++++++++++----------------------
++ 1 file changed, 113 insertions(+), 80 deletions(-)
++
++diff --git a/shell/ev-window.c b/shell/ev-window.c
++index b6ea528..fb5e50d 100644
++--- a/shell/ev-window.c
+++++ b/shell/ev-window.c
++@@ -135,8 +135,9 @@ typedef struct {
++ 
++ 	GtkWidget *main_box;
++ 	GtkWidget *toolbar;
++-	GtkWidget *hpaned;
+++	GtkWidget *flap;
++ 	GtkWidget *view_box;
+++	GtkWidget *sidebar_stack;
++ 	GtkWidget *sidebar;
++ 	GtkWidget *search_box;
++ 	GtkWidget *search_bar;
++@@ -265,7 +266,7 @@ typedef struct {
++ #define GS_LAST_PICTURES_DIRECTORY "pictures-directory"
++ #define GS_ALLOW_LINKS_CHANGE_ZOOM "allow-links-change-zoom"
++ 
++-#define SIDEBAR_DEFAULT_SIZE    132
+++#define SIDEBAR_DEFAULT_SIZE    246
++ #define LINKS_SIDEBAR_ID "links"
++ #define THUMBNAILS_SIDEBAR_ID "thumbnails"
++ #define ATTACHMENTS_SIDEBAR_ID "attachments"
++@@ -302,9 +303,6 @@ static const gchar *document_print_settings[] = {
++ };
++ 
++ static void	ev_window_update_actions_sensitivity    (EvWindow         *ev_window);
++-static void     ev_window_sidebar_visibility_changed_cb (EvSidebar        *ev_sidebar,
++-							 GParamSpec       *pspec,
++-							 EvWindow         *ev_window);
++ static void     ev_window_set_page_mode                 (EvWindow         *window,
++ 							 EvWindowPageMode  page_mode);
++ static void	ev_window_load_job_cb  			(EvJob            *job,
++@@ -679,7 +677,8 @@ update_chrome_visibility (EvWindow *window)
++ 	sidebar = (priv->chrome & EV_CHROME_SIDEBAR) != 0 && priv->document && !presentation;
++ 
++ 	set_widget_visibility (priv->toolbar, toolbar);
++-	set_widget_visibility (priv->sidebar, sidebar);
+++	set_widget_visibility (priv->sidebar, TRUE);
+++	hdy_flap_set_reveal_flap (HDY_FLAP (priv->flap), sidebar);
++ }
++ 
++ static void
++@@ -1292,15 +1291,11 @@ static void
++ setup_sidebar_from_metadata (EvWindow *window)
++ {
++ 	gchar *page_id;
++-	gint   sidebar_size;
++ 	EvWindowPrivate *priv = GET_PRIVATE (window);
++ 
++ 	if (!priv->metadata)
++ 		return;
++ 
++-	if (ev_metadata_get_int (priv->metadata, "sidebar_size", &sidebar_size))
++-		gtk_paned_set_position (GTK_PANED (priv->hpaned), sidebar_size);
++-
++ 	if (ev_metadata_get_string (priv->metadata, "sidebar_page", &page_id))
++ 		ev_window_sidebar_set_current_page (window, page_id);
++ }
++@@ -1595,10 +1590,6 @@ ev_window_setup_default (EvWindow *ev_window)
++ 			    g_settings_get_boolean (settings, "show-sidebar"));
++ 	update_chrome_visibility (ev_window);
++ 
++-	/* Sidebar */
++-	gtk_paned_set_position (GTK_PANED (priv->hpaned),
++-				g_settings_get_int (settings, "sidebar-size"));
++-
++ 	/* Document model */
++ 	ev_document_model_set_continuous (model, g_settings_get_boolean (settings, "continuous"));
++ 	ev_document_model_set_dual_page (model, g_settings_get_boolean (settings, "dual-page"));
++@@ -1717,7 +1708,7 @@ ev_window_setup_document (EvWindow *ev_window)
++ 
++ 	if (EV_WINDOW_IS_PRESENTATION (priv))
++ 		gtk_widget_grab_focus (priv->presentation_view);
++-	else if (!gtk_search_bar_get_search_mode (GTK_SEARCH_BAR (priv->search_bar)))
+++	else if (!hdy_search_bar_get_search_mode (HDY_SEARCH_BAR (priv->search_bar)))
++ 		gtk_widget_grab_focus (priv->view);
++ 
++ 	return FALSE;
++@@ -2042,7 +2033,7 @@ ev_window_reload_job_cb (EvJob    *job,
++ 	}
++ 
++ 	/* Restart the search after reloading */
++-	if (gtk_search_bar_get_search_mode (GTK_SEARCH_BAR (priv->search_bar)))
+++	if (hdy_search_bar_get_search_mode (HDY_SEARCH_BAR (priv->search_bar)))
++ 		ev_search_box_restart (EV_SEARCH_BOX (priv->search_box));
++ 
++ 	ev_window_clear_reload_job (ev_window);
++@@ -2574,7 +2565,7 @@ ev_window_open_recent_view (EvWindow *ev_window)
++ 	if (priv->recent_view)
++ 		return;
++ 
++-	gtk_widget_hide (priv->hpaned);
+++	gtk_widget_hide (priv->flap);
++ 
++ 	priv->recent_view = EV_RECENT_VIEW (ev_recent_view_new ());
++ 	g_signal_connect_object (priv->recent_view,
++@@ -2603,7 +2594,7 @@ ev_window_destroy_recent_view (EvWindow *ev_window)
++ 
++ 	gtk_widget_destroy (GTK_WIDGET (priv->recent_view));
++ 	priv->recent_view = NULL;
++-	gtk_widget_show (priv->hpaned);
+++	gtk_widget_show (priv->flap);
++ }
++ 
++ static void
++@@ -4484,7 +4475,7 @@ ev_window_cmd_edit_find_next (GSimpleAction *action,
++ 	if (EV_WINDOW_IS_PRESENTATION (priv))
++ 		return;
++ 
++-	search_mode_enabled = gtk_search_bar_get_search_mode (GTK_SEARCH_BAR (priv->search_bar));
+++	search_mode_enabled = hdy_search_bar_get_search_mode (HDY_SEARCH_BAR (priv->search_bar));
++ 	ev_window_show_find_bar (ev_window, FALSE);
++ 
++ 	/* Use idle to make sure view allocation happens before find */
++@@ -4513,7 +4504,7 @@ ev_window_cmd_edit_find_previous (GSimpleAction *action,
++ 	if (EV_WINDOW_IS_PRESENTATION (priv))
++ 		return;
++ 
++-	search_mode_enabled = gtk_search_bar_get_search_mode (GTK_SEARCH_BAR (priv->search_bar));
+++	search_mode_enabled = hdy_search_bar_get_search_mode (HDY_SEARCH_BAR (priv->search_bar));
++ 	ev_window_show_find_bar (ev_window, FALSE);
++ 
++ 	/* Use idle to make sure view allocation happens before find */
++@@ -4534,18 +4525,6 @@ ev_window_cmd_edit_copy (GSimpleAction *action,
++ 	ev_view_copy (EV_VIEW (priv->view));
++ }
++ 
++-static void
++-ev_window_sidebar_position_change_cb (GObject    *object,
++-				      GParamSpec *pspec,
++-				      EvWindow   *ev_window)
++-{
++-	EvWindowPrivate *priv = GET_PRIVATE (ev_window);
++-
++-	if (priv->metadata && !ev_window_is_empty (ev_window))
++-		ev_metadata_set_int (priv->metadata, "sidebar_size",
++-				     gtk_paned_get_position (GTK_PANED (object)));
++-}
++-
++ static void
++ ev_window_update_links_model (EvWindow *window)
++ {
++@@ -4737,7 +4716,7 @@ ev_window_run_presentation (EvWindow *window)
++ 			    priv->presentation_view,
++ 			    TRUE, TRUE, 0);
++ 
++-	gtk_widget_hide (priv->hpaned);
+++	gtk_widget_hide (priv->flap);
++ 	update_chrome_visibility (window);
++ 
++ 	gtk_widget_grab_focus (priv->presentation_view);
++@@ -4772,7 +4751,7 @@ ev_window_stop_presentation (EvWindow *window,
++ 			      priv->presentation_view);
++ 	priv->presentation_view = NULL;
++ 
++-	gtk_widget_show (priv->hpaned);
+++	gtk_widget_show (priv->flap);
++ 	update_chrome_visibility (window);
++ 	if (unfullscreen_window)
++ 		gtk_window_unfullscreen (GTK_WINDOW (window));
++@@ -4961,9 +4940,7 @@ ev_window_cmd_edit_save_settings (GSimpleAction *action,
++ 		g_settings_set_double (settings, "zoom", zoom);
++ 	}
++ 	g_settings_set_boolean (settings, "show-sidebar",
++-				gtk_widget_get_visible (priv->sidebar));
++-	g_settings_set_int (settings, "sidebar-size",
++-			    gtk_paned_get_position (GTK_PANED (priv->hpaned)));
+++				hdy_flap_get_reveal_flap (HDY_FLAP (priv->flap)));
++ 	g_settings_set_string (settings, "sidebar-page",
++ 			       ev_window_sidebar_get_current_page_id (ev_window));
++ 	g_settings_set_boolean (settings, "enable-spellchecking",
++@@ -5232,7 +5209,7 @@ ev_window_cmd_escape (GSimpleAction *action,
++ 
++ 	ev_view_autoscroll_stop (EV_VIEW (priv->view));
++ 
++-	if (gtk_search_bar_get_search_mode (GTK_SEARCH_BAR (priv->search_bar)))
+++	if (hdy_search_bar_get_search_mode (HDY_SEARCH_BAR (priv->search_bar)))
++ 		ev_window_close_find_bar (window);
++ 	else if (ev_document_model_get_fullscreen (priv->model))
++ 		ev_window_stop_fullscreen (window, TRUE);
++@@ -5487,14 +5464,12 @@ ev_window_sidebar_current_page_changed_cb (EvSidebar  *ev_sidebar,
++ }
++ 
++ static void
++-ev_window_sidebar_visibility_changed_cb (EvSidebar  *ev_sidebar,
++-					 GParamSpec *pspec,
++-					 EvWindow   *ev_window)
+++flap_reveal_changed_cb (EvWindow *ev_window)
++ {
++ 	EvWindowPrivate *priv = GET_PRIVATE (ev_window);
++ 
++ 	if (!EV_WINDOW_IS_PRESENTATION (priv)) {
++-		gboolean visible = gtk_widget_get_visible (GTK_WIDGET (ev_sidebar));
+++		gboolean visible = hdy_flap_get_reveal_flap (HDY_FLAP (priv->flap));
++ 
++ 		g_action_group_change_action_state (G_ACTION_GROUP (ev_window), "show-side-pane",
++ 						    g_variant_new_boolean (visible));
++@@ -5504,6 +5479,10 @@ ev_window_sidebar_visibility_changed_cb (EvSidebar  *ev_sidebar,
++ 						 visible);
++ 		if (!visible)
++ 			gtk_widget_grab_focus (priv->view);
+++
+++		update_chrome_flag (ev_window, EV_CHROME_SIDEBAR, visible);
+++		update_chrome_visibility (ev_window);
+++		ev_toolbar_set_sidebar_visible (EV_TOOLBAR (priv->toolbar), visible);
++ 	}
++ }
++ 
++@@ -5838,12 +5817,12 @@ search_next_cb (EvSearchBox *search_box,
++ }
++ 
++ static void
++-search_bar_search_mode_enabled_changed (GtkSearchBar *search_bar,
+++search_bar_search_mode_enabled_changed (HdySearchBar *search_bar,
++ 					GParamSpec   *param,
++ 					EvWindow     *ev_window)
++ {
++ 	EvWindowPrivate *priv = GET_PRIVATE (ev_window);
++-	gboolean enabled = gtk_search_bar_get_search_mode (search_bar);
+++	gboolean enabled = hdy_search_bar_get_search_mode (search_bar);
++ 
++ 	ev_view_find_set_highlight_search (EV_VIEW (priv->view), enabled);
++ 	ev_window_update_actions_sensitivity (ev_window);
++@@ -5867,7 +5846,8 @@ ev_window_show_find_bar (EvWindow *ev_window,
++ {
++ 	EvWindowPrivate *priv = GET_PRIVATE (ev_window);
++ 
++-	if (gtk_widget_get_visible (priv->find_sidebar)) {
+++	if (gtk_stack_get_visible_child (GTK_STACK (priv->sidebar_stack)) == priv->find_sidebar) {
+++		hdy_flap_set_reveal_flap (HDY_FLAP (priv->flap), TRUE);
++ 		gtk_widget_grab_focus (priv->search_box);
++ 		return;
++ 	}
++@@ -5883,13 +5863,10 @@ ev_window_show_find_bar (EvWindow *ev_window,
++ 	ev_history_freeze (priv->history);
++ 
++ 	g_object_ref (priv->sidebar);
++-	gtk_container_remove (GTK_CONTAINER (priv->hpaned), priv->sidebar);
++-	gtk_paned_pack1 (GTK_PANED (priv->hpaned),
++-			 priv->find_sidebar, FALSE, FALSE);
++-	gtk_widget_show (priv->find_sidebar);
+++	gtk_stack_set_visible_child (GTK_STACK (priv->sidebar_stack), priv->find_sidebar);
++ 
++ 
++-	gtk_search_bar_set_search_mode (GTK_SEARCH_BAR (priv->search_bar), TRUE);
+++	hdy_search_bar_set_search_mode (HDY_SEARCH_BAR (priv->search_bar), TRUE);
++ 	gtk_widget_grab_focus (priv->search_box);
++ 	g_action_group_change_action_state (G_ACTION_GROUP (ev_window), "toggle-find", g_variant_new_boolean (TRUE));
++ 
++@@ -5907,17 +5884,13 @@ ev_window_close_find_bar (EvWindow *ev_window)
++ {
++ 	EvWindowPrivate *priv = GET_PRIVATE (ev_window);
++ 
++-	if (!gtk_widget_get_visible (priv->find_sidebar))
+++	if (gtk_stack_get_visible_child (GTK_STACK (priv->sidebar_stack)) != priv->find_sidebar)
++ 		return;
++ 
++ 	g_object_ref (priv->find_sidebar);
++-	gtk_container_remove (GTK_CONTAINER (priv->hpaned),
++-			      priv->find_sidebar);
++-	gtk_paned_pack1 (GTK_PANED (priv->hpaned),
++-			 priv->sidebar, FALSE, FALSE);
++-	gtk_widget_hide (priv->find_sidebar);
+++	gtk_stack_set_visible_child (GTK_STACK (priv->sidebar_stack), priv->sidebar);
++ 
++-	gtk_search_bar_set_search_mode (GTK_SEARCH_BAR (priv->search_bar), FALSE);
+++	hdy_search_bar_set_search_mode (HDY_SEARCH_BAR (priv->search_bar), FALSE);
++ 	gtk_widget_grab_focus (priv->view);
++ 	g_action_group_change_action_state (G_ACTION_GROUP (ev_window), "toggle-find", g_variant_new_boolean (FALSE));
++ 
++@@ -6612,6 +6585,48 @@ window_state_event_cb (EvWindow *window, GdkEventWindowState *event, gpointer du
++ 	return FALSE;
++ }
++ 
+++static void
+++window_size_allocate_cb (EvWindow *window)
+++{
+++	EvWindowPrivate *priv = GET_PRIVATE (window);
+++	gboolean is_maximized, is_fullscreen;
+++	gboolean is_narrow, is_mobile_landscape, is_mobile;
+++	int width, height;
+++	GdkDisplay *display;
+++	GdkWindow *surface;
+++	GdkMonitor *monitor = NULL;
+++	GdkRectangle geometry = {};
+++
+++	gtk_window_get_size (GTK_WINDOW (window), &width, &height);
+++
+++	/* Get the monitor to guess whether we are on a mobile or not. If not found,
+++	* fallback to the window size.
+++	*/
+++	display = gtk_widget_get_display (GTK_WIDGET (window));
+++	surface = gtk_widget_get_window (GTK_WIDGET (window));
+++
+++	if (display != NULL && surface != NULL)
+++		monitor = gdk_display_get_monitor_at_window (display, surface);
+++
+++	if (monitor != NULL)
+++		gdk_monitor_get_geometry (monitor, &geometry);
+++	else
+++		geometry.height = height;
+++
+++	is_maximized = gtk_window_is_maximized (GTK_WINDOW (window));
+++	is_fullscreen = GDK_IS_WINDOW (surface) && (gdk_window_get_state (surface) & GDK_WINDOW_STATE_FULLSCREEN) > 0;
+++
+++	is_narrow = width <= 600;
+++	is_mobile_landscape = geometry.height <= 400 &&
+++	                      (is_maximized || is_fullscreen);
+++
+++	is_mobile = is_narrow || is_mobile_landscape;
+++
+++	hdy_flap_set_fold_policy (HDY_FLAP (priv->flap),
+++				  is_mobile ? HDY_FLAP_FOLD_POLICY_ALWAYS : HDY_FLAP_FOLD_POLICY_AUTO);
+++	ev_toolbar_set_mobile (EV_TOOLBAR (priv->toolbar), is_mobile);
+++}
+++
++ static gboolean
++ window_configure_event_cb (EvWindow *window, GdkEventConfigure *event, gpointer dummy)
++ {
++@@ -7518,7 +7533,9 @@ ev_window_init (EvWindow *ev_window)
++ 	GtkBuilder *builder;
++ 	GError *error = NULL;
++ 	GtkWidget *sidebar_widget;
+++	GtkWidget *separator;
++ 	GtkWidget *overlay;
+++	GtkWidget *clamp;
++ 	GtkWidget *searchbar_revealer;
++ 	GObject *mpkeys;
++ 	guint page_cache_mb;
++@@ -7535,6 +7552,8 @@ ev_window_init (EvWindow *ev_window)
++ 			  G_CALLBACK (window_configure_event_cb), NULL);
++ 	g_signal_connect (ev_window, "window_state_event",
++ 			  G_CALLBACK (window_state_event_cb), NULL);
+++	g_signal_connect (ev_window, "size-allocate",
+++			  G_CALLBACK (window_size_allocate_cb), NULL);
++ 
++ 	priv = GET_PRIVATE (ev_window);
++ 
++@@ -7628,13 +7647,15 @@ ev_window_init (EvWindow *ev_window)
++ 			    priv->annots_toolbar, FALSE, TRUE, 0);
++ 
++ 	/* Search Bar */
++-	priv->search_bar = gtk_search_bar_new ();
+++	priv->search_bar = hdy_search_bar_new ();
+++
+++	clamp = hdy_clamp_new ();
+++	gtk_container_add (GTK_CONTAINER (priv->search_bar), clamp);
+++	gtk_widget_show (clamp);
++ 
++ 	priv->search_box = ev_search_box_new (priv->model);
++ 	search_entry = GTK_ENTRY (ev_search_box_get_entry (EV_SEARCH_BOX (priv->search_box)));
++-	gtk_entry_set_width_chars (search_entry, 32);
++-	gtk_entry_set_max_length (search_entry, 512);
++-	gtk_container_add (GTK_CONTAINER (priv->search_bar),
+++	gtk_container_add (GTK_CONTAINER (clamp),
++ 			   priv->search_box);
++ 	gtk_widget_show (priv->search_box);
++ 
++@@ -7648,7 +7669,7 @@ ev_window_init (EvWindow *ev_window)
++ 	gtk_container_add (GTK_CONTAINER (searchbar_revealer), priv->search_bar);
++ 	gtk_widget_show (GTK_WIDGET (searchbar_revealer));
++ 
++-	/* We don't use gtk_search_bar_connect_entry, because it clears the entry when the
+++	/* We don't use hdy_search_bar_connect_entry, because it clears the entry when the
++ 	 * search is closed, but we want to keep the current search.
++ 	 */
++ 	gtk_box_pack_start (GTK_BOX (priv->main_box),
++@@ -7656,22 +7677,26 @@ ev_window_init (EvWindow *ev_window)
++ 	gtk_widget_show (priv->search_bar);
++ 
++ 	/* Add the main area */
++-	priv->hpaned = gtk_paned_new (GTK_ORIENTATION_HORIZONTAL);
++-	g_signal_connect (priv->hpaned,
++-			  "notify::position",
++-			  G_CALLBACK (ev_window_sidebar_position_change_cb),
++-			  ev_window);
++-	
++-	gtk_paned_set_position (GTK_PANED (priv->hpaned), SIDEBAR_DEFAULT_SIZE);
++-	gtk_box_pack_start (GTK_BOX (priv->main_box), priv->hpaned,
+++	priv->flap = hdy_flap_new ();
+++	hdy_flap_set_swipe_to_open (HDY_FLAP (priv->flap), FALSE);
+++	hdy_flap_set_locked (HDY_FLAP (priv->flap), TRUE);
+++	gtk_box_pack_start (GTK_BOX (priv->main_box), priv->flap,
++ 			    TRUE, TRUE, 0);
++-	gtk_widget_show (priv->hpaned);
+++	gtk_widget_show (priv->flap);
++ 	
+++	priv->sidebar_stack = gtk_stack_new ();
+++	hdy_flap_set_flap (HDY_FLAP (priv->flap), priv->sidebar_stack);
+++	gtk_widget_set_size_request (priv->sidebar_stack, SIDEBAR_DEFAULT_SIZE, -1);
+++	gtk_widget_set_hexpand (priv->sidebar_stack, FALSE);
+++	gtk_widget_set_hexpand_set (priv->sidebar_stack, TRUE);
+++	gtk_style_context_add_class (gtk_widget_get_style_context (priv->sidebar_stack),
+++	                             "background");
+++	gtk_widget_show (priv->sidebar_stack);
+++
++ 	priv->sidebar = ev_sidebar_new ();
++ 	ev_sidebar_set_model (EV_SIDEBAR (priv->sidebar),
++ 			      priv->model);
++-	gtk_paned_pack1 (GTK_PANED (priv->hpaned),
++-			 priv->sidebar, FALSE, FALSE);
+++	gtk_container_add (GTK_CONTAINER (priv->sidebar_stack), priv->sidebar);
++ 	gtk_widget_show (priv->sidebar);
++ 
++ 	/* Stub sidebar, for now */
++@@ -7754,6 +7779,10 @@ ev_window_init (EvWindow *ev_window)
++ 			      LAYERS_SIDEBAR_ID, _("Layers"),
++ 			      LAYERS_SIDEBAR_ICON);
++ 
+++	separator = gtk_separator_new (GTK_ORIENTATION_VERTICAL);
+++	hdy_flap_set_separator (HDY_FLAP (priv->flap), separator);
+++	gtk_widget_show (separator);
+++
++ 	priv->view_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
++ 
++ 	overlay = gtk_overlay_new ();
++@@ -7773,8 +7802,10 @@ ev_window_init (EvWindow *ev_window)
++ 			    TRUE, TRUE, 0);
++ 	gtk_widget_show (overlay);
++ 
++-	gtk_paned_add2 (GTK_PANED (priv->hpaned),
++-			priv->view_box);
+++	hdy_flap_set_content (HDY_FLAP (priv->flap), priv->view_box);
+++	hdy_flap_set_reveal_flap (HDY_FLAP (priv->flap), FALSE);
+++	gtk_widget_set_size_request (priv->view_box, 360, -1);
+++	gtk_widget_set_hexpand (priv->view_box, TRUE);
++ 	gtk_widget_show (priv->view_box);
++ 
++ 	priv->view = ev_view_new ();
++@@ -7860,6 +7891,8 @@ ev_window_init (EvWindow *ev_window)
++ 			  "result-activated",
++ 			  G_CALLBACK (find_sidebar_result_activated_cb),
++ 			  ev_window);
+++	gtk_container_add (GTK_CONTAINER (priv->sidebar_stack), priv->find_sidebar);
+++	gtk_widget_show (priv->find_sidebar);
++ 
++ 	/* We own a ref on these widgets, as we can swap them in and out */
++ 	g_object_ref (priv->view);
++@@ -7911,10 +7944,10 @@ ev_window_init (EvWindow *ev_window)
++ 			  ev_window);
++ 
++      	/* Connect sidebar signals */
++-	g_signal_connect (priv->sidebar,
++-			  "notify::visible",
++-			  G_CALLBACK (ev_window_sidebar_visibility_changed_cb),
++-			  ev_window);
+++	g_signal_connect_swapped (priv->flap,
+++	                          "notify::reveal-flap",
+++	                          G_CALLBACK (flap_reveal_changed_cb),
+++	                          ev_window);
++ 	g_signal_connect (priv->sidebar,
++ 			  "notify::current-page",
++ 			  G_CALLBACK (ev_window_sidebar_current_page_changed_cb),
++@@ -8143,5 +8176,5 @@ ev_window_set_divider_position (EvWindow *ev_window,
++ 
++ 	priv = GET_PRIVATE (ev_window);
++ 
++-	gtk_paned_set_position (GTK_PANED (priv->hpaned), sidebar_width);
+++	gtk_widget_set_size_request (priv->sidebar_stack, sidebar_width, -1);
++ }
+diff --git a/debian/patches/series b/debian/patches/series
+index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..98d7a362821d743a38fed6a0184dd537e36f97eb 100644
+--- a/debian/patches/series
++++ b/debian/patches/series
+@@ -0,0 +1,5 @@
++# UI patches from Purism
++purism/0001-toolbar-Allow-to-toggle-the-sidebar-button.patch
++purism/0002-toolbar-Allow-hiding-zoom-annotation-and-page-widgets.patch
++purism/0003-properties-view-Reduce-the-label-width-chars.patch
++purism/0004-window-Port-it-to-phones.patch
