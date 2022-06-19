@@ -359,6 +359,26 @@ e-books for convenient reading.")
                    license:silofl1.1
                    license:cc-by-sa3.0))))
 
+(define-public calibre-plugin-dedrm
+  (package
+    (name "calibre-plugin-dedrm")
+    (version "10.0.2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://github.com/noDRM/DeDRM_tools")
+	   (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "1grg59f0xzm5qwkfnixyqmghvkwvc4sgx06w8cfx7s2hw95ixzh2"))))
+    (build-system python-build-system)
+    (home-page
+	"https://github.com/noDRM/DeDRM_tools")
+    (synopsis "DeDRM tools for ebooks")
+    (description "")
+    (license #f)))
+
 (define-public ebook-tools
   (package
     (name "ebook-tools")
