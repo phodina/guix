@@ -4729,8 +4729,6 @@ language that is written in a Cyrillic alphabet.")
                     "11f14dzhwsy4pli21acccip43d36nf3pac33ihjffnps1i2mhqkd"))))
     (package
       (inherit template)
-      ;; TODO: This package is missing files.
-      (replacement texlive-psnfss/fixed)
       (arguments
        (substitute-keyword-arguments (package-arguments template)
          ((#:tex-directory _ #t)
@@ -4768,6 +4766,7 @@ language that is written in a Cyrillic alphabet.")
                    ;; source, as per the installation instructions.
                    (copy-recursively doc-path source-path)
                    (delete-file-recursively "doc"))))))))
+      (outputs '("out" "doc"))
       (native-inputs
        (list texlive-cm))
       (home-page "https://www.ctan.org/pkg/psnfss")
@@ -4786,24 +4785,6 @@ means to select single glyphs from symbol fonts.  The bundle as a whole is
 part of the LaTeX required set of packages.")
       (license license:lppl1.2+))))
 
-(define-public texlive-psnfss/fixed
-  (package
-    (inherit texlive-psnfss)
-    (name "texlive-psnfss-fixed")
-    (arguments
-     (substitute-keyword-arguments (package-arguments texlive-psnfss)
-       ((#:phases phases)
-        `(modify-phases ,phases
-           (add-before 'copy-files 'unchdir
-             (lambda _
-               (chdir "../../..")))
-           (add-after 'copy-files 'delete-extra-files
-             (lambda* (#:key outputs #:allow-other-keys)
-               (delete-file-recursively
-                (string-append (assoc-ref outputs "out")
-                               "/share/texmf-dist/source/latex/psnfss/build"))))))))))
-
-(define-deprecated-package texlive-latex-psnfss texlive-psnfss)
 
 ;; For user profiles
 (define-public texlive-base
