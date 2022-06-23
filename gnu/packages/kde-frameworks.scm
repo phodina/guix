@@ -117,7 +117,7 @@
      (if (and (not (%current-target-system))
               (string=? (%current-system) "armhf-linux"))
          '()
-         `(("qtbase" ,qtbase-5))))                ;for tests (needs qmake)
+         (list qtbase-5 appstream)))                ;for tests (needs qmake)
     (arguments
      `(#:tests? ,(and (not (%current-target-system))
                       (not (null? (package-native-inputs this-package))))
@@ -125,6 +125,9 @@
        (modify-phases %standard-phases
          (add-after 'unpack 'fix-lib-path
            (lambda _
+             ;; This fixes test to pass
+             (substitute* "tests/KDEFetchTranslations/CMakeLists.txt"
+              (("frameworks/extra-cmake-modules") "extra-cmake-modules"))
              ;; Always install into /lib and not into /lib64.
              (substitute* "kde-modules/KDEInstallDirs.cmake"
                (("\"lib64\"") "\"lib\"")

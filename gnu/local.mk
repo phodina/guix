@@ -1293,6 +1293,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/imagemagick-ReadDCMImage-fix.patch	\
   %D%/packages/patches/imagemagick-ReadDCMPixels-fix.patch	\
   %D%/packages/patches/imagemagick-WriteTHUMBNAILImage-fix.patch	\
+  %D%/packages/patches/inkscape-fix-build-with-poppler.patch \
   %D%/packages/patches/instead-use-games-path.patch		\
   %D%/packages/patches/intel-xed-fix-nondeterminism.patch	\
   %D%/packages/patches/intltool-perl-compatibility.patch	\

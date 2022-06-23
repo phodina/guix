@@ -62,6 +62,7 @@
        (uri (string-append "https://media.inkscape.org/dl/"
                            "resources/file/"
                            "inkscape-" version ".tar.xz"))
+	   (patches (search-patches "inkscape-fix-build-with-poppler.patch"))
        (sha256
         (base32 "1bvqg5xfs3m6r7qfdhmgzwhd1hx8wvg3nhvhmalwzcdm6ffhpjmf"))
        (modules '((guix build utils)
