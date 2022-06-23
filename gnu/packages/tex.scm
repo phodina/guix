@@ -4301,7 +4301,7 @@ definitions.")
                     "0gmdzhgr0h57xhsl61c5jsp4fj4pbmdr8p6k96am5jbyrbbx121q"))))
     (package
       (inherit template)
-      (outputs '("out" "doc"))
+      ;(outputs '("out" "doc"))
       (arguments
        (substitute-keyword-arguments (package-arguments template)
          ((#:tex-directory _ #t)
