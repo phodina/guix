@@ -54513,6 +54513,26 @@ also have to make sure that the wrapper is dropped from within the original
 thread.  If any of these constraints is violated, a panic occurs.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-sensors-0.2
+  (package
+    (name "rust-sensors")
+    (version "0.2.2")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "sensors" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1l6nvmbbbbl9mdkd9806mmls68d6hvqb2nl0nm14chva5xwz8fks"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs (("rust-libc" ,rust-libc-0.2) ("rust-libsensors-sys" ,rust-libsensors-sys-0.2))))
+    (home-page "https://github.com/nyantec/sensors")
+    (synopsis "A Rust-friendly interface to lm-sensors")
+    (description
+     "This package provides a Rust-friendly interface to lm-sensors")
+    (license license:miros)))
+
 (define-public rust-seq-io-0.3
   (package
     (name "rust-seq-io")
