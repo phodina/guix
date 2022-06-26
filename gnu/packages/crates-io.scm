@@ -32016,6 +32016,25 @@ library.")
 library.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-libsensors-sys-0.2
+  (package
+    (name "rust-libsensors-sys")
+    (version "0.2.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "libsensors-sys" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0cii4jbj19d95q6nyczfi3d3s2j3jg4qf7qc8qfxx5jb2v3hqwx1"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "")
+    (synopsis "Rust bindings to libsensors")
+    (description "Rust bindings to libsensors")
+    (license license:miros)))
+
 (define-public rust-libsqlite3-sys-0.23
   (package
     (name "rust-libsqlite3-sys")
