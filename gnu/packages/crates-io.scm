@@ -38246,17 +38246,17 @@ varying noise for textural use and graphical display.")
        (("rust-tempfile" ,rust-tempfile-3))))
     (license license:cc0)))
 
-(define-public rust-notmuch-0.6
+(define-public rust-notmuch-0.7
   (package
     (name "rust-notmuch")
-    (version "0.6.0")
+    (version "0.7.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "notmuch" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "19q93iyvx4liksm09mhq9ibm8zj7i3dizc1s40f916z0kbpn9k5w"))))
+        (base32 "1ahd11y36jisfjssr2056857dywzyd79rsyx815x42nkzlm9np8d"))))
     (build-system cargo-build-system)
     (arguments
      `(#:tests? #f         ;see https://github.com/vhdirk/notmuch-rs/issues/35
@@ -38268,7 +38268,7 @@ varying noise for textural use and graphical display.")
         ("rust-gethostname" ,rust-gethostname-0.2)
         ("rust-lettre" ,rust-lettre-0.9)
         ("rust-lettre-email" ,rust-lettre-email-0.9)
-        ("rust-maildir" ,rust-maildir-0.5)
+        ("rust-maildir" ,rust-maildir-0.6)
         ("rust-tempfile" ,rust-tempfile-3))
        #:phases
        (modify-phases %standard-phases
