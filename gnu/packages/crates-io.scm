@@ -36965,6 +36965,30 @@ general elements and for numerics.")
     (description "Type safe netlink library written in Rust")
     (license license:bsd-3)))
 
+(define-public rust-neli-proc-macros-0.1
+  (package
+    (name "rust-neli-proc-macros")
+    (version "0.1.2")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "neli-proc-macros" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0hmasga3pl2d3rnykvb58xkjkk1m8vpm86gd8f0ffi72qi84ygmb"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs
+       (("rust-either" ,rust-either-1) ("rust-proc-macro2" ,rust-proc-macro2-1)
+        ("rust-quote" ,rust-quote-1)
+        ("rust-serde" ,rust-serde-1)
+        ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/jbaublitz/neli")
+    (synopsis "Procedural macros for neli")
+    (description "Procedural macros for neli")
+    (license license:bsd-3)))
+
 (define-public rust-neso-0.5
   (package
     (name "rust-neso")
