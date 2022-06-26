@@ -36940,30 +36940,29 @@ general elements and for numerics.")
     (description "This package provides FFI bindings for the Android NDK.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-neli-0.4
+(define-public rust-neli-0.6
   (package
     (name "rust-neli")
-    (version "0.4.4")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (crate-uri "neli" version))
-       (file-name (string-append name "-" version ".tar.gz"))
-       (sha256
-        (base32 "1lxnns9vfrsiwksscjgr7yvgpc5658lw07d745ir37r5pn19fpp8"))))
+    (version "0.6.1")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "neli" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0f6f39a95n4h1byppg318n0s6cqazjqycffvp09w5yv6rqj9wj4s"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-buffering" ,rust-buffering-0.4)
-        ("rust-byteorder" ,rust-byteorder-1)
+       (("rust-byteorder" ,rust-byteorder-1) ("rust-futures" ,rust-futures-0.3)
         ("rust-libc" ,rust-libc-0.2)
-        ("rust-mio" ,rust-mio-0.6)
-        ("rust-tokio" ,rust-tokio-0.1))))
+        ("rust-log" ,rust-log-0.4)
+        ("rust-neli-proc-macros" ,rust-neli-proc-macros-0.1)
+        ("rust-tokio" ,rust-tokio-1))))
     (home-page "https://github.com/jbaublitz/neli")
     (synopsis "Type safe netlink library written in Rust")
-    (description
-     "This crate is a type safe netlink library written in Rust.")
+    (description "Type safe netlink library written in Rust")
     (license license:bsd-3)))
 
 (define-public rust-neso-0.5
