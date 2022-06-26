@@ -33530,17 +33530,17 @@ algorithms.  It supports CBC block cipher mode, PKCS5 padding and 64, 128,
 192 or 256-bits key length.")
     (license license:asl2.0)))
 
-(define-public rust-maildir-0.5
+(define-public rust-maildir-0.6
   (package
     (name "rust-maildir")
-    (version "0.5.0")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (crate-uri "maildir" version))
-       (file-name (string-append name "-" version ".tar.gz"))
-       (sha256
-        (base32 "0pivq6njjmfnf0jn6i8sihbfgly6v674zwncd6f5nwiw79lz9p3a"))))
+    (version "0.6.1")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "maildir" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1da5xrj0r8n6vrxaf3vy457n8x3y2j71a294r6njcnj6mlc6iqzq"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
