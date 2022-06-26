@@ -36989,6 +36989,27 @@ general elements and for numerics.")
     (description "Procedural macros for neli")
     (license license:bsd-3)))
 
+(define-public rust-neli-wifi-0.3
+  (package
+    (name "rust-neli-wifi")
+    (version "0.3.1")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "neli-wifi" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0701bxfz2bfb8hqcaq29fn4m0b85qk69iih0hrp6cysq75lhwz9m"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:cargo-inputs (("rust-neli" ,rust-neli-0.6) ("rust-neli-proc-macros" ,rust-neli-proc-macros-0.1))
+       #:cargo-development-inputs
+       (("rust-tokio" ,rust-tokio-1))))
+    (home-page "https://github.com/MaxVerevkin/neli-wifi")
+    (synopsis "Communicate with nl80211")
+    (description "Communicate with nl80211")
+    (license license:expat)))
+
 (define-public rust-neso-0.5
   (package
     (name "rust-neso")
