@@ -377,16 +377,15 @@ system, and the core design of Django is reused in Grantlee.")
            vulkan-headers
            ruby))
     (arguments
-     `(#:configure-flags
-       (let ((out (assoc-ref %outputs "out")))
-         (list "-verbose"
-               "-prefix" out
-               "-docdir" (string-append out "/share/doc/qt5")
-               "-headerdir" (string-append out "/include/qt5")
-               "-archdatadir" (string-append out "/lib/qt5")
-               "-datadir" (string-append out "/share/qt5")
+     (list #:configure-flags
+         #~(list "-verbose"
+               "-prefix" #$output
+               "-docdir" (string-append #$output "/share/doc/qt5")
+               "-headerdir" (string-append #$output "/include/qt5")
+               "-archdatadir" (string-append #$output "/lib/qt5")
+               "-datadir" (string-append #$output "/share/qt5")
                "-examplesdir" (string-append
-                               out "/share/doc/qt5/examples")
+                               #$output "/share/doc/qt5/examples")
                "-opensource"
                "-confirm-license"
 
@@ -419,15 +418,15 @@ system, and the core design of Django is reused in Grantlee.")
                "-no-pch"
                ;; drop special machine instructions that do not have
                ;; runtime detection
-               ,@(if (string-prefix? "x86_64"
+               #$@(if (string-prefix? "x86_64"
                                      (or (%current-target-system)
                                          (%current-system)))
                      '()
                      '("-no-sse2"))
                "-no-mips_dsp"
-               "-no-mips_dspr2"))
+               "-no-mips_dspr2")
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'configure 'patch-bin-sh
            (lambda _
              (substitute* '("config.status"
@@ -446,7 +445,6 @@ system, and the core design of Django is reused in Grantlee.")
            ;; Overridden to not pass "--enable-fast-install", which makes the
            ;; configure process fail.
            (lambda* (#:key outputs configure-flags #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
                (substitute* "configure"
                  (("/bin/pwd") (which "pwd")))
                (substitute* "src/corelib/global/global.pri"
@@ -460,11 +458,10 @@ system, and the core design of Django is reused in Grantlee.")
                  (("NO_DEFAULT_PATH") ""))
                (format #t "build directory: ~s~%" (getcwd))
                (format #t "configure flags: ~s~%" configure-flags)
-               (apply invoke "./configure" configure-flags))))
+               (apply invoke "./configure" configure-flags)))
          (add-after 'install 'patch-mkspecs
            (lambda* (#:key outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
-                    (archdata (string-append out "/lib/qt5"))
+             (let* ((archdata (string-append #$output "/lib/qt5"))
                     (mkspecs (string-append archdata "/mkspecs"))
                     (qt_config.prf (string-append
                                     mkspecs "/features/qt_config.prf")))
@@ -495,20 +492,19 @@ system, and the core design of Django is reused in Grantlee.")
                  (("\\$\\$\\[QT_HOST_DATA/src\\]") archdata)))))
          (add-after 'patch-mkspecs 'patch-prl-files
            (lambda* (#:key outputs #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
                ;; Insert absolute references to the qtbase libraries because
                ;; QT_INSTALL_LIBS does not always resolve correctly, depending
                ;; on context.  See <https://bugs.gnu.org/38405>
-               (substitute* (find-files (string-append out "/lib") "\\.prl$")
+               (substitute* (find-files (string-append #$output "/lib") "\\.prl$")
                  (("\\$\\$\\[QT_INSTALL_LIBS\\]")
-                  (string-append out "/lib"))))))
+                  (string-append #$output "/lib")))))
          (add-after 'unpack 'patch-paths
            ;; Use the absolute paths for dynamically loaded libs, otherwise
            ;; the lib will be searched in LD_LIBRARY_PATH which typically is
            ;; not set in guix.
            (lambda* (#:key inputs #:allow-other-keys)
              ;; libresolve
-             (let ((glibc (assoc-ref inputs ,(if (%current-target-system)
+             (let ((glibc (assoc-ref inputs #$(if (%current-target-system)
                                                  "cross-libc" "libc"))))
                (substitute* '("src/network/kernel/qdnslookup_unix.cpp"
                               "src/network/kernel/qhostinfo_unix.cpp")
