@@ -279,17 +279,17 @@ system, and the core design of Django is reused in Grantlee.")
   ;; the layout differs between them.
   (list (string-append "https://download.qt.io/official_releases/qt/"
                        (version-major+minor version) "/" version
-                       "/submodules/" component "-everywhere-src-"
+                       "/submodules/" component "-everywhere-opensource-src-"
                        version ".tar.xz")
         (string-append "https://download.qt.io/archive/qt/"
                        (version-major+minor version) "/" version
-                       "/submodules/" component "-everywhere-src-"
+                       "/submodules/" component "-everywhere-opensource-src-"
                        version ".tar.xz")
         (let ((directory (string-append "qt5" (string-drop component 2))))
           (string-append "http://sources.buildroot.net/" directory "/"
-                         component "-everywhere-src-" version ".tar.xz"))
+                         component "-everywhere-opensource-src-" version ".tar.xz"))
         (string-append "https://distfiles.macports.org/qt5/"
-                       component "-everywhere-src-" version ".tar.xz")))
+                       component "-everywhere-opensource-src-" version ".tar.xz")))
 
 (define-public qtbase-5
   (package
