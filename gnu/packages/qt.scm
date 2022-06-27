@@ -24,6 +24,7 @@
 ;;; Copyright © 2021, 2022 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2021 Nicolò Balzarotti <nicolo@nixo.xyz>
 ;;; Copyright © 2022 Foo Chuan Wei <chuanwei.foo@hotmail.com>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -86,6 +87,7 @@
   #:use-module (gnu packages maths)
   #:use-module (gnu packages networking)
   #:use-module (gnu packages ninja)
+  #:use-module (gnu packages node)
   #:use-module (gnu packages nss)
   #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pcre)
@@ -1542,14 +1544,16 @@ using the Enchant spell-checking library.")
   (package
     (inherit qtsvg)
     (name "qtwebengine")
+    (version "5.15.10")
     (version (package-version qtbase-5))
     (source
      (origin
        (method url-fetch)
-       (uri (qt5-urls name version))
+       (uri "https://anduin.linuxfromscratch.org/BLFS/qtwebengine/qtwebengine-5.15.10.tar.xz")
        (sha256
         (base32
-         "1q4idxdm81sx102xc12ixj0xpfx52d6vwvs3jpapnkyq8c7cmby8"))
+         "008pvrxhm55gyidspvln7yyldj0idakfmg731c6ah10iwmgq9s87"))
+       (patches (search-patches "qtwebengine-5.15.10-build_fixes-1.patch"))
        (modules '((ice-9 ftw)
                   (ice-9 match)
                   (srfi srfi-1)
@@ -1585,6 +1589,36 @@ using the Enchant spell-checking library.")
                     "third_party/boringssl/src/third_party/fiat"
                     "third_party/breakpad"
                     "third_party/brotli"
+                    "third_party/catapult/tracing/bin"
+                    "third_party/catapult/tracing/tracing/base"
+                    "third_party/catapult/tracing/tracing/core"
+                    "third_party/catapult/tracing/tracing/extras"
+                    "third_party/catapult/tracing/tracing/extras/android"
+                    "third_party/catapult/tracing/tracing/extras/chrome/blame_context"
+                    "third_party/catapult/tracing/tracing/extras/chrome/blink"
+                    "third_party/catapult/tracing/tracing/extras/chrome/cc"
+                    "third_party/catapult/tracing/tracing/extras/chrome"
+                    "third_party/catapult/tracing/tracing/importer"
+                    "third_party/catapult/tracing/tracing/metrics"
+                    "third_party/catapult/tracing/tracing/model"
+                    "third_party/catapult/tracing/tracing/mre"
+                    "third_party/catapult/tracing/tracing/ui/analysis"
+                    "third_party/catapult/tracing/tracing/ui/annotations"
+                    "third_party/catapult/tracing/tracing/ui/base"
+                    "third_party/catapult/tracing/tracing/ui"
+                    "third_party/catapult/tracing/tracing/value"
+                    "third_party/catapult/common/py_vulcanize"
+                    "third_party/catapult/common/py_vulcanize/third_party/rcssmin"
+                    "third_party/catapult/common/py_vulcanize/third_party/rjsmin"
+                    "third_party/catapult/tracing"
+                    "third_party/catapult/tracing/tracing/ui/extras/about_tracing"
+                    "third_party/catapult/tracing/tracing/ui/extras/chrome/gpu"
+                    "third_party/catapult/tracing/tracing/ui/extras/system_stats"
+                    "third_party/catapult/tracing/tracing/ui/tracks"
+                    "third_party/catapult/third_party/polymer/components/polymer"
+                    "third_party/libavif/src/src"
+                    "third_party/xcbproto/src/src"
+                    "third_party/libavif/src/include/avif"
                     "third_party/ced"
                     "third_party/cld_3"
                     "third_party/closure_compiler"
@@ -1595,10 +1629,21 @@ using the Enchant spell-checking library.")
                     "third_party/dav1d"
                     "third_party/dawn"
                     "third_party/devtools-frontend"
+                    "third_party/devtools-frontend/src/front_end/third_party/acorn"
+                    "third_party/devtools-frontend/src/front_end/third_party/acorn-logical-assignment"
+                    "third_party/devtools-frontend/src/front_end/third_party/acorn-loose"
+                    "third_party/devtools-frontend/src/front_end/third_party/acorn-numeric-separator"
+                    "third_party/devtools-frontend/src/front_end/third_party/axe-core/axe.js"
+                    "third_party/devtools-frontend/src/front_end/third_party/codemirror"
+                    "third_party/devtools-frontend/src/front_end/third_party/chromium"
                     "third_party/devtools-frontend/src/front_end/third_party/fabricjs"
+                    "third_party/devtools-frontend/src/front_end/third_party/i18n"
                     "third_party/devtools-frontend/src/front_end/third_party/lighthouse"
+                    "third_party/devtools-frontend/src/front_end/third_party/lit-html"
+                    "third_party/devtools-frontend/src/front_end/third_party/marked"
+                    "third_party/devtools-frontend/src/front_end/third_party/puppeteer"
                     "third_party/devtools-frontend/src/front_end/third_party/wasmparser"
-                    "third_party/devtools-frontend/src/third_party/axe-core"
+                    "third_party/devtools-frontend/src/third_party/typescript/ts_library.py"
                     "third_party/emoji-segmenter"
                     "third_party/ffmpeg"
                     "third_party/googletest"
@@ -1626,6 +1671,7 @@ using the Enchant spell-checking library.")
                     "third_party/libxml"
                     "third_party/libxslt"
                     "third_party/libyuv"
+                    "third_party/lottie"
                     "third_party/lss"
                     "third_party/mako"
                     "third_party/markupsafe"
@@ -1633,8 +1679,29 @@ using the Enchant spell-checking library.")
                     "third_party/metrics_proto"
                     "third_party/modp_b64"
                     "third_party/nasm"
+                    "third_party/node/node.py"
                     "third_party/one_euro_filter"
                     "third_party/openh264/src/codec/api/svc"
+                    "third_party/openh264/src/codec/encoder/core/src"
+                    "third_party/openh264/src/codec/encoder/plus/src"
+                    "third_party/openh264/src/codec/common/src"
+                    "third_party/openh264/src/codec/common/inc"
+                    "third_party/openh264/src/codec/processing/src/adaptivequantization"
+                    "third_party/openh264/src/codec/processing/src/backgrounddetection"
+                    "third_party/openh264/src/codec/processing/src/common"
+                    "third_party/openh264/src/codec/processing/src/complexityanalysis"
+                    "third_party/openh264/src/codec/processing/src/denoise"
+                    "third_party/openh264/src/codec/processing/src/downsample"
+                    "third_party/openh264/src/codec/processing/src/imagerotate"
+                    "third_party/openh264/src/codec/processing/src/scenechangedetection"
+                    "third_party/openh264/src/codec/processing/src/scrolldetection"
+                    "third_party/openh264/src/codec/processing/src/vaacalc"
+                    "third_party/openh264/src/codec/common/x86"
+                    "third_party/openh264/src/codec/processing/src/x86"
+                    "third_party/openh264/src/codec/encoder/core/x86"
+                    "third_party/openh264/src/codec/encoder/core/inc"
+                    "third_party/openh264/src/codec/processing/interface"
+                    "third_party/openh264/src/codec/encoder/plus/inc"
                     "third_party/opus"
                     "third_party/ots"
                     "third_party/pdfium"
@@ -1663,9 +1730,11 @@ using the Enchant spell-checking library.")
                     "third_party/sqlite"
                     "third_party/usb_ids"
                     "third_party/usrsctp"
+                    "third_party/vulkan_headers/include/vulkan"
+                    "third_party/vulkan_memory_allocator/src"
                     "third_party/web-animations-js"
                     "third_party/webrtc"
-                    "third_party/webrtc/common_audio/third_party/fft4g"
+                    "third_party/webrtc/common_audio/third_party/ooura"
                     "third_party/webrtc/common_audio/third_party/spl_sqrt_floor"
                     "third_party/webrtc/modules/third_party/fft"
                     "third_party/webrtc/modules/third_party/g711"
@@ -1676,7 +1745,6 @@ using the Enchant spell-checking library.")
                     "third_party/widevine/cdm/widevine_cdm_common.h"
                     "third_party/widevine/cdm/widevine_cdm_version.h"
                     "third_party/woff2"
-                    "third_party/yasm"
                     "third_party/zlib"
                     "url/third_party/mozilla"
                     "v8/src/third_party/utf8-decoder"
@@ -1756,7 +1824,6 @@ using the Enchant spell-checking library.")
                    (("third_party/curl") "curl"))
                  (substitute*
                      '("components/viz/common/gpu/vulkan_context_provider.h"
-                       "components/viz/common/resources/resource_format_utils_vulkan.h"
                        "gpu/config/gpu_util.cc")
                    (("third_party/vulkan/include/")
                     ""))
@@ -1780,8 +1847,9 @@ using the Enchant spell-checking library.")
            ninja
            perl
            pkg-config
-           python2-six
-           python-2
+           python-six
+           python
+           python-beautifulsoup4
            ruby))
     (inputs
      (list alsa-lib
@@ -1795,6 +1863,7 @@ using the Enchant spell-checking library.")
            icu4c
            jsoncpp
            lcms
+           libavif
            libcap
            libevent
            libgcrypt
@@ -1807,6 +1876,7 @@ using the Enchant spell-checking library.")
            libxcursor
            libxi
            libxkbcommon
+           libxkbfile
            ;; FIXME: libxml2 needs to built with icu support though it links to
            ;; libxml2 configure summary still states "Checking for compatible
            ;; system libxml2... no"
@@ -1818,9 +1888,11 @@ using the Enchant spell-checking library.")
            libxtst
            mesa
            minizip
+           node
            nss
            opus
            pciutils
+           pipewire
            protobuf
            pulseaudio
            qtbase-5
@@ -1832,6 +1904,7 @@ using the Enchant spell-checking library.")
            eudev
            valgrind
            vulkan-headers
+           xcb-proto
            xcb-util))
     (arguments
      (substitute-keyword-arguments (package-arguments qtsvg)
@@ -1881,11 +1954,9 @@ using the Enchant spell-checking library.")
                (invoke "qmake" "QT_BUILD_PARTS = libs tools" "--"
                        "--webengine-printing-and-pdf=no"
                        "--webengine-ffmpeg=system"
-                       ;; FIXME: Building qtwebengine 5.12.2 with
-                       ;; icu4c >= 68 fails.
-                       ;;"--webengine-icu=system"
+                       "--webengine-icu=system"
                        "--webengine-pepper-plugins=no"
-                       "-webengine-proprietary-codecs")))))
+                       "--webengine-proprietary-codecs")))))
        ;; Tests are disabled due to "Could not find QtWebEngineProcess error"
        ;; It's possible this can be fixed by setting QTWEBENGINEPROCESS_PATH
        ;; before running tests.
