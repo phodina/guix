@@ -269,7 +269,7 @@ Telegram project, for its use in telegram desktop client.")
 (define-public telegram-desktop
   (package
     (name "telegram-desktop")
-    (version "2.9.3")
+    (version "4.0.2")
     (source
      (origin
        (method git-fetch)
@@ -281,7 +281,7 @@ Telegram project, for its use in telegram desktop client.")
        (file-name
         (git-file-name name version))
        (sha256
-        (base32 "0dzf1y3xhqvizg29bd1kya48cjbkq073d2x10ynwcmmx396l4nd8"))
+        (base32 "1dzf1y3xhqvizg29bd1kya48cjbkq073d2x10ynwcmmx396l4nd8"))
        (modules '((guix build utils)
                   (ice-9 ftw)
                   (srfi srfi-1)))

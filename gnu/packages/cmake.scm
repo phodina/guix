@@ -88,7 +88,7 @@
       (synopsis "Shared CMake functions and macros")
       (description "CMake-Shared are shared functions and macros for projects
 using the CMake build system.")
-      (home-page "https://github.com/lirios/cmake-shared/")
+      (home-page "https://github.com/lirios/cmake-shared")
       (license license:bsd-3))))
 
 ;;; Build phases shared between 'cmake-bootstrap' and the later variants

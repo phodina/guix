@@ -195,24 +195,24 @@ window managers, that don't provide Qt integration by themselves.")
     (home-page "https://qt5ct.sourceforge.io/")
     (license license:bsd-2)))
 
-(define-public materialdecoration
-  (let ((commit "6a5de23f2e5162fbee39d16f938473ff970a2ec0")
-        (revision "9"))
+(define-public qtintegration
+  (let ((commit "1dab05a1e6472956e25de16258ed04aa09dde348")
+        (revision "10"))
     (package
-      (name "materialdecoration")
+      (name "qtintegration")
       (version
-       (git-version "1.1.0" revision commit))
+       (git-version "1.0.0" revision commit))
       (source
        (origin
          (method git-fetch)
          (uri
           (git-reference
-           (url "https://github.com/lirios/materialdecoration.git")
+           (url "https://github.com/lirios/qtintegration")
            (commit commit)))
          (file-name
           (git-file-name name version))
          (sha256
-          (base32 "1zdrcb39fhhmn76w8anv1dnspz26pdl6izmj1mlm02aza4y8ffp4"))
+          (base32 "1sq61xndcjwmzp99gra0l5m6szhr4g55g68by5h99ymwcvyyazdg"))
          (modules '((guix build utils)
                     (ice-9 ftw)
                     (srfi srfi-1)))
@@ -221,9 +221,9 @@ window managers, that don't provide Qt integration by themselves.")
              (delete-file-recursively "cmake/3rdparty")))))
       (build-system qt-build-system)
       (arguments
-       `(#:tests? #f                    ; No target
+       (list #:tests? #f                    ; No target
          #:configure-flags
-         ,#~(list
+         #~(list
              (string-append "-DCMAKE_CXX_FLAGS=-I"
                             #$(this-package-input "qtbase")
                             "/include/qt5/QtXkbCommonSupport/"
@@ -231,15 +231,55 @@ window managers, that don't provide Qt integration by themselves.")
       (native-inputs
        (list cmake-shared extra-cmake-modules pkg-config))
       (inputs
-       `(("qtbase" ,qtbase-5)
-         ("qtwayland" ,qtwayland)
-         ("wayland" ,wayland)
-         ("xkbcommon" ,libxkbcommon)))
-      (synopsis "Material Decoration for Qt")
-      (description "MaterialDecoration is a client-side decoration for Qt
-applications on Wayland.")
-      (home-page "https://github.com/lirios/materialdecoration")
-      (license license:lgpl3+))))
+       (list qtbase-5 qtquickcontrols2 qtwayland wayland-protocols libxkbcommon))
+      (synopsis "Qt platform theme plugin for apps integration with Liri")
+      (description "Qtintegration provides integration with Liri desktop
+	  environment. is a client-side decoration for Qt
+applications on Wayland.
+@itemize
+@item Platform theme plugin
+@item Client-side decoration for Qt applications on Wayland
+@item Wayland shell integration for layer-shell and xdg-shell
+@end itemize
+")
+      (home-page "https://github.com/lirios/qtintegration")
+      (license (list license:lgpl3+ license:gpl3+)))))
+
+(define-public qtsettings
+  (let ((commit "7fb2af5b997d2583ffda40872880138b1cb7bcb4")
+        (revision "1"))
+    (package
+      (name "qtsettings")
+      (version
+       (git-version "1.3.0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri
+          (git-reference
+           (url "https://github.com/lirios/qtgsettings")
+           (commit commit)))
+         (file-name
+          (git-file-name name version))
+         (sha256
+          (base32 "0dq4w6s6kjaynlj9qi9wxmbfkpb8rn9bms9l973868f5g28fxqkx"))))
+      (build-system qt-build-system)
+      (native-inputs
+       (list cmake-shared extra-cmake-modules glib pkg-config))
+      (inputs
+       (list qtbase-5 qtdeclarative))
+      (synopsis "Qt platform theme plugin for apps integration with Liri")
+      (description "Qtintegration provides integration with Liri desktop
+	  environment. is a client-side decoration for Qt
+applications on Wayland.
+@itemize
+@item Platform theme plugin
+@item Client-side decoration for Qt applications on Wayland
+@item Wayland shell integration for layer-shell and xdg-shell
+@end itemize
+")
+      (home-page "https://github.com/lirios/qtintegration")
+      (license (list license:lgpl3+ license:gpl3+)))))
 
 (define-public grantlee
   (package
@@ -1015,17 +1055,17 @@ set of plugins for interacting with pulseaudio and GStreamer.")))
      (substitute-keyword-arguments (package-arguments qtsvg)
        ((#:phases phases)
         `(modify-phases ,phases
-           (add-after 'unpack 'disable-failing-tests
-             (lambda _
-               ;; FIXME: tst_seatv4::animatedCursor() fails for no good
-               ;; reason and breaks these two tests.
-               (substitute* "tests/auto/client/seatv4/tst_seatv4.cpp"
-                 (((string-append "QVERIFY\\(!cursorSurface\\(\\)->"
-                                  "m_waitingFrameCallbacks\\.empty\\(\\)\\);"))
-                  "")
-                 (("QTRY_COMPARE\\(bufferSpy\\.count\\(\\), 1\\);")
-                  ""))
-               #t))
+;           (add-after 'unpack 'disable-failing-tests
+;             (lambda _
+;               ;; FIXME: tst_seatv4::animatedCursor() fails for no good
+;               ;; reason and breaks these two tests.
+;               (substitute* "tests/auto/client/seatv4/tst_seatv4.cpp"
+;                 (((string-append "QVERIFY\\(!cursorSurface\\(\\)->"
+;                                  "m_waitingFrameCallbacks\\.empty\\(\\)\\);"))
+;                  "")
+;                 (("QTRY_COMPARE\\(bufferSpy\\.count\\(\\), 1\\);")
+;                  ""))
+;               #t))
            (add-before 'check 'set-test-environment
              (lambda _
                ;; Do not fail just because /etc/machine-id is missing.
@@ -2882,7 +2922,7 @@ color-related widgets.")
                                   version ".tar.xz"))
               (sha256
                (base32
-                "062ljj1nzyp4zfz2vasbv2i7gs5rfkkjwxxbisd0fdw01d5m01mk"))))
+                "0cwvw6695215498rsbm2xzkwaxdr3w7zfvy4kc62c01k6pxs881r"))))
     (build-system cmake-build-system)
     (inputs
      (list clang-toolchain
