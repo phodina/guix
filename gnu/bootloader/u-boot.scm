@@ -3,6 +3,7 @@
 ;;; Copyright © 2017, 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -37,6 +38,7 @@
             u-boot-novena-bootloader
             u-boot-pine64-plus-bootloader
             u-boot-pine64-lts-bootloader
+            u-boot-pinenote-rk3568-bootloader
             u-boot-pinebook-bootloader
             u-boot-pinebook-pro-rk3399-bootloader
             u-boot-puma-rk3399-bootloader
@@ -127,6 +129,15 @@
 
 (define install-pinebook-pro-rk3399-u-boot install-rockpro64-rk3399-u-boot)
 
+;; TODO: Supply correct offsets
+(define install-pinenote-rk3568-u-boot
+  #~(lambda (bootloader root-index image)
+      (let ((idb (string-append bootloader "/libexec/idbloader.img"))
+            (u-boot (string-append bootloader "/libexec/u-boot.itb")))
+        (write-file-on-device idb (stat:size (stat idb))
+                              image (* 64 512))
+        (write-file-on-device u-boot (stat:size (stat u-boot))
+                              image (* 16384 512)))))
 
 
 ;;;
@@ -255,3 +266,9 @@
    (inherit u-boot-bootloader)
    (package u-boot-pinebook-pro-rk3399)
    (disk-image-installer install-pinebook-pro-rk3399-u-boot)))
+
+(define u-boot-pinenote-rk3568-bootloader
+  (bootloader
+   (inherit u-boot-bootloader)
+   (package u-boot-pinenote-rk3568)
+   (disk-image-installer install-pinenote-rk3568-u-boot)))
