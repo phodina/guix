@@ -16,6 +16,7 @@
 ;;; Copyright © 2021 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2022 Denis 'GNUtoo' Carikli <GNUtoo@cyberdimension.org>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -558,20 +559,20 @@ tree binary files.  These are board description files used by Linux and BSD.")
                (base32
                 "1l5w13dznj0z1ibqv2d6ljx2ma1gnf5x5ay3dqkqwxr6750nbq38"))))
     (native-inputs
-     `(("bc" ,bc)
-       ("bison" ,bison)
-       ("dtc" ,dtc)
-       ("gnutls" ,gnutls)
-       ("flex" ,flex)
-       ("lz4" ,lz4)
-       ("tinfo" ,ncurses/tinfo)
-       ("perl" ,perl)
-       ("python" ,python)
-       ("python-coverage" ,python-coverage)
-       ("python-pycryptodomex" ,python-pycryptodomex)
-       ("python-pytest" ,python-pytest)
-       ("swig" ,swig)
-       ("libuuid" ,util-linux "lib")))
+     (list bc
+           bison
+           dtc
+           gnutls
+           flex
+           lz4
+           ncurses/tinfo
+           perl
+           python
+           python-coverage
+           python-pycryptodomex
+           python-pytest
+           swig
+           `(,util-linux "lib")))
     (build-system  gnu-build-system)
     (home-page "https://www.denx.de/wiki/U-Boot/")
     (synopsis "ARM bootloader")
