@@ -1,0 +1,108 @@
+From d6bb8a6b5a5210fea70bc590350bfca3a9e3a7a2 Mon Sep 17 00:00:00 2001
+From: Peter Geis <pgwipeout@gmail.com>
+Date: Sat, 15 Jan 2022 21:50:45 -0500
+Subject: [PATCH] Input: cyttsp5: support touchscreen device tree overrides
+
+It is possible for the cyttsp5 chip to not have a configuration burned
+to it.
+This leads to a sitatuion where all calibration values return zero,
+leading to a broken touchscreen configuration.
+
+The current driver does not support utilizing overrides from the device
+tree.
+Extend the driver to support this, and permit it to do some basic sanity
+checking of the values for the touchscreen and abort if they are
+invalid.
+
+Signed-off-by: Peter Geis <pgwipeout@gmail.com>
+---
+ drivers/input/touchscreen/cyttsp5.c | 62 ++++++++++++++++++++++++++---
+ 1 file changed, 57 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/touchscreen/cyttsp5.c b/drivers/input/touchscreen/cyttsp5.c
+index 3ac45108090c..e837985d199a 100644
+--- a/drivers/input/touchscreen/cyttsp5.c
++++ b/drivers/input/touchscreen/cyttsp5.c
+@@ -507,15 +507,66 @@ static int cyttsp5_get_sysinfo_regs(struct cyttsp5 *ts)
+ 	struct cyttsp5_sensing_conf_data_dev *scd_dev =
+ 		(struct cyttsp5_sensing_conf_data_dev *)
+ 		&ts->response_buf[HID_SYSINFO_SENSING_OFFSET];
++	u32 tmp;
+ 
+ 	cyttsp5_si_get_btn_data(ts);
+ 
+ 	scd->max_tch = scd_dev->max_num_of_tch_per_refresh_cycle;
+-	scd->res_x = get_unaligned_le16(&scd_dev->res_x);
+-	scd->res_y = get_unaligned_le16(&scd_dev->res_y);
+-	scd->max_z = get_unaligned_le16(&scd_dev->max_z);
+-	scd->len_x = get_unaligned_le16(&scd_dev->len_x);
+-	scd->len_y = get_unaligned_le16(&scd_dev->len_y);
++
++	if (scd->max_tch == 0) {
++		dev_dbg(ts->dev, "Max touch points cannot be zero\n");
++		scd->max_tch = 2;
++	}
++
++	if(device_property_read_u32(ts->dev, "touchscreen-size-x", &tmp))
++		scd->res_x = get_unaligned_le16(&scd_dev->res_x);
++	else
++		scd->res_x = tmp;
++
++	if (scd->res_x == 0) {
++		dev_err(ts->dev, "ABS_X cannot be zero\n");
++		return -ENODATA;
++	}
++
++	if(device_property_read_u32(ts->dev, "touchscreen-size-y", &tmp))
++		scd->res_y = get_unaligned_le16(&scd_dev->res_y);
++	else
++		scd->res_y = tmp;
++
++	if (scd->res_y == 0) {
++		dev_err(ts->dev, "ABS_Y cannot be zero\n");
++		return -ENODATA;
++	}
++
++	if(device_property_read_u32(ts->dev, "touchscreen-max-pressure", &tmp))
++		scd->max_z = get_unaligned_le16(&scd_dev->max_z);
++	else
++		scd->max_z = tmp;
++
++	if (scd->max_z == 0) {
++		dev_err(ts->dev, "ABS_PRESSURE cannot be zero\n");
++		return -ENODATA;
++	}
++
++	if(device_property_read_u32(ts->dev, "touchscreen-x-mm", &tmp))
++		scd->len_x = get_unaligned_le16(&scd_dev->len_x);
++	else
++		scd->len_x = tmp;
++
++	if (scd->len_x == 0) {
++		dev_dbg(ts->dev, "Touchscreen size x cannot be zero\n");
++		scd->len_x = scd->res_x + 1;
++	}
++
++	if(device_property_read_u32(ts->dev, "touchscreen-y-mm", &tmp))
++		scd->len_y = get_unaligned_le16(&scd_dev->len_y);
++	else
++		scd->len_y = tmp;
++
++	if (scd->len_y == 0) {
++		dev_dbg(ts->dev, "Touchscreen size y cannot be zero\n");
++		scd->len_y = scd->res_y + 1;
++	}
+ 
+ 	return 0;
+ }
+@@ -877,6 +928,7 @@ static int cyttsp5_i2c_probe(struct i2c_client *client,
+ 
+ static const struct of_device_id cyttsp5_of_match[] = {
+ 	{ .compatible = "cypress,tt21000", },
++	{ .compatible = "cypress,tma448", },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, cyttsp5_of_match);
+-- 
+GitLab
+

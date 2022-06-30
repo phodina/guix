@@ -1487,6 +1487,9 @@ dist_patch_DATA =						\
   %D%/packages/patches/linbox-fix-pkgconfig.patch		\
   %D%/packages/patches/linphone-desktop-without-sdk.patch           \
   %D%/packages/patches/linux-libre-support-for-Pinebook-Pro.patch \
+  %D%/packages/patches/linux-libre-arm64-pinenote-touchscreen-1.patch \
+  %D%/packages/patches/linux-libre-arm64-pinenote-touchscreen-2.patch \
+    %D%/packages/patches/linux-libre-arm64-pinenote-defconfig.patch \
   %D%/packages/patches/linux-pam-no-setfsuid.patch		\
   %D%/packages/patches/linuxdcpp-openssl-1.1.patch		\
   %D%/packages/patches/lirc-localstatedir.patch			\
