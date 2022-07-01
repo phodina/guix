@@ -832,6 +832,21 @@ it fits within common partitioning schemes.")
 (define-public u-boot-pine64-lts
   (make-u-boot-sunxi64-package "pine64-lts" "aarch64-linux-gnu"))
 
+(define-public u-boot-pinenote-rk3568
+  (let ((base (make-u-boot-package "pinenote"
+                                   "aarch64-linux-gnu")))
+    (package
+      (inherit base)
+      (version "2022.07")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                  (url "https://gitlab.com/phodina/u-boot-quartz64")
+                  (commit "quartz64")))
+                (sha256
+                 (base32
+                  "2l1w13dznj0z1ibqv2d6ljx2ma1gnf5x5ay3dqkqwxr6750nbq38")))))))
+
 (define-public u-boot-pinebook
   (let ((base (make-u-boot-sunxi64-package "pinebook" "aarch64-linux-gnu")))
     (package
