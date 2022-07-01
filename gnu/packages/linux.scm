@@ -8127,6 +8127,38 @@ including errata.")
 	;; TODO: Intel nonfree license
     (license #f)))
 
+(define-public mcextractor
+  (package
+    (name "mcextractor")
+    (version "1.74.1")
+    (home-page "https://github.com/platomav/MCExtractor")
+    (source 
+              (origin
+                          (method git-fetch)
+                          (uri (git-reference
+						  (url home-page)
+						  (commit (string-append "v" version "-r232"))))
+              (file-name (git-file-name name version))
+                          (sha256
+                           (base32
+                            "09pxa23kdsy8apnxay7v1wmds5879rj6hx779rrqmspllwgg79hj"))))
+    (build-system python-build-system)
+	(arguments
+	 (list #:use-setuptools? #f
+	       #:tests? #f
+	       #:phases
+           #~(modify-phases %standard-phases
+		      (delete 'build)
+			  (replace 'install
+			   (lambda* _
+			   (install-file "MCE.py" (string-append #$output "/bin"))
+			   (install-file "MCE.db" (string-append #$output
+			   "/share/")))))))
+    (synopsis "Intel, AMD, VIA & Freescale Microcode Extraction Tool")
+    (description "This package provides a tool MC Extractor which parses Intel,
+AMD, VIA and Freescale processor microcode binaries")
+    (license license:bsd-2)))
+
 (define-public snapscreenshot
   (package
     (name "snapscreenshot")
