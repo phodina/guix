@@ -8104,6 +8104,29 @@ interfaces in parallel environments.")
     (supported-systems '("i686-linux" "x86_64-linux"))
     (license (list license:bsd-2 license:gpl2)))) ;dual
 
+(define-public intelfw
+  (package
+    (name "intelfw")
+    (version "20220510")
+    (home-page "https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files")
+    (source 
+              (origin
+                            (method url-fetch)
+                            (uri
+                             (string-append home-page
+							 "/archive/refs/tags/microcode-"
+							 version ".tar.gz"))
+                            (sha256
+                             (base32
+                              "0akd526rrkskz7l0kihbymmjzcmf56pv7kh0nbdviywqnmqxqk95"))))
+    (build-system copy-build-system)
+    (synopsis "Intel Processor Microcode")
+    (description "This package provides Intel Processor Microcode provides
+a mechanism to release updates for security advisories and functional issues,
+including errata.")
+	;; TODO: Intel nonfree license
+    (license #f)))
+
 (define-public snapscreenshot
   (package
     (name "snapscreenshot")
