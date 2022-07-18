@@ -75,6 +75,7 @@
   #:use-module (gnu packages mail)
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages nettle)
+  #:use-module (gnu packages qt)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages pulseaudio)
@@ -43334,6 +43335,40 @@ Python code from a Rust binary is also supported.")
     (description
      "This crate generates import libraries for the Python shared library
 for MinGW-w64 and MSVC (cross-)compile targets.")
+    (license license:expat)))
+
+(define-public rust-qmetaobject-0.2
+  (package
+    (name "rust-qmetaobject")
+    (version "0.2.7")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "qmetaobject" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0lv1xj87q4b7ihkn52bq9h2gyhsb6wqf2gj8aa82by0f1a36076p"))))
+    (build-system cargo-build-system)
+	(inputs (list pkg-config qtbase qtdeclarative qtquickcontrols2))
+	(native-search-paths
+     (list (search-path-specification
+            (variable "QMAKEPATH")
+            (files '("lib/qt6")))
+	 (search-path-specification
+            (variable "QML2_IMPORT_PATH")
+            (files '("lib/qt6/qml")))))
+    (arguments
+     `(#:cargo-inputs (("rust-cpp" ,rust-cpp-0.5) ("rust-cpp-build" ,rust-cpp-build-0.5)
+                       ("rust-lazy-static" ,rust-lazy-static-1)
+                       ("rust-log" ,rust-log-0.4)
+                       ("rust-qmetaobject-impl" ,rust-qmetaobject-impl-0.2)
+                       ("rust-qttypes" ,rust-qttypes-0.2)
+                       ("rust-semver" ,rust-semver-1))
+       #:cargo-development-inputs (("rust-cstr" ,rust-cstr-0.2) ("rust-if-rust-version" ,rust-if-rust-version-1)
+                                   ("rust-tempfile" ,rust-tempfile-3))))
+    (home-page "https://github.com/woboq/qmetaobject-rs")
+    (synopsis "Expose rust object to Qt and QML.")
+    (description "Expose rust object to Qt and QML.")
     (license license:expat)))
 
 (define-public rust-qmetaobject-impl-0.2
