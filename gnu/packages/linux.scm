@@ -67,6 +67,7 @@
 ;;; Copyright © 2022 Denis 'GNUtoo' Carikli <GNUtoo@cyberdimension.org>
 ;;; Copyright © 2022 Hunter Jozwiak <hunter.t.joz@gmail.com>
 ;;; Copyright © 2022 Hilton Chain <hako@ultrarare.space>
+;;; Copyright © 2022 Stefan <stefan-guix@vodafonemail.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -834,8 +835,8 @@ for ARCH and optionally VARIANT, or #f if there is no such configuration."
                  (lambda _
                    (substitute* (find-files "." "^Makefile(\\.include)?$")
                      (("/bin/pwd") "pwd"))))
-               (replace 'configure
-                 (lambda* (#:key inputs target #:allow-other-keys)
+               (add-before 'configure 'set-environment
+                 (lambda* (#:key target #:allow-other-keys)
                    ;; Avoid introducing timestamps.
                    (setenv "KCONFIG_NOTIMESTAMP" "1")
                    (setenv "KBUILD_BUILD_TIMESTAMP"
@@ -857,12 +858,17 @@ for ARCH and optionally VARIANT, or #f if there is no such configuration."
                        (setenv "CROSS_COMPILE" (string-append target "-"))
                        (format #t "`CROSS_COMPILE' set to `~a'~%"
                                (getenv "CROSS_COMPILE"))))
-
+                   ;; Allow EXTRAVERSION to be set via the environment.
+                   (substitute* "Makefile"
+                     (("^ *EXTRAVERSION[[:blank:]]*=") "EXTRAVERSION ?="))
                    (setenv "EXTRAVERSION"
                            #$(and extra-version
-                                  (string-append "-" extra-version)))
-
-                   (let ((config (assoc-ref inputs "kconfig")))
+                                  (not (string-null? extra-version))
+                                  (string-append "-" extra-version)))))
+               (replace 'configure
+                 (lambda* (#:key inputs #:allow-other-keys)
+                   (let ((build  (assoc-ref %standard-phases 'build))
+                         (config (assoc-ref inputs "kconfig")))
 
                      ;; Use a custom kernel configuration file or a default
                      ;; configuration file.
@@ -881,7 +887,7 @@ for ARCH and optionally VARIANT, or #f if there is no such configuration."
 
                      (invoke "make" "oldconfig"))))
                (replace 'install
-                 (lambda* (#:key inputs native-inputs #:allow-other-keys)
+                 (lambda* (#:key inputs #:allow-other-keys)
                    (let ((moddir (string-append #$output "/lib/modules"))
                          (dtbdir (string-append #$output "/lib/dtbs")))
                      ;; Install kernel image, kernel configuration and link map.
