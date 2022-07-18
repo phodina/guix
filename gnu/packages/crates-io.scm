@@ -14498,6 +14498,26 @@ processors.")
      "This crates implements CStr and CString for no_std environments.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-cstr-0.2
+  (package
+    (name "rust-cstr")
+    (version "0.2.10")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "cstr" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1ssd8ac8n5ixk0rf8n9g3bzndxk8v4slhkbnzlh7zdp46b8hs3x6"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-proc-macro2" ,rust-proc-macro2-1) ("rust-quote" ,rust-quote-1))))
+    (home-page "https://github.com/upsuper/cstr")
+    (synopsis "Macro for building static CStr reference")
+    (description "Macro for building static CStr reference")
+    (license license:expat)))
+
 (define-public rust-ct-logs-0.8
   (package
     (name "rust-ct-logs")
