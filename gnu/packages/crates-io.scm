@@ -43357,6 +43357,28 @@ for MinGW-w64 and MSVC (cross-)compile targets.")
     (description "This package provides query string parser.")
     (license license:expat)))
 
+(define-public rust-qttypes-0.2
+  (package
+    (name "rust-qttypes")
+    (version "0.2.8")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "qttypes" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1dyy4c410an4rn0y5v9llqhf3s8y3nd3sfwg9mj0xlsyfxvqq1hc"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-chrono" ,rust-chrono-0.4) ("rust-cpp" ,rust-cpp-0.5)
+                       ("rust-cpp-build" ,rust-cpp-build-0.5)
+                       ("rust-semver" ,rust-semver-1))))
+    (home-page "https://github.com/woboq/qmetaobject-rs")
+    (synopsis "Manually maintained buildings for Qt value types")
+    (description "Manually maintained buildings for Qt value types")
+    (license license:expat)))
+
 (define-public rust-quantiles-0.7
   (package
     (name "rust-quantiles")
