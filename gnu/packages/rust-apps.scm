@@ -1022,11 +1022,11 @@ rebase.")
         ("rust-semver" ,rust-semver-1)
         ("rust-breakpad-sys" ,rust-breakpad-sys-0.1)
 ;;qmetaobject = { version = "*", git = "https://github.com/AdrianEddy/qmetaobject-rs.git", default-features = false, features = ["log"] }
-;;qttypes     = { version = "*", git = "https://github.com/AdrianEddy/qmetaobject-rs.git", default-features = false, features = ["required", "qtquick", "qtquickcontrols2"]}
+("rust-qttypes" ,rust-qttypes)
 ;;qml-video-rs = { git = "https://github.com/AdrianEddy/qml-video-rs.git" }
 ;;#qml-video-rs = { path = "../qml-video-rs" }
 ;
-;;ffmpeg-next = { version = "5.0.2", default-features = false, features = ["codec", "filter", "format", "software-resampling", "software-scaling"] }
+("rust-ffmpeg" ,rust-ffmpeg)
 ("rust-lazy-static" ,rust-lazy-static-1)
 ("rust-parking-lot" ,rust-parking-lot-0.12)
 ("rust-winapi" ,rust-winapi-0.3)
