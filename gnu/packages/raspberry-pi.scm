@@ -238,6 +238,59 @@ Raspberry Pi.  Note: It does not work on Raspberry Pi 1.")
                #t))))))))
     (supported-systems '("aarch64-linux"))))
 
+(define-public (raspi-config-file name content)
+  "Make a configuration file like config.txt for the Raspberry Pi firmware.
+CONTENT can be a list of strings, which are concatenated with a newline
+character.  Alternatively CONTENT can be a string with the full file content."
+  (plain-file
+   name
+   (if (list? content)
+       (string-join content "\n" 'suffix)
+       content)))
+
+(define-public %raspi-config-txt
+  ;; A config.txt file to start the ARM cores up in 64-bit mode if necessary
+  ;; and to include a dtb.txt, bootloader.txt, and a custom.txt, each with
+  ;; separated configurations for the Raspberry Pi firmware.
+  (raspi-config-file
+   "config.txt"
+   `("# See https://www.raspberrypi.org/documentation/configuration/config-txt/README.md for details."
+     ""
+     ,(string-append "arm_64bit=" (if (target-aarch64?) "1" "0"))
+     "include dtb.txt"
+     "include bootloader.txt"
+     "include custom.txt")))
+
+(define-public %raspi-bcm27-dtb-txt
+  ;; A dtb.txt file to be included by the config.txt to ensure that the
+  ;; downstream device tree files bcm27*.dtb will be used.
+  (raspi-config-file
+   "dtb.txt"
+   "upstream_kernel=0"))
+
+(define-public %raspi-bcm28-dtb-txt
+  ;; A dtb.txt file to be included by the config.txt to ensure that the
+  ;; upstream device tree files bcm28*.dtb will be used.
+  ;; This also implies the use of the dtoverlay=upstream.
+  (raspi-config-file
+   "dtb.txt"
+   "upstream_kernel=1"))
+
+(define-public %raspi-u-boot-bootloader-txt
+  ;; A bootloader.txt file to be included by the config.txt to load the
+  ;; U-Boot bootloader.
+  (raspi-config-file
+   "bootloader.txt"
+   '("dtoverlay=upstream"
+     "enable_uart=1"
+     "kernel=u-boot.bin")))
+
+(define-public (raspi-custom-txt content)
+  "Make a custom.txt file for the Raspberry Pi firmware.
+CONTENT can be a list of strings, which are concatenated with a newline
+character.  Alternatively CONTENT can be a string with the full file content."
+  (raspi-config-file "custom.txt" content))
+
 (define (make-raspi-defconfig arch defconfig sha256-as-base32)
   "Make for the architecture ARCH a file-like object from the DEFCONFIG file
 with the hash SHA256-AS-BASE32.  This object can be used as the #:defconfig
