@@ -8420,7 +8420,7 @@ in a byte slice, fast.")
 (define-public rust-bytemuck-1.5
   (package
     (name "rust-bytemuck")
-    (version "1.5.0")
+    (version "1.10.0")
     (source
       (origin
         (method url-fetch)
@@ -8429,7 +8429,7 @@ in a byte slice, fast.")
          (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
-          "18355qn3r9yp7ibg00r688sjx58g2qsjylwyq15w5b41b46asjss"))))
+          "12j0vfv746rhjzbr555sxzrfw90s727njwn5sf7dyx62gs8zlgf5"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
