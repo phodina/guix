@@ -12839,14 +12839,14 @@ the `cpp` crate.")
 (define-public rust-cpp-macros-0.5
   (package
     (name "rust-cpp-macros")
-    (version "0.5.6")
+    (version "0.5.7")
     (source
       (origin
         (method url-fetch)
         (uri (crate-uri "cpp_macros" version))
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
-          (base32 "09gwm3j61y2y5ma1s55qd12pl7rfjnjzyqxv9v4an44cc4ga54sg"))))
+          (base32 "00fwck5h2bvkp68zcd4rmhrc9vr7xx0hn4gsvf4qjan10hcs1nkz"))))
     (build-system cargo-build-system)
     (arguments
       `(#:skip-build?
