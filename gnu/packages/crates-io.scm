@@ -24782,13 +24782,10 @@ of gzip files based on the gzip header implementation in the @code{flate2} crate
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-serde" ,rust-serde-1))
-       #:cargo-development-inputs
-       (("rust-criterion" ,rust-criterion-0.3)
-        ("rust-quickcheck" ,rust-quickcheck-0.9)
-        ("rust-quickcheck-macros" ,rust-quickcheck-macros-0.9)
-        ("rust-rand" ,rust-rand-0.7)
-        ("rust-version-sync" ,rust-version-sync-0.8))))
+       (("rust-bytemuck" ,rust-bytemuck-1-10)
+	    ("rust-num-traits" ,rust-num-traits-0.2)
+        ("rust-serde" ,rust-serde-1)
+		("rust-zerocopy" ,rust-zerocopy-0.6))))
     (home-page "https://github.com/starkat99/half-rs")
     (synopsis "Half-precision floating point f16 type")
     (description
