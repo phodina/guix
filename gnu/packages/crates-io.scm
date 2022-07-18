@@ -8417,7 +8417,7 @@ in a byte slice, fast.")
         ("rust-quickcheck" ,rust-quickcheck-0.6)
         ("rust-rand" ,rust-rand-0.4))))))
 
-(define-public rust-bytemuck-1.5
+(define-public rust-bytemuck-1-10
   (package
     (name "rust-bytemuck")
     (version "1.10.0")
