@@ -8466,7 +8466,7 @@ in a byte slice, fast.")
 (define-public rust-bytemuck-derive-1
   (package
     (name "rust-bytemuck-derive")
-    (version "1.0.0")
+    (version "1.1.0")
     (source
       (origin
         (method url-fetch)
@@ -8474,7 +8474,7 @@ in a byte slice, fast.")
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
-          "1k59b6g2d87nf32qwhp73vng3al0zklxg64iiwf0pkxy74xf5ni8"))))
+          "03nd7lc6ycqmlhb9bna70l5x1aqr5bkcani724fwcnwph4j3hbjn"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
