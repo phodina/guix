@@ -39023,14 +39023,14 @@ Format (MCF).")
 (define-public rust-paste-1
   (package
     (name "rust-paste")
-    (version "1.0.4")
+    (version "1.0.7")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "paste" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1hfikh0bds8hqn371l2wf039mp6b5wrmwrwg96jcs6lkjm6mrmn5"))))
+        (base32 "1z15h1rnq1wcacpcvgm77djl3413gs1nlhmn90qpcvjx2c2hwlhc"))))
     (build-system cargo-build-system)
     (arguments `(#:skip-build? #t))
     (home-page "https://github.com/dtolnay/paste")
