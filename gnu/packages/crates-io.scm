@@ -20578,6 +20578,32 @@ Atom, RSS 2.0, RSS 1.0, RSS 0.x and JSON Feed")
     ;; No copyright headers in the source code.  LICENSE indicates gpl3.
     (license license:gpl3)))
 
+(define-public rust-ffmpeg-sys-4
+  (package
+    (name "rust-ffmpeg-sys")
+    (version "4.3.3")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "ffmpeg-sys" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "12326in3wsqsa7qfaxqccbn7q3f3ik4lbsi8fka49i2qljl69i8g"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-bindgen" ,rust-bindgen-0.58) ("rust-cc" ,rust-cc-1)
+                       ("rust-libc" ,rust-libc-0.2)
+                       ("rust-num-cpus" ,rust-num-cpus-1)
+                       ("rust-pkg-config" ,rust-pkg-config-0.3)
+                       ("rust-regex" ,rust-regex-1)
+                       ("rust-serde" ,rust-serde-1)
+                       ("rust-vcpkg" ,rust-vcpkg-0.2))))
+    (home-page "https://github.com/meh/rust-ffmpeg-sys")
+    (synopsis "FFI bindings to FFmpeg")
+    (description "FFI bindings to FFmpeg")
+    (license license:wtfpl2)))
+
 (define-public rust-fiat-crypto-0.1
   (package
     (name "rust-fiat-crypto")
