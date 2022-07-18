@@ -64542,6 +64542,36 @@ write operations.")
 has at least 1 element.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-vek-0.15
+  (package
+    (name "rust-vek")
+    (version "0.15.8")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "vek" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1xhq75y1hphab5lbyqrg985daiq7kiqjk9vbcfzzmv6mmdgs8lxi"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-approx" ,rust-approx-0.5) ("rust-bytemuck" ,rust-bytemuck-1)
+                       ("rust-image" ,rust-image-0.23)
+                       ("rust-mint" ,rust-mint-0.5)
+                       ("rust-num-integer" ,rust-num-integer-0.1)
+                       ("rust-num-traits" ,rust-num-traits-0.2)
+                       ("rust-rustc-version" ,rust-rustc-version-0.4)
+                       ("rust-serde" ,rust-serde-1)
+                       ("rust-static-assertions" ,rust-static-assertions-1))))
+    (home-page "https://github.com/yoanlcq/vek")
+    (synopsis
+     "Generic 2D-3D math swiss army knife for game engines, with SIMD support and focus on convenience.")
+    (description
+     "Generic 2D-3D math swiss army knife for game engines, with SIMD support and
+focus on convenience.")
+	(license (list license:expat license:asl2.0))))
+
 (define-public rust-vergen-3
   (package
     (name "rust-vergen")
