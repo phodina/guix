@@ -88,6 +88,7 @@
   #:use-module (gnu packages ssh)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages version-control)
+  #:use-module (gnu packages video)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
@@ -20602,6 +20603,29 @@ Atom, RSS 2.0, RSS 1.0, RSS 0.x and JSON Feed")
     (home-page "https://github.com/meh/rust-ffmpeg-sys")
     (synopsis "FFI bindings to FFmpeg")
     (description "FFI bindings to FFmpeg")
+    (license license:wtfpl2)))
+
+(define-public rust-ffmpeg-0.3
+  (package
+    (name "rust-ffmpeg")
+    (version "0.3.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "ffmpeg" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0xbxxivzk9x1a5sw938fchbz1i5fdbmvm5ly7mqyq2hy0d0q9yk5"))))
+    (build-system cargo-build-system)
+	(native-inputs (list pkg-config clang))
+	(inputs (list ffmpeg))
+    (arguments
+     `(#:cargo-inputs (("rust-bitflags" ,rust-bitflags-1) ("rust-ffmpeg-sys" ,rust-ffmpeg-sys-4)
+                       ("rust-image" ,rust-image-0.23)
+                       ("rust-libc" ,rust-libc-0.2))))
+    (home-page "https://github.com/meh/rust-ffmpeg")
+    (synopsis "Safe FFmpeg wrapper")
+    (description "Safe FFmpeg wrapper")
     (license license:wtfpl2)))
 
 (define-public rust-fiat-crypto-0.1
