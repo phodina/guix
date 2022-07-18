@@ -12762,14 +12762,14 @@ intrinsics.")
 (define-public rust-cpp-build-0.5
   (package
     (name "rust-cpp-build")
-    (version "0.5.6")
+    (version "0.5.7")
     (source
       (origin
         (method url-fetch)
         (uri (crate-uri "cpp_build" version))
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
-          (base32 "0393w44dbscvl96g0n97r8jcfw47y5mygq4d2ijmp32a3yvha9vn"))))
+          (base32 "1l1dmllcayja7rqcpgihk7jg25w1i4n3x5kyzlxgndgcp01x7x0n"))))
     (build-system cargo-build-system)
     (arguments
       `(#:skip-build?
