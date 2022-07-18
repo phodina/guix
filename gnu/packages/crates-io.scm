@@ -24771,14 +24771,14 @@ of gzip files based on the gzip header implementation in the @code{flate2} crate
 (define-public rust-half-1
   (package
     (name "rust-half")
-    (version "1.7.1")
+    (version "1.8.2")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "half" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1wzavaaaa2jwkm4i1dbglmwjfsdhn4n73wrkbdzllaynlams5b32"))))
+        (base32 "1mqbmx2m9qd4lslkb42fzgldsklhv9c4bxsc8j82r80d8m24mfza"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
