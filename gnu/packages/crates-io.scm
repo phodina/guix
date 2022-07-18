@@ -12790,14 +12790,14 @@ intrinsics.")
 (define-public rust-cpp-common-0.5
   (package
     (name "rust-cpp-common")
-    (version "0.5.6")
+    (version "0.5.7")
     (source
       (origin
         (method url-fetch)
         (uri (crate-uri "cpp_common" version))
         (file-name (string-append name "-" version ".tar.gz"))
         (sha256
-          (base32 "10zj9z639f7j1ccycix8k73j0ic77cyznyb7062l50gywllasy6z"))))
+          (base32 "18fqhzqz8dsxxk3gsgdyy4y34cdhnzm7v409n9g2ppf4r2win1vn"))))
     (build-system cargo-build-system)
     (arguments
       `(#:skip-build?
