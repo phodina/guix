@@ -43336,6 +43336,27 @@ Python code from a Rust binary is also supported.")
 for MinGW-w64 and MSVC (cross-)compile targets.")
     (license license:expat)))
 
+(define-public rust-qmetaobject-impl-0.2
+  (package
+    (name "rust-qmetaobject-impl")
+    (version "0.2.7")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "qmetaobject_impl" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0p91krpswg1i6h893xksx27r382vq6j6xiw4xwyph0m75jnbaffj"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-proc-macro2" ,rust-proc-macro2-1) ("rust-quote" ,rust-quote-1)
+                       ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/woboq/qmetaobject-rs")
+    (synopsis "Custom derive for the qmetaobject crate.")
+    (description "Custom derive for the qmetaobject crate.")
+    (license license:expat)))
+
 (define-public rust-qstring-0.7
   (package
     (name "rust-qstring")
