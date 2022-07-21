@@ -16,6 +16,7 @@
 ;;; Copyright © 2021 la snesne <lasnesne@lagunposprasihopre.org>
 ;;; Copyright © 2021, 2022 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2022 Brendan Tildesley <mail@brendan.scot>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -797,14 +798,12 @@ communicate with each other.  Here's a few things KDE Connect can do:
            (lambda* (#:key tests? #:allow-other-keys)
              (when tests?
                ;; This test fails, I don't know why.
-               (invoke "ctest" "-E" "parsertest"))
-             #t)))))
-    (native-inputs
-     `(("bison" ,bison)
-       ("extra-cmake-modules" ,extra-cmake-modules)
-       ("pkg-config" ,pkg-config)
-       ("python" ,python-wrapper)
-       ("qttools" ,qttools)))
+               (invoke "ctest" "-E" "parsertest")))))))
+    (native-inputs (list bison
+                         extra-cmake-modules
+                         pkg-config
+                         python-wrapper
+                         qttools))
     (inputs
      (list breeze ;for dark themes
            breeze-icons ;for icons
