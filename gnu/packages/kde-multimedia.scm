@@ -605,19 +605,18 @@ This package is part of the KDE multimedia module.")
      (list license:gpl2+ license:lgpl2.0+ license:fdl1.2+))))
 
 (define-public kmplayer
+(let ((commit "88e85308b71dc5e58cc655b5b9a13cd71b78233f")
+      (revision "1"))
   (package
     (name "kmplayer")
     (version "0.12.0b")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://kde/stable/kmplayer/0.12"
-                           "/kmplayer-" version ".tar.bz2"))
+	   (uri (string-append "https://invent.kde.org/multimedia/kmplayer/-/archive/" commit "/kmplayer-" commit ".tar.bz2"))
        (sha256
-        (base32 "0wzdxym4fc83wvqyhcwid65yv59a2wvp1lq303cn124mpnlwx62y"))
-       (patches (search-patches
-                 "kmplayer-aarch64.patch"
-                 "kmplayer-upstream_Fix-build-with-Qt-5.9.patch"))))
+        (base32
+		"1gmz0kiddqa8nca6mpkds3di9f6dksyz9rq413b1wmks9803f9hk"))))
     (build-system qt-build-system)
     (native-inputs
      (list extra-cmake-modules pkg-config kdoctools))
@@ -668,7 +667,7 @@ Some features:
 @item For TV sources, you need v4lctl (part of the xawtv package)
 @end itemize")
     (license ;; GPL for programs, LGPL for libraries, FDL for documentation
-     (list license:gpl2+ license:lgpl2.0+ license:fdl1.2+))))
+     (list license:gpl2+ license:lgpl2.0+ license:fdl1.2+)))))
 
 (define-public kwave
   (package
