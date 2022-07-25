@@ -1713,9 +1713,7 @@ from DocBook files.")
                ;; (but it can find audio/x-speex+ogg).
                (invoke "ctest" "-E"
 			   "(usermetadatawritertest|embeddedimagedatatest|taglibextractortest)")))))))
-    (native-inputs
-     `(("extra-cmake-modules" ,extra-cmake-modules)
-       ("pkg-config" ,pkg-config)))
+    (native-inputs (list extra-cmake-modules pkg-config))
     (inputs
      (list attr
            ;; TODO: EPub http://sourceforge.net/projects/ebook-tools
