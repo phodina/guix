@@ -108,7 +108,8 @@ This package is part of the KDE multimedia module.")
     (native-inputs
      (list extra-cmake-modules kdoctools))
     (inputs
-     (list kconfig
+     (list bash-minimal
+           kconfig
            kconfigwidgets
            kcoreaddons
            kcrash
@@ -262,14 +263,13 @@ This package is part of the KDE multimedia module.")
         (base32 "1ipzx031996h83f9w3fzbx5vf5nnskq9kf71a6aypqckk65vcqcs"))))
     (build-system qt-build-system)
     (native-inputs
-     (list extra-cmake-modules))
+     (list extra-cmake-modules kdoctools))
     (inputs
      (list kcoreaddons
            kcompletion
            kconfig
            kcrash
            kdbusaddons
-           kdoctools
            kglobalaccel
            ki18n
            kiconthemes
@@ -572,7 +572,7 @@ camera.  Use it to take pictures and make videos to share.")
        (base32 "1zk2xljis1pv3m4vs5zr6wza6iv5y6wmh1csx3rn8ylfkrpk7h8k"))))
     (build-system qt-build-system)
     (native-inputs
-     (list extra-cmake-modules pkg-config))
+     (list extra-cmake-modules kdoctools pkg-config))
     (inputs
      (list alsa-lib
            glib
@@ -582,7 +582,6 @@ camera.  Use it to take pictures and make videos to share.")
            kconfigwidgets
            kcrash
            kdbusaddons
-           kdoctools
            kglobalaccel
            ki18n
            kiconthemes
