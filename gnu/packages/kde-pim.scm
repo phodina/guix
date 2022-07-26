@@ -3,6 +3,7 @@
 ;;; Copyright © 2020 Marius Bakke <marius@gnu.org>
 ;;; Copyright © 2021, 2022 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2022 Brendan Tildesley <mail@brendan.scot>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -103,7 +104,7 @@
                       get-string-all))))
                (rename-file "CMakeLists.txt.new" "CMakeLists.txt"))
              #t)))))
-    (home-page "https://kontact.kde.org/components/akonadi.html")
+    (home-page "https://kontact.kde.org/components/akonadi")
     (synopsis "Extensible cross-desktop storage service for PIM")
     (description "Akonadi is an extensible cross-desktop Personal Information
 Management (PIM) storage service.  It provides a common framework for
@@ -421,7 +422,7 @@ Akonadi PIM data server.  It uses Xapian for indexing and querying.")
         (base32 "1hzq0fdy99l1kqw14d582l0s56gvrw86abihib6k4az4c6g3c0md"))))
     (build-system qt-build-system)
     (native-inputs
-     (list extra-cmake-modules))
+     (list extra-cmake-modules kdoctools))
     (inputs
      (list akonadi
            akonadi-contacts
@@ -456,7 +457,7 @@ Akonadi PIM data server.  It uses Xapian for indexing and querying.")
            prison
            qgpgme
            qtbase-5))
-    (home-page "https://kontact.kde.org/components/kaddressbook.html")
+    (home-page "https://kontact.kde.org/components/kaddressbook")
     (synopsis "Address Book application to manage your contacts")
     (description "KAddressBook stores all the personal details of your family,
 friends and other contacts.  It supports large variety of services, including
@@ -615,7 +616,7 @@ calendaring applications.")
            qtbase-5))
     (arguments
      `(#:tests? #f)) ;; TODO: seem to pull in some wrong theme
-    (home-page "https://api.kde.org/stable/kdepimlibs-apidocs/")
+    (home-page "https://api.kde.org/kdepim/kcalutils/html/index.html")
     (synopsis "Library with utility functions for the handling of calendar
 data")
     (description "This library provides a utility and user interface
@@ -818,7 +819,7 @@ package.")
            kxmlgui
            oxygen-icons ;; default icon set
            qtbase-5))
-    (home-page "https://kde.org/applications/utilities/org.kde.kgpg")
+    (home-page "https://apps.kde.org/utilities/org.kde.kgpg/")
     (synopsis "Graphical front end for GNU Privacy Guard")
     (description "Kgpg manages cryptographic keys for the GNU Privacy Guard,
 and can encrypt, decrypt, sign, and verify files.  It features a simple editor
@@ -886,7 +887,7 @@ cryptography to the contents of the clipboard.")
            kio
            kmime
            qtbase-5))
-    (home-page "https://api.kde.org/stable/kdepimlibs-apidocs/")
+    (home-page "https://api.kde.org/kdepim/kimap/html/index.html")
     (synopsis "Library for handling IMAP")
     (description "This library provides a job-based API for interacting with
 an IMAP4rev1 server.  It manages connections, encryption and parameter quoting
@@ -914,7 +915,7 @@ easier to do so.")
      (list ki18n kio kwidgetsaddons qtbase-5 qtkeychain))
     (propagated-inputs
      (list cyrus-sasl openldap))
-    (home-page "https://api.kde.org/stable/kdepimlibs-apidocs/")
+    (home-page "https://api.kde.org/kdepim/kldap/html/index.html")
     (synopsis "Library for accessing LDAP")
     (description "This is a library for accessing LDAP with a convenient Qt
 style C++ API.  LDAP (Lightweight Directory Access Protocol) is an application
@@ -968,7 +969,7 @@ protocol for querying and modifying directory services running over TCP/IP.")
              (when tests?
                (invoke "dbus-launch" "ctest"))
              #t)))))
-    (home-page "https://kde.org/applications/utilities/org.kde.kleopatra")
+    (home-page "https://apps.kde.org/utilities/org.kde.kleopatra/")
     (synopsis "Certificate Manager and Unified Crypto GUI")
     (description "Kleopatra is a certificate manager and a universal crypto
 GUI.  It supports managing X.509 and OpenPGP certificates in the GpgSM keybox
@@ -1065,7 +1066,7 @@ sendlateragent-sendlaterconfigtest|\
 followupreminder-followupreminderconfigtest|\
 akonadi-sqlite-unifiedmailboxmanagertest)"))
              #t)))))
-    (home-page "https://kontact.kde.org/components/kmail.html")
+    (home-page "https://kontact.kde.org/components/kmail/")
     (synopsis "Full featured graphical email client")
     (description "KMail supports multiple accounts, mail filtering and email
 encryption.  The program let you configure your workflow and it has good
@@ -1225,7 +1226,7 @@ e-mail client programs into KMail and KDE PIM.")
            qtkeychain))
     (arguments
      `(#:tests? #f)) ;; TODO - 3/3 tests fail, require drkonqi
-    (home-page "https://api.kde.org/stable/kdepimlibs-apidocs/")
+    (home-page "https://api.kde.org/kdepim/kmailtransport/html/index.html")
     (synopsis "Mail transport service library")
     (description "This library provides an API and support code for managing
 mail transport.")
@@ -1247,7 +1248,7 @@ mail transport.")
      (list extra-cmake-modules))
     (inputs
      (list kcodecs kmime qtbase-5))
-    (home-page "https://api.kde.org/stable/kdepimlibs-apidocs/")
+    (home-page "https://api.kde.org/kdepim/kmbox/html/index.html")
     (synopsis "Library for handling mbox mailboxes")
     (description "This is a library for handling mailboxes in mbox format,
 using a Qt/KMime C++ API.")
@@ -1366,7 +1367,7 @@ kwebengineviewer.")
                (("(Today|Yesterday) 12:34:56" line day)
                 (string-append day " 12:34 PM")))
              #t)))))
-    (home-page "https://api.kde.org/stable/kdepimlibs-apidocs/")
+    (home-page "https://api.kde.org/kdepim/kmime/html/index.html")
     (synopsis "Library for handling MIME data")
     (description "This library provides an API for handling MIME
 data.  MIME (Multipurpose Internet Mail Extensions) is an Internet Standard
@@ -1388,7 +1389,7 @@ information in non-ASCII character sets.")
         (base32 "07pj0aqwsy1xi5mx7x0h3zmxfg0n4afgjax9a9ihc553xs6k48d7"))))
     (build-system qt-build-system)
     (native-inputs
-     (list extra-cmake-modules libxslt))
+     (list extra-cmake-modules kdoctools libxslt))
     (inputs
      (list akonadi
            akonadi-contacts
@@ -1431,7 +1432,7 @@ information in non-ASCII character sets.")
            oxygen-icons ; default icon set, required for tests
            qtbase-5
            qtx11extras))
-    (home-page "https://kontact.kde.org/components/knotes.html")
+    (home-page "https://apps.kde.org/knotes/")
     (synopsis "Note-taking utility")
     (description "KNotes lets you write the computer equivalent of sticky
 notes.  The notes are saved automatically when you exit the program, and they
@@ -1468,9 +1469,9 @@ Features:
            kwindowsystem
            kxmlgui
            qtbase-5))
-    (home-page "https://api.kde.org/stable/kdepimlibs-apidocs/")
+    (home-page "https://api.kde.org/kdepim/kontactinterface/html/index.html")
     (synopsis "Kontact interface library")
-    (description " This library provides the glue necessary for
+    (description "This library provides the glue necessary for
 application \"Parts\" to be embedded as a Kontact component (or plugin).")
     (license license:lgpl2.0+)))
 
@@ -1554,7 +1555,7 @@ application \"Parts\" to be embedded as a Kontact component (or plugin).")
              (when tests?
                (invoke "dbus-launch" "ctest"))
              #t)))))
-    (home-page "https://kontact.kde.org/components/korganizer.html")
+    (home-page "https://apps.kde.org/korganizer/")
     (synopsis "Organizational assistant, providing calendars and other similar
 functionality to help you organize your life")
     (description "KOrganizer is the calendar and scheduling component of
@@ -1724,7 +1725,7 @@ unnecessary network operations.")
            sonnet))
     (arguments
      `(#:tests? #f)) ;; TODO - test suite hangs
-    (home-page "https://api.kde.org/stable/kdepimlibs-apidocs/")
+    (home-page "https://api.kde.org/kdepim/kpimtextedit/html/index.html")
     (synopsis "Library providing a textedit with PIM-specific features")
     (description "This package provides a textedit with PIM-specific features.
 It also provides so-called rich text builders which can convert the formatted
@@ -1795,7 +1796,7 @@ standard protocols for e-mail transmission.")
            kcoreaddons
            ki18n
            qtbase-5))
-    (home-page "https://api.kde.org/stable/kdepimlibs-apidocs/ktnef/html/")
+    (home-page "https://api.kde.org/kdepim/ktnef/html/index.html")
     (synopsis "Library for handling mail attachments using TNEF format")
     (description "Ktnef is a library for handling data in the TNEF
 format (Transport Neutral Encapsulation Format, a proprietary format of e-mail
