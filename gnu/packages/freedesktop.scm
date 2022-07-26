@@ -176,11 +176,12 @@
            gobject-introspection
            gperf
            gtk-doc/stable
+           itstool
            pkg-config
            python-wrapper
            libxslt))
     (inputs
-     (list curl itstool libsoup-minimal-2 libstemmer libxmlb libxml2 libyaml lmdb))
+     (list curl libsoup-minimal-2 libstemmer libxmlb libxml2 libyaml lmdb))
     (propagated-inputs
      (list glib))
     (synopsis "Tools and libraries to work with AppStream metadata")
