@@ -107,7 +107,7 @@
            unzip
            zip
            zstd))
-    (home-page "https://apps.kde.org/en/ark")
+    (home-page "https://apps.kde.org/ark/")
     (synopsis "Graphical archiving tool")
     (description "Ark is a graphical file compression/decompression utility
 with support for multiple formats, including tar, gzip, bzip2, rar and zip, as
@@ -202,7 +202,7 @@ Kate's features include:
            oxygen-icons ;; default icon set
            ;; TODO: QAccessibilityClient - libqaccessibilityclien
            qtbase-5))
-    (home-page "https://kde.org/applications/utilities/org.kde.kmag")
+    (home-page "https://apps.kde.org/kmag/")
     (synopsis "Screen magnifier tool")
     (description "You can use KMagnifier to magnify a part of the screen just
 as you would use a lens to magnify a newspaper fine-print or a photograph.
@@ -240,7 +240,7 @@ artists to web-designers to people with low vision.")
            phonon
            oxygen-icons ;; default icon set
            qtbase-5))
-    (home-page "https://kde.org/applications/utilities/org.kde.kmousetool")
+    (home-page "https://apps.kde.org/kmousetool/")
     (synopsis "Automatic mouse click and mouse manipulation tool for the
 disabled")
     (description "KMouseTool clicks the mouse whenever the mouse cursor pauses
@@ -276,7 +276,7 @@ whom pressing buttons hurts.")
            oxygen-icons ;; default icon set
            qtbase-5
            qtspeech))
-    (home-page "https://kde.org/applications/utilities/org.kde.kmouth")
+    (home-page "https://apps.kde.org/kmouth/")
     (synopsis "Type-and-say frontend for speech synthesizers")
     (description "KMouth is a program which enables persons that cannot speak
 to let their computer speak, e.g. mutal people or people who have lost their
@@ -313,7 +313,7 @@ sentences to be re-spoken.")
            kxmlgui
            oxygen-icons ;; default icon set
            qtbase-5))
-    (home-page "https://kde.org/applications/utilities/org.kde.kronometer")
+    (home-page "https://apps.kde.org/kronometer/")
     (synopsis "Simple stopwatch application")
     (description "Kronometer is a stopwatch application.  It features the
 basic stopwatch actions (pause, resume, reset, laps), as well as the ability
@@ -358,7 +358,7 @@ to save the times and resume them later.")
            qtbase-5
            solid
            zlib))
-    (home-page "https://www.krusader.org")
+    (home-page "https://krusader.org/")
     (synopsis "Twin-panel (commander-style) file manager")
     (description "Krusader is a simple, easy, yet powerful,
 twin-panel (commander-style) file manager, similar to Midnight Commander or
@@ -391,7 +391,7 @@ great on your desktop.")
      (list extra-cmake-modules kdoctools pkg-config))
     (inputs
      (list ktexteditor imagemagick qtbase-5 qtx11extras))
-    (home-page "https://kde.org/applications/en/graphics/org.kde.kxstitch")
+    (home-page "https://apps.kde.org/kxstitch/")
     (synopsis "Create and print cross stitch patterns")
     (description
      "KXStitch allows creating and printing cross stitch patterns, which can
@@ -442,7 +442,7 @@ either be created or generated from a image.")
              (setenv "QT_QPA_PLATFORM" "offscreen")
              (setenv "HOME" "/tmp/dummy-home")
              #t)))))
-    (home-page "https://kde.org/applications/utilities/org.kde.okteta")
+    (home-page "https://apps.kde.org/okteta/")
     (synopsis "Hexadecimal editor for binary files")
     (description "Okteta is a simple editor for the raw data of files.  This
 type of program is also called hex editor or binary editor.
@@ -489,7 +489,7 @@ redone.")
            kxmlgui
            oxygen-icons ;; default icon set
            qtbase-5))
-    (home-page "https://kde.org/applications/utilities/org.kde.rsibreak")
+    (home-page "https://apps.kde.org/rsibreak/")
     (synopsis "Assists in the Recovery and Prevention of Repetitive Strain
 Injury")
     (description "Repetitive Strain Injury is an illness which can occur as a
@@ -538,7 +538,7 @@ remind you to take a break now and then.")
            qtbase-5
            qtdeclarative-5
            solid))
-    (home-page "https://kde.org/applications/utilities/org.kde.smb4k")
+    (home-page "https://apps.kde.org/smb4k/")
     (synopsis "Samba (SMB) share advanced browser")
     (description "Smb4K is an network neighborhood browser for the KDE
 Software Compilation and a frontend to the programs of the Samba software
@@ -597,7 +597,7 @@ Features:
            kxmlgui
            oxygen-icons ;; default icon set
            qtbase-5))
-    (home-page "https://kde.org/applications/utilities/org.kde.sweeper")
+    (home-page "https://apps.kde.org/sweeper/")
     (synopsis "Temporary file and history cleaner")
     (description "
 Sweeper helps to clean unwanted traces the user leaves on the system and to
