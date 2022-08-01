@@ -1524,16 +1524,16 @@ functionality to display information about the most commonly used services.")
 (define-public wlroots
   (package
     (name "wlroots")
-    (version "0.14.1")
+    (version "0.15.1")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/swaywm/wlroots")
+             (url "https://gitlab.freedesktop.org/wlroots/wlroots")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1sshp3lvlkl1i670kxhwsb4xzxl8raz6769kqvgmxzcb63ns9ay1"))))
+        (base32 "00s73nhi3sc48l426jdlqwpclg41kx1hv0yk4yxhbzw19gqpfm1h"))))
     (build-system meson-build-system)
     (arguments
      `(#:phases
@@ -1552,6 +1552,7 @@ functionality to display information about the most commonly used services.")
            libxkbcommon
            mesa
            pixman
+           libdrm
            libseat
            wayland
            wayland-protocols
