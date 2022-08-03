@@ -1,0 +1,15 @@
+--- parking_lot_core-0.9.3/Cargo.toml	2022-08-03 15:35:04.256541546 +0200
++++ parking_lot_core-0.9.3/Cargo.toml	2022-08-03 15:35:23.056614747 +0200
+@@ -57,12 +57,3 @@
+ 
+ [target."cfg(unix)".dependencies.libc]
+ version = "0.2.95"
+-
+-[target."cfg(windows)".dependencies.windows-sys]
+-version = "0.36.0"
+-features = [
+-    "Win32_Foundation",
+-    "Win32_System_LibraryLoader",
+-    "Win32_System_SystemServices",
+-    "Win32_System_WindowsProgramming",
+-]
