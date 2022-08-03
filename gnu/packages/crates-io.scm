@@ -73055,6 +73055,29 @@ for locating fonts.")
     (description "This package provides an implementation of zbase32.")
     (license license:lgpl3+)))
 
+(define-public rust-zbus-macros-1
+  (package
+    (name "rust-zbus-macros")
+    (version "1.9.3")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "zbus_macros" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "19p0pdwdf52zkaknav0pj5qvgcf52xk8a4p3a4ymxybwhjkmjfgs"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-proc-macro-crate" ,rust-proc-macro-crate-0.1)
+                       ("rust-proc-macro2" ,rust-proc-macro2-1)
+                       ("rust-quote" ,rust-quote-1)
+                       ("rust-syn" ,rust-syn-1))))
+    (home-page "https://gitlab.freedesktop.org/dbus/zbus/")
+    (synopsis "proc-macros for zbus")
+    (description "proc-macros for zbus")
+    (license license:expat)))
+
 (define-public rust-zerocopy-0.3
   (package
     (name "rust-zerocopy")
