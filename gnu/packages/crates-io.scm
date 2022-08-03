@@ -38432,8 +38432,31 @@ enhances the built-in library with some useful features.")
      "Provide helper functions for the procedural macros used in ntest.")
     (license license:expat)))
 
+(define-public rust-ntest-test-cases-0.7
+  (package
+    (name "rust-ntest-test-cases")
+    (version "0.7.5")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "ntest_test_cases" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1ghal2rb03cnj7ciqgdq0dvifdf8qp2hnmi9z1ip1j5b02s1xa4r"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-proc-macro2" ,rust-proc-macro2-1)
+                       ("rust-quote" ,rust-quote-1)
+                       ("rust-syn" ,rust-syn-1))))
+    (home-page "https://github.com/becheran/ntest")
+    (synopsis "Test cases for ntest framework.")
+    (description "Test cases for ntest framework.")
+    (license license:expat)))
+
 (define-public rust-ntest-test-cases-0.3
   (package
+    (inherit rust-ntest-test-cases-0.7)
     (name "rust-ntest-test-cases")
     (version "0.3.4")
     (source
@@ -38449,11 +38472,7 @@ enhances the built-in library with some useful features.")
      `(#:cargo-inputs
        (("rust-proc-macro2" ,rust-proc-macro2-1)
         ("rust-quote" ,rust-quote-1)
-        ("rust-syn" ,rust-syn-1))))
-    (home-page "https://github.com/becheran/ntest")
-    (synopsis "Test cases for ntest framework")
-    (description "This package provides test cases for ntest framework.")
-    (license license:expat)))
+        ("rust-syn" ,rust-syn-1))))))
 
 (define-public rust-ntest-timeout-0.7
   (package
