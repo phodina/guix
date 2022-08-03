@@ -1792,6 +1792,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/rust-nettle-disable-vendor.patch		 \
   %D%/packages/patches/rust-nettle-sys-disable-vendor.patch	 \
   %D%/packages/patches/rust-openssl-sys-no-vendor.patch	\
+  %D%/packages/patches/rust-parking-lot-core-0.9.patch	\
   %D%/packages/patches/rust-shell2batch-lint-fix.patch		\
   %D%/packages/patches/rust-wl-clipboard-rs-newer-wl.patch      \
   %D%/packages/patches/sbc-fix-build-non-x86.patch		\
