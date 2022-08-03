@@ -37623,14 +37623,14 @@ while still providing platform specific APIs.")
   (package
     (inherit rust-nix-0.23)
     (name "rust-nix")
-    (version "0.22.1")
+    (version "0.22.3")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "nix" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0cahgzxhdwsaa8491n6cn8gadgfsxk5razyfw4xr3k34f5n5smg7"))))
+        (base32 "1bsgc8vjq07a1wg9vz819bva3dvn58an4r87h80dxrfqkqanz4g4"))))
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
