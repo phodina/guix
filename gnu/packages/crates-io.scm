@@ -73288,6 +73288,29 @@ for locating fonts.")
        (("rust-const-cstr" ,rust-const-cstr-0.3)
         ("rust-pkg-config" ,rust-pkg-config-0.3))))))
 
+(define-public rust-zbus-polkit-1
+  (package
+    (name "rust-zbus-polkit")
+    (version "1.2.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "zbus_polkit" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1yzbs8sga4s3h97vb6n5nvdvlnmhws2vj46bn44hbncfm25f51mc"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-enumflags2" ,rust-enumflags2-0.6)
+                       ("rust-serde" ,rust-serde-1)
+                       ("rust-serde-repr" ,rust-serde-repr-0.1)
+                       ("rust-zvariant" ,rust-zvariant-2))))
+    (home-page "https://gitlab.freedesktop.org/dbus/zbus/")
+    (synopsis "PolicyKit binding")
+    (description "PolicyKit binding")
+    (license license:expat)))
+
 (define-public rust-zvariant-derive-2
   (package
     (name "rust-zvariant-derive")
