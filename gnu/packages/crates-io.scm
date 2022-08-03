@@ -73288,6 +73288,29 @@ for locating fonts.")
        (("rust-const-cstr" ,rust-const-cstr-0.3)
         ("rust-pkg-config" ,rust-pkg-config-0.3))))))
 
+(define-public rust-zvariant-derive-2
+  (package
+    (name "rust-zvariant-derive")
+    (version "2.10.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "zvariant_derive" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1s9xk9c4p9vl0j2vr1abqc12mgv500sjc3fnh8ij3d1yb4i5xjp4"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-proc-macro-crate" ,rust-proc-macro-crate-1)
+                       ("rust-proc-macro2" ,rust-proc-macro2-1)
+                       ("rust-quote" ,rust-quote-1)
+                       ("rust-syn" ,rust-syn-1))))
+    (home-page "https://gitlab.freedesktop.org/dbus/zbus/")
+    (synopsis "D-Bus & GVariant encoding & decoding")
+    (description "D-Bus & GVariant encoding & decoding")
+    (license license:expat)))
+
 (define-public rust-zbase32-0.1
   (package
     (name "rust-zbase32")
