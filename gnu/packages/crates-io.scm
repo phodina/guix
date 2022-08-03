@@ -38383,8 +38383,32 @@ varying noise for textural use and graphical display.")
     (description "FFI bindings for Native API")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-ntest-0.7
+  (package
+    (name "rust-ntest")
+    (version "0.7.5")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "ntest" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0i4xsvx52hmcnga2xbjl74hdylz4jy8bc2swcichlvw1di4lwm2w"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-ntest-proc-macro-helper" ,rust-ntest-proc-macro-helper-0.7)
+                       ("rust-ntest-test-cases" ,rust-ntest-test-cases-0.7)
+                       ("rust-ntest-timeout" ,rust-ntest-timeout-0.7))))
+    (home-page "https://github.com/becheran/ntest")
+    (synopsis "Testing framework for Rust")
+    (description "This package provides a testing framework for Rust which
+enhances the built-in library with some useful features.")
+    (license license:expat)))
+
 (define-public rust-ntest-0.3
   (package
+    (inherit rust-ntest-0.7)
     (name "rust-ntest")
     (version "0.3.3")
     (source
@@ -38404,12 +38428,7 @@ varying noise for textural use and graphical display.")
        #:cargo-development-inputs
        (("rust-ntest-test-cases" ,rust-ntest-test-cases-0.3)
         ("rust-ntest-timeout" ,rust-ntest-timeout-0.3)
-        ("rust-timebomb" ,rust-timebomb-0.1))))
-    (home-page "https://github.com/becheran/ntest")
-    (synopsis "Testing framework for Rust")
-    (description "This package provides a testing framework for Rust which
-enhances the built-in library with some useful features.")
-    (license license:expat)))
+        ("rust-timebomb" ,rust-timebomb-0.1))))))
 
 (define-public rust-ntest-proc-macro-helper-0.7
   (package
