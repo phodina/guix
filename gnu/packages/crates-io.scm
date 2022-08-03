@@ -5668,6 +5668,38 @@ built on the Actix ecosystem.")
 trace (backtrace) at runtime in a Rust program.")
     (license (list license:asl2.0 license:expat))))
 
+;; FIXME: Currently breaks rav1e-0.5.1
+(define-public rust-backtrace-next
+  (package
+    (inherit rust-backtrace-0.3)
+    (name "rust-backtrace")
+    (version "0.3.66")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "backtrace" version))
+       (file-name
+        (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "19yrfx0gprqmzphmf6qv32g93w76ny5g751ks1abdkqnsqcl7f6a"))))
+    (arguments
+      `(#:skip-build? #t
+        #:cargo-inputs
+        (("rust-addr2line" ,rust-addr2line-0.17)
+         ("rust-backtrace-sys" ,rust-backtrace-sys-0.1)
+         ("rust-cfg-if" ,rust-cfg-if-1)
+         ("rust-cpp-demangle" ,rust-cpp-demangle-0.3)
+         ("rust-libc" ,rust-libc-0.2)
+         ("rust-miniz-oxide" ,rust-miniz-oxide-0.5)
+         ("rust-object" ,rust-object-0.29)
+         ("rust-rustc-demangle" ,rust-rustc-demangle-0.1)
+         ("rust-rustc-serialize" ,rust-rustc-serialize-0.3)
+         ("rust-serde" ,rust-serde-1)
+         ("rust-winapi" ,rust-winapi-0.3))
+        #:cargo-development-inputs
+           (("rust-libloading" ,rust-libloading-0.7))))))
+
 (define-public rust-backtrace-0.3.35
   (package
     (inherit rust-backtrace-0.3)
