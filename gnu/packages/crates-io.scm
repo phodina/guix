@@ -25072,8 +25072,41 @@ permitted in ordinary Rust.")
     (description "This crate provides a GIF de- and encoder.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-gimli-0.26
+  (package
+    (name "rust-gimli")
+    (version "0.26.2")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "gimli" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0pafbk64rznibgnvfidhm1pqxd14a5s9m50yvsgnbv38b8n0w0r2"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-compiler-builtins" ,rust-compiler-builtins-0.1)
+                       ("rust-fallible-iterator" ,rust-fallible-iterator-0.2)
+                       ("rust-indexmap" ,rust-indexmap-1)
+                       ("rust-rustc-std-workspace-alloc" ,rust-rustc-std-workspace-alloc-1)
+                       ("rust-rustc-std-workspace-core" ,rust-rustc-std-workspace-core-1)
+                       ("rust-stable-deref-trait" ,rust-stable-deref-trait-1))
+       #:cargo-development-inputs (("rust-memmap2" ,rust-memmap2-0.5)
+       ("rust-typed-arena" ,rust-typed-arena-2)
+       ("rust-byteorder" ,rust-byteorder-0.5)
+       ("rust-test-assembler" ,rust-test-assembler-0.1)
+       ("rust-object" ,rust-object-0.29))))
+    (home-page "https://github.com/gimli-rs/gimli")
+    (synopsis "Library for reading and writing the DWARF debugging format")
+    (description
+     "This package provides a library for reading and writing the DWARF
+debugging format.")
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-gimli-0.23
   (package
+    (inherit rust-gimli-0.26)
     (name "rust-gimli")
     (version "0.23.0")
     (source
@@ -25092,13 +25125,7 @@ permitted in ordinary Rust.")
         ("rust-indexmap" ,rust-indexmap-1)
         ("rust-rustc-std-workspace-alloc" ,rust-rustc-std-workspace-alloc-1)
         ("rust-rustc-std-workspace-core" ,rust-rustc-std-workspace-core-1)
-        ("rust-stable-deref-trait" ,rust-stable-deref-trait-1))))
-    (home-page "https://github.com/gimli-rs/gimli")
-    (synopsis "Library for reading and writing the DWARF debugging format")
-    (description
-     "This package provides a library for reading and writing the DWARF
-debugging format.")
-    (license (list license:asl2.0 license:expat))))
+        ("rust-stable-deref-trait" ,rust-stable-deref-trait-1))))))
 
 (define-public rust-gimli-0.20
   (package
