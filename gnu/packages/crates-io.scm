@@ -39928,6 +39928,28 @@ be assigned to at most once and provide direct access to the stored
 contents.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-once-cell-next
+  (package
+    (inherit rust-once-cell-1)
+    (name "rust-once-cell")
+    (version "1.13.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "once-cell" version))
+       (file-name
+        (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1qfqvgnwfzzwxd13ybvplzshaqwnjnna9ghcn0zgijaq0zixp9hq"))))
+    (arguments
+     `(#:cargo-inputs
+       (("rust-atomic-polyfill" ,rust-atomic-polyfill-0.1)
+        ("rust-parking-lot-core" ,rust-parking-lot-core-0.9))
+       #:cargo-development-inputs
+       (("rust-crossbeam-utils" ,rust-crossbeam-utils-0.8)
+        ("rust-lazy-static" ,rust-lazy-static-1)
+        ("rust-regex" ,rust-regex-1))))))
+
 (define-public rust-once-cell-0.1
   (package
     (inherit rust-once-cell-1)
