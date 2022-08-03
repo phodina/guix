@@ -45482,6 +45482,28 @@ losslessly as possible.")
 renamed in @file{Cargo.toml}.")
     (license (list license:asl2.0 license:expat))))
 
+ (define-public rust-proc-macro-crate-next
+   (package
+     (inherit rust-proc-macro-crate-1)
+     (name "rust-proc-macro-crate")
+     (version "1.2.1")
+     (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "proc-macro-crate" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+         (base32 "1sclzva81n2lpjyfpdpdcd03f5ys9684vqap2xipbjdp1wxzr87d"))))
+    (arguments
+     `(#:cargo-inputs
+       (("rust-once-cell" ,rust-once-cell-next)
+        ("rust-thiserror" ,rust-thiserror-1)
+        ("rust-toml" ,rust-toml-0.5))
+       #:cargo-development-inputs
+       (("rust-proc-macro2" ,rust-proc-macro2-1)
+        ("rust-quote" ,rust-quote-1)
+        ("rust-syn" ,rust-syn-1))))))
+
 (define-public rust-proc-macro-crate-0.1
   (package
     (inherit rust-proc-macro-crate-1)
