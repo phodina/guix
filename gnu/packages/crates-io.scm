@@ -38411,6 +38411,27 @@ varying noise for textural use and graphical display.")
 enhances the built-in library with some useful features.")
     (license license:expat)))
 
+(define-public rust-ntest-proc-macro-helper-0.7
+  (package
+    (name "rust-ntest-proc-macro-helper")
+    (version "0.7.5")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "ntest_proc_macro_helper" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0lkyfx97aynbm7cnhzyc9cr0rpq1xzng1hwmzizbf1a6855y6llg"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "https://github.com/becheran/ntest")
+    (synopsis
+     "Provide helper functions for the procedural macros used in ntest.")
+    (description
+     "Provide helper functions for the procedural macros used in ntest.")
+    (license license:expat)))
+
 (define-public rust-ntest-test-cases-0.3
   (package
     (name "rust-ntest-test-cases")
