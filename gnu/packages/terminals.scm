@@ -1459,30 +1459,25 @@ basic input/output.")
                (install-file "extra/completions/alacritty.fish"
                              (string-append share "/fish/vendor_completions.d"))
                #t))))))
-    (native-inputs
-     `(("cmake" ,cmake)
-       ("ncurses" ,ncurses)
-       ("pkg-config" ,pkg-config)
-       ("python3" ,python)))
-    (inputs
-     `(("expat" ,expat)
-       ("fontconfig" ,fontconfig)
-       ("freetype" ,freetype)
-       ("libx11" ,libx11)
-       ("libxcb" ,libxcb)
-       ("libxcursor" ,libxcursor)
-       ("libxi" ,libxi)
-       ("libxkbcommon" ,libxkbcommon)
-       ("libxrandr" ,libxrandr)
-       ("libxxf86vm" ,libxxf86vm)
-       ("mesa" ,mesa)
-       ("rust-bitflags" ,rust-bitflags-1)
-       ("rust-dirs" ,rust-dirs-3)
-       ("rust-libc" ,rust-libc-0.2)
-       ("rust-unicode-width" ,rust-unicode-width-0.1)
-       ("rust-wayland-client" ,rust-wayland-client-0.28)
-       ("rust-winapi" ,rust-winapi-0.3)
-       ("wayland" ,wayland)))
+    (native-inputs (list cmake ncurses pkg-config python))
+    (inputs (list expat
+                  fontconfig
+                  freetype
+                  libx11
+                  libxcb
+                  libxcursor
+                  libxi
+                  libxkbcommon
+                  libxrandr
+                  libxxf86vm
+                  mesa
+                  rust-bitflags-1
+                  rust-dirs-3
+                  rust-libc-0.2
+                  rust-unicode-width-0.1
+                  rust-wayland-client-0.28
+                  rust-winapi-0.3
+                  wayland))
     (native-search-paths
      ;; FIXME: This should only be located in 'ncurses'.  Nonetheless it is
      ;; provided for usability reasons.  See <https://bugs.gnu.org/22138>.
