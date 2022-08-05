@@ -23368,8 +23368,31 @@ pseudorandom number generator")
     (description "Low-level Rust bindings for the Zircon kernel.")
     (license license:bsd-3)))
 
+(define-public rust-funty-2
+  (package
+    (name "rust-funty")
+    (version "2.0.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "funty" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "177w048bm0046qlzvp33ag3ghqkqw4ncpzcm5lq36gxf2lla7mg6"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "https://github.com/myrrlyn/funty")
+    (synopsis "Trait generalization over the primitive types")
+    (description
+     "Prior to 1.0, Rust had traits for the numeric primitive types to permit
+code to generalize over which specific type it accepted. This was never
+stabilized, and eventually removed.  This library reïnstates these traits.")
+    (license license:expat)))
+
 (define-public rust-funty-1
   (package
+    (inherit rust-funty-2)
     (name "rust-funty")
     (version "1.2.0")
     (source
@@ -23384,14 +23407,7 @@ pseudorandom number generator")
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-development-inputs
-       (("rust-static-assertions" ,rust-static-assertions-1))))
-    (home-page "https://github.com/myrrlyn/funty")
-    (synopsis "Trait generalization over the primitive types")
-    (description
-     "Prior to 1.0, Rust had traits for the numeric primitive types to permit
-code to generalize over which specific type it accepted. This was never
-stabilized, and eventually removed.  This library reïnstates these traits.")
-    (license license:expat)))
+       (("rust-static-assertions" ,rust-static-assertions-1))))))
 
 (define-public rust-funty-1.1
   (package
