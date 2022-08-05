@@ -11417,6 +11417,26 @@ traits.")
 derive crate.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-clap-lex-0.2
+  (package
+    (name "rust-clap-lex")
+    (version "0.2.4")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "clap_lex" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1ib1a9v55ybnaws11l63az0jgz5xiy24jkdgsmyl7grcm3sz4l18"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-os-str-bytes" ,rust-os-str-bytes-6))))
+    (home-page "https://github.com/clap-rs/clap/tree/master/clap_lex")
+    (synopsis "Minimal, flexible command line parser")
+    (description "Minimal, flexible command line parser")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-clap-3
   (package
     (name "rust-clap")
