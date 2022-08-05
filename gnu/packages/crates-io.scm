@@ -72393,8 +72393,32 @@ serialization.")
 non-cryptographic hashing algorithm and random number generator.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-wyz-0.5
+  (package
+    (name "rust-wyz")
+    (version "0.5.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "wyz" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "03ir858jfk3sn98v3vzh33ap8s27sfgbalrv71n069wxyaa1bcrh"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-once-cell" ,rust-once-cell-1)
+                       ("rust-tap" ,rust-tap-1)
+                       ("rust-typemap" ,rust-typemap-0.3))))
+    (home-page "https://myrrlyn.net/crates/wyz")
+    (synopsis "Collection of utility functions")
+    (description
+     "This package provides a collection of utility functions.")
+    (license license:expat)))
+
 (define-public rust-wyz-0.4
   (package
+    (inherit rust-wyz-0.5)
     (name "rust-wyz")
     (version "0.4.0")
     (source
@@ -72411,12 +72435,7 @@ non-cryptographic hashing algorithm and random number generator.")
      `(#:cargo-inputs
        (("rust-once-cell" ,rust-once-cell-1)
         ("rust-tap" ,rust-tap-1)
-        ("rust-typemap" ,rust-typemap-0.3))))
-    (home-page "https://myrrlyn.net/crates/wyz")
-    (synopsis "Collection of utility functions")
-    (description
-     "This package provides a collection of utility functions.")
-    (license license:expat)))
+        ("rust-typemap" ,rust-typemap-0.3))))))
 
 (define-public rust-wyz-0.2
   (package
