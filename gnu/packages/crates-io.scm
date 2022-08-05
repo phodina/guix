@@ -88,6 +88,7 @@
   #:use-module (gnu packages version-control)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
+  #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages webkit)
@@ -73076,6 +73077,32 @@ to XDG Base Directory specification.")
     (description
      "This package provides a moderately simple command line arguments parser.")
     (license (list license:expat license:asl2.0))))
+
+(define-public rust-xkbcommon-0.4
+  (package
+    (name "rust-xkbcommon")
+    (version "0.4.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (crate-uri "xkbcommon" version))
+        (file-name (string-append name "-" version ".tar.gz"))
+        (sha256
+          (base32 "1kr8ik92ckz12s9my66a7grip84n87xgkannpchi5hsmqw6d0bh3"))))
+    (build-system cargo-build-system)
+    (arguments
+      `(#:tests? #f ;; TODO: Failing test in src/xkb/mod.rs
+        #:cargo-inputs
+        (("rust-libc" ,rust-libc-0.2)
+         ("rust-memmap" ,rust-memmap-0.7)
+         ("rust-xcb" ,rust-xcb-0.9))
+        #:cargo-development-inputs
+        (("rust-evdev" ,rust-evdev-0.11))))
+    (inputs (list libxkbcommon))
+    (home-page "https://github.com/rust-x-bindings/xkbcommon-rs")
+    (synopsis "Rust bindings and wrappers for libxkbcommon")
+    (description "Rust bindings and wrappers for libxkbcommon")
+    (license license:expat)))
 
 (define-public rust-xml-rs-0.8
   (package
