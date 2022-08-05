@@ -12590,7 +12590,8 @@ in @code{no_std}.  Alloc support is optional.")
       `(#:skip-build?
         #t
         #:cargo-inputs
-        (("rust-libc" ,rust-libc-0.2) ("rust-mach" ,rust-mach-0.1))))
+        (("rust-libc" ,rust-libc-0.2))))
+		; ("rust-mach" ,rust-mach-0.1))))
     (home-page "https://github.com/dcuddeback/core-foundation-sys")
     (synopsis "FFI bindings for CoreFoundation")
     (description "FFI bindings for CoreFoundation")
