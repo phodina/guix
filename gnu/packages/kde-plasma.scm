@@ -1053,3 +1053,24 @@ license:lgpl3))))
     (description "")
     (license (list license:bsd-3 license:gpl2+ license:gpl3 license:lgpl2.1+
 license:lgpl3))))
+
+(define-public latte-dock
+(package
+  (name "latte-dock")
+  (version "0.10.8")
+  (source (origin
+            (method git-fetch)
+            (uri (git-reference
+             (url "https://github.com/KDE/latte-dock")
+             (commit (string-append "v" version))))
+            (sha256
+             (base32
+              "15b3jpjmp0xvwis5kigpkbpgd0ry8wwyffznhwzbd9gcw9m2az0r"))))
+  (build-system cmake-build-system)
+  (native-inputs (list extra-cmake-modules pkg-config))
+  (inputs (list qtbase-5 qtsvg kio kitemmodels kcoreaddons ki18n kdiagram))
+  (synopsis "Latte is a dock based on plasma frameworks")
+  (description "")
+  (home-page "https://github.com/KDE/latte-dock")
+  ;; TODO: Multiple
+  (license license:gpl3)))
