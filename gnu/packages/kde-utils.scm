@@ -374,6 +374,28 @@ Almost completely customizable, Krusader is very user friendly, fast and looks
 great on your desktop.")
     (license license:gpl2+)))
 
+(define-public ktrip
+  (package
+    (name "ktrip")
+    (version "22.04")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://kde/stable/ktrip/" version
+                           "/ktrip-" version ".tar.xz"))
+       (sha256
+        (base32
+         "0mlq77nfgkkcqlqyyxalx929l3iy87psmjrlksk8zkck6zcdahfy"))))
+    (build-system qt-build-system)
+	(native-inputs (list extra-cmake-modules))
+	(inputs (list kcoreaddons ki18n kitemmodels kconfig qtbase-5 qtdeclarative qtquickcontrols2))
+    (home-page "https://apps.kde.org/ktrip/")
+    (synopsis "Helps you navigate in public transport")
+    (description "This package allows you to find journeys between specified
+locations, departures for a specific station and shows real-time delay and
+disruption information.")
+    (license license:gpl2+)))
+
 (define-public kxstitch
   (package
     (name "kxstitch")
