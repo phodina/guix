@@ -625,6 +625,26 @@ conjunction with the KDE Plasma Desktop.")
         (base32
          "1yn6vifj8f4bk5ni6pjsadjiapmdzyfn7yc9j30sd0rixsr5k1n9"))))))
 
+(define-public plasmatube
+  (package
+    (name "plasmatube")
+    (version "22.04")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+               (url "https://github.com/KDE/plasmatube")
+			   (commit (string-append "v" version))))
+              (sha256
+               (base32
+                "0q8268nhjrkph7nmmib1khkqybjx8vyghzd2rab5v1c73pr9jxl5"))))
+    (build-system cmake-build-system)
+    (native-inputs (list extra-cmake-modules pkg-config)) ;qttools))
+    (inputs (list kirigami ki18n qtbase-5 qtdeclarative qtquickcontrols2 qtsvg qtmultimedia youtube-dl))
+    (home-page "https://apps.kde.org/plasmatube/")
+    (synopsis "Kirigami YouTube video player")
+    (description "")
+    (license license:gpl3+)))
+
 (define-public plasma-mobile
   (package
     (name "plasma-mobile")
