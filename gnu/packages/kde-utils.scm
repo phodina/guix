@@ -32,6 +32,7 @@
   #:use-module (gnu packages compression)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages imagemagick)
+  #:use-module (gnu packages license) ; ktrip
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
@@ -250,7 +251,7 @@ whom pressing buttons hurts.")
 
 (define-public kmouth
   (package
-    (name "kmouth")
+    (name "klmouth")
     (version "22.04.3")
     (source
      (origin
@@ -382,8 +383,8 @@ great on your desktop.")
      (origin
        (method url-fetch)
        (uri (string-append
-	   "https://download.kde.org/stable/release-service/" version
-	   "/src/kpublictransport-" version ".tar.xz"))
+          "https://download.kde.org/stable/release-service/" version
+          "/src/kpublictransport-" version ".tar.xz"))
        (sha256
         (base32
          "05s8mpqn74vz1daim3qdyfg8n7b7n8f18hzcybiim4zxcy2k71rz"))))
@@ -395,15 +396,41 @@ great on your desktop.")
                 (lambda* (#:key tests? #:allow-other-keys)
                   (when tests?
                     (invoke "ctest" "-E"
-					"(mergeutiltest|departuretest|journeytest|networkconfigtest|
-					locationhistorymodeltest|navitiaparsertest|otpparsertest|ivvassparsertest|cachetest|locationhistorymodeltest)")))))))
-	(native-inputs (list extra-cmake-modules))
+                                       "(mergeutiltest|departuretest|journeytest|networkconfigtest|
+                                       locationhistorymodeltest|navitiaparsertest|otpparsertest|ivvassparsertest|cachetest|locationhistorymodeltest)")))))))
+       (native-inputs (list extra-cmake-modules))
     (inputs (list zlib qtdeclarative-5))
     (home-page "https://api.kde.org/kdepim/kpublictransport/html/index.html")
     (synopsis "Library for accessing realtime public transport data")
     (description "This pakckage provides library for accessing realtime public
 transport data and for performing public transport journey queries.")
     (license (list license:expat license:bsd-3 license:gpl2+))))
+
+(define-public ktrip
+  (package
+    (name "ktrip")
+    (version "22.04")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+	   "https://invent.kde.org/utilities/ktrip/-/archive/v" version "/ktrip-v"
+	   version ".tar.gz"))
+       (sha256
+        (base32
+         "1vhllccrbvpman31pr13bxv75ry6zswnfxf0ln0ybxssp29l9xyh"))))
+    (build-system qt-build-system)
+	(native-inputs (list extra-cmake-modules reuse))
+	(inputs (list kcoreaddons ki18n kirigami kirigami-addons kitemmodels kconfig
+	kpublictransport  qtbase-5 qtdeclarative-5 qtgraphicaleffects
+	qtquickcontrols2-5 kqqc2-desktop-style zlib))
+    (home-page "https://apps.kde.org/ktrip/")
+    (synopsis "Helps you navigate in public transport")
+    (description "This package allows you to find journeys between specified
+locations, departures for a specific station and shows real-time delay and
+disruption information.")
+    (license (list license:bsd-2 license:bsd-3 license:gpl2 license:gpl3
+	license:lgpl2.0))))
 
 (define-public kxstitch
   (package
