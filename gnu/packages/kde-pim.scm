@@ -21,6 +21,7 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages kde-pim)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system qt)
   #:use-module (guix download)
   #:use-module ((guix licenses) #:prefix license:)
@@ -850,6 +851,29 @@ protocol.  This library does not implement an IMAP client; it merely makes it
 easier to do so.")
     (license ;; GPL for programs, LGPL for libraries
      (list license:gpl2+ license:lgpl2.0+))))
+
+(define-public kitinerary
+  (package
+    (name "kitinerary")
+    (version "20.11.80")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://kde/stable/release-service/" version
+                           "/src/" name "-" version ".tar.xz"))
+       (sha256
+        (base32
+         "0x2mswj4fvb9371nhvahs6gvwwmibhcz07x8k5whycqib4hgzl87"))))
+    (build-system cmake-build-system)
+	(native-inputs (list extra-cmake-modules pkg-config))
+	(inputs (list kpkpass ki18n kcoreaddons kcontacts knotifications qtbase-5 qtdeclarative qtlocation
+	qtquickcontrols2))
+    (home-page
+	"https://apps.kde.org/cs/itinerary/")
+    (synopsis
+     "Digital travel assistant with a priority on protecting your privacy")
+    (description "")
+    (license license:lgpl2.0)))
 
 (define-public kldap
   (package
