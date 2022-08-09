@@ -29,6 +29,7 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix gexp)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system copy)
   #:use-module (guix build-system qt)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages boost)
@@ -115,6 +116,27 @@ the Plasma Desktop.  Breeze is the default theme for the KDE Plasma desktop.")
 Breeze is the default theme for the KDE Plasma desktop.")
     (license (list license:bsd-3                  ;cmake/FindSass.cmake
                    license:lgpl2.1+))))           ;<all other files>
+
+(define-public eink-lookandfeel
+  (let ((commit "4d7799c9388e976af107ef2644621e79f3a85914")
+        (revision "1"))
+    (package
+      (name "eink-lookandfeel")
+      (version "")
+      (source (origin
+                (method url-fetch)
+                (uri (string-append
+                      "https://invent.kde.org/niccolove/eink-lookandfeel/-/archive/"
+                      commit "/eink-lookandfeel-" commit ".tar.gz"))
+                (sha256
+                 (base32
+                  "06qlv2zb6svhfcx4kwq3ccz95c1nzf1bhd289y9zhql1n1d2as93"))))
+      (build-system copy-build-system)
+      (home-page "https://invent.kde.org/apol/plasma-ink")
+      (synopsis "EInk theme for Plasma")
+      (description "EInk configuration for KDE Plasma.")
+      ;; Missing license
+      (license #f))))
 
 (define-public kactivitymanagerd
   (package
