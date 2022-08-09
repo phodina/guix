@@ -25,6 +25,7 @@
 (define-module (gnu packages kde-plasma)
   #:use-module (guix packages)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix gexp)
   #:use-module (guix build-system cmake)
@@ -610,6 +611,21 @@ conjunction with the KDE Plasma Desktop.")
                    license:lgpl2.0+
                    license:lgpl2.1
                    license:lgpl3))))
+
+(define-public kwin-lowlatency
+  (package
+    (inherit kwin)
+    (name "kwin-lowlatency")
+    (version "5.23.5")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+	   (url "https://github.com/tildearrow/kwin-lowlatency")
+	   (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "1yn6vifj8f4bk5ni6pjsadjiapmdzyfn7yc9j30sd0rixsr5k1n9"))))))
 
 (define-public plasma-mobile
   (package
