@@ -21,6 +21,7 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages kde-utils)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system qt)
   #:use-module (guix download)
   #:use-module ((guix licenses) #:prefix license:)
@@ -513,6 +514,32 @@ filter tool.  All modifications to the data loaded can be endlessly undone or
 redone.")
     (license ;; GPL for programs, LGPL for libraries, FDL for documentation
      (list license:gpl2+ license:lgpl2.0+ license:fdl1.2+))))
+
+(define-public pikasso
+(let ((commit "b72ceb5485eb3af5f8fbce63f807045c4057f1bb")
+      (revision "1"))
+  (package
+    (name "pikasso")
+    (version "")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+	   "https://invent.kde.org/graphics/pikasso/-/archive/" commit "/pikasso-"
+	   commit ".tar.gz"))
+       (sha256
+        (base32
+         "0897x6nz6mj348kvb8y6aql61hlb3xb0frnpr1vkayvdwbg8fmx4"))))
+    (build-system cmake-build-system)
+	(native-inputs (list extra-cmake-modules))
+	;; TODO: Missing Corrosion
+	(inputs (list kirigami ki18n qtdeclarative-5 qtbase-5 qtquickcontrols2-5 qtsvg-5))
+    (home-page
+	"https://invent.kde.org/graphics/pikasso/")
+    (synopsis
+     "Simple drawing program")
+    (description "")
+    (license #f))))
 
 (define-public rsibreak
   (package
