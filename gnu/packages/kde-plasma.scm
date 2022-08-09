@@ -125,6 +125,30 @@ Breeze is the default theme for the KDE Plasma desktop.")
     (license (list license:bsd-3                  ;cmake/FindSass.cmake
                    license:lgpl2.1+))))           ;<all other files>
 
+(define-public eink-lookandfeel
+(let ((commit "8d0914bc179bb8f83c96aa2b1911cd12604954ce")
+      (revision "1"))
+  (package
+    (name "eink-lookandfeel")
+    (version "")
+    (source
+     (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version "/" name
+                                  "-" version ".tar.xz"))
+       (sha256
+        (base32
+         "1h4khxk6hz5b3pm98aflg9dadgpgb8c4xpcbw76dfdv7jw2r3cj7"))))
+    (build-system cmake-build-system)
+	(native-inputs (list extra-cmake-modules))
+    (home-page
+	"https://invent.kde.org/apol/plasma-ink")
+    (synopsis
+     "EInk theme for Plasma")
+    (description "")
+    (license #f))))
+
 (define-public kdecoration
   (package
     (name "kdecoration")
