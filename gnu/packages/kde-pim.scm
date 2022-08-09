@@ -1573,6 +1573,30 @@ and exchanging calendar data, vCalendar and iCalendar.")
 Virtual Contact File}) files to the KPeople contact management library.")
     (license license:lgpl2.1+)))
 
+(define-public kpkpass
+  (package
+    (name "kpkpass")
+    (version "20.11.80")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://kde/stable/release-service/" version
+                           "/src/" name "-" version ".tar.xz"))
+       (sha256
+        (base32
+         "1kiqzikyd322q7yb30gfb7m995a79947xswl5z9wdqxpxd21a6dm"))))
+    (build-system cmake-build-system)
+	(native-inputs (list extra-cmake-modules pkg-config))
+	(inputs (list ;ki18n kcoreaddons kcontacts knotifications
+	karchive qtbase-5)) ;qtdeclarative qtlocation
+	;qtquickcontrols2))
+    (home-page
+	"https://apps.kde.org/cs/itinerary/")
+    (synopsis
+     "Apple Wallet Pass reader")
+    (description "")
+    (license license:lgpl2.0)))
+
 (define-public kpimcommon
   (package
     (name "kpimcommon")
