@@ -21,7 +21,9 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages kde-pim)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system qt)
+  #:use-module (guix gexp)
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
@@ -29,6 +31,7 @@
   #:use-module (guix utils)
   #:use-module (gnu packages)
   #:use-module (gnu packages boost)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages cyrus-sasl)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages documentation)
@@ -850,6 +853,48 @@ protocol.  This library does not implement an IMAP client; it merely makes it
 easier to do so.")
     (license ;; GPL for programs, LGPL for libraries
      (list license:gpl2+ license:lgpl2.0+))))
+
+(define-public kitinerary
+  (package
+    (name "kitinerary")
+    (version "20.11.80")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://invent.kde.org/pim/kitinerary/-/archive/v"
+                    version "/kitinerary-v" version ".tar.gz"))
+              (sha256
+               (base32
+                "0j46gndarz8gkjiwqwkh1xgnxv4xbkwp1bxd72xia3i5dpx3dbah"))))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (replace 'check
+                          (lambda* (#:key tests? #:allow-other-keys)
+                            (when tests?
+                              (invoke "dbus-launch" "ctest" "-E"
+                               "(datatypestest|jsonlddocumenttest|mergeutiltest|knowledgedbtest|airportdbtest|pkpassextractortest|postprocessortest|calendarhandlertest|extractortest)")))))))
+    (native-inputs (list dbus extra-cmake-modules))
+    (inputs (list kpkpass
+                  kcalendarcore
+                  karchive
+                  ki18n
+                  kcoreaddons
+                  kcontacts
+                  kmime
+                  knotifications
+                  shared-mime-info
+                  qtbase-5
+                  qtdeclarative-5
+                  qtlocation
+                  qtquickcontrols2-5
+                  libxml2
+                  zlib))
+    (home-page "https://apps.kde.org/cs/itinerary/")
+    (synopsis
+     "Digital travel assistant with a priority on protecting your privacy")
+    (description "")
+    (license license:lgpl2.0)))
 
 (define-public kldap
   (package
