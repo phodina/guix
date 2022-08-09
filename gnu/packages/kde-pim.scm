@@ -23,6 +23,7 @@
 (define-module (gnu packages kde-pim)
   #:use-module (guix build-system qt)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
@@ -1546,6 +1547,27 @@ and exchanging calendar data, vCalendar and iCalendar.")
      "This plugins adds support for vCard (also known as @acronym{VCF,
 Virtual Contact File}) files to the KPeople contact management library.")
     (license license:lgpl2.1+)))
+
+(define-public kpkpass
+  (package
+    (name "kpkpass")
+    (version "22.08")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://invent.kde.org/pim/kpkpass")
+                    (commit (string-append "release/" version))))
+              (sha256
+               (base32
+                "1v71dvq4nvfw0xdiywgi3n0lblq3hh9f4dcr5d4f8gsxa2p9k4kl"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list karchive qtbase-5 shared-mime-info))
+    (home-page "https://invent.kde.org/pim/kpkpass")
+    (synopsis "Apple Wallet Pass reader")
+    (description "This package provides library to deal with Apple Wallet
+pass files.")
+    (license license:lgpl2.0+)))
 
 (define-public kpimcommon
   (package
