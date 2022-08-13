@@ -374,6 +374,35 @@ Almost completely customizable, Krusader is very user friendly, fast and looks
 great on your desktop.")
     (license license:gpl2+)))
 
+(define-public kpublictransport
+  (package
+    (name "kpublictransport")
+    (version "22.04.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://kde/stable/release-service/" version
+                    "/src/kpublictransport-" version ".tar.xz"))
+              (sha256
+               (base32
+                "05s8mpqn74vz1daim3qdyfg8n7b7n8f18hzcybiim4zxcy2k71rz"))))
+    (build-system qt-build-system)
+    (arguments
+     (list #:phases '(modify-phases %standard-phases
+                       (replace 'check
+                         (lambda* (#:key tests? #:allow-other-keys)
+                           (when tests?
+                             (invoke "ctest" "-E"
+                              "(mergeutiltest|departuretest|journeytest|networkconfigtest|locationhistorymodeltest|navitiaparsertest|otpparsertest|ivvassparsertest|cachetest|locationhistorymodeltest)")))))))
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list zlib qtdeclarative-5))
+    (home-page "https://api.kde.org/kdepim/kpublictransport/html/index.html")
+    (synopsis "Library for accessing realtime public transport data")
+    (description
+     "This pakckage provides library for accessing realtime public
+transport data and for performing public transport journey queries.")
+    (license (list license:lgpl2.0+))))
+
 (define-public kxstitch
   (package
     (name "kxstitch")
