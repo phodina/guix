@@ -883,6 +883,28 @@ and desktop experiences.")
     (license (list license:expat license:gpl2+ license:gpl3 license:lgpl2.1+
 	license:lgpl3))))
 
+(define-public kqqc2-desktop-style
+  (package
+    (name "kqqc2-desktop-style")
+    (version "5.94.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+	   "https://invent.kde.org/frameworks/qqc2-desktop-style/-/archive/v" version "/qqc2-desktop-style-v"
+	   version ".tar.gz"))
+       (sha256
+        (base32
+         "0pw0d91llrkdhvqcxlv2v453ds3078napq8nyr8c7z6dg3z9ph8f"))))
+    (build-system qt-build-system)
+	(native-inputs (list extra-cmake-modules))
+	(inputs (list kconfig kirigami qtdeclarative-5 qtquickcontrols2-5))
+    (home-page "https://invent.kde.org/frameworks/qqc2-desktop-style")
+    (synopsis "Qt Quick Controls 2: Desktop Style")
+    (description "This package provides QtQuickControls 2 style that uses
+QWidget's QStyle for painting.")
+    (license (list license:gpl2 license:gpl3 license:lgpl2.0 license:lgpl3))))
+
 (define-public kitemmodels
   (package
     (name "kitemmodels")
