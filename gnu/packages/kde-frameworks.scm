@@ -858,6 +858,31 @@ and feeling well on both mobile and desktop devices.  They ease the creation
 of applications that follow the Kirigami Human Interface Guidelines.")
     (license license:lgpl2.1+)))
 
+(define-public kirigami-addons
+  (package
+    (name "kirigami-addons")
+    (version "0.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+	   "https://invent.kde.org/libraries/kirigami-addons/-/archive/v" version
+	   "/kirigami-addons-v" version ".tar.gz"))
+       (sha256
+        (base32
+         "1zr8dpc7bzw6g3y0jaxsr2lqlxqwlcphchpk8iah6g1f3n9fq73r"))))
+    (build-system qt-build-system)
+	(arguments
+	(list #:tests? #f)) ;; TODO: failing test
+	(native-inputs (list extra-cmake-modules))
+ 	(inputs (list kirigami ki18n qtdeclarative-5 qtquickcontrols2-5))
+    (home-page "https://invent.kde.org/libraries/kirigami-addons")
+    (synopsis "Add-ons for the Kirigami framework")
+    (description "This package provides Kirigami components usable by both touch
+and desktop experiences.")
+    (license (list license:expat license:gpl2+ license:gpl3 license:lgpl2.1+
+	license:lgpl3))))
+
 (define-public kitemmodels
   (package
     (name "kitemmodels")
