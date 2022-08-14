@@ -1477,6 +1477,40 @@ on top of Baloo.")
 is controllable via voice or TV remote.")
     (license license:gpl2+)))
 
+(define-public plasma-thunderbolt
+  (package
+    (name "plasma-thunderbolt")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "0hjvkss0qfmwhrsba83wfxwxhikvzf56faan325ic0iv7fdaj3ns"))))
+    (build-system qt-build-system)
+    (native-inputs (list dbus extra-cmake-modules))
+    (arguments
+     (list #:tests? #f))
+    (inputs (list bolt
+                  kcmutils
+                  kcoreaddons
+                  kdbusaddons
+                  kdeclarative
+                  ki18n
+                  knotifications
+                  qtdeclarative-5))
+    (home-page "https://invent.kde.org/plasma/plasma-thunderbolt")
+    (synopsis "Plasma integration for controlling Thunderbolt devices")
+    (description "This package provides Plasma integration for controlling
+Thunderbolt devices.")
+    (license (list license:bsd-3 license:gpl2 license:gpl3))))
+
 (define-public plasmatube
   (package
     (name "plasmatube")
