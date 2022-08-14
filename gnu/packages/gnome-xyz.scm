@@ -954,6 +954,33 @@ style.")
 position when the mouse is moved rapidly.")
     (license license:gpl2)))
 
+(define-public tophat
+  (package
+    (name "tophat")
+    (version "2")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/fflewddur/tophat")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "0pl1s2k729abgcvsw5crh7vhrkbbzac1fr7f0w4m13jvblwvwmb2"))
+       (file-name (git-file-name name version))))
+    (build-system copy-build-system)
+    (arguments
+     `(#:install-plan
+       '(("." ,(string-append
+                "share/gnome-shell/extensions/"
+                "tophat@fflewddur.github.com")
+          #:include-regexp ("\\.js(on)?$" "\\.css$" "\\.ui$" "\\.png$"
+                            "\\.xml$" "\\.compiled$" "\\.gresource$")))))
+    (home-page "https://github.com/fflewddur/tophat")
+    (synopsis "System resource monitor for the GNOME shell")
+    (description "TopHat is an elegant system resource monitor for the GNOME shell.  It displays CPU, memory, and network activity in the GNOME top bar.")
+    (license license:gpl3+)))
+
 (define-public gnome-shell-extension-rounded-window-corners
   (package
     (name "gnome-shell-extension-rounded-window-corners")
