@@ -1250,6 +1250,44 @@ like GNOME, Unity, Budgie, Pantheon, XFCE, Mate, etc.")
 Shimmer Project.  It supports GNOME, Unity, and Xfce.")
     (license (list license:gpl2+ license:cc-by-sa3.0))))
 
+(define-public gnome-shell-theme-e-ink
+  (package
+    (name "gnome-shell-theme-e-ink")
+    (version "2.0.0")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/fujimo-t/gnome-shell-theme-e-ink")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "09b4dn5lcicniidm8p1kjycgfnmjw2dilacjs5k80rplkgn5qndm"))))
+    (build-system trivial-build-system)
+    (arguments
+     '(#:modules ((guix build utils))
+       #:builder
+       (begin
+         (use-modules (guix build utils))
+         (let* ((out (assoc-ref %outputs "out"))
+                (source (assoc-ref %build-inputs "source"))
+                (bash (assoc-ref %build-inputs "bash"))
+                (coreutils (assoc-ref %build-inputs  "coreutils"))
+                (themesdir (string-append out "/share/themes")))
+           (setenv "PATH"
+                   (string-append coreutils "/bin:"
+                                  (string-append bash "/bin:")))
+           (copy-recursively source (getcwd))
+           (patch-shebang "install.sh")
+           (mkdir-p themesdir)
+           (invoke "./install.sh" "-d" themesdir)
+           #t))))
+    (synopsis "GNOME Shell theme for E-Ink displays")
+    (description "This package provide Gnome Shell theme that is suitable for
+E-Ink displays.")
+    (home-page "https://github.com/fujimo-t/gnome-shell-theme-e-ink")
+    (license license:gpl2+)))
+
 (define-public matcha-theme
   (package
     (name "matcha-theme")
