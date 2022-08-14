@@ -954,6 +954,34 @@ style.")
 position when the mouse is moved rapidly.")
     (license license:gpl2)))
 
+(define-public gnome-shell-extension-rounded-window-corners
+  (package
+    (name "gnome-shell-extension-rounded-window-corners")
+    (version "5")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/yilozt/rounded-window-corners")
+             (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "0pl1s2k729abgcvsw5crh7vhrkbbzac1fr7f0w4m13jvblwvwmb8"))
+       (file-name (git-file-name name version))))
+    (build-system copy-build-system)
+    (arguments
+     `(#:install-plan
+       '(("." ,(string-append
+                "share/gnome-shell/extensions/"
+                "rounded-window-corners@yilozt.github.com")
+          #:include-regexp ("\\.js(on)?$" "\\.css$" "\\.ui$" "\\.png$"
+                            "\\.xml$" "\\.compiled$" "\\.gresource$")))))
+    (home-page "https://github.com/yilozt/rounded-window-corners")
+    (synopsis "Add rounded corners for all windows")
+    (description "This gnome-shell extension try to add rounded corners for all
+windows.")
+    (license license:gpl3)))
+
 (define-public gnome-shell-extension-burn-my-windows
   (package
     (name "gnome-shell-extension-burn-my-windows")
