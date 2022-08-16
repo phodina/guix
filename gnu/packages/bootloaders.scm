@@ -831,6 +831,9 @@ it fits within common partitioning schemes.")
 (define-public u-boot-pine64-lts
   (make-u-boot-sunxi64-package "pine64-lts" "aarch64-linux-gnu"))
 
+(define-public u-boot-pinephone
+  (make-u-boot-sunxi64-package "pinephone" "aarch64-linux-gnu"))
+
 (define-public u-boot-pinebook
   (let ((base (make-u-boot-sunxi64-package "pinebook" "aarch64-linux-gnu")))
     (package
