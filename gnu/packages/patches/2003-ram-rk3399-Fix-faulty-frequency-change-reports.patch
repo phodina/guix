@@ -1,0 +1,149 @@
+From patchwork Tue Jun 21 10:07:28 2022
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Lee Jones <lee.jones@linaro.org>
+X-Patchwork-Id: 1646010
+X-Patchwork-Delegate: ykai007@gmail.com
+Return-Path: <u-boot-bounces@lists.denx.de>
+X-Original-To: incoming@patchwork.ozlabs.org
+Delivered-To: patchwork-incoming@bilbo.ozlabs.org
+Authentication-Results: bilbo.ozlabs.org;
+	dkim=pass (2048-bit key;
+ unprotected) header.d=linaro.org header.i=@linaro.org header.a=rsa-sha256
+ header.s=google header.b=kQSoGEGh;
+	dkim-atps=neutral
+Authentication-Results: ozlabs.org;
+ spf=pass (sender SPF authorized) smtp.mailfrom=lists.denx.de
+ (client-ip=2a01:238:438b:c500:173d:9f52:ddab:ee01; helo=phobos.denx.de;
+ envelope-from=u-boot-bounces@lists.denx.de; receiver=<UNKNOWN>)
+Received: from phobos.denx.de (phobos.denx.de
+ [IPv6:2a01:238:438b:c500:173d:9f52:ddab:ee01])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest
+ SHA256)
+	(No client certificate requested)
+	by bilbo.ozlabs.org (Postfix) with ESMTPS id 4LS2Jj6HF0z9sG2
+	for <incoming@patchwork.ozlabs.org>; Tue, 21 Jun 2022 20:08:05 +1000 (AEST)
+Received: from h2850616.stratoserver.net (localhost [IPv6:::1])
+	by phobos.denx.de (Postfix) with ESMTP id 859E683B68;
+	Tue, 21 Jun 2022 12:07:42 +0200 (CEST)
+Authentication-Results: phobos.denx.de;
+ dmarc=pass (p=none dis=none) header.from=linaro.org
+Authentication-Results: phobos.denx.de;
+ spf=pass smtp.mailfrom=u-boot-bounces@lists.denx.de
+Authentication-Results: phobos.denx.de;
+	dkim=pass (2048-bit key;
+ unprotected) header.d=linaro.org header.i=@linaro.org header.b="kQSoGEGh";
+	dkim-atps=neutral
+Received: by phobos.denx.de (Postfix, from userid 109)
+ id 891E7839E9; Tue, 21 Jun 2022 12:07:39 +0200 (CEST)
+X-Spam-Checker-Version: SpamAssassin 3.4.2 (2018-09-13) on phobos.denx.de
+X-Spam-Level: 
+X-Spam-Status: No, score=-2.1 required=5.0 tests=BAYES_00,DKIM_SIGNED,
+ DKIM_VALID,DKIM_VALID_AU,DKIM_VALID_EF,SPF_HELO_NONE,SPF_PASS,
+ T_SCC_BODY_TEXT_LINE autolearn=ham autolearn_force=no version=3.4.2
+Received: from mail-wr1-x431.google.com (mail-wr1-x431.google.com
+ [IPv6:2a00:1450:4864:20::431])
+ (using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))
+ (No client certificate requested)
+ by phobos.denx.de (Postfix) with ESMTPS id 6145883A07
+ for <u-boot@lists.denx.de>; Tue, 21 Jun 2022 12:07:37 +0200 (CEST)
+Authentication-Results: phobos.denx.de;
+ dmarc=pass (p=none dis=none) header.from=linaro.org
+Authentication-Results: phobos.denx.de;
+ spf=pass smtp.mailfrom=lee.jones@linaro.org
+Received: by mail-wr1-x431.google.com with SMTP id c21so18191573wrb.1
+ for <u-boot@lists.denx.de>; Tue, 21 Jun 2022 03:07:37 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linaro.org; s=google;
+ h=from:to:cc:subject:date:message-id:in-reply-to:references
+ :mime-version:content-transfer-encoding;
+ bh=UsIQ7csyBJwRcYc0ptEtHopXzRqx4ZG4z/ztYxIySPA=;
+ b=kQSoGEGhuJqeZCNxx/V6uTmv6nB5bjly4VEIBCbzeEonjr8h2TTo7kZgf+D6f6h1WQ
+ pdbKq4IeCNcJz3iQUX9wt1/0A9eyRDbjEX37DJVMearo9wbfWUNebZAqTLZU+R61vvMz
+ jK0AHxAEdgFbdujysS/scCMNLERxuB+0PbxG1PGuWt5NKwp3dBKDF+JTqxP9RX+EPoGp
+ OuWibxQh1cXxhvN7P2IzrM/57W1fNlCOyoYVnDRLJbgml0YSOY1XB9PmkFkoi4OJGKCx
+ PlgsyJhrqbcYiWC+VeK27R65zND8nZ8GksFeRkcV/H0pOpxv3zYYuXX8xTEPvx76CkUc
+ Bqhg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=1e100.net; s=20210112;
+ h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
+ :references:mime-version:content-transfer-encoding;
+ bh=UsIQ7csyBJwRcYc0ptEtHopXzRqx4ZG4z/ztYxIySPA=;
+ b=YqM/r4p1kTa9j8+bF+YaC943HIdkOaJmvDBefG2i+X4IjlaVZnJx0kbHIQZ5WA+h9n
+ ZAyb1GB7jhaV8+ELFUhrIznKiq7KLA2zY3ZhS6g1XSGu6ZhfmsHQu/rW9ThcSqo21sc0
+ YGvK5D4/FTno9R1vYq0xB2DxUgfTcETO4cvqbcU5w2vPA73eQWBH5zuDN2XyZSzGRBdX
+ xQbWk+wDlmUA+/gCLvFWV16ZbRF8DkGjBmGtRTKlul6emibQvEqNJyE1KVCNOmSufhx7
+ dvBt4U1u4eUVhGMaB01D78CcmBITFT8UjZ/JHIxiGc1lpgtrjSk+sIXVV8m/zQR0yhU/
+ FUEg==
+X-Gm-Message-State: AJIora+5DCoixYsp6Q73WbydQY/9Eg7a+Brxjf8sHWHJ8TKkNeyfSsvb
+ TnezMuR/bx142teAMuvgQfyKMT5PX9CkFPTm
+X-Google-Smtp-Source: 
+ AGRyM1vcb0H2xRqPo/VDWMZq2Vefke7QQdtbWHBjcNR73iRKvZxqSmVe9GNs9yqAe/tpVW3yWWTG9Q==
+X-Received: by 2002:a5d:598e:0:b0:218:525b:4743 with SMTP id
+ n14-20020a5d598e000000b00218525b4743mr27143691wri.708.1655806056906;
+ Tue, 21 Jun 2022 03:07:36 -0700 (PDT)
+Received: from joneslee.c.googlers.com.com
+ (205.215.190.35.bc.googleusercontent.com. [35.190.215.205])
+ by smtp.gmail.com with ESMTPSA id
+ j19-20020a05600c1c1300b0039c5645c60fsm30368302wms.3.2022.06.21.03.07.36
+ (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+ Tue, 21 Jun 2022 03:07:36 -0700 (PDT)
+From: Lee Jones <lee.jones@linaro.org>
+To: lee.jones@linaro.org, sjg@chromium.org, philipp.tomsich@vrull.eu,
+ kever.yang@rock-chips.com
+Cc: cym@rock-chips.com,
+	u-boot@lists.denx.de
+Subject: [PATCH 2/3] ram: rk3399: Fix faulty frequency change reports
+Date: Tue, 21 Jun 2022 10:07:28 +0000
+Message-Id: <20220621100729.979275-2-lee.jones@linaro.org>
+X-Mailer: git-send-email 2.37.0.rc0.104.g0611611a94-goog
+In-Reply-To: <20220621100729.979275-1-lee.jones@linaro.org>
+References: <20220621100729.979275-1-lee.jones@linaro.org>
+MIME-Version: 1.0
+X-BeenThere: u-boot@lists.denx.de
+X-Mailman-Version: 2.1.39
+Precedence: list
+List-Id: U-Boot discussion <u-boot.lists.denx.de>
+List-Unsubscribe: <https://lists.denx.de/options/u-boot>,
+ <mailto:u-boot-request@lists.denx.de?subject=unsubscribe>
+List-Archive: <https://lists.denx.de/pipermail/u-boot/>
+List-Post: <mailto:u-boot@lists.denx.de>
+List-Help: <mailto:u-boot-request@lists.denx.de?subject=help>
+List-Subscribe: <https://lists.denx.de/listinfo/u-boot>,
+ <mailto:u-boot-request@lists.denx.de?subject=subscribe>
+Errors-To: u-boot-bounces@lists.denx.de
+Sender: "U-Boot" <u-boot-bounces@lists.denx.de>
+X-Virus-Scanned: clamav-milter 0.103.6 at phobos.denx.de
+X-Virus-Status: Clean
+
+Frequency changes to 400MHz are presently reported as:
+
+  lpddr4_set_rate_0: change freq to 400000000 mhz 0, 1
+
+This is obviously wrong by 6 orders of magnitude.
+
+Ensure frequency changes are reported accurately.
+
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Kever Yang <kever.yang@rock-chips.com>
+Tested-by: Xavier Drudis Ferran <xdrudis@tinet.cat>
+---
+ drivers/ram/rockchip/sdram_rk3399.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/ram/rockchip/sdram_rk3399.c b/drivers/ram/rockchip/sdram_rk3399.c
+index 0af0fa9e7b..34d6c93f95 100644
+--- a/drivers/ram/rockchip/sdram_rk3399.c
++++ b/drivers/ram/rockchip/sdram_rk3399.c
+@@ -2552,8 +2552,8 @@ static int lpddr4_set_rate(struct dram_info *dram,
+ 			       dfs_cfgs_lpddr4[ctl_fn].base.ddr_freq);
+ 
+ 		if (IS_ENABLED(CONFIG_RAM_ROCKCHIP_DEBUG))
+-			printf("%s: change freq to %d mhz %d, %d\n", __func__,
+-			       dfs_cfgs_lpddr4[ctl_fn].base.ddr_freq,
++			printf("%s: change freq to %dMHz %d, %d\n", __func__,
++			       dfs_cfgs_lpddr4[ctl_fn].base.ddr_freq / MHz,
+ 			       ctl_fn, phy_fn);
+ 	}
+ 

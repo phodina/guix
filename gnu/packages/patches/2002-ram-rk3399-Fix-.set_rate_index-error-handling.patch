@@ -1,0 +1,142 @@
+From patchwork Tue Jun 21 10:07:27 2022
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Lee Jones <lee.jones@linaro.org>
+X-Patchwork-Id: 1646009
+X-Patchwork-Delegate: ykai007@gmail.com
+Return-Path: <u-boot-bounces@lists.denx.de>
+X-Original-To: incoming@patchwork.ozlabs.org
+Delivered-To: patchwork-incoming@bilbo.ozlabs.org
+Authentication-Results: bilbo.ozlabs.org;
+	dkim=pass (2048-bit key;
+ unprotected) header.d=linaro.org header.i=@linaro.org header.a=rsa-sha256
+ header.s=google header.b=Mbzdh33v;
+	dkim-atps=neutral
+Authentication-Results: ozlabs.org;
+ spf=pass (sender SPF authorized) smtp.mailfrom=lists.denx.de
+ (client-ip=85.214.62.61; helo=phobos.denx.de;
+ envelope-from=u-boot-bounces@lists.denx.de; receiver=<UNKNOWN>)
+Received: from phobos.denx.de (phobos.denx.de [85.214.62.61])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest
+ SHA256)
+	(No client certificate requested)
+	by bilbo.ozlabs.org (Postfix) with ESMTPS id 4LS2JP68fkz9sG2
+	for <incoming@patchwork.ozlabs.org>; Tue, 21 Jun 2022 20:07:47 +1000 (AEST)
+Received: from h2850616.stratoserver.net (localhost [IPv6:::1])
+	by phobos.denx.de (Postfix) with ESMTP id 82A69839F9;
+	Tue, 21 Jun 2022 12:07:40 +0200 (CEST)
+Authentication-Results: phobos.denx.de;
+ dmarc=pass (p=none dis=none) header.from=linaro.org
+Authentication-Results: phobos.denx.de;
+ spf=pass smtp.mailfrom=u-boot-bounces@lists.denx.de
+Authentication-Results: phobos.denx.de;
+	dkim=pass (2048-bit key;
+ unprotected) header.d=linaro.org header.i=@linaro.org header.b="Mbzdh33v";
+	dkim-atps=neutral
+Received: by phobos.denx.de (Postfix, from userid 109)
+ id A462383E3A; Tue, 21 Jun 2022 12:07:38 +0200 (CEST)
+X-Spam-Checker-Version: SpamAssassin 3.4.2 (2018-09-13) on phobos.denx.de
+X-Spam-Level: 
+X-Spam-Status: No, score=-2.1 required=5.0 tests=BAYES_00,DKIM_SIGNED,
+ DKIM_VALID,DKIM_VALID_AU,DKIM_VALID_EF,SPF_HELO_NONE,SPF_PASS,
+ T_SCC_BODY_TEXT_LINE autolearn=ham autolearn_force=no version=3.4.2
+Received: from mail-wr1-x431.google.com (mail-wr1-x431.google.com
+ [IPv6:2a00:1450:4864:20::431])
+ (using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))
+ (No client certificate requested)
+ by phobos.denx.de (Postfix) with ESMTPS id 7924F839E9
+ for <u-boot@lists.denx.de>; Tue, 21 Jun 2022 12:07:36 +0200 (CEST)
+Authentication-Results: phobos.denx.de;
+ dmarc=pass (p=none dis=none) header.from=linaro.org
+Authentication-Results: phobos.denx.de;
+ spf=pass smtp.mailfrom=lee.jones@linaro.org
+Received: by mail-wr1-x431.google.com with SMTP id o8so18194690wro.3
+ for <u-boot@lists.denx.de>; Tue, 21 Jun 2022 03:07:36 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linaro.org; s=google;
+ h=from:to:cc:subject:date:message-id:mime-version
+ :content-transfer-encoding;
+ bh=yYEs2kymqeO1F8xZg74HglGthhe9hA9X35ECSAhGX9c=;
+ b=Mbzdh33vCRnNsH727S16kDG+WlCYNjvce3WUwC6lkX4t5Y6EoDXWDLOn9VIkRW0yu+
+ zH3o09soiw5/are8P9YOvCPogexJl1lXdr0P3iUayfchbzV5rxNRezLwr411j3KGZU9z
+ 5yCJXmVR3Q72JMBtWbQgdr5QpJM4egAOLHagkG55u8c6kqopxL6WqHpc15Ro9X672Myn
+ iXyaEkyBZxzI00ojpbxREMncI9/wzqvCveJPGxSp78uxGyAnF8j76SVVPGNVMejqlOuP
+ C+doE5nO8OR+Bhtfr6gyRW/ilKdg0tk4VZ7Ro8YwbdWHgvZbou9dnUqCiVsSsPOr2/YD
+ BsXw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=1e100.net; s=20210112;
+ h=x-gm-message-state:from:to:cc:subject:date:message-id:mime-version
+ :content-transfer-encoding;
+ bh=yYEs2kymqeO1F8xZg74HglGthhe9hA9X35ECSAhGX9c=;
+ b=mJHl0xU8fbya0HKYPbDrgdAb4XPi6wjDBgvbmziV83CniNhcmkZf7foyJjSM2kQn+q
+ CqX7TVPZ/UmD0dfMzz0hoAJNiuaV1S6P8Zgf4LZXc2itrKolhRE1clhqKlmF50TbxJ8Q
+ LTBzP3LWkC75K8SUCP/0runZiXVeAerjfZbweft5wepDf55GEncmN6ZFEmFpnH69AfNv
+ JEw2UHPaAyZ0yfTedRV6ZhaOK+8xHRYA7GgekJQZqTlaoEp6Okw/zeAOQNPMy0NF/gYU
+ 2AgpTs2PSyyGG+lg53vZnXnaqjN8UWmJ4N2YoQCYkAvt6QrWJ4y6QG4bXLaC3PU2jkYl
+ VE0A==
+X-Gm-Message-State: AJIora/H3CkprCuxoxIXfB2kXuUsOcur6YTMfRy6RM7lglmON/No0LO6
+ emCF3oRb1P2ybeWLWVSh2lu4GQ==
+X-Google-Smtp-Source: 
+ AGRyM1thtuF3ZwRCGMZeXw+awa/Pwydshqo0ldGIAaAw3NZiV1Zr1p+6lqVEFRAKa5fyLyl9DNrjlg==
+X-Received: by 2002:adf:eb4d:0:b0:218:45b6:8fdb with SMTP id
+ u13-20020adfeb4d000000b0021845b68fdbmr28845892wrn.77.1655806055930;
+ Tue, 21 Jun 2022 03:07:35 -0700 (PDT)
+Received: from joneslee.c.googlers.com.com
+ (205.215.190.35.bc.googleusercontent.com. [35.190.215.205])
+ by smtp.gmail.com with ESMTPSA id
+ j19-20020a05600c1c1300b0039c5645c60fsm30368302wms.3.2022.06.21.03.07.34
+ (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+ Tue, 21 Jun 2022 03:07:35 -0700 (PDT)
+From: Lee Jones <lee.jones@linaro.org>
+To: lee.jones@linaro.org, sjg@chromium.org, philipp.tomsich@vrull.eu,
+ kever.yang@rock-chips.com
+Cc: cym@rock-chips.com,
+	u-boot@lists.denx.de
+Subject: [PATCH 1/3] ram: rk3399: Fix .set_rate_index() error handling
+Date: Tue, 21 Jun 2022 10:07:27 +0000
+Message-Id: <20220621100729.979275-1-lee.jones@linaro.org>
+X-Mailer: git-send-email 2.37.0.rc0.104.g0611611a94-goog
+MIME-Version: 1.0
+X-BeenThere: u-boot@lists.denx.de
+X-Mailman-Version: 2.1.39
+Precedence: list
+List-Id: U-Boot discussion <u-boot.lists.denx.de>
+List-Unsubscribe: <https://lists.denx.de/options/u-boot>,
+ <mailto:u-boot-request@lists.denx.de?subject=unsubscribe>
+List-Archive: <https://lists.denx.de/pipermail/u-boot/>
+List-Post: <mailto:u-boot@lists.denx.de>
+List-Help: <mailto:u-boot-request@lists.denx.de?subject=help>
+List-Subscribe: <https://lists.denx.de/listinfo/u-boot>,
+ <mailto:u-boot-request@lists.denx.de?subject=subscribe>
+Errors-To: u-boot-bounces@lists.denx.de
+Sender: "U-Boot" <u-boot-bounces@lists.denx.de>
+X-Virus-Scanned: clamav-milter 0.103.6 at phobos.denx.de
+X-Virus-Status: Clean
+
+Functions pointed to by this op pointer can return non-zero values
+indicating an error.  Ensure any error value is propagated back up the
+call-chain.
+
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Kever Yang <kever.yang@rock-chips.com>
+Tested-by: Xavier Drudis Ferran <xdrudis@tinet.cat>
+---
+ drivers/ram/rockchip/sdram_rk3399.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/ram/rockchip/sdram_rk3399.c b/drivers/ram/rockchip/sdram_rk3399.c
+index c0a06dcaed..0af0fa9e7b 100644
+--- a/drivers/ram/rockchip/sdram_rk3399.c
++++ b/drivers/ram/rockchip/sdram_rk3399.c
+@@ -3005,7 +3005,9 @@ static int sdram_init(struct dram_info *dram,
+ 	params->base.stride = calculate_stride(params);
+ 	dram_all_config(dram, params);
+ 
+-	dram->ops->set_rate_index(dram, params);
++	ret = dram->ops->set_rate_index(dram, params);
++	if (ret)
++		return ret;
+ 
+ 	debug("Finish SDRAM initialization...\n");
+ 	return 0;

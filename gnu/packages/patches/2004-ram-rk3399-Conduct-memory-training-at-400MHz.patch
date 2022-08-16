@@ -1,0 +1,218 @@
+From patchwork Tue Jun 21 10:07:29 2022
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Lee Jones <lee.jones@linaro.org>
+X-Patchwork-Id: 1646011
+X-Patchwork-Delegate: ykai007@gmail.com
+Return-Path: <u-boot-bounces@lists.denx.de>
+X-Original-To: incoming@patchwork.ozlabs.org
+Delivered-To: patchwork-incoming@bilbo.ozlabs.org
+Authentication-Results: bilbo.ozlabs.org;
+	dkim=pass (2048-bit key;
+ unprotected) header.d=linaro.org header.i=@linaro.org header.a=rsa-sha256
+ header.s=google header.b=zXJiEQTA;
+	dkim-atps=neutral
+Authentication-Results: ozlabs.org;
+ spf=pass (sender SPF authorized) smtp.mailfrom=lists.denx.de
+ (client-ip=85.214.62.61; helo=phobos.denx.de;
+ envelope-from=u-boot-bounces@lists.denx.de; receiver=<UNKNOWN>)
+Received: from phobos.denx.de (phobos.denx.de [85.214.62.61])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits))
+	(No client certificate requested)
+	by bilbo.ozlabs.org (Postfix) with ESMTPS id 4LS2Jw1BFFz9sG2
+	for <incoming@patchwork.ozlabs.org>; Tue, 21 Jun 2022 20:08:16 +1000 (AEST)
+Received: from h2850616.stratoserver.net (localhost [IPv6:::1])
+	by phobos.denx.de (Postfix) with ESMTP id 0B80083EBE;
+	Tue, 21 Jun 2022 12:07:46 +0200 (CEST)
+Authentication-Results: phobos.denx.de;
+ dmarc=pass (p=none dis=none) header.from=linaro.org
+Authentication-Results: phobos.denx.de;
+ spf=pass smtp.mailfrom=u-boot-bounces@lists.denx.de
+Authentication-Results: phobos.denx.de;
+	dkim=pass (2048-bit key;
+ unprotected) header.d=linaro.org header.i=@linaro.org header.b="zXJiEQTA";
+	dkim-atps=neutral
+Received: by phobos.denx.de (Postfix, from userid 109)
+ id 5B5B883E7E; Tue, 21 Jun 2022 12:07:42 +0200 (CEST)
+X-Spam-Checker-Version: SpamAssassin 3.4.2 (2018-09-13) on phobos.denx.de
+X-Spam-Level: 
+X-Spam-Status: No, score=-2.1 required=5.0 tests=BAYES_00,DKIM_SIGNED,
+ DKIM_VALID,DKIM_VALID_AU,DKIM_VALID_EF,SPF_HELO_NONE,SPF_PASS,
+ T_SCC_BODY_TEXT_LINE autolearn=ham autolearn_force=no version=3.4.2
+Received: from mail-wr1-x42c.google.com (mail-wr1-x42c.google.com
+ [IPv6:2a00:1450:4864:20::42c])
+ (using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))
+ (No client certificate requested)
+ by phobos.denx.de (Postfix) with ESMTPS id 1F44783B2F
+ for <u-boot@lists.denx.de>; Tue, 21 Jun 2022 12:07:38 +0200 (CEST)
+Authentication-Results: phobos.denx.de;
+ dmarc=pass (p=none dis=none) header.from=linaro.org
+Authentication-Results: phobos.denx.de;
+ spf=pass smtp.mailfrom=lee.jones@linaro.org
+Received: by mail-wr1-x42c.google.com with SMTP id q9so18177485wrd.8
+ for <u-boot@lists.denx.de>; Tue, 21 Jun 2022 03:07:38 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linaro.org; s=google;
+ h=from:to:cc:subject:date:message-id:in-reply-to:references
+ :mime-version:content-transfer-encoding;
+ bh=Hm5+f+UCieW/RP46BXn2BZ6sVQc82WO3wWo6e0nQBpA=;
+ b=zXJiEQTANf+cfEmosWPRo5N6O0EDZwd9fgS509UOUlbHMg3p0BrsQEFiwfhEyM+Zyo
+ s1YQhPaZEhljPOOdf6er9u8P5KXQnsNF3nR+tONxpVkIk1NZqwRJufIgJlwW9Ob9mNcx
+ 2JNt+KehjMXIwUSDDTVflhwQVA8VyaoxY4SH5+umpZjVpZadSMEd2VMKJNVvTh1M1Ew+
+ uwJGb77iJ83pMyyWGIQ8Te8UL6bqHVxM6sNBRJpBBq+8fbnBzFIHjoH8A06DkaJB1dZC
+ xpXSEupwmVf85VdVlvWeBVT/tAooGKsOvlruuiaHpRKZ1hzwL6DiBXfFPS/M2dk8A5X8
+ tlgw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=1e100.net; s=20210112;
+ h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
+ :references:mime-version:content-transfer-encoding;
+ bh=Hm5+f+UCieW/RP46BXn2BZ6sVQc82WO3wWo6e0nQBpA=;
+ b=yiF3tdaTl4a6GcvbaS06NRUrwUZ8sNMSXaPkNjUbIX+MGqZpAFL0KkGBKwjinu9N5s
+ LzjDlq0NiVBP1aEvQ4kLP+92Br58nYUdwds7ApNo7etAn2XX+dGs1zkz3e7JLoJb/caW
+ bpZZw2JKDYrnj2+vT4nr3dyLpLeThofvi7BU32VQ0BFMmqolF4e79UF94l+S3UxLLRyr
+ xsDejdOX+q2espnBpsCF8aVoptH0vcAVk7ciUaCAUttrWCbbVBR3GUNlR/KImtW1PLfb
+ x5sBMQywBo3MKFcC/xRKXy9+4eYP1sj7XZEkeaLxwJiHJ/g9A0HdA75VKYH5dzTU36L3
+ qjzg==
+X-Gm-Message-State: AJIora+HZ7JNeu9dWQkBzp1z71iE9qOMza4F541K9w3HbI9ruU3M+8Jz
+ LsGMtIa+t7Y2KBeCtcG4dJiICw==
+X-Google-Smtp-Source: 
+ AGRyM1tzV1iW4Mhj3JCYoWrUokvp2vGXJpFT0vuZER7ZpxD19uykXlcqHsiZGMKw4Y1mnBwVvijOHw==
+X-Received: by 2002:adf:ef52:0:b0:21b:81e8:5d0b with SMTP id
+ c18-20020adfef52000000b0021b81e85d0bmr19962026wrp.502.1655806057627;
+ Tue, 21 Jun 2022 03:07:37 -0700 (PDT)
+Received: from joneslee.c.googlers.com.com
+ (205.215.190.35.bc.googleusercontent.com. [35.190.215.205])
+ by smtp.gmail.com with ESMTPSA id
+ j19-20020a05600c1c1300b0039c5645c60fsm30368302wms.3.2022.06.21.03.07.36
+ (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+ Tue, 21 Jun 2022 03:07:37 -0700 (PDT)
+From: Lee Jones <lee.jones@linaro.org>
+To: lee.jones@linaro.org, sjg@chromium.org, philipp.tomsich@vrull.eu,
+ kever.yang@rock-chips.com
+Cc: cym@rock-chips.com,
+	u-boot@lists.denx.de
+Subject: [PATCH 3/3] ram: rk3399: Conduct memory training at 400MHz
+Date: Tue, 21 Jun 2022 10:07:29 +0000
+Message-Id: <20220621100729.979275-3-lee.jones@linaro.org>
+X-Mailer: git-send-email 2.37.0.rc0.104.g0611611a94-goog
+In-Reply-To: <20220621100729.979275-1-lee.jones@linaro.org>
+References: <20220621100729.979275-1-lee.jones@linaro.org>
+MIME-Version: 1.0
+X-BeenThere: u-boot@lists.denx.de
+X-Mailman-Version: 2.1.39
+Precedence: list
+List-Id: U-Boot discussion <u-boot.lists.denx.de>
+List-Unsubscribe: <https://lists.denx.de/options/u-boot>,
+ <mailto:u-boot-request@lists.denx.de?subject=unsubscribe>
+List-Archive: <https://lists.denx.de/pipermail/u-boot/>
+List-Post: <mailto:u-boot@lists.denx.de>
+List-Help: <mailto:u-boot-request@lists.denx.de?subject=help>
+List-Subscribe: <https://lists.denx.de/listinfo/u-boot>,
+ <mailto:u-boot-request@lists.denx.de?subject=subscribe>
+Errors-To: u-boot-bounces@lists.denx.de
+Sender: "U-Boot" <u-boot-bounces@lists.denx.de>
+X-Virus-Scanned: clamav-milter 0.103.6 at phobos.denx.de
+X-Virus-Status: Clean
+
+Currently the default initialisation frequency is 50MHz.  Although
+this does appear to be suitable for some LPDDR4 RAM chips, training at
+this low frequency has been seen to cause Column errors, leading to
+Capacity check errors on others.
+
+Here we force RAM initialisation to happen at 400MHz before ramping up
+to the final value running value of 800MHz after everything has been
+successfully configured.
+
+Link: https://lore.kernel.org/u-boot/Yo4v3jUeHXTovjOH@google.com/
+Suggested-by: YouMin Chen <cym@rock-chips.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Kever Yang <kever.yang@rock-chips.com>
+Tested-by: Xavier Drudis Ferran <xdrudis@tinet.cat>
+---
+ drivers/ram/rockchip/sdram_rk3399.c | 36 +++++++++++++++++------------
+ 1 file changed, 21 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/ram/rockchip/sdram_rk3399.c b/drivers/ram/rockchip/sdram_rk3399.c
+index 34d6c93f95..b05c5925d5 100644
+--- a/drivers/ram/rockchip/sdram_rk3399.c
++++ b/drivers/ram/rockchip/sdram_rk3399.c
+@@ -85,7 +85,7 @@ struct sdram_rk3399_ops {
+ 	int (*data_training_first)(struct dram_info *dram, u32 channel, u8 rank,
+ 				   struct rk3399_sdram_params *sdram);
+ 	int (*set_rate_index)(struct dram_info *dram,
+-			      struct rk3399_sdram_params *params);
++			      struct rk3399_sdram_params *params, u32 ctl_fn);
+ 	void (*modify_param)(const struct chan_info *chan,
+ 			     struct rk3399_sdram_params *params);
+ 	struct rk3399_sdram_params *
+@@ -1644,7 +1644,8 @@ static int data_training_first(struct dram_info *dram, u32 channel, u8 rank,
+ }
+ 
+ static int switch_to_phy_index1(struct dram_info *dram,
+-				struct rk3399_sdram_params *params)
++				struct rk3399_sdram_params *params,
++				u32 unused)
+ {
+ 	u32 channel;
+ 	u32 *denali_phy;
+@@ -2539,26 +2540,25 @@ static int lpddr4_set_ctl(struct dram_info *dram,
+ }
+ 
+ static int lpddr4_set_rate(struct dram_info *dram,
+-			   struct rk3399_sdram_params *params)
++			    struct rk3399_sdram_params *params,
++			    u32 ctl_fn)
+ {
+-	u32 ctl_fn;
+ 	u32 phy_fn;
+ 
+-	for (ctl_fn = 0; ctl_fn < 2; ctl_fn++) {
+-		phy_fn = lpddr4_get_phy_fn(params, ctl_fn);
++	phy_fn = lpddr4_get_phy_fn(params, ctl_fn);
+ 
+-		lpddr4_set_phy(dram, params, phy_fn, &dfs_cfgs_lpddr4[ctl_fn]);
+-		lpddr4_set_ctl(dram, params, ctl_fn,
+-			       dfs_cfgs_lpddr4[ctl_fn].base.ddr_freq);
++	lpddr4_set_phy(dram, params, phy_fn, &dfs_cfgs_lpddr4[ctl_fn]);
++	lpddr4_set_ctl(dram, params, ctl_fn,
++		       dfs_cfgs_lpddr4[ctl_fn].base.ddr_freq);
+ 
+-		if (IS_ENABLED(CONFIG_RAM_ROCKCHIP_DEBUG))
+-			printf("%s: change freq to %dMHz %d, %d\n", __func__,
+-			       dfs_cfgs_lpddr4[ctl_fn].base.ddr_freq / MHz,
+-			       ctl_fn, phy_fn);
+-	}
++	if (IS_ENABLED(CONFIG_RAM_ROCKCHIP_DEBUG))
++		printf("%s: change freq to %dMHz %d, %d\n", __func__,
++		       dfs_cfgs_lpddr4[ctl_fn].base.ddr_freq / MHz,
++		       ctl_fn, phy_fn);
+ 
+ 	return 0;
+ }
++
+ #endif /* CONFIG_RAM_RK3399_LPDDR4 */
+ 
+ /* CS0,n=1
+@@ -2955,6 +2955,12 @@ static int sdram_init(struct dram_info *dram,
+ 		params->ch[ch].cap_info.rank = rank;
+ 	}
+ 
++#if defined(CONFIG_RAM_RK3399_LPDDR4)
++	/* LPDDR4 needs to be trained at 400MHz */
++	lpddr4_set_rate(dram, params, 0);
++	params->base.ddr_freq = dfs_cfgs_lpddr4[0].base.ddr_freq / MHz;
++#endif
++
+ 	params->base.num_channels = 0;
+ 	for (channel = 0; channel < 2; channel++) {
+ 		const struct chan_info *chan = &dram->chan[channel];
+@@ -3005,7 +3011,7 @@ static int sdram_init(struct dram_info *dram,
+ 	params->base.stride = calculate_stride(params);
+ 	dram_all_config(dram, params);
+ 
+-	ret = dram->ops->set_rate_index(dram, params);
++	ret = dram->ops->set_rate_index(dram, params, 1);
+ 	if (ret)
+ 		return ret;
+ 

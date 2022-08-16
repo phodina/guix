@@ -1930,6 +1930,15 @@ dist_patch_DATA =						\
   %D%/packages/patches/u-boot-rockchip-inno-usb.patch		\
   %D%/packages/patches/u-boot-sifive-prevent-reloc-initrd-fdt.patch	\
   %D%/packages/patches/u-boot-rk3399-enable-emmc-phy.patch	\
+  %D%/packages/patches/1001-Correct-boot-order-to-be-USB-SD-eMMC.patch
+  %D%/packages/patches/1002-rockchip-Add-initial-support-for-the-PinePhone-Pro.patch
+  %D%/packages/patches/1003-Configure-USB-power-settings-for-PinePhone-Pro.patch
+  %D%/packages/patches/1004-mtd-spi-nor-ids-Add-GigaDevice-GD25LQ128E-entry.patch
+  %D%/packages/patches/2001-mmc-sdhci-allow-disabling-sdma-in-spl.patch
+  %D%/packages/patches/2002-ram-rk3399-Fix-.set_rate_index-error-handling.patch
+  %D%/packages/patches/2003-ram-rk3399-Fix-faulty-frequency-change-reports.patch
+  %D%/packages/patches/2004-ram-rk3399-Conduct-memory-training-at-400MHz.patch
+  %D%/gnu/packages/patches/3002-pine64-pinephonePro-SPI-support.patch
   %D%/packages/patches/ucx-tcp-iface-ioctl.patch		\
   %D%/packages/patches/ultrastar-deluxe-no-freesans.patch		\
   %D%/packages/patches/ungoogled-chromium-extension-search-path.patch	\

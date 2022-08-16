@@ -534,6 +534,18 @@ tree binary files.  These are board description files used by Linux and BSD.")
   ;; https://lists.denx.de/pipermail/u-boot/2021-October/462728.html
   (search-patch "u-boot-allow-disabling-openssl.patch"))
 
+(define %u-boot-rk3399-pinephone-pro-patches
+  (search-patches
+  "1001-Correct-boot-order-to-be-USB-SD-eMMC.patch"
+  "1002-rockchip-Add-initial-support-for-the-PinePhone-Pro.patch"
+  "1003-Configure-USB-power-settings-for-PinePhone-Pro.patch"
+  "1004-mtd-spi-nor-ids-Add-GigaDevice-GD25LQ128E-entry.patch"
+  "2001-mmc-sdhci-allow-disabling-sdma-in-spl.patch"
+  "2002-ram-rk3399-Fix-.set_rate_index-error-handling.patch"
+  "2003-ram-rk3399-Fix-faulty-frequency-change-reports.patch"
+  "2004-ram-rk3399-Conduct-memory-training-at-400MHz.patch"
+  "3002-pine64-pinephonePro-SPI-support.patch"))
+
 (define %u-boot-rk3399-enable-emmc-phy-patch
   ;; Fix emmc boot on rockpro64 and pinebook-pro, this was a regression
   ;; therefore should hopefully be fixed when updating u-boot.
@@ -546,10 +558,11 @@ tree binary files.  These are board description files used by Linux and BSD.")
     (version "2022.04")
     (source (origin
 	      (patches
-               (list %u-boot-rockchip-inno-usb-patch
+               (cons* %u-boot-rockchip-inno-usb-patch
                      %u-boot-allow-disabling-openssl-patch
                      %u-boot-sifive-prevent-relocating-initrd-fdt
-                     %u-boot-rk3399-enable-emmc-phy-patch))
+                     %u-boot-rk3399-enable-emmc-phy-patch
+                     %u-boot-rk3399-pinephone-pro-patches))
               (method url-fetch)
               (uri (string-append
                     "https://ftp.denx.de/pub/u-boot/"
@@ -833,6 +846,9 @@ it fits within common partitioning schemes.")
 
 (define-public u-boot-pinephone
   (make-u-boot-sunxi64-package "pinephone" "aarch64-linux-gnu"))
+
+(define-public u-boot-pinephone-pro
+  (make-u-boot-sunxi64-package "pinephone-pro-rk3399" "aarch64-linux-gnu"))
 
 (define-public u-boot-pinebook
   (let ((base (make-u-boot-sunxi64-package "pinebook" "aarch64-linux-gnu")))
