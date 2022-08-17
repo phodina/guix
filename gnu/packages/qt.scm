@@ -4233,3 +4233,49 @@ and import their menus over DBus.")
 services using the XML based SOAP protocol and without the need for a dedicated
 web server.")
     (license (list license:gpl2 license:gpl3))))
+
+(define-public signond
+  (package
+    (name "signond")
+    (version "8.61")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/accounts-sso/signond")
+                    (commit (string-append "VERSION_" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0k6saz5spys4a4p6ws0ayrjks2gqdqvz7zfmlhdpz5axha0gbqq4"))))
+    (build-system qt-build-system)
+    (native-inputs (list doxygen pkg-config qtbase-5 qttools-5))
+    (inputs (list dbus glib libaccounts-glib))
+    (arguments
+     (list #:tests? #f ; Figure out how to run tests
+           #:phases #~(modify-phases %standard-phases
+                        (delete 'validate-runpath)
+                        (replace 'configure
+                          (lambda _
+                            (substitute* "src/signond/signond.pro"
+                              (("/etc/")
+                               (string-append #$output "/etc/")))
+                            (substitute* '("tests/extensions/extensions.pri"
+                                           "tests/signond-tests/mock-ac-plugin/plugin.pro"
+                                           "tests/signond-tests/identity-tool.pro"
+                                           "tests/signond-tests/mock-ac-plugin/identity-ac-helper.pro"
+                                           "tests/libsignon-qt-tests/libsignon-qt-tests.pro"
+                                           "tests/signond-tests/signond-tests.pri")
+                              (("QMAKE_RPATHDIR = \\$\\$\\{QMAKE_LIBDIR\\}")
+                               (string-append "QMAKE_RPATHDIR = "
+                                              #$output "/lib:"
+                                              #$output "/lib/signon")))
+                            (invoke "qmake"
+                                    (string-append "PREFIX="
+                                                   #$output)
+                                    (string-append "LIBDIR="
+                                                   #$output "/lib")))))))
+    (home-page "http://accounts-sso.gitlab.io/signond/index.html")
+    (synopsis "D-Bus service which performs user authentication")
+    (description "This package provides A D-Bus service which performs user
+authentication on behalf of its clients")
+    (license license:lgpl2.1+)))
