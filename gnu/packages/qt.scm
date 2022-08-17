@@ -49,6 +49,7 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system meson)
   #:use-module (guix build-system trivial)
   #:use-module (guix build-system python)
   #:use-module (guix build-system qt)
@@ -60,6 +61,7 @@
   #:use-module (gnu packages bash)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bison)
+  #:use-module (gnu packages check)
   #:use-module (gnu packages cmake)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cups)
@@ -4241,6 +4243,62 @@ web server.")
     (home-page "https://accounts-sso.gitlab.io/")
     (synopsis "Qt5 bindings for libaccounts-glib")
     (description #~(package-description libaccounts-glib))
+    (license license:lgpl2.1+)))
+
+(define-public libsignon-glib
+  (package
+    (name "libsignon-glib")
+    (version "2.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/accounts-sso/libsignon-glib")
+                    (commit (string-append "VERSION_" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0vgckvv78kzp54drj0dclqi0gfgrz6ihyjlks8z0cbd6k01r1dfy"))))
+    (build-system meson-build-system)
+    (arguments
+     (list #:tests? #f ;TODO: ninja: no work to do.
+           #:imported-modules `((guix build python-build-system)
+                                ,@%meson-build-system-modules)
+           #:modules '(((guix build python-build-system)
+                        #:select (python-version))
+                       (guix build meson-build-system)
+                       (guix build utils))
+           #:configure-flags #~(list "-Dtests=true"
+                                     (string-append "-Dpy-overrides-dir="
+                                      #$output "/lib/python"
+                                      (python-version #$(this-package-input
+                                                         "python"))
+                                      "/site-packages/gi/overrides"))
+           #:phases #~(modify-phases %standard-phases
+                        (add-after 'unpack 'get-submodule
+                          (lambda* _
+                            (copy-recursively #$(origin
+                                                  (method git-fetch)
+                                                  (uri (git-reference (url
+                                                                       "https://gitlab.com/accounts-sso/signon-dbus-specification")
+                                                                      (commit
+                                                                       "67487954653006ebd0743188342df65342dc8f9b")))
+                                                  (sha256 (base32
+                                                           "0w2wlm2vbgdw4fr3bd8z0x9dchl3l3za1gzphwhg4s6val1yk2rj")))
+                                              "libsignon-glib/interfaces"))))))
+    (native-inputs (list dbus
+                         dbus-test-runner
+                         `(,glib "bin")
+                         gobject-introspection
+                         gtk-doc
+                         pkg-config
+                         vala))
+    (inputs (list check signond python python-pygobject))
+    (propagated-inputs (list glib))
+    (home-page "https://accounts-sso.gitlab.io/libsignon-glib/")
+    (synopsis "Single signon authentication library for GLib applications")
+    (description
+     "This package provides single signon authentication library for
+GLib applications.")
     (license license:lgpl2.1+)))
 
 (define-public signond
