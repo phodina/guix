@@ -932,8 +932,35 @@
        #:cargo-development-inputs
        (("rust-gir-format-check" ,rust-gir-format-check-0.1))))))
 
+(define-public rust-gio-sys-0.15
+  (package
+    (name "rust-gio-sys")
+    (version "0.15.10")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "gio-sys" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "13fgmc2xdzg9qk9l3nlp1bilwn6466mrqbiq4fhc9qkia93pl59j"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-glib-sys" ,rust-glib-sys-0.15)
+                       ("rust-gobject-sys" ,rust-gobject-sys-0.15)
+                       ("rust-libc" ,rust-libc-0.2)
+                       ("rust-system-deps" ,rust-system-deps-6)
+                       ("rust-winapi" ,rust-winapi-0.3))))
+    (inputs
+     (list glib))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "FFI bindings to libgio-2.0")
+    (description "This package provides FFI bindings to libgio-2.0.")
+    (license license:expat)))
+
 (define-public rust-gio-sys-0.14
   (package
+    (inherit rust-gio-sys-0.15)
     (name "rust-gio-sys")
     (version "0.14.0")
     (source
@@ -943,7 +970,6 @@
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "1yj8dx2rna07av3jwyd93s832kw8dg14zxxwqj3w5z2pdvv1v960"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build?
        #t
@@ -952,13 +978,7 @@
         ("rust-gobject-sys" ,rust-gobject-sys-0.14)
         ("rust-libc" ,rust-libc-0.2)
         ("rust-system-deps" ,rust-system-deps-3)
-        ("rust-winapi" ,rust-winapi-0.3))))
-    (inputs
-     (list glib))
-    (home-page "https://gtk-rs.org/")
-    (synopsis "FFI bindings to libgio-2.0")
-    (description "This package provides FFI bindings to libgio-2.0.")
-    (license license:expat)))
+        ("rust-winapi" ,rust-winapi-0.3))))))
 
 (define-public rust-gio-sys-0.10
   (package
