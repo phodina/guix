@@ -1057,8 +1057,35 @@
        #:cargo-development-inputs
        (("rust-tempfile" ,rust-tempfile-3))))))
 
+(define-public rust-glib-macros-0.15
+  (package
+    (name "rust-glib-macros")
+    (version "0.15.11")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "glib-macros" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0r3cr0c79rs91z0sps089nsf8ppnm8agp48qwwqlkc32lqqq39i5"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-anyhow" ,rust-anyhow-1)
+                       ("rust-heck" ,rust-heck-0.4)
+                       ("rust-proc-macro-crate" ,rust-proc-macro-crate-1)
+                       ("rust-proc-macro-error" ,rust-proc-macro-error-1)
+                       ("rust-proc-macro2" ,rust-proc-macro2-1)
+                       ("rust-quote" ,rust-quote-1)
+                       ("rust-syn" ,rust-syn-1))))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Rust bindings for the GLib library, proc macros crate")
+    (description "Rust bindings for the GLib library, proc macros crate.")
+    (license license:expat)))
+
 (define-public rust-glib-macros-0.14
   (package
+    (inherit rust-glib-macros-0.15)
     (name "rust-glib-macros")
     (version "0.14.1")
     (source
@@ -1068,7 +1095,6 @@
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "0675i7m7pksg4cd9kfpzjnw0x5r3y4gcac7mfgy6nyb63wv6db9a"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build?
        #t
@@ -1079,11 +1105,7 @@
         ("rust-proc-macro-error" ,rust-proc-macro-error-1)
         ("rust-proc-macro2" ,rust-proc-macro2-1)
         ("rust-quote" ,rust-quote-1)
-        ("rust-syn" ,rust-syn-1))))
-    (home-page "https://gtk-rs.org/")
-    (synopsis "Rust bindings for the GLib library, proc macros crate")
-    (description "Rust bindings for the GLib library, proc macros crate.")
-    (license license:expat)))
+        ("rust-syn" ,rust-syn-1))))))
 
 (define-public rust-glib-macros-0.10
   (package
