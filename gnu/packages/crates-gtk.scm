@@ -430,8 +430,38 @@
         ("rust-x11" ,rust-x11-2)
         ("rust-pkg-config" ,rust-pkg-config-0.3))))))
 
+(define-public rust-gdk-0.15
+  (package
+    (name "rust-gdk")
+    (version "0.15.4")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "gdk" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1s59rm5xiw0azyjr5xqlicj8q219vkq1fhp9bgqy3c1aawgmrq56"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-bitflags" ,rust-bitflags-1)
+                       ("rust-cairo-rs" ,rust-cairo-rs-0.15)
+                       ("rust-gdk-pixbuf" ,rust-gdk-pixbuf-0.15)
+                       ("rust-gdk-sys" ,rust-gdk-sys-0.15)
+                       ("rust-gio" ,rust-gio-0.15)
+                       ("rust-glib" ,rust-glib-0.15)
+                       ("rust-libc" ,rust-libc-0.2)
+                       ("rust-pango" ,rust-pango-0.15))))
+    (inputs
+     (list cairo gdk-pixbuf glib gtk+ pango))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Rust bindings for the GDK 3 library")
+    (description "This package provides Rust bindings for the GDK 3 library.")
+    (license license:expat)))
+
 (define-public rust-gdk-0.14
   (package
+    (inherit rust-gdk-0.15)
     (name "rust-gdk")
     (version "0.14.3")
     (source
@@ -455,13 +485,7 @@
         ("rust-libc" ,rust-libc-0.2)
         ("rust-pango" ,rust-pango-0.14))
        #:cargo-development-inputs
-       (("rust-gir-format-check" ,rust-gir-format-check-0.1))))
-    (inputs
-     (list cairo gdk-pixbuf glib gtk+ pango))
-    (home-page "https://gtk-rs.org/")
-    (synopsis "Rust bindings for the GDK 3 library")
-    (description "This package provides Rust bindings for the GDK 3 library.")
-    (license license:expat)))
+       (("rust-gir-format-check" ,rust-gir-format-check-0.1))))))
 
 (define-public rust-gdk-0.13
   (package
