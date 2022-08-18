@@ -36,25 +36,24 @@
 ;;;
 ;;; Please: Try to add new module packages in alphabetic order.
 ;;;
-(define-public rust-atk-sys-0.14
+(define-public rust-atk-sys-0.15
   (package
     (name "rust-atk-sys")
-    (version "0.14.0")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (crate-uri "atk-sys" version))
-       (file-name (string-append name "-" version ".tar.gz"))
-       (sha256
-        (base32 "1sl3pqfb2jaf9kcfxj9k43d7iv8gcl5zgdgn3j5vp13w2mqgdp5s"))))
+    (version "0.15.1")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "atk-sys" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1dmg7aq3f533cczkhcyyp929daqpwdz1r5w9h3dhd3k9zf4v1bjq"))))
     (build-system cargo-build-system)
     (arguments
-     `(#:tests? #f                      ; missing files
-       #:cargo-inputs
-       (("rust-glib-sys" ,rust-glib-sys-0.14)
-        ("rust-gobject-sys" ,rust-gobject-sys-0.14)
-        ("rust-libc" ,rust-libc-0.2)
-        ("rust-system-deps" ,rust-system-deps-3))
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-glib-sys" ,rust-glib-sys-0.15)
+                       ("rust-gobject-sys" ,rust-gobject-sys-0.15)
+                       ("rust-libc" ,rust-libc-0.2)
+                       ("rust-system-deps" ,rust-system-deps-6))
        #:cargo-development-inputs
        (("rust-shell-words" ,rust-shell-words-1)
         ("rust-tempfile" ,rust-tempfile-3))))
@@ -65,6 +64,29 @@
     (synopsis "FFI bindings to libatk-1")
     (description "FFI bindings to libatk-1")
     (license license:expat)))
+
+(define-public rust-atk-sys-0.14
+  (package
+    (inherit rust-atk-sys-0.15)
+    (name "rust-atk-sys")
+    (version "0.14.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "atk-sys" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1sl3pqfb2jaf9kcfxj9k43d7iv8gcl5zgdgn3j5vp13w2mqgdp5s"))))
+    (arguments
+     `(#:tests? #f                      ; missing files
+       #:cargo-inputs
+       (("rust-glib-sys" ,rust-glib-sys-0.14)
+        ("rust-gobject-sys" ,rust-gobject-sys-0.14)
+        ("rust-libc" ,rust-libc-0.2)
+        ("rust-system-deps" ,rust-system-deps-3))
+       #:cargo-development-inputs
+       (("rust-shell-words" ,rust-shell-words-1)
+        ("rust-tempfile" ,rust-tempfile-3))))))
 
 (define-public rust-atk-sys-0.10
   (package
