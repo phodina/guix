@@ -579,6 +579,7 @@ in JavaScript.")
               (uri (git-reference
                     (url "https://gitlab.gnome.org/World/Phosh/squeekboard")
                     (commit (string-append "v" version))))
+			  (patches (search-patches "squeekboard-Fix-build-newer.patch"))
               (sha256
                (base32
                 "01fxcg7c7cr2xbywn1yhppqx9q8gy5yafl7gnfd3bmnl9z5smq8m"))))
@@ -603,7 +604,7 @@ in JavaScript.")
                             ("rust-serde-yaml" ,rust-serde-yaml-0.8)
                             ("rust-xkbcommon" ,rust-xkbcommon-0.4)
                             ("rust-zbus" ,rust-zbus-1))
-           #:features `(list "glib_v0_14")
+           #:features `(list "glib_v0_15")
            #:phases #~(modify-phases %standard-phases
                         (add-after 'unpack 'create-cargo-toml
                           (lambda* _
@@ -620,15 +621,14 @@ in JavaScript.")
                                 (("@path@/")
                                  ""))
                               (chmod "Cargo.toml" 365)))))))
-    (native-inputs (list python wayland-protocols pkg-config))
+    (native-inputs (list `(,glib "bin") python wayland-protocols pkg-config))
     (inputs (list atk
-                  gtk+
                   libxml2
                   libxkbcommon
                   feedbackd
-                  glib
                   dbus
                   wayland))
+	(propagated-inputs (list glib gtk+))
     (home-page "https://gitlab.gnome.org/World/Phosh/squeekboard")
     (synopsis "On-screen-keyboard input method for Wayland")
     (description "This package provides an on-screen-keyboard input
