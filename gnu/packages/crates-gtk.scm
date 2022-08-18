@@ -1660,8 +1660,41 @@
      "LGPL-licensed docs for Gtk-rs crates.")
     (license license:lgpl2.0)))
 
+(define-public rust-gtk-sys-0.15
+  (package
+    (name "rust-gtk-sys")
+    (version "0.15.3")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "gtk-sys" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "113wp3x7xh2zjv8i5pn3mcz77yr5zq8wm8260bv4g8nbhw2jzg6m"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-atk-sys" ,rust-atk-sys-0.15)
+                       ("rust-cairo-sys-rs" ,rust-cairo-sys-rs-0.15)
+                       ("rust-gdk-pixbuf-sys" ,rust-gdk-pixbuf-sys-0.15)
+                       ("rust-gdk-sys" ,rust-gdk-sys-0.15)
+                       ("rust-gio-sys" ,rust-gio-sys-0.15)
+                       ("rust-glib-sys" ,rust-glib-sys-0.15)
+                       ("rust-gobject-sys" ,rust-gobject-sys-0.15)
+                       ("rust-libc" ,rust-libc-0.2)
+                       ("rust-pango-sys" ,rust-pango-sys-0.15)
+                       ("rust-system-deps" ,rust-system-deps-6))))
+    (native-inputs (list pkg-config))
+    (inputs
+     (list gtk+))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "FFI bindings to libgtk-3")
+    (description "This package provides FFI bindings to libgtk-3.")
+    (license license:expat)))
+
 (define-public rust-gtk-sys-0.14
   (package
+    (inherit rust-gtk-sys-0.15)
     (name "rust-gtk-sys")
     (version "0.14.0")
     (source
@@ -1671,7 +1704,6 @@
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "0gihp9zh4z7lycp0zbmq1w0k9ddbnd2h64jsgid7hi85vb9wh54c"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:tests? #f                      ;missing files
        #:cargo-inputs
@@ -1687,14 +1719,7 @@
         ("rust-system-deps" ,rust-system-deps-3))
        #:cargo-development-inputs
        (("rust-shell-words" ,rust-shell-words-1)
-        ("rust-tempfile" ,rust-tempfile-3))))
-    (native-inputs (list pkg-config))
-    (inputs
-     (list gtk+))
-    (home-page "https://gtk-rs.org/")
-    (synopsis "FFI bindings to libgtk-3")
-    (description "This package provides FFI bindings to libgtk-3.")
-    (license license:expat)))
+        ("rust-tempfile" ,rust-tempfile-3))))))
 
 (define-public rust-gtk-sys-0.10
   (package
