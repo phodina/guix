@@ -137,8 +137,36 @@
        (("rust-shell-words" ,rust-shell-words-0.1)
         ("rust-tempfile" ,rust-tempfile-3))))))
 
+(define-public rust-atk-0.15
+  (package
+    (name "rust-atk")
+    (version "0.15.1")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "atk" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1pfympjvlhvv4rzjvy8y1cvl9w5gq88nj3c3jsd91qphwrn82g9c"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-atk-sys" ,rust-atk-sys-0.15)
+                       ("rust-bitflags" ,rust-bitflags-1)
+                       ("rust-glib" ,rust-glib-0.15)
+                       ("rust-libc" ,rust-libc-0.2))
+       #:cargo-development-inputs
+       (("rust-gir-format-check" ,rust-gir-format-check-0.1))))
+    (inputs
+     (list atk glib))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Rust bindings for the ATK library")
+    (description "Rust bindings for the ATK library")
+    (license license:expat)))
+
 (define-public rust-atk-0.14
   (package
+    (inherit rust-atk-0.15)
     (name "rust-atk")
     (version "0.14.0")
     (source
@@ -148,7 +176,6 @@
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "1fi6f3k1lgd0iymar58hp88k76fm5pd1npi2avdn9r3mmb922fx8"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build?
        #t
@@ -158,13 +185,7 @@
         ("rust-glib" ,rust-glib-0.14)
         ("rust-libc" ,rust-libc-0.2))
        #:cargo-development-inputs
-       (("rust-gir-format-check" ,rust-gir-format-check-0.1))))
-    (inputs
-     (list atk glib))
-    (home-page "https://gtk-rs.org/")
-    (synopsis "Rust bindings for the ATK library")
-    (description "Rust bindings for the ATK library")
-    (license license:expat)))
+       (("rust-gir-format-check" ,rust-gir-format-check-0.1))))))
 
 (define-public rust-atk-0.8
   (package
