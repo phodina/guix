@@ -579,7 +579,7 @@ in JavaScript.")
               (uri (git-reference
                     (url "https://gitlab.gnome.org/World/Phosh/squeekboard")
                     (commit (string-append "v" version))))
-		;	  (patches (search-patches "squeekboard-Fix-build-newer.patch"))
+;			  (patches (search-patches "squeekboard-Fix-build-newer.patch"))
               (sha256
                (base32
                 "01fxcg7c7cr2xbywn1yhppqx9q8gy5yafl7gnfd3bmnl9z5smq8m"))))
@@ -592,6 +592,8 @@ in JavaScript.")
      #:modules '((guix build cargo-build-system)
                  ((guix build glib-or-gtk-build-system) #:prefix glib-or-gtk:)
                  ((guix build meson-build-system) #:prefix meson:)
+				 (ice-9 match)
+                       (ice-9 rdelim)
                  (guix build utils))
            #:cargo-inputs `(("rust-cairo-sys-rs" ,rust-cairo-sys-rs-0.9)
                             ("rust-bitflags" ,rust-bitflags-1.2)
@@ -609,9 +611,9 @@ in JavaScript.")
                             ("rust-xkbcommon" ,rust-xkbcommon-0.4)
                             ("rust-zbus" ,rust-zbus-1))
            #:cargo-development-inputs `(("rust-fragile" ,rust-fragile-0.3))
-           #:features `(list "glib_v0_14")
+;           #:features `(list "glib_v0_15")
            #:phases #~(modify-phases %standard-phases
-                        (add-after 'unpack 'meson-configure
+                        (add-after 'patch-cargo-checksums 'meson-configure
  (lambda* (#:key outputs configure-flags build-type
                     #:allow-other-keys)
   (let* ((source-dir (getcwd))
@@ -634,13 +636,15 @@ in JavaScript.")
                 #:allow-other-keys)
   (invoke "ninja" "-j" (if parallel-build?
                            (number->string (parallel-job-count))
-                           "1")))
-						))))
+                           "1"))))
+						)))
 ;                        (add-after 'unpack 'create-cargo-toml
 ;                          (lambda* _
-;                            (let* ((cargo-in (call-with-input-file "Cargo.toml.in"
+;                            (let* ((cargo-in (call-with-input-file
+;							(string-append #$source "/Cargo.toml.in")
 ;                                               read-string))
-;                                   (cargo-dep (call-with-input-file "Cargo.deps.newer"
+;                                   (cargo-dep (call-with-input-file
+;								   (string-append #$source "/Cargo.deps.newer")
 ;                                                read-string)))
 ;                              (rename-file "data/style-Adwaita:dark.css"
 ;                                           "data/style-Adwaita.dark.css")
@@ -653,13 +657,13 @@ in JavaScript.")
 ;                              (chmod "Cargo.toml" 365)))))))
     (native-inputs (list `(,glib "bin") meson ninja python wayland-protocols pkg-config))
     (inputs (list atk
-                  gtk+
                   libxml2
                   libxkbcommon
                   feedbackd
 				  gnome-desktop
                   dbus
                   wayland))
+	(propagated-inputs (list glib gtk+))
     (home-page "https://gitlab.gnome.org/World/Phosh/squeekboard")
     (synopsis "On-screen-keyboard input method for Wayland")
     (description "This package provides an on-screen-keyboard input

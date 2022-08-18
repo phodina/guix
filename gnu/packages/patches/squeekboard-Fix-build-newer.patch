@@ -1,0 +1,265 @@
+diff --git a/Cargo.toml.in b/Cargo.toml.in
+index 5667197..7af3c3f 100644
+--- a/Cargo.toml.in
++++ b/Cargo.toml.in
+@@ -17,7 +17,7 @@ name = "test_layout"
+ path = "@path@/examples/test_layout.rs"
+ 
+ [features]
+-glib_v0_14 = []
++glib_v0_15 = []
+ 
+ # Dependencies which don't change based on build flags
+ [dependencies]
+diff --git a/cargo.sh b/cargo.sh
+index c4be97b..9ba7ed7 100755
+--- a/cargo.sh
++++ b/cargo.sh
+@@ -14,9 +14,5 @@ export CARGO_TARGET_DIR
+ 
+ cd "$SOURCE_DIR"
+ 
+-# the 'run" command takes arguments at the end,
+-# so --manifest-path must not be last
+-CMD="$1"
+-shift
+-cargo "$CMD" --manifest-path "$CARGO_TARGET_DIR"/Cargo.toml "$@"
++cargo "$@"
+ 
+diff --git a/meson.build b/meson.build
+index 79e16ec..de21e04 100644
+--- a/meson.build
++++ b/meson.build
+@@ -85,37 +85,14 @@ summary = [
+ ]
+ message('\n'.join(summary))
+ 
+-# Rust deps are changing, depending on compile flags. Cargo can't handle it alone.
+-# As a side effect, Cargo.toml never gets used.
+-cargo_toml_in = files('Cargo.toml.in')
+-path_data = configuration_data()
+-path_data.set('path', meson.source_root())
+-cargo_toml_base = configure_file(
+-    input: 'Cargo.toml.in',
+-    output: 'Cargo.toml.base',
+-    configuration: path_data,
+-)
+-
+-cargo_patch = []
+-
+ if get_option('newer') == true
+-    cargo_build_flags += ['--features', 'glib_v0_14']
+-    cargo_deps = files('Cargo.deps.newer')
++    cargo_build_flags += ['--features', 'glib_v0_15']
+ else
+-    cargo_deps = files('Cargo.deps')
+     if get_option('online') == true
+         cargo_patch = [files('Cargo.deps.online')]
+     endif
+ endif
+ 
+-cat = find_program('cat')
+-cargo_toml = custom_target(
+-    'Cargo.toml',
+-    output: 'Cargo.toml',
+-    command: [cat, cargo_toml_base, cargo_deps] + cargo_patch,
+-    capture: true,
+-)
+-
+ dep_cargo = find_program('cargo')
+ cargo_script = find_program('cargo.sh')
+ cargo_build = find_program('cargo_build.py')
+diff --git a/src/main.rs b/src/main.rs
+index 13c1766..8957185 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -154,7 +154,7 @@ mod c {
+                 Continue(true)
+             },
+         );
+-        #[cfg(not(feature = "glib_v0_14"))]
++        #[cfg(not(feature = "glib_v0_15"))]
+         ctx.release();
+     }
+ 
+diff --git a/src/meson.build b/src/meson.build
+index af33418..6434ef3 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -62,8 +62,7 @@ rslibs = custom_target(
+     output: ['librs.a'],
+     install: false,
+     console: true,
+-    command: [cargo_build] + ['@OUTPUT@', '--lib'] + cargo_build_flags,
+-    depends: cargo_toml,
++    command: [cargo_build] + ['@OUTPUT@', '--lib'] + cargo_build_flags
+ )
+ 
+ build_rstests = custom_target(
+@@ -78,7 +77,7 @@ build_rstests = custom_target(
+     install: false,
+     console: true,
+     command: [cargo_script, 'test', '--no-run'] + cargo_build_flags,
+-    depends: [rslibs, cargo_toml], # no point building tests if the code itself fails
++    depends: rslibs, # no point building tests if the code itself fails
+ )
+ 
+ test(
+@@ -88,7 +87,7 @@ test(
+     env: ['SOURCE_DIR=' + meson.source_root()],
+     # this is a whole Carg-based test suite, let it run for a while
+     timeout: 900,
+-    depends: [build_rstests, cargo_toml],
++    depends: build_rstests
+ )
+ 
+ libsqueekboard = static_library('libsqueekboard',
+diff --git a/src/popover.rs b/src/popover.rs
+index 5aba7e9..83ba7fe 100644
+--- a/src/popover.rs
++++ b/src/popover.rs
+@@ -108,9 +108,9 @@ mod variants {
+ fn get_settings(schema_name: &str) -> Option<gio::Settings> {
+     let mut error_handler = logging::Print{};
+ 
+-    #[cfg(feature = "glib_v0_14")]
++    #[cfg(feature = "glib_v0_15")]
+     let ss = gio::SettingsSchemaSource::default();
+-    #[cfg(not(feature = "glib_v0_14"))]
++    #[cfg(not(feature = "glib_v0_15"))]
+     let ss = gio::SettingsSchemaSource::get_default();
+     
+     ss.or_warn(
+@@ -134,9 +134,9 @@ fn set_layout(kind: &str, name: &str) {
+     if let Some(settings) = settings {
+         let kind = String::from(kind);
+         let name = String::from(name);
+-        #[cfg(feature = "glib_v0_14")]
++        #[cfg(feature = "glib_v0_15")]
+         let inputs = settings.value("sources");
+-        #[cfg(not(feature = "glib_v0_14"))]
++        #[cfg(not(feature = "glib_v0_15"))]
+         let inputs = settings.get_value("sources").unwrap();
+ 
+         let current = (kind.clone(), name.clone());
+@@ -246,9 +246,9 @@ pub fn show(
+     let settings = get_settings("org.gnome.desktop.input-sources");
+     let inputs = settings
+         .map(|settings| {
+-            #[cfg(feature = "glib_v0_14")]
++            #[cfg(feature = "glib_v0_15")]
+             let inputs = settings.value("sources");
+-            #[cfg(not(feature = "glib_v0_14"))]
++            #[cfg(not(feature = "glib_v0_15"))]
+             let inputs = settings.get_value("sources").unwrap();
+ 
+             variants::get_tuples(inputs)
+@@ -282,12 +282,12 @@ pub fn show(
+     });
+ 
+     let model: gio::Menu = {
+-        #[cfg(feature = "glib_v0_14")]
++        #[cfg(feature = "glib_v0_15")]
+         {
+             let builder = gtk::Builder::from_resource("/sm/puri/squeekboard/popover.ui");
+             builder.object("app-menu").unwrap()
+         }
+-        #[cfg(not(feature = "glib_v0_14"))]
++        #[cfg(not(feature = "glib_v0_15"))]
+         {
+             let builder = gtk::Builder::new_from_resource("/sm/puri/squeekboard/popover.ui");
+             builder.get_object("app-menu").unwrap()
+@@ -300,17 +300,29 @@ pub fn show(
+         model.prepend_item (&item);
+     }
+ 
+-    #[cfg(feature = "glib_v0_14")]
++    #[cfg(feature = "glib_v0_15")]
+     let menu = gtk::Popover::from_model(Some(&window), &model);
+-    #[cfg(not(feature = "glib_v0_14"))]
++    #[cfg(not(feature = "glib_v0_15"))]
+     let menu = gtk::Popover::new_from_model(Some(&window), &model);
+-
+-    menu.set_pointing_to(&gtk::Rectangle {
+-        x: position.x.ceil() as i32,
+-        y: position.y.ceil() as i32,
+-        width: position.width.floor() as i32,
+-        height: position.width.floor() as i32,
+-    });
++	
++    #[cfg(not(feature = "glib_v0_15"))]
++    {
++        menu.set_pointing_to(&gtk::Rectangle {
++            x: position.x.ceil() as i32,
++            y: position.y.ceil() as i32,
++            width: position.width.floor() as i32,
++            height: position.width.floor() as i32,
++        });
++    }
++    #[cfg(feature = "glib_v0_15")]
++    {
++        menu.set_pointing_to(&gtk::Rectangle::new(
++            position.x.ceil() as i32,
++            position.y.ceil() as i32,
++            position.width.floor() as i32,
++            position.width.floor() as i32,
++        ));
++    }
+     menu.set_constrain_to(gtk::PopoverConstraint::None);
+ 
+     let action_group = gio::SimpleActionGroup::new();
+diff --git a/src/style.rs b/src/style.rs
+index 9c2bff4..e5bc7d5 100644
+--- a/src/style.rs
++++ b/src/style.rs
+@@ -41,9 +41,9 @@ pub mod c {
+     fn squeek_load_style() -> *const gtk_sys::GtkCssProvider {
+         unsafe { gtk::set_initialized() };
+         
+-        #[cfg(feature = "glib_v0_14")]
++        #[cfg(feature = "glib_v0_15")]
+         let theme = gtk::Settings::default();
+-        #[cfg(not(feature = "glib_v0_14"))]
++        #[cfg(not(feature = "glib_v0_15"))]
+         let theme = gtk::Settings::get_default();
+         
+         let theme = theme.map(|settings| get_theme_name(&settings));
+@@ -98,16 +98,19 @@ fn get_theme_name(settings: &gtk::Settings) -> GtkTheme {
+             e
+         }).ok();
+ 
+-    #[cfg(feature = "glib_v0_14")]
+-    let prop = |s: &gtk::Settings, name| s.property(name);
+-    #[cfg(not(feature = "glib_v0_14"))]
+-    let prop = |s: &gtk::Settings, name| s.get_property(name);
+-
+-    #[cfg(feature = "glib_v0_14")]
++    #[cfg(feature = "glib_v0_15")]
++    let prop = |s: &gtk::Settings, name| -> Option<glib::Value> {
++        Some(s.property_value(name))
++    };
++    #[cfg(not(feature = "glib_v0_15"))]
++    let prop = |s: &gtk::Settings, name| -> Result<_, _> {
++        s.get_property(name)
++    };
++    #[cfg(feature = "glib_v0_15")]
+     fn check<T, E: std::fmt::Display>(v: Result<T, E>) -> Option<T> {
+         v.or_print(logging::Problem::Surprise, "Key not of expected type")
+     }
+-    #[cfg(not(feature = "glib_v0_14"))]
++    #[cfg(not(feature = "glib_v0_15"))]
+     fn check<T>(v: Option<T>) -> Option<T> { v }
+ 
+     match env_theme {
+diff --git a/tools/meson.build b/tools/meson.build
+index 75a7e17..cc8b83b 100644
+--- a/tools/meson.build
++++ b/tools/meson.build
+@@ -15,6 +15,5 @@ test_layout = custom_target('squeekboard-test-layout',
+     command: [cargo_build, '--rename', 'test_layout', '@OUTPUT@', '--bin', 'test_layout']
+         + cargo_build_flags,
+     install: true,
+-    install_dir: bindir,
+-    depends: cargo_toml,
++    install_dir: bindir
+ )
