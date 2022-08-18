@@ -1699,8 +1699,35 @@
 library.")
     (license license:expat)))
 
+(define-public rust-pango-0.15
+  (package
+    (name "rust-pango")
+    (version "0.15.10")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "pango" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0ksf85fqkw4y5pf21p84g5xn4fnqn21cbrmx2d9yx6k591ah9r12"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-bitflags" ,rust-bitflags-1)
+                       ("rust-glib" ,rust-glib-0.15)
+                       ("rust-libc" ,rust-libc-0.2)
+                       ("rust-once-cell" ,rust-once-cell-1)
+                       ("rust-pango-sys" ,rust-pango-sys-0.15))))
+    (inputs
+     (list pango))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Rust bindings for the Pango library")
+    (description "Rust bindings for the Pango library")
+    (license license:expat)))
+
 (define-public rust-pango-0.14
   (package
+    (inherit rust-pango-0.15)
     (name "rust-pango")
     (version "0.14.8")
     (source
@@ -1710,7 +1737,6 @@ library.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "10c5q8wl9gkjh323whq6pg9yfvr2vmz00f98z1d77jp506cdavsl"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build?
        #t
@@ -1721,13 +1747,7 @@ library.")
         ("rust-once-cell" ,rust-once-cell-1)
         ("rust-pango-sys" ,rust-pango-sys-0.14))
        #:cargo-development-inputs
-       (("rust-gir-format-check" ,rust-gir-format-check-0.1))))
-    (inputs
-     (list pango))
-    (home-page "https://gtk-rs.org/")
-    (synopsis "Rust bindings for the Pango library")
-    (description "Rust bindings for the Pango library")
-    (license license:expat)))
+       (("rust-gir-format-check" ,rust-gir-format-check-0.1))))))
 
 (define-public rust-pango-0.9
   (package
