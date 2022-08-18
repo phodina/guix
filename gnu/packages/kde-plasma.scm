@@ -53,6 +53,7 @@
   #:use-module (gnu packages qt)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xorg)
+  #:use-module (gnu packages video)
   #:use-module (gnu packages web))
 
 (define-public breeze
@@ -214,7 +215,7 @@ call it if it is not associated to a terminal.")
     (inputs
      (list libxkbcommon
            qtbase-5
-           qtdeclarative
+           qtdeclarative-5
            qtwayland
            wayland
            wayland-protocols))
@@ -328,7 +329,7 @@ basic needs and easy to configure for those who want special setups.")
        (sha256
         (base32 "1mrrrxjvqmrnkjwafvqrd2hlvl9gr9y4hn7dv0gf70lp5bl06i89"))))
     (native-inputs
-     (list extra-cmake-modules pkg-config qttools))
+     (list extra-cmake-modules pkg-config qttools-5))
     (inputs
      (list kauth
            kcompletion
@@ -438,7 +439,7 @@ wayland-server API.")
            dbus
            kdoctools
            pkg-config
-           qttools
+           qttools-5
            xorg-server-for-tests))
     (inputs
      (list breeze
@@ -481,7 +482,7 @@ wayland-server API.")
            plasma-framework
            plasma-wayland-protocols
            qtbase-5
-           qtdeclarative
+           qtdeclarative-5
            qtwayland
            qtx11extras
            wayland
@@ -827,7 +828,7 @@ adding, modifying and removing contacts.")
     (native-inputs
      (list extra-cmake-modules
            pkg-config
-           qtsvg
+           qtsvg-5
            qttools))
     (inputs
      (list ;kplasma
@@ -890,7 +891,7 @@ adding, modifying and removing contacts.")
            plasma-wayland-protocols
            prison
            qtbase-5
-           qtdeclarative
+           qtdeclarative-5
            qtwayland
            qtx11extras
            wayland
