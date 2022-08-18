@@ -1833,8 +1833,35 @@
        (("rust-shell-words" ,rust-shell-words-0.1)
         ("rust-tempfile" ,rust-tempfile-3))))))
 
+(define-public rust-gtk3-macros-0.15
+  (package
+    (name "rust-gtk3-macros")
+    (version "0.15.4")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "gtk3-macros" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1sd207xnlvz66n05hr9gqsxsgrprarw6kmxjhnjzn8qcx6piix94"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:tests? #f ; failing composite_template_derive test
+       #:cargo-inputs (("rust-anyhow" ,rust-anyhow-1)
+                       ("rust-proc-macro-crate" ,rust-proc-macro-crate-1)
+                       ("rust-proc-macro-error" ,rust-proc-macro-error-1)
+                       ("rust-proc-macro2" ,rust-proc-macro2-1)
+                       ("rust-quote" ,rust-quote-1)
+                       ("rust-syn" ,rust-syn-1))))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "Rust bindings for the GTK 3 library")
+    (description "This package provides Rust bindings for the GTK 3
+library.")
+    (license license:expat)))
+
 (define-public rust-gtk3-macros-0.14
   (package
+    (inherit rust-gtk3-macros-0.15)
     (name "rust-gtk3-macros")
     (version "0.14.0")
     (source
@@ -1844,7 +1871,6 @@
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "0yavfirn2iw9nsxik6m7s2cdxdrl5l5jfbiwn0zl85y1dnlivpi1"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build?
        #t
@@ -1855,12 +1881,7 @@
         ("rust-proc-macro-error" ,rust-proc-macro-error-1)
         ("rust-proc-macro2" ,rust-proc-macro2-1)
         ("rust-quote" ,rust-quote-1)
-        ("rust-syn" ,rust-syn-1))))
-    (home-page "https://gtk-rs.org/")
-    (synopsis "Rust bindings for the GTK 3 library")
-    (description "This package provides Rust bindings for the GTK 3
-library.")
-    (license license:expat)))
+        ("rust-syn" ,rust-syn-1))))))
 
 (define-public rust-pango-0.15
   (package
