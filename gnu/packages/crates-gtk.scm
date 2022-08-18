@@ -1809,8 +1809,34 @@ library.")
        #:cargo-development-inputs
        (("rust-gir-format-check" ,rust-gir-format-check-0.1))))))
 
+(define-public rust-pango-sys-0.15
+  (package
+    (name "rust-pango-sys")
+    (version "0.15.10")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "pango-sys" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1an3c931kbkr08n9d9d1dapsq3n26zs0xn4ixn11jrp4rn0h186j"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-glib-sys" ,rust-glib-sys-0.15)
+                       ("rust-gobject-sys" ,rust-gobject-sys-0.15)
+                       ("rust-libc" ,rust-libc-0.2)
+                       ("rust-system-deps" ,rust-system-deps-6))))
+    (inputs
+     (list pango))
+    (home-page "https://gtk-rs.org/")
+    (synopsis "FFI bindings to libpango-1.0")
+    (description "This package provides FFI bindings to @code{libpango-1.0}.")
+    (license license:expat)))
+
 (define-public rust-pango-sys-0.14
   (package
+    (inherit rust-pango-sys-0.15)
     (name "rust-pango-sys")
     (version "0.14.0")
     (source
@@ -1820,7 +1846,6 @@ library.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "1zj236n9kjldf47wwlxvhshwm5zhg589a0fml5mm8qg7lnf0jrr3"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:skip-build?
        #t
@@ -1828,13 +1853,7 @@ library.")
        (("rust-glib-sys" ,rust-glib-sys-0.14)
         ("rust-gobject-sys" ,rust-gobject-sys-0.14)
         ("rust-libc" ,rust-libc-0.2)
-        ("rust-system-deps" ,rust-system-deps-3))))
-    (inputs
-     (list pango))
-    (home-page "https://gtk-rs.org/")
-    (synopsis "FFI bindings to libpango-1.0")
-    (description "This package provides FFI bindings to @code{libpango-1.0}.")
-    (license license:expat)))
+        ("rust-system-deps" ,rust-system-deps-3))))))
 
 (define-public rust-pango-sys-0.10
   (package
