@@ -76,6 +76,7 @@
   ;; NetworkManager, and more.
   (services (if (target-x86-64?)
                 (append (list (service gnome-desktop-service-type)
+                              (service plasma-desktop-service-type)
                               (service xfce-desktop-service-type)
                               (set-xorg-configuration
                                (xorg-configuration

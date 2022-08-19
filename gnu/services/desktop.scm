@@ -1448,14 +1448,22 @@ with the administrator's password."
   make-plasma-desktop-configuration
   plasma-desktop-configuration?
   (plasma plasma-package
-          (default plasma-desktop)))
+          (default plasma)))
+
+(define (plasma-polkit-settings config)
+  "Return the list of Plasma dependencies that provide polkit actions and
+rules."
+  (let ((plasma (plasma-package config)))
+    (map (lambda (name)
+           ((package-direct-input-selector name) plasma))
+         '("powerdevil"))))
 
 (define plasma-desktop-service-type
   (service-type
    (name 'plasma-desktop)
    (extensions
-    (list ;; (service-extension polkit-service-type
-          ;;                    plasma-polkit-settings)
+    (list (service-extension polkit-service-type
+                              plasma-polkit-settings)
           (service-extension profile-service-type
                              (compose list plasma-package))))
    (default-value (plasma-desktop-configuration))
