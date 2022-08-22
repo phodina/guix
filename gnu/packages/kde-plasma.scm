@@ -138,6 +138,51 @@ These window decorations can be used by for example an X11 based window
 manager which re-parents a Client window to a window decoration frame.")
     (license license:lgpl3+)))
 
+(define-public kscreen
+  (package
+    (name "kscreen")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1wjpyq56iw8axbjhsa82w67g54v6y3rv5nx623d1kddvlzlhh8pf"))))
+    (build-system cmake-build-system)
+    (arguments
+     ;; TODO: All tests fail
+     (list #:tests? #f))
+    (native-inputs (list extra-cmake-modules qttools-5 pkg-config))
+    (inputs (list kconfig
+                  kdbusaddons
+                  kdeclarative
+                  kglobalaccel
+                  ki18n
+                  kwindowsystem
+                  kiconthemes
+                  kcoreaddons
+                  kcmutils
+                  kxmlgui
+                  libkscreen
+                  libxi
+                  plasma-wayland-protocols
+                  qtsensors
+                  qtbase-5
+                  qtx11extras
+                  xcb-util))
+    (propagated-inputs (list plasma-framework))
+    (home-page "https://invent.kde.org/plasma/kscreen")
+    (synopsis "Screen management software")
+    (description "This package provides the screen management software for
+KDE Plasma Workspaces.")
+    (license license:gpl2+)))
+
 (define-public ksshaskpass
   (package
     (name "ksshaskpass")
