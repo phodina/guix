@@ -1899,6 +1899,54 @@ UI for Plasma")
     (home-page "https://invent.kde.org/plasma/polkit-kde-agent-1")
     (license license:gpl2+)))
 
+(define-public powerdevil
+  (package
+    (name "powerdevil")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1nznjxi59xc6pmyh0vainznhp9ig1ini3i87iapayawpnpf8sdxx"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules qttools-5 pkg-config))
+    (inputs (list bluez-qt
+                  glib
+                  kauth
+                  kactivities
+                  kscreen
+                  kidletime
+                  kconfig
+                  kdbusaddons
+                  solid
+                  ki18n
+                  kcrash
+                  knotifyconfig
+                  knetworkmanager
+                  kio
+                  kwayland
+                  kglobalaccel
+                  kcrash
+                  knotifications
+                  kirigami
+                  libkscreen
+                  network-manager
+                  plasma-workspace
+                  eudev
+                  qtx11extras))
+    (synopsis "Manages the power consumption settings of a Plasma Shell")
+    (description "This package provides the power consumption settings
+of a Plasma shell.")
+    (home-page "https://invent.kde.org/plasma/powerdevil")
+    (license license:gpl2+)))
+
 (define-public system-settings
   (package
     (name "system-settings")
