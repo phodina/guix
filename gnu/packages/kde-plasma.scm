@@ -119,6 +119,29 @@ Breeze is the default theme for the KDE Plasma desktop.")
     (license (list license:bsd-3                  ;cmake/FindSass.cmake
                    license:lgpl2.1+))))           ;<all other files>
 
+(define-public oxygen-sounds
+  (package
+    (name "oxygen-sounds")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "0v8j8kf86ri1z14mgqc1c6kkpsbih8rjph35sr5y0i4av9mh6p9b"))))
+    (build-system cmake-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (home-page "https://community.kde.org/Frameworks")
+    (synopsis "Oxygen provides the standard sounds for the KDE desktop")
+    (description "This package provides Oxygen sounds for the KDE desktop.")
+    (license license:lgpl3+)))
+
 (define-public eink-lookandfeel
   (let ((commit "4d7799c9388e976af107ef2644621e79f3a85914")
         (revision "1"))
