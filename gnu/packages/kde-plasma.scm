@@ -754,3 +754,37 @@ Wayland.")
     (description "This package provides YouTube video player based
 on QtMultimedia and @command{yt-dlp}.")
     (license license:gpl3+)))
+
+(define-public plasma-vault
+  (package
+    (name "plasma-vault")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "10ym2gk46yr1vgjnm1li1shdawklvvy3yvjcanm8ic5llchbxvzq"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list kio
+                  ki18n
+                  kconfigwidgets
+                  kconfig
+                  kactivities
+                  kdbusaddons
+                  kiconthemes
+                  libksysguard
+                  plasma-framework
+                  qtdeclarative-5))
+    (home-page "https://invent.kde.org/plasma/plasma-vault")
+    (synopsis "Plasma applet and services for creating encrypted vaults")
+    (description "Provides Plasma applet and services for creating encrypted
+	vaults.")
+    (license (list license:gpl2 license:gpl3))))
