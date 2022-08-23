@@ -1870,6 +1870,38 @@ formats.")
 asynchronous jobs.")
     (license license:lgpl2.1+)))
 
+(define-public knetworkmanager
+  (package
+    (name "knetworkmanager")
+    (version "5.98.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/frameworks/"
+                                  (version-major+minor version)
+                                  "/"
+                                  "/networkmanager-qt-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "0s1h02v9k8nyl30mw7gayzvpb8bnzzp9crcfqpry7rf02rxv9idw"))))
+    (build-system qt-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (replace 'check
+                    (lambda* (#:key tests? #:allow-other-keys)
+                      (when tests?
+                        (invoke "ctest" "-E"
+                         "(managertest|settingstest|activeconnectiontest)")))))))
+    (native-inputs (list extra-cmake-modules pkg-config))
+    (inputs (list glib qtbase-5))
+    (propagated-inputs (list network-manager))
+    (properties `((upstream-name . "networkmanager-qt")))
+    (home-page "https://community.kde.org/Frameworks")
+    (synopsis "Qt wrapper for NetworkManager API")
+    (description "This package provides Qt wrapper for NetworkManager API.")
+    (license (list license:lgpl2.0 license:lgpl3))))
+
 (define-public knotifications
   (package
     (name "knotifications")
