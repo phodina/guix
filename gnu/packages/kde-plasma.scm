@@ -43,8 +43,10 @@
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
+  #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
   #:use-module (gnu packages video)
   #:use-module (gnu packages vpn)
@@ -866,6 +868,40 @@ integration of Qt applications when running on a KDE Plasma workspace.")
     (synopsis "Plasma applet written in QML for managing network connections")
     (description "Provide Plasma applet written in QML for managing network
 connections.")
+    (license (list license:lgpl2.1 license:lgpl3))))
+
+(define-public plasma-pa
+  (package
+    (name "plasma-pa")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "0v92jk826jj2kf11hlxh3xrxl9nsj6835ik2pmb192xbn6gpb4lm"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules kdoctools pkg-config))
+    (inputs (list glib
+                  kcoreaddons
+                  kdeclarative
+                  kglobalaccel
+                  knotifications
+                  kwindowsystem
+                  kirigami
+                  ki18n
+                  qtdeclarative-5))
+    (propagated-inputs (list libcanberra pulseaudio plasma-framework))
+    (home-page "https://invent.kde.org/plasma/plasma-pa")
+    (synopsis "Plasma applet for audio volume management using PulseAudio")
+    (description
+     "Provide Plasma applet for audio volume management using PulseAudio")
     (license (list license:lgpl2.1 license:lgpl3))))
 
 (define-public plasma-pass
