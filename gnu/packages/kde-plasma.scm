@@ -1539,6 +1539,46 @@ integration of Qt applications when running on a KDE Plasma workspace.")
 active window on Plasma Desktop.")
     (license (list license:gpl2 license:gpl3)))))
 
+(define-public plasma-browser-integration
+  (package
+    (name "plasma-browser-integration")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1l3n4psbqimfar5qsmrfp3nhgg3v9yy93rkjpvyqgdmizi44scqw"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules pkg-config))
+    (inputs (list kio
+                  ki18n
+                  kcoreaddons
+                  kconfig
+                  kcrash
+                  kdbusaddons
+                  knotifications
+                  kitemmodels
+                  krunner
+                  kactivities
+                  purpose
+                  kfilemetadata
+                  kjobwidgets
+                  qtdeclarative-5))
+    (propagated-inputs (list plasma-workspace))
+    (home-page "https://invent.kde.org/plasma/plasma-browser-integration")
+    (synopsis
+     "Components necessary to integrate browsers into the Plasma Desktop")
+    (description "This package aims to provide better integration of web
+browsers with the KDE Plasma 5 desktop.")
+    (license license:gpl3+)))
+
 (define-public plasma-nm
   (package
     (name "plasma-nm")
