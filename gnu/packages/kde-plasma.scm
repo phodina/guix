@@ -31,6 +31,8 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix gexp)
   #:use-module (guix build-system cmake)
+  #:use-module (guix build-system copy)
+  #:use-module (guix build-system trivial)
   #:use-module (guix build-system qt)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
@@ -55,6 +57,8 @@
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
   #:use-module (gnu packages kde-pim)
+  ;; Including this module breaks the build
+  ;#:use-module ((gnu packages kde-systemtools) #:select (konsole))
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages libusb)
@@ -63,6 +67,7 @@
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages polkit)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
   #:use-module (gnu packages package-management) ; flatpak
@@ -1383,6 +1388,66 @@ on top of Baloo.")
     (synopsis "Oxygen provides the standard sounds for the KDE desktop")
     (description "This package provides Oxygen sounds for the KDE desktop.")
     (license license:lgpl3+)))
+
+(define-public plasma
+  (package
+    (name "plasma")
+    (version "5.25.5")
+    (source #f)
+    (build-system trivial-build-system)
+    (arguments
+     (list #:builder #~(begin
+                         (mkdir #$output))))
+    (propagated-inputs (list bluedevil
+                             breeze
+                             breeze-gtk
+                             discover
+                             drkonqi
+                             kactivitymanagerd
+                             kde-cli-tools
+                             ;; kde-gtk-config
+                             kdecoration
+                             kdeplasma-addons
+                             kgamma
+                             khotkeys
+                             kinfocenter
+                             kmenuedit
+                             kscreen
+                             kscreenlocker
+                             ksshaskpass
+                             ksystemstats
+                             kwallet-pam
+                             kwayland-integration
+                             kwin
+                             kwrited
+                             kinit
+                             layer-shell-qt
+                             libkscreen
+                             libksysguard
+                             milou
+                             ;; oxygen
+                             oxygen-sounds
+                             plasma-browser-integration
+                             plasma-desktop
+                             plasma-disks
+                             plasma-firewall
+                             plasma-integration
+                             plasma-nm
+                             plasma-pa
+                             plasma-systemmonitor
+                             ;; plasma-thunderbolt ;; waiting for bolt
+                             plasma-vault
+                             plasma-workspace
+                             plasma-workspace-wallpapers
+                             polkit-kde-agent
+                             powerdevil
+                             sddm
+                             system-settings
+                             xdg-desktop-portal-kde))
+    (synopsis "Plasma desktop")
+    (home-page "https://kde.org/plasma-desktop/")
+    (description "Meta package containing packages for Plasma Desktop")
+    (license license:gpl2+)))
 
 (define-public plasmatube
   (package
