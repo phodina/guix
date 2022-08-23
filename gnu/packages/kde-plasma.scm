@@ -881,6 +881,30 @@ on QtMultimedia and @command{yt-dlp}.")
 integration of Qt applications when running on a KDE Plasma workspace.")
     (license license:lgpl2.0)))
 
+(define-public plasma-active-window-control
+(let ((commit "0b1c091b5662fb21917064d7809b3be8b4a8be47")
+       (revision "1"))
+  (package
+    (name "plasma-active-window-control")
+    (version "1.7.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://invent.kde.org/plasma/"
+			  "plasma-active-window-control/-/archive/"commit
+			  "/plasma-active-window-control-" commit ".tar.gz"))
+              (sha256
+               (base32
+                "1q1scv2x7jrda14zyaqh13aqxpxa42lysdvcfmplpr6w38gcsvlh"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+	(inputs (list kwindowsystem libsm plasma-framework qtdeclarative-5
+	qtx11extras))
+    (home-page "https://invent.kde.org/plasma/plasma-active-window-control")
+    (synopsis "Plasma applet for controlling the currently active window")
+    (description "This package provides window control applet for the current
+active window on Plasma Desktop.")
+    (license (list license:gpl2 license:gpl3)))))
+
 (define-public plasma-nm
   (package
     (name "plasma-nm")
