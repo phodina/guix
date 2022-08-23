@@ -293,6 +293,26 @@ games, and tools.")
     (description "This package provides Oxygen sounds for the KDE desktop.")
     (license license:lgpl3+)))
 
+(define-public plasma-workspace-wallpapers
+  (package
+    (name "plasma-workspace-wallpapers")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://kde/stable/plasma/"
+                    version "/" name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1vjrfmzib17cb9r2q17rv4zmnqsk5mf55vy8kzx71djjif7gaqiy"))))
+    (build-system cmake-build-system)
+    (native-inputs
+     (list extra-cmake-modules))
+    (home-page "https://community.kde.org/Frameworks")
+    (synopsis "Oxygen provides the standard wallpapers for the KDE desktop")
+    (description "This package provides Wallpapers for the KDE desktop.")
+    (license license:lgpl3+)))
+
 (define-public eink-lookandfeel
   (let ((commit "4d7799c9388e976af107ef2644621e79f3a85914")
         (revision "1"))
