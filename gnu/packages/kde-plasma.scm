@@ -31,6 +31,7 @@
   #:use-module (guix gexp)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system copy)
+  #:use-module (guix build-system trivial)
   #:use-module (guix build-system qt)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages boost)
@@ -52,6 +53,8 @@
   #:use-module (gnu packages iso-codes)
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
+  #:use-module (gnu packages kde-pim)
+  ;#:use-module ((gnu packages kde-systemtools) #:select (konsole))
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages maths)
@@ -1369,6 +1372,66 @@ conjunction with the KDE Plasma Desktop.")
 on top of Baloo.")
     (home-page "https://invent.kde.org/plasma/milou")
     (license (list license:gpl2+))))
+
+(define-public plasma
+  (package
+    (name "plasma")
+    (version "5.25.4")
+    (source #f)
+    (build-system trivial-build-system)
+    (arguments
+     (list #:builder #~(begin
+                         (mkdir #$output))))
+    (propagated-inputs (list bluedevil
+                             breeze
+                             ;; breeze-gtk
+                             discover
+                             drkonqi
+                             kactivitymanagerd
+                             kde-cli-tools
+                             ;; kde-gtk-config
+                             kdecoration
+                             kdeplasma-addons
+                             kgamma
+                             khotkeys
+                             kinfocenter
+                             kmenuedit
+                             kscreen
+                             kscreenlocker
+                             ksshaskpass
+                             ksystemstats
+                             kwallet-pam
+                             kwayland-integration
+                             kwin
+                             kwrited
+                             kinit
+                             layer-shell-qt
+                             libkscreen
+                             libksysguard
+                             milou
+                             ;; oxygen
+                             oxygen-sounds
+                             plasma-browser-integration
+                             plasma-desktop
+                             plasma-disks
+                             plasma-firewall
+                             plasma-integration
+                             plasma-nm
+                             plasma-pa
+                             plasma-systemmonitor
+                             ;; plasma-thunderbolt ;; waiting for bolt
+                             plasma-vault
+                             plasma-workspace
+                             plasma-workspace-wallpapers
+                             polkit-kde-agent
+                             powerdevil
+                             sddm
+                             system-settings
+                             xdg-desktop-portal-kde))
+    (synopsis "Plasma desktop")
+    (home-page "https://kde.org/plasma-desktop/")
+    (description "Meta package containing packages for Plasma Desktop")
+    (license license:gpl2+)))
 
 (define-public plasma-disks
   (package
