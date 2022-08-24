@@ -17,9 +17,9 @@
 
   ;; Use the UEFI variant of GRUB with the EFI System
   ;; Partition mounted on /boot/efi.
-  (bootloader (bootloader-configuration
+  (bootloader  (bootloader-configuration
                 (bootloader grub-efi-bootloader)
-                (targets '("/boot/efi"))
+                (targets '())
                 (keyboard-layout keyboard-layout)))
 
   ;; Specify a mapped device for the encrypted root partition.
@@ -44,8 +44,8 @@
 
   ;; Specify a swap file for the system, which resides on the
   ;; root file system.
-  (swap-devices (list (swap-space
-                       (target "/swapfile"))))
+;  (swap-devices (list (swap-space
+;                       (target "/swapfile"))))
 
   ;; Create user `bob' with `alice' as its initial password.
   (users (cons (user-account
@@ -74,26 +74,14 @@
   ;; by clicking the gear.  Use the "desktop" services, which
   ;; include the X11 log-in service, networking with
   ;; NetworkManager, and more.
-  (services (if (target-x86-64?)
-                (append (list (service gnome-desktop-service-type)
-                              (service plasma-desktop-service-type)
-                              (service xfce-desktop-service-type)
-                              (set-xorg-configuration
-                               (xorg-configuration
-                                (keyboard-layout keyboard-layout))))
-                        %desktop-services)
-
-                ;; FIXME: Since GDM depends on Rust (gdm -> gnome-shell -> gjs
-                ;; -> mozjs -> rust) and Rust is currently unavailable on
-                ;; non-x86_64 platforms, we use SDDM and Mate here instead of
-                ;; GNOME and GDM.
-                (append (list (service mate-desktop-service-type)
-                              (service xfce-desktop-service-type)
-                              (set-xorg-configuration
-                               (xorg-configuration
-                                (keyboard-layout keyboard-layout))
-                               sddm-service-type))
-                        %desktop-services)))
+  (services
+             (append (list
+			 (service sddm-service-type
+			 (sddm-configuration
+			 (display-server "wayland")))
+			 (service elogind-service-type)
+			 (service plasma-desktop-service-type))
+			 %base-services))
 
   ;; Allow resolution of '.local' host names with mDNS.
   (name-service-switch %mdns-host-lookup-nss))
