@@ -520,6 +520,30 @@ Wayland.")
     (home-page "https://invent.kde.org/plasma/kwayland-integration")
     (license (list license:lgpl2.1 license:lgpl3))))
 
+(define-public kwrited
+  (package
+    (name "kwrited")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "0xn20irka7adbqfc8w6gnhwp0pbv7bz7l7g16qddv1wq3xix9053"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list kcoreaddons ki18n kpty knotifications))
+    (home-page "https://invent.kde.org/plasma/kwrited")
+    (synopsis "Listen to traditional system notifications")
+    (description "This package provides access to system notifications.")
+    (license license:gpl2+)))
+
 (define-public kgamma
   (package
     (name "kgamma")
