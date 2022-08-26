@@ -474,3 +474,32 @@ wayland-server API.")
 Wayland.")
     (home-page "https://invent.kde.org/plasma/kwayland-integration")
     (license (list license:lgpl2.1 license:lgpl3))))
+
+(define-public kgamma
+  (package
+    (name "kgamma")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "5-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1m72dl1rxsh56pmacx0q0qda7lr4359azik2lnhw7nhs30z4p25a"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list kauth
+                  kcoreaddons
+                  kconfig
+                  kconfigwidgets
+                  kdoctools
+                  ki18n))
+    (synopsis "Adjust your monitor's gamma settings")
+    (description "This package allows to adjust your monitor gamma settings.")
+    (home-page "https://invent.kde.org/plasma/kgamma5")
+    (license license:gpl2+)))
