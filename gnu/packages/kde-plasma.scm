@@ -769,6 +769,36 @@ Wayland.")
     (home-page "https://invent.kde.org/plasma/plasma-disks")
     (license (list license:gpl2 license:gpl3))))
 
+(define-public plasma-firewall
+  (package
+    (name "plasma-firewall")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "12rmf7x8dyyb1k5ycj43kn4c0wzidig4h5wdh1igrgcvyypmjjcl"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list iproute
+                  kcoreaddons
+                  kcmutils
+                  ki18n
+                  kdeclarative
+                  python
+                  qtdeclarative-5))
+    (synopsis "Control Panel for system firewall")
+    (description "This package provides interface to system firewall")
+    (home-page "https://invent.kde.org/plasma/plasma-firewall")
+    (license (list license:gpl2 license:gpl3))))
+
 (define-public plasmatube
   (package
     (name "plasmatube")
