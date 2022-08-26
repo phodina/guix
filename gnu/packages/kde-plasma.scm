@@ -437,6 +437,43 @@ to better interact with the system.")
     (home-page "https://invent.kde.org/plasma/kde-cli-tools")
     (license license:lgpl2.0+)))
 
+(define-public kde-gtk-config
+  (package
+    (name "kde-gtk-config")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "03cr5v7sr67vhcidr87min8z1ld5dm0n6yh79c1ghp1hp5ndscl8"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules
+                         `(,glib "bin")
+                         `(,gtk+ "bin")
+                         pkg-config
+                         sassc))
+    (inputs (list glib
+                  gtk+
+                  kcoreaddons
+                  kconfig
+                  kconfigwidgets
+                  kdecoration
+                  kguiaddons
+                  kdbusaddons
+                  qtsvg-5
+                  xsettingsd))
+    (synopsis "Syncs KDE settings to GTK applications")
+    (description "Provides a good integration with GTK applications.")
+    (home-page "https://invent.kde.org/plasma/kde-gtk-config/")
+    (license (list license:gpl2 license:gpl3))))
+
 (define-public kinfocenter
   (package
     (name "kinfocenter")
