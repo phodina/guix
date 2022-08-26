@@ -1238,3 +1238,31 @@ connections.")
     (description "Provides Plasma applet and services for creating encrypted
 	vaults.")
     (license (list license:gpl2 license:gpl3))))
+
+(define-public plasma-systemmonitor
+  (package
+    (name "plasma-systemmonitor")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1fj0vyjdk6h3f4p9aagh03hyhbf69y2qwlavs2zr7d0iadih7b4c"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+	(inputs (list ki18n kconfig kdeclarative kservice kiconthemes kglobalaccel
+  kio kdbusaddons kirigami knewstuff ksystemstats kitemmodels libksysguard qtdeclarative-5
+  qtquickcontrols2-5))
+    (synopsis "System sensors, process information and other system resources
+monitor")
+    (description "This package provides an interface for monitoring system
+sensors, process information and other system resources.")
+    (home-page "https://invent.kde.org/plasma/plasma-systemmonitor")
+    (license (list license:gpl2 license:gpl3))))
