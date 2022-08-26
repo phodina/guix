@@ -474,6 +474,52 @@ to better interact with the system.")
     (home-page "https://invent.kde.org/plasma/kde-gtk-config/")
     (license (list license:gpl2 license:gpl3))))
 
+(define-public kdeplasma-addons
+  (package
+    (name "kdeplasma-addons")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1lgmmqr798cfxmllalgzixf3v9xbiiazbn3vkcdqxcj6cjf730c0"))))
+    (build-system qt-build-system)
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (replace 'check
+                          (lambda* (#:key tests? #:allow-other-keys)
+                            (when tests?
+                              (invoke "ctest" "-E"
+                               "(converterrunnertest|spellcheckrunnertest)")))))))
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list karchive
+                  kconfig
+                  kcoreaddons
+                  kdeclarative
+                  kholidays
+                  ki18n
+                  kio
+                  kcmutils
+                  knotifications
+                  plasma-framework
+                  krunner
+                  kservice
+                  sonnet
+                  kunitconversion
+                  knewstuff
+                  qtdeclarative-5))
+    (synopsis "Add-ons to improve your Plasma experience")
+    (description "Provides multiple addons for Plasma Desktop.")
+    (home-page "https://invent.kde.org/plasma/kdeplasma-addons")
+    (license license:lgpl2.0)))
+
 (define-public kinfocenter
   (package
     (name "kinfocenter")
