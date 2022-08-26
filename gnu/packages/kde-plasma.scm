@@ -47,12 +47,15 @@
   #:use-module (gnu packages kde-frameworks)
   #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages polkit)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
   #:use-module (gnu packages video)
   #:use-module (gnu packages vpn)
+  #:use-module (gnu packages vulkan)
+  #:use-module (gnu packages textutils)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xorg)
@@ -313,6 +316,66 @@ concept.")
 These window decorations can be used by for example an X11 based window
 manager which re-parents a Client window to a window decoration frame.")
     (license license:lgpl3+)))
+
+(define-public kinfocenter
+  (package
+    (name "kinfocenter")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "0ns2xsqghglg4ikq7w556y1kh20gs677km1vs0paw50xhi7jzbd2"))))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (add-after 'unpack 'fix-systemsettings-symlink
+                          (lambda* _
+                            (substitute* "CMakeLists.txt"
+                              (("\\$\\{KDE_INSTALL_FULL_BINDIR\\}/systemsettings5")
+                               (string-append #$system-settings
+                                              "/bin/systemsettings5"))))))))
+    (native-inputs (list aha extra-cmake-modules kdoctools pkg-config))
+    ;; * vulkaninfo
+    ;; * wayland-info, <https://gitlab.freedesktop.org/wayland/wayland-utils>
+    ;; Wayland KCM
+    ;; * eglinfo
+    (inputs (list dmidecode
+	              ;fwupdmgr
+                  kconfig
+                  kconfigwidgets
+                  kcoreaddons
+                  kirigami
+                  ki18n
+                  kcmutils
+                  kio
+                  kservice
+                  solid
+                  kwidgetsaddons
+                  kdeclarative
+                  kpackage
+                  kwayland
+                  mesa-utils
+                  pciutils
+                  solid
+                  util-linux
+                  vulkan-tools
+                  plasma-framework
+                  qtbase-5
+                  xdpyinfo))
+    (propagated-inputs (list system-settings))
+    (home-page "https://invent.kde.org/plasma/kinfocenter")
+    (synopsis "View information about computer's hardware")
+    (description "This package provides tool to view information about
+computer's hardware.")
+    (license (list license:gpl2 license:gpl3))))
 
 (define-public kmenuedit
   (package
