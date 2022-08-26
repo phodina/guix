@@ -37,6 +37,10 @@
   #:use-module (gnu packages authentication)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages cups)
+  #:use-module (gnu packages display-managers)
+  #:use-module (gnu packages fonts)
+  #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages gl)
@@ -1403,3 +1407,44 @@ UI for Plasma")
     (description "This package provides configuration UI for Plasma Desktop.")
     (home-page "https://invent.kde.org/plasma/systemsettings")
     (license license:gpl2+)))
+
+(define-public xdg-desktop-portal-kde
+  (package
+    (name "xdg-desktop-portal-kde")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "13gva3mci9gawlxpw4ymdma8w6lc2b3y8z36699kmzli4vib214g"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules pkg-config))
+    (inputs (list cups
+                  kcoreaddons
+                  kconfig
+                  ki18n
+                  kdeclarative
+                  kio
+                  kirigami
+                  knotifications
+                  plasma-framework
+                  plasma-wayland-protocols
+                  kwayland
+                  kwidgetsaddons
+                  kwindowsystem
+                  kiconthemes
+                  qtdeclarative-5
+                  qtwayland
+                  wayland))
+    (synopsis "Backend implementation for xdg-desktop-portal using Qt/KF5")
+    (description "This package provides a backend implementation
+for xdg-desktop-portal that is using Qt/KF5.")
+    (home-page "https://invent.kde.org/plasma/xdg-desktop-portal-kde")
+    (license license:lgpl2.0+)))
