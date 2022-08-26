@@ -23,6 +23,7 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages kde-plasma)
+  #:use-module (guix build utils)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module ((guix licenses) #:prefix license:)
@@ -395,3 +396,54 @@ wayland-server API.")
     (license (list license:lgpl2.1 license:lgpl3
                    ;; src/server/drm_fourcc.h carries the MIT license.
                    license:expat))))
+
+(define-public kwayland-integration
+  (package
+    (name "kwayland-integration")
+    (version "5.25.5")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "10xl7yrj519b9s5vq0hqqfz3vvg1fdwggw96snzm44iwycqbgss8"))))
+    (build-system qt-build-system)
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (delete 'check)
+                        (add-after 'install 'check-after-install
+                          (lambda* (#:key tests? #:allow-other-keys)
+                            (when tests?
+                              (setenv "HOME"
+                                      (getcwd))
+                              (setenv "XDG_RUNTIME_DIR"
+                                      (getcwd))
+                              (setenv "QT_QPA_PLATFORM" "offscreen")
+                              ;; https://bugs.gentoo.org/668872
+                              (invoke "ctest" "-E" "(idleTest-kwayland-test)"))))
+                        (add-before 'check-after-install 'check-setup
+                          (lambda* (#:key outputs #:allow-other-keys)
+                            (setenv "QT_PLUGIN_PATH"
+                                    (string-append #$output
+                                                   "/lib/qt5/plugins:"
+                                                   (getenv "QT_PLUGIN_PATH"))))))))
+    (native-inputs (list extra-cmake-modules wayland-protocols pkg-config))
+    (inputs (list kguiaddons
+                  kidletime
+                  kwindowsystem
+                  kwayland
+                  libxkbcommon
+                  wayland
+                  qtbase-5
+                  qtwayland))
+    (synopsis "KWayland runtime integration plugins")
+    (description "Provides integration plugins for various KDE Frameworks for
+Wayland.")
+    (home-page "https://invent.kde.org/plasma/kwayland-integration")
+    (license (list license:lgpl2.1 license:lgpl3))))
