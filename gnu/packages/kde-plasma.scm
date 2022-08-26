@@ -126,6 +126,45 @@ Breeze is the default theme for the KDE Plasma desktop.")
     (license (list license:bsd-3                  ;cmake/FindSass.cmake
                    license:lgpl2.1+))))           ;<all other files>
 
+(define-public discover
+  (package
+    (name "discover")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "154sjr7c8dwlf1m22vh3wqiyfii8xpmxmfrf36i9r0xyb0zb5zg6"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules pkg-config))
+    (inputs (list kcoreaddons
+                  kconfig
+                  kcrash
+                  kdbusaddons
+                  ki18n
+                  karchive
+                  kxmlgui
+                  kirigami
+                  kuserfeedback
+                  knotifications
+                  kio
+                  kdeclarative
+                  kcmutils
+                  kidletime
+                  qtdeclarative-5))
+    (synopsis "KDE and Plasma resources management GUI")
+    (description "This package provides a way to find and install applications,
+games, and tools.")
+    (home-page "https://invent.kde.org/plasma/discover")
+    (license (list license:gpl2 license:gpl3))))
+
 (define-public drkonqi
   (package
     (name "drkonqi")
