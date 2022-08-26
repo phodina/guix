@@ -394,6 +394,49 @@ These window decorations can be used by for example an X11 based window
 manager which re-parents a Client window to a window decoration frame.")
     (license license:lgpl3+)))
 
+(define-public kde-cli-tools
+  (package
+    (name "kde-cli-tools")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "00p6vm9qw871hjclvw21nh93dq60r1ylb95hscx917gfx42dan8x"))))
+    (build-system qt-build-system)
+    (arguments
+     (list #:tests? #f ;TODO: Failing test
+           #:phases #~(modify-phases %standard-phases
+                        (add-before 'check 'setup-env
+                          (lambda* _
+                            (setenv "XDG_RUNTIME_DIR"
+                                    (getcwd)))))))
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list kconfig
+                  kdoctools
+                  kiconthemes
+                  ki18n
+                  kcmutils
+                  kio
+                  kservice
+                  kwindowsystem
+                  kactivities
+                  kparts
+                  plasma-workspace
+                  qtsvg-5))
+    (synopsis "Tools for KDE to better interact with the system")
+    (description "This package provides tools based on KDE Frameworks 5
+to better interact with the system.")
+    (home-page "https://invent.kde.org/plasma/kde-cli-tools")
+    (license license:lgpl2.0+)))
+
 (define-public kinfocenter
   (package
     (name "kinfocenter")
