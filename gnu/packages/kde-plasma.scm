@@ -1299,3 +1299,44 @@ sensors, process information and other system resources.")
 UI for Plasma")
     (home-page "https://invent.kde.org/plasma/polkit-kde-agent-1")
     (license license:gpl2+)))
+
+(define-public system-settings
+  (package
+    (name "system-settings")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/" version
+                                  "/systemsettings-" version ".tar.xz"))
+              (sha256
+               (base32
+                "130739bfxl1jwkn3f4h7dnr7dv2i76g6sd2svmg0qy60cnwvcgcv"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list kauth
+                  kcrash
+                  kitemviews
+                  kitemmodels
+                  kcmutils
+                  ki18n
+                  kio
+                  kservice
+                  kiconthemes
+                  kwidgetsaddons
+                  kwindowsystem
+                  kxmlgui
+                  kdbusaddons
+                  kconfig
+                  kpackage
+                  kactivities
+                  kactivities-stats
+                  kguiaddons
+                  kirigami
+                  knotifications
+                  krunner
+                  plasma-workspace
+                  qtdeclarative-5))
+    (synopsis "Control center to configure Plasma Desktop")
+    (description "This package provides configuration UI for Plasma Desktop.")
+    (home-page "https://invent.kde.org/plasma/systemsettings")
+    (license license:gpl2+)))
