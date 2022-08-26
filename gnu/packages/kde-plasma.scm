@@ -892,6 +892,39 @@ Wayland.")
     (home-page "https://invent.kde.org/plasma/kgamma5")
     (license license:gpl2+)))
 
+(define-public milou
+  (package
+    (name "milou")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "17npfn7gwiqrvy5w8vzpc38c4bgkx3vjgjkm1caizn04zfk7xar7"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list kcoreaddons
+                  ki18n
+                  kdeclarative
+                  kitemmodels
+                  kservice
+                  plasma-framework
+                  kwindowsystem
+                  krunner
+                  qtdeclarative-5))
+    (synopsis "Dedicated search application built on top of Baloo")
+    (description "This package provides a dedicated search application built
+on top of Baloo.")
+    (home-page "https://invent.kde.org/plasma/milou")
+    (license (list license:gpl2+))))
+
 (define-public plasma-disks
   (package
     (name "plasma-disks")
