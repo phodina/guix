@@ -138,6 +138,38 @@ These window decorations can be used by for example an X11 based window
 manager which re-parents a Client window to a window decoration frame.")
     (license license:lgpl3+)))
 
+(define-public kmenuedit
+  (package
+    (name "kmenuedit")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1y3ml4jscb28nvadh7iq2y240qifv71dv2nkd32i69h52xdrvz27"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules kdoctools))
+    (inputs (list ki18n
+                  kxmlgui
+                  kdbusaddons
+                  kiconthemes
+                  kio
+                  kitemviews
+                  sonnet
+                  kglobalaccel
+                  kwindowsystem))
+    (synopsis "Menu Editor for Plasma Workspaces")
+    (description "This package provides menu editor for Plasma Workspaces.")
+    (home-page "https://invent.kde.org/plasma/kmenuedit")
+    (license license:gpl2+)))
+
 (define-public kscreen
   (package
     (name "kscreen")
