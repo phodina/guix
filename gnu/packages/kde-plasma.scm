@@ -736,6 +736,39 @@ Wayland.")
     (home-page "https://invent.kde.org/plasma/kgamma5")
     (license license:gpl2+)))
 
+(define-public plasma-disks
+  (package
+    (name "plasma-disks")
+    (version "5.25.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "04hs8jg7f5bm5rjcb6i6zidyamq6cfry5sm5mj6hqdj0qmn9i396"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list kcoreaddons
+                  kdbusaddons
+                  knotifications
+                  ki18n
+                  solid
+                  kservice
+                  kio
+                  kauth
+                  kdeclarative
+                  smartmontools))
+    (synopsis "Monitors S.M.A.R.T. capable devices for imminent failure")
+    (description "This package provides intrface to S.M.A.R.T. data of disks.")
+    (home-page "https://invent.kde.org/plasma/plasma-disks")
+    (license (list license:gpl2 license:gpl3))))
+
 (define-public plasmatube
   (package
     (name "plasmatube")
