@@ -68,14 +68,14 @@
 (define-public breeze
   (package
     (name "breeze")
-    (version "5.25.3")
+    (version "5.25.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://kde/stable/plasma/" version "/"
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "0za75ckgfcdxrh2qxgyl2c1273g2xqwmd55njsis1yvwryadypqw"))))
+                "0lw0vj07z8l19v2z31d601kfanqixy3dbsv0lf8q273xv3li9sbp"))))
     (build-system qt-build-system)
     ;; TODO: Warning at /gnu/store/…-kpackage-5.34.0/…/KF5PackageMacros.cmake:
     ;;   warnings during generation of metainfo for org.kde.breezedark.desktop:
