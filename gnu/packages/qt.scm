@@ -4279,3 +4279,35 @@ web server.")
     (description "This package provides A D-Bus service which performs user
 authentication on behalf of its clients")
     (license license:lgpl2.1+)))
+
+(define-public signon-plugin-oauth2
+  (package
+    (name "signon-plugin-oauth2")
+    (version "0.25")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.com/accounts-sso/signon-plugin-oauth2")
+                    (commit (string-append "VERSION_" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "16aslnyk8jdg03zcg97rp6qzd0gmclj14hyhliksz8jgfz1l0w7c"))))
+    (build-system qt-build-system)
+    (native-inputs (list doxygen pkg-config))
+    (inputs (list signond))
+    (arguments
+     (list #:tests? #f
+           #:make-flags #~(list (string-append "INSTALL_ROOT=" #$output))
+           #:phases #~(modify-phases %standard-phases
+                        (replace 'configure
+                          (lambda _
+						  ; Don't treat warnings as erros
+						  (substitute* "common-project-config.pri"
+						  (("-Werror") ""))
+						  (invoke "qmake" (string-append "PREFIX=" #$output)
+						  (string-append "LIBDIR=" #$output "/lib")))))))
+    (home-page "")
+    (synopsis "OAuth 2 plugin for signon")
+    (description "")
+    (license license:lgpl2.1+)))
