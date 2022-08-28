@@ -3,7 +3,7 @@
 ;; root partition is encrypted with LUKS, and a swap file.
 
 (use-modules (gnu) (gnu system nss) (guix utils))
-(use-service-modules desktop sddm xorg)
+(use-service-modules desktop sddm speech xorg)
 (use-package-modules certs gnome)
 
 (operating-system
@@ -77,6 +77,7 @@
   (services (if (target-x86-64?)
                 (append (list (service gnome-desktop-service-type)
                               (service xfce-desktop-service-type)
+                              (service mycroft-service-type)
                               (set-xorg-configuration
                                (xorg-configuration
                                 (keyboard-layout keyboard-layout))))
