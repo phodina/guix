@@ -31,6 +31,7 @@
 ;;; Copyright © 2021 Wamm K. D. <jaft.r@outlook.com>
 ;;; Copyright © 2022 Zhu Zihao <all_but_last@163.com>
 ;;; Copyright © 2022 Benjamin Slade <slade@lambda-y.net>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -115,6 +116,35 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match))
+
+(define-public appmenu-gtk-module
+  (package
+    (name "appmenu-gtk-module")
+    (version "0.7.6")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url
+                     "https://gitlab.com/vala-panel-project/vala-panel-appmenu")
+                    (commit version)))
+              (sha256
+               (base32
+                "1ywpygjwlbli65203ja2f8wwxh5gbavnfwcxwg25v061pcljaqmm"))))
+    (build-system meson-build-system)
+    (arguments
+     (list #:glib-or-gtk? #t
+           #:phases #~(modify-phases %standard-phases
+                        (add-after 'unpack 'fix-install-gtk-module
+                          (lambda* _
+                            (substitute* "subprojects/appmenu-gtk-module/src/gtk-3.0/meson.build"
+                              (("gtk3.get_pkgconfig_variable\\('libdir'\\)")
+                               #$output)))))))
+    (native-inputs (list `(,glib "bin") vala pkg-config))
+    (inputs (list gtk+-2 gtk+ libwnck))
+    (synopsis "Application Menu GTK+ Module")
+    (description "")
+    (home-page "https://gitlab.com/vala-panel-project/vala-panel-appmenu")
+    (license (list license:lgpl3))))
 
 (define-public atk
   (package
