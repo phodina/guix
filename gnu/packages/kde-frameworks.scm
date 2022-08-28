@@ -933,6 +933,45 @@ item models.  It includes views for categorizing lists and to add search filters
 to flat and hierarchical lists.")
     (license (list license:gpl2+ license:lgpl2.1+))))
 
+(define-public kquickcharts
+  (package
+    (name "kquickcharts")
+    (version "5.96.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/frameworks/"
+                                  (version-major+minor version)
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1sd9mfxk72xfa1kz77s7z312scfm0vwvvgmyi4pypb9cs7d9dq3j"))))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (replace 'check
+                          (lambda* (#:key tests? #:allow-other-keys)
+                            (when tests?
+                              (setenv "HOME"
+                                      (getcwd))
+                              (setenv "XDG_RUNTIME_DIR"
+                                      (getcwd))
+                              (setenv "QT_QPA_PLATFORM" "offscreen")
+                              (invoke "ctest" "-E"
+                               "(tst_BarChart.qml|tst_LineChart.qml|tst_PieChart.qml)")))))))
+    (inputs (list qtbase-5 qtdeclarative-5 qtquickcontrols2-5))
+    (native-inputs (list pkg-config extra-cmake-modules))
+    (home-page "https://api.kde.org/frameworks/kquickcharts/html/index.html")
+    (synopsis "QtQuick plugin providing high-performance charts")
+    (description
+     "The Quick Charts module provides a set of charts that can be
+used from QtQuick applications for both simple display of data as well as
+continuous display of high-volume data.")
+    (license (list license:lgpl2.1 license:lgpl3))))
+
 (define-public kplotting
   (package
     (name "kplotting")
