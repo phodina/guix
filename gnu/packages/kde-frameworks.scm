@@ -2747,6 +2747,39 @@ the data accessible in all applications using the KDE file dialog or any other
 KIO enabled infrastructure.")
     (license license:lgpl2.1+)))
 
+(define-public kio-extras
+  (package
+    (name "kio-extras")
+    (version "22.08.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://kde/stable/release-service/"
+                    version "/src/"
+                    name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "0gzna2ps2qd2js28c97kjpcbah7zz8n4s4932faggc2nz5z5wnyn"))))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:phases
+       #~(modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (setenv "HOME" (getcwd))
+             (setenv "TMPDIR" (getcwd))
+             (when tests?  ; disable failing test
+               (invoke "ctest" "-E" "testkioarchive")))))))
+    (native-inputs
+     (list extra-cmake-modules dbus kdoctools qttools-5))
+	(inputs (list karchive kconfig kconfigwidgets kcoreaddons
+  kdbusaddons ki18n kdnssd kio solid kbookmarks kguiaddons ksyntaxhighlighting qtbase-5 qtsvg-5))
+    (home-page "https://community.kde.org/Frameworks")
+    (synopsis "Additional components to increase the functionality of KIO")
+    (description "This package provides additional components to increase
+the functionality of the KDE resource and network access abstractions.")
+    (license license:lgpl2.0+)))
+
 (define-public knewstuff
   (package
     (name "knewstuff")
