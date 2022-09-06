@@ -124,6 +124,7 @@
   #:use-module (gnu packages flex)
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages file-systems)
+  #:use-module (gnu packages firmware)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages game-development)
@@ -2329,6 +2330,42 @@ The gnome-about program helps find which version of GNOME is installed.")
     (home-page "https://git.gnome.org/browse/gnome-disk-utility")
     (synopsis "Disk management utility for GNOME")
     (description "Disk management utility for GNOME.")
+    (license license:gpl2+)))
+
+(define-public gnome-firmware
+  (package
+    (name "gnome-firmware")
+    (version "43.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://gitlab.gnome.org/World/gnome-firmware")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "033cy17pzbvzcynw88sr594asp6xcxirq88gl49zrxx6a1gvl17m"))))
+    (build-system meson-build-system)
+    (arguments
+     (list #:glib-or-gtk? #t
+           #:configure-flags #~(list "-Dsystemd=false" "-Delogind=true")))
+    (native-inputs (list desktop-file-utils
+                         gettext-minimal
+                         `(,glib "bin")
+                         `(,gtk "bin")
+                         help2man
+                         pkg-config))
+    (inputs (list gtk fwupd libadwaita libxmlb elogind))
+    (synopsis "Manage firmware on devices")
+    (description
+     "This package provides integration of firmware manager:
+   @itemize
+@item Upgrade, Downgrade, & Reinstall firmware on devices supported by fwupd.
+@item Unlock locked fwupd devices
+@item Verify firmware on supported devices
+@item Display all releases for a fwupd device
+@end itemize")
+    (home-page "https://gitlab.gnome.org/World/gnome-firmware")
     (license license:gpl2+)))
 
 (define-public gnome-font-viewer
