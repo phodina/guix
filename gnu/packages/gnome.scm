@@ -424,20 +424,20 @@ services.")
     (build-system glib-or-gtk-build-system)
     (outputs '("out" "doc"))
     (arguments
-     `(#:configure-flags
-       (list
+     (list #:configure-flags
+       #~(list
         "--enable-gtk-doc"
         (string-append "--with-html-dir="
-                       (assoc-ref %outputs "doc")
+                       #$output:doc
                        "/share/gtk-doc/html"))
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'patch-docbook-xml
            (lambda* (#:key inputs #:allow-other-keys)
              (with-directory-excursion "doc/reference"
                (substitute* "libgrss-docs.sgml"
                  (("http://www.oasis-open.org/docbook/xml/4.1.2/")
-                  (string-append (assoc-ref inputs "docbook-xml")
+                  (string-append #$docbook-xml
                                  "/xml/dtd/docbook/")))))))))
     (native-inputs
      (list docbook-xml-4.1.2 gobject-introspection gtk-doc/stable
