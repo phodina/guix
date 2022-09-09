@@ -1243,13 +1243,13 @@ in particular in the GNOME desktop.")
            (system "Xvfb :1 &")
            (setenv "DISPLAY" ":1"))))))
    (native-inputs
-    `(("desktop-file-utils" ,desktop-file-utils)
-      ("gettext" ,gettext-minimal)
-      ("glib:bin" ,glib "bin")
-      ("gtk+:bin" ,gtk+ "bin")
-      ("itstool" ,itstool)
-      ("pkg-config" ,pkg-config)
-      ("xorg-server" ,xorg-server-for-tests)))
+    (list desktop-file-utils
+      gettext-minimal
+      `(,glib "bin")
+      `(,gtk+ "bin")
+      itstool
+      pkg-config
+      xorg-server-for-tests))
    (inputs
     (list adwaita-icon-theme
           appstream-glib
