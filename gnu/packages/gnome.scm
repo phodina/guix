@@ -310,21 +310,20 @@
                "05gabybkl7xfinwx97i4scp9hic0dlxj7gh03dyj0hd16fp9wx47"))))
     (build-system glib-or-gtk-build-system)
     (arguments
-     `(#:configure-flags (list
+     (list #:configure-flags #~(list
                           (string-append "--with-girdir="
-                                         (assoc-ref %outputs "out")
+                                         #$output
                                          "/share/gir-1.0")
                           (string-append "--with-typelibdir="
-                                         (assoc-ref %outputs "out")
+                                         #$output
                                          "/lib/girepository-1.0"))
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-before 'configure 'embed-growisofs-reference
            (lambda* (#:key inputs #:allow-other-keys)
-             (let ((dvd+rw-tools (assoc-ref inputs "dvd+rw-tools")))
                (substitute* "plugins/growisofs/burn-growisofs.c"
                  (("(\")(growisofs)" _ prefix command)
-                  (string-append prefix dvd+rw-tools "/bin/" command)))))))))
+                  (string-append prefix #$dvd+rw-tools "/bin/" command))))))))
     (propagated-inputs
      (list hicolor-icon-theme))
     (native-inputs
