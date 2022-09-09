@@ -665,26 +665,26 @@ of writing test cases for asynchronous interactions.")
     (build-system glib-or-gtk-build-system)
     (outputs '("out" "doc"))
     (arguments
-     `(#:configure-flags
-       (list
+     (list #:configure-flags
+       #~(list
         "--disable-maintainer-flags"
         (string-append "--with-pygi-overrides-dir="
-                       (assoc-ref %outputs "out")
+		               #$output:doc
                        "/lib/python"
-                       ,(version-major+minor
+                       #$(version-major+minor
                          (package-version python))
                        "/site-packages/gi/overrides")
         (string-append "--with-html-dir="
-                       (assoc-ref %outputs "doc")
+                       #$output:doc
                        "/share/gtk-doc/html"))
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'patch-docbook-xml
            (lambda* (#:key inputs #:allow-other-keys)
              (with-directory-excursion "doc/reference/dee-1.0"
                (substitute* "dee-1.0-docs.sgml"
                  (("http://www.oasis-open.org/docbook/xml/4.3/")
-                  (string-append (assoc-ref inputs "docbook-xml")
+                  (string-append #$docbook-xml
                                  "/xml/dtd/docbook/"))))))
          (add-after 'patch-docbook-xml 'disable-failing-tests
            (lambda _
@@ -700,19 +700,19 @@ of writing test cases for asynchronous interactions.")
              ;; For missing '/etc/machine-id'.
              (setenv "DBUS_FATAL_WARNINGS" "0"))))))
     (native-inputs
-     `(("dbus" ,dbus)
-       ("dbus-test-runner" ,dbus-test-runner)
-       ("docbook-xml" ,docbook-xml-4.3)
-       ("gobject-introspection" ,gobject-introspection)
-       ("gtk-doc" ,gtk-doc/stable)
+     (list dbus
+       dbus-test-runner
+       docbook-xml-4.3
+       gobject-introspection
+       gtk-doc/stable
        ;; Would only be required by configure flag "--enable-extended-tests".
        ;("gtx" ,gtx)
-       ("pkg-config" ,pkg-config)
-       ("pygobject" ,python-pygobject)
-       ("python" ,python-wrapper)
-       ("vala" ,vala-0.52)))
+       pkg-config
+       python-pygobject
+       python-wrapper
+       vala-0.52))
     (inputs
-     `(("icu" ,icu4c)))
+     (list icu4c))
     (propagated-inputs
      (list glib))
     (synopsis "Model to synchronize multiple instances over DBus")
