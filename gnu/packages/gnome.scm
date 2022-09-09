@@ -1941,7 +1941,7 @@ and running smart commands.")
     "The GNOME User Documentation explains how to use the GNOME desktop and its
 components.  It covers usage and setup of the core GNOME programs by end-users
 and system administrators.")
-   (home-page "https://live.gnome.org/DocumentationProject")
+   (home-page "https://wiki.gnome.org/DocumentationProject")
    (license license:cc-by3.0)))
 
 (define-public dia
