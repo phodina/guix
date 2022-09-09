@@ -1585,32 +1585,30 @@ tour of all gnome components and allows the user to set them up.")
 (define-public gnome-user-share
   (package
    (name "gnome-user-share")
-   (version "3.34.0")
+   (version "43")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnome/sources/" name "/"
-                                (version-major+minor version) "/"
-                                name "-" version ".tar.xz"))
+                                version "/"
+                                name "-" version ".alpha.tar.xz"))
             (sha256
              (base32
-              "04r9ck9v4i0d31grbli1d4slw2d6dcsfkpaybkwbzi7wnj72l30x"))))
+              "16iy8cpkpxwcxkl2b3y2gzpv0x72y8zgccc5mhsal8ygpqgq2ygd"))))
    (build-system meson-build-system)
    (arguments
     `(#:glib-or-gtk? #t
       #:meson ,meson-0.60
       #:configure-flags
-       `("-Dsystemduserunitdir=/tmp/empty"
-         ;; Enable nautilus extension for file sharing.
-         "-Dnautilus_extension=true")))
+       `("-Dsystemduserunitdir=/tmp/empty")))
    (native-inputs
     `(("gettext" ,gettext-minimal)
-      ("glib:bin" ,glib "bin")
+      ("glib:bin" ,glib-next "bin")
       ("gobject-introspection" ,gobject-introspection)
       ("gtk+:bin" ,gtk+ "bin")
       ("pkg-config" ,pkg-config)
       ("yelp-tools" ,yelp-tools)))
    (inputs
-    (list glib
+    (list glib-next
           gnome-bluetooth
           gtk+
           libcanberra
