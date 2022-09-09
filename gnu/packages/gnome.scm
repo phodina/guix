@@ -2313,7 +2313,7 @@ The gnome-about program helps find which version of GNOME is installed.")
            libpwquality
            libsecret
            udisks))
-    (home-page "https://git.gnome.org/browse/gnome-disk-utility")
+    (home-page "https://gitlab.gnome.org/GNOME/gnome-disk-utility")
     (synopsis "Disk management utility for GNOME")
     (description "Disk management utility for GNOME.")
     (license license:gpl2+)))
