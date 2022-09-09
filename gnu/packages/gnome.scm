@@ -577,21 +577,21 @@ in JavaScript.")
     (build-system glib-or-gtk-build-system)
     (outputs '("out" "doc"))
     (arguments
-     `(#:tests? #f                      ; Tests require networking.
+     (list #:tests? #f                      ; Tests require networking.
        #:configure-flags
-       (list
+       #~(list
         "--disable-static"
         (string-append "--with-html-dir="
-                       (assoc-ref %outputs "doc")
+		               #$output:doc
                        "/share/gtk-doc/html"))
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'patch-docbook-xml
            (lambda* (#:key inputs #:allow-other-keys)
              (with-directory-excursion "doc"
                (substitute* "libdmapsharing-4.0-docs.xml"
                  (("http://www.oasis-open.org/docbook/xml/4.3/")
-                  (string-append (assoc-ref inputs "docbook-xml")
+                  (string-append #$docbook-xml
                                  "/xml/dtd/docbook/")))))))))
     (native-inputs
      (list check
@@ -601,11 +601,11 @@ in JavaScript.")
            pkg-config
            vala))
     (inputs
-     `(("avahi" ,avahi)
-       ("librsvg" ,librsvg)
-       ("gee" ,libgee)
-       ("gst-plugins-base" ,gst-plugins-base)
-       ("gtk+" ,gtk+)))
+     (list avahi
+       librsvg
+       libgee
+       gst-plugins-base
+       gtk+))
     (propagated-inputs
      (list glib glib-networking gstreamer libsoup-minimal-2))
     (synopsis "Media management library")
