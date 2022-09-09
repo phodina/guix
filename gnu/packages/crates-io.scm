@@ -97,6 +97,50 @@
 ;;; Please: Try to add new module packages in alphabetic order.
 ;;;
 
+(define-public corrosion
+  (package
+    (name "corrosion")
+    (version "0.2.2")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/AndrewGaspar/corrosion")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0b9y3r9agm1h6wznvd99g7ri5yifdm2bm9br8ciiqd1bk5xhf5kq"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:imported-modules ((guix build cmake-build-system)
+                           ,@%cargo-build-system-modules)
+       #:modules ((guix build cargo-build-system)
+                  ((guix build cmake-build-system)
+                   #:prefix cmake:)
+                  (guix build utils))
+       #:cargo-inputs (("rust-cargo-metadata" ,rust-cargo-metadata-0.14)
+                       ("rust-semver" ,rust-semver-1)
+                       ("rust-platforms" ,rust-platforms-2)
+                       ("rust-clap" ,rust-clap-2))
+       #:phases (modify-phases %standard-phases
+                  (add-after 'patch-cargo-checksums 'cmake-configure
+                    (assoc-ref cmake:%standard-phases
+                               'configure))
+                  (add-after 'cmake-configure 'cmake-build
+                    (assoc-ref cmake:%standard-phases
+                               'build))
+                  (remove 'install
+                          (assoc-ref cmake:%standard-phases
+                                     'install)))))
+    (native-inputs (list cmake))
+    (home-page "https://github.com/corrosion-rs/corrosion")
+    (synopsis "Rust and C/C++ Integration")
+    (description
+     "This tool provides integraton of Rust into an existing CMake
+project.  Corrosion is capable of importing executables, static libraries,
+and dynamic libraries from a crate.")
+    (license license:expat)))
+
 (define-public rust-ab-glyph-rasterizer-0.1
   (package
     (name "rust-ab-glyph-rasterizer")

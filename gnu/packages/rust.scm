@@ -51,6 +51,7 @@
   #:use-module (gnu packages tls)
   #:use-module (gnu packages)
   #:use-module (guix build-system cargo)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system copy)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system trivial)
