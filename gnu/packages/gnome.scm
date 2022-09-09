@@ -1150,8 +1150,8 @@ freedesktop.org desktop notification specification.")
                 "1x8yvjy0yg17qyhmqws8xh2k8dvzrhpwqz7j1cfwzalrb1i9c5g8"))))
     (build-system meson-build-system)
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'patch
            (lambda* (#:key inputs #:allow-other-keys)
              (substitute* "util/mm-common-prepare.in"
@@ -1160,10 +1160,10 @@ freedesktop.org desktop notification specification.")
                (("sed") (search-input-file inputs "/bin/sed"))
                (("cat") (search-input-file inputs "/bin/cat"))))))))
     (native-inputs
-     `(("coreutils" ,coreutils)
-       ("gettext" ,gettext-minimal)
-       ("pkg-config" ,pkg-config)
-       ("sed" ,sed)))
+     (list coreutils
+           gettext-minimal
+           pkg-config
+           sed))
     (inputs
      (list python))
     (synopsis "Module of GNOME C++ bindings")
