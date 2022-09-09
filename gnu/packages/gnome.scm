@@ -630,12 +630,12 @@ It is written in C using GObject and libsoup.")
     (build-system glib-or-gtk-build-system)
     (outputs '("out" "doc"))
     (arguments
-     `(#:configure-flags
-       (list
+     (list #:configure-flags
+       #~(list
         "--disable-static"
         "--enable-gtk-doc"
         (string-append "--with-html-dir="
-                       (assoc-ref %outputs "doc")
+		               #$output:doc
                        "/share/gtk-doc/html"))))
     (native-inputs
      (list gobject-introspection gtk-doc/stable pkg-config))
