@@ -1821,17 +1821,16 @@ configuration files for the GNOME menu, as well as a simple menu editor.")
                 "1mr2g009w0zm5rj8dg1k77c7zdwylih2yszm8vh8wkw6al6bzfh3"))))
     (build-system meson-build-system)
     (arguments
-     `(#:glib-or-gtk? #t
+     (list #:glib-or-gtk? #t
        #:configure-flags
-       (list
+       #~(list
         ;; Otherwise, the RUNPATH will lack the final path component.
         (string-append "-Dc_link_args=-Wl,-rpath="
-                       (assoc-ref %outputs "out") "/lib/deja-dup"))
+                       #$output "/lib/deja-dup"))
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'patch-paths
            (lambda* (#:key inputs #:allow-other-keys)
-             (let ((python (assoc-ref inputs "python")))
                (substitute* '("libdeja/duplicity/DuplicityInstance.vala"
                               "libdeja/tests/scripts/instance-error.test")
                  (("/bin/rm")
@@ -1841,17 +1840,16 @@ configuration files for the GNOME menu, as well as a simple menu editor.")
                   (which "sh")))
                (substitute* "libdeja/tests/scripts/instance-error.test"
                  (("`which python3`")
-                  (string-append python "/bin/python3"))))))
+                  (string-append #$python "/bin/python3")))))
          (add-after 'unpack 'patch-libgpg-error
            (lambda* (#:key inputs #:allow-other-keys)
-             (let ((libgpg-error (assoc-ref inputs "libgpg-error")))
                (substitute* "meson.build"
                  (("(gpgerror_libs = ).*" _ var)
-                  (format #f "~a '-L~a/lib -lgpg-error'\n" var libgpg-error))))))
+                  (format #f "~a '-L~a/lib -lgpg-error'\n" var #$libgpg-error)))))
          (add-after 'install 'wrap-program
            (lambda* (#:key inputs outputs #:allow-other-keys)
              ;; Add duplicity to the search path
-             (wrap-program (string-append (assoc-ref outputs "out")
+             (wrap-program (string-append #$output
                                           "/bin/deja-dup")
                `("PATH" ":" prefix
                  (,(string-append (assoc-ref inputs "duplicity") "/bin")))))))))
