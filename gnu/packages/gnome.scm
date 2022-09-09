@@ -1981,11 +1981,13 @@ and system administrators.")
        (list appstream-glib docbook-xsl
              `(,glib "bin") gettext-minimal pkg-config))
       (home-page "https://wiki.gnome.org/Apps/Dia")
-      (synopsis "Diagram creation for GNOME")
-      (description "Dia can be used to draw different types of diagrams, and
-includes support for UML static structure diagrams (class diagrams), entity
-relationship modeling, and network diagrams.  The program supports various file
-formats like PNG, SVG, PDF and EPS.")
+      (synopsis "GNU program for drawing diagrams")
+      (description "Dia is a GNU program for drawing diagrams.  It is a versatile
+diagramming tool with a modular design that allows development of custom
+shape packages for drawing various kinds of diagrams by writing XML files,
+and has support for UML diagrams, flowcharts, network diagrams, circuit
+diagrams, and many more.  Dia can export diagrams to a number of formats,
+including EPS, SVG, PNG, and more.")
       (license license:gpl2+))))
 
 (define-public libgdata
