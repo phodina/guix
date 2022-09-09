@@ -465,13 +465,13 @@ and other formats.")
         (base32 "1zv5b9bcbclzj64xd9kgql4ndmbwvvi6cl937ykw8fp21xgh8z7y"))))
     (build-system glib-or-gtk-build-system)
     (arguments
-     `(#:configure-flags
-       (list
+     (list #:configure-flags
+       #~(list
         "--disable-static")))
     (native-inputs
-     `(("gettext" ,gettext-minimal)
-       ("intltool" ,intltool)
-       ("pkg-config" ,pkg-config)))
+     (list gettext-minimal
+       intltool
+       pkg-config))
     (synopsis "Common JS Modules")
     (description "GNOME-JS-Common provides common modules for GNOME JavaScript
 bindings.")
