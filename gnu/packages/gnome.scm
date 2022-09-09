@@ -367,8 +367,8 @@ features to enable users to create their discs easily and quickly.")
         (base32 "0aars24myf6n8b8hm1n12hsgcm54097kpbpm4ba31zp1l4y22qs7"))))
     (build-system meson-build-system)
     (arguments
-     `(#:glib-or-gtk? #t             ; To wrap binaries and/or compile schemas
-       #:configure-flags (list "-Dintrospection=false"
+     (list #:glib-or-gtk? #t             ; To wrap binaries and/or compile schemas
+       #:configure-flags #~(list "-Dintrospection=false"
                                "-Denable-gtk-doc=false"
                                "-Dvapigen=false")))
     (native-inputs
@@ -393,22 +393,18 @@ services.")
     (arguments
      (substitute-keyword-arguments (package-arguments libcloudproviders-minimal)
        ((#:configure-flags _)
-        '(list "-Denable-gtk-doc=true")) ;false by default
+        #~(list "-Denable-gtk-doc=true")) ;false by default
        ((#:phases phases '%standard-phases)
-        `(modify-phases %standard-phases
+        #~(modify-phases %standard-phases
            (add-after 'install 'move-doc
              (lambda* (#:key outputs #:allow-other-keys)
-               (let* ((out (assoc-ref outputs "out"))
-                      (doc (assoc-ref outputs "doc")))
-                 (mkdir-p (string-append doc "/share"))
+                 (mkdir-p (string-append #$output:doc "/share"))
                  (rename-file
-                  (string-append out "/share/gtk-doc")
-                  (string-append doc "/share/gtk-doc")))))))))
+                  (string-append #$output "/share/gtk-doc")
+                  (string-append #$output:doc "/share/gtk-doc"))))))))
     (native-inputs
-     (append
-         `(("gobject-introspection" ,gobject-introspection)
-           ("gtk-doc" ,gtk-doc/stable))
-         (package-native-inputs libcloudproviders-minimal)))))
+     (modify-inputs (package-native-inputs libcloudproviders-minimal) (append
+         gobject-introspection gtk-doc/stable)))))
 
 (define-public libgrss
   (package
