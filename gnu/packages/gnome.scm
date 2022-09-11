@@ -7752,6 +7752,7 @@ configuration program to choose applications starting on login.")
              (setenv "DBUS_FATAL_WARNINGS" "0"))))))
     (native-inputs
      (list `(,glib "bin")               ;for glib-compile-resources
+           gobject-introspection
            pkg-config
            libxml2
            ;; For testing
@@ -7761,7 +7762,7 @@ configuration program to choose applications starting on login.")
            xorg-server-for-tests))
     (propagated-inputs
      ;; These are all in the Requires.private field of gjs-1.0.pc.
-     (list cairo gobject-introspection mozjs-91))
+     (list cairo mozjs-91))
     (inputs
      (list gtk+ readline))
     (synopsis "Javascript bindings for GNOME")
