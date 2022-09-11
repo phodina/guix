@@ -72,6 +72,7 @@
 ;;; Copyright © 2022 Leo Nikkilä <hello@lnikki.la>
 ;;; Copyright © 2022 Rene Saavedra <nanuui@protonmail.com>
 ;;; Copyright © 2022 Alexandros Theodotou <alex@zrythm.org>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -442,8 +443,7 @@ services.")
                (substitute* "libgrss-docs.sgml"
                  (("http://www.oasis-open.org/docbook/xml/4.1.2/")
                   (string-append (assoc-ref inputs "docbook-xml")
-                                 "/xml/dtd/docbook/"))))
-             #t)))))
+                                 "/xml/dtd/docbook/")))))))))
     (native-inputs
      (list docbook-xml-4.1.2 gobject-introspection gtk-doc/stable
            pkg-config))
@@ -518,22 +518,19 @@ bindings.")
              (for-each delete-file
                        (list
                         "configure"
-                        "Makefile.in"))
-             #t))
+                        "Makefile.in"))))
          (add-after 'unpack 'patch-tests
            (lambda* (#:key outputs #:allow-other-keys)
              (substitute* (find-files "." "\\.js$")
               (("#!/usr/bin/env seed")
-               (string-append "#!" (getcwd) "/src/seed")))
-             #t))
+               (string-append "#!" (getcwd) "/src/seed")))))
          (add-before 'build 'patch-docbook-xml
            (lambda* (#:key inputs #:allow-other-keys)
              (with-directory-excursion "doc"
                (substitute* '("reference/seed-docs.sgml" "modules/book.xml")
                  (("http://www.oasis-open.org/docbook/xml/4.1.2/")
                   (string-append (assoc-ref inputs "docbook-xml")
-                                 "/xml/dtd/docbook/"))))
-             #t)))))
+                                 "/xml/dtd/docbook/")))))))))
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
@@ -599,8 +596,7 @@ in JavaScript.")
                (substitute* "libdmapsharing-4.0-docs.xml"
                  (("http://www.oasis-open.org/docbook/xml/4.3/")
                   (string-append (assoc-ref inputs "docbook-xml")
-                                 "/xml/dtd/docbook/"))))
-             #t)))))
+                                 "/xml/dtd/docbook/")))))))))
     (native-inputs
      (list check
            docbook-xml-4.3
@@ -1249,8 +1245,7 @@ in particular in the GNOME desktop.")
          (lambda _
            ;; Tests require a running X server.
            (system "Xvfb :1 &")
-           (setenv "DISPLAY" ":1")
-           #t)))))
+           (setenv "DISPLAY" ":1"))))))
    (native-inputs
     `(("desktop-file-utils" ,desktop-file-utils)
       ("gettext" ,gettext-minimal)
@@ -2503,8 +2498,7 @@ GNOME Desktop.")
                (("GTK_DOC_CHECK.*") "")
                (("docs/.*") ""))
              (substitute* "Makefile.am"
-               (("gdl docs po") "gdl po"))
-             #t)))))
+               (("gdl docs po") "gdl po")))))))
     (native-inputs (alist-delete "gtk-doc" (package-native-inputs gdl)))))
 
 (define-public libgnome-keyring
@@ -2849,8 +2843,7 @@ know, from small tasks to large projects.")
                     (prog (string-append out "/libexec/icon-name-mapping")))
                (wrap-program
                    prog
-                 `("PERL5LIB" = ,(list (getenv "PERL5LIB")))))
-             #t)))))
+                 `("PERL5LIB" = ,(list (getenv "PERL5LIB"))))))))))
     (home-page "http://tango.freedesktop.org/Standard_Icon_Naming_Specification")
     (synopsis
      "Utility to implement the Freedesktop Icon Naming Specification")
@@ -3080,8 +3073,7 @@ configuring CUPS.")
                 (string-append (assoc-ref inputs "docbook-xsl")
                                "/xml/xsl/docbook-xsl-"
                                ,(package-version docbook-xsl)
-                               "/manpages/docbook.xsl")))
-             #t)))))
+                               "/manpages/docbook.xsl"))))))))
     (propagated-inputs
      (list ;; In Requires of libnotify.pc.
            gdk-pixbuf glib))
@@ -3178,8 +3170,7 @@ API.")
          (add-after 'unpack 'fix-collision
            (lambda _
              (substitute* "gdk/gdkglshapes.c"
-               ((" index") " triangle_index"))
-             #t)))))
+               ((" index") " triangle_index")))))))
     (inputs (list gtk+-2 mesa glu libx11 libxt))
     (native-inputs (list pkg-config
                          `(,glib "bin")))
@@ -3719,8 +3710,7 @@ diagrams.")
                                 "loaders\n"))
                ;; Drop the 'loaders.cache' file, it's in gdk-pixbuf+svg.
                (("gdk_pixbuf_cache_file = .*$")
-                "gdk_pixbuf_cache_file = $(TMPDIR)/loaders.cache\n"))
-             #t))
+                "gdk_pixbuf_cache_file = $(TMPDIR)/loaders.cache\n"))))
          (add-before 'check 'remove-failing-tests
            (lambda _
              (with-directory-excursion "tests/fixtures/reftests"
@@ -3868,8 +3858,7 @@ featuring mature C, C++ and Python bindings.")
          (add-before 'configure 'ignore-deprecations
            (lambda _
              (substitute* "activation-server/Makefile.in"
-               (("-DG_DISABLE_DEPRECATED") "-DGLIB_DISABLE_DEPRECATION_WARNINGS"))
-             #t)))
+               (("-DG_DISABLE_DEPRECATED") "-DGLIB_DISABLE_DEPRECATION_WARNINGS")))))
 
        ;; There's apparently a race condition between the server stub
        ;; generation and linking of the example under 'samples/echo' that can
@@ -3950,8 +3939,7 @@ is intended for user preferences; not arbitrary data storage.")
                       (substitute* (find-files "." "^Makefile$")
                         (("^INTLTOOL_(EXTRACT|UPDATE|MERGE) = .*$" _ tool)
                          (string-append "INTLTOOL_" tool " = intltool-"
-                                        (string-downcase tool) "\n")))
-                      #t)))))
+                                        (string-downcase tool) "\n"))))))))
     (home-page "https://www.gnome.org")
     (synopsis "Base MIME and Application database for GNOME")
     (description  "GNOME Mime Data is a module which contains the base MIME
@@ -3980,13 +3968,11 @@ designed to be accessed through the MIME functions in GnomeVFS.")
            (lambda _
              (substitute* '("libgnomevfs/Makefile.in"
                             "daemon/Makefile.in")
-               (("-DG_DISABLE_DEPRECATED") "-DGLIB_DISABLE_DEPRECATION_WARNINGS"))
-             #t))
+               (("-DG_DISABLE_DEPRECATED") "-DGLIB_DISABLE_DEPRECATION_WARNINGS"))))
          (add-before 'configure 'patch-test-async-cancel-to-never-fail
            (lambda _
              (substitute* "test/test-async-cancel.c"
-               (("EXIT_FAILURE") "77"))
-             #t)))))
+               (("EXIT_FAILURE") "77")))))))
     (inputs (list libxml2 dbus-glib gconf gnome-mime-data zlib))
     (native-inputs
      (list `(,glib "bin") ; for glib-mkenums, etc.
@@ -4021,8 +4007,7 @@ to access local and remote files with a single consistent API.")
          (add-before 'configure 'enable-deprecated
            (lambda _
              (substitute* "libgnome/Makefile.in"
-               (("-DG_DISABLE_DEPRECATED") "-DGLIB_DISABLE_DEPRECATION_WARNINGS"))
-             #t)))))
+               (("-DG_DISABLE_DEPRECATED") "-DGLIB_DISABLE_DEPRECATION_WARNINGS")))))))
     (inputs (list libxml2))
     (native-inputs
      (list `(,glib "bin") ; for glib-mkenums, etc.
@@ -4305,7 +4290,7 @@ Hints specification (EWMH).")
              ;; Only glib.h can be included directly.  See
              ;; https://bugzilla.gnome.org/show_bug.cgi?id=670316
              (substitute* "configure"
-               (("glib/gregex\\.h") "glib.h")) #t)))
+               (("glib/gregex\\.h") "glib.h")))))
 
        ,@(package-arguments goffice)))
     (propagated-inputs
@@ -4702,13 +4687,11 @@ selection and URL hints.")))
            (lambda _
              ;; Don't create 'icon-theme.cache'
              (substitute* (find-files "." "^Makefile$")
-               (("gtk-update-icon-cache") (which "true")))
-             #t))
+               (("gtk-update-icon-cache") (which "true")))))
          (add-after 'unpack 'patch-configure
            (lambda _
              (substitute* "configure"
-               (("freerdp") "freerdp2"))
-             #t)))))
+               (("freerdp") "freerdp2")))))))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("intltool" ,intltool)
@@ -5398,8 +5381,7 @@ floating in an ocean using only your brain and a little bit of luck.")
          (add-after 'unpack 'skip-post-install
            (lambda _
              (substitute* "meson.build"
-               (("meson.add_install_script" &) (string-append "# " &)))
-             #t)))))
+               (("meson.add_install_script" &) (string-append "# " &))))))))
     (native-inputs
      `(("glib:bin" ,glib "bin")
        ("pkg-config" ,pkg-config)))
@@ -6287,8 +6269,7 @@ throughout GNOME for API documentation).")
              (substitute* '("configure"
                             "cogl/winsys/cogl-winsys-egl-kms.c")
                (("#include <EGL/eglext.h>" all)
-                (string-append all "\n#include <EGL/eglmesaext.h>\n")))
-             #t))
+                (string-append all "\n#include <EGL/eglmesaext.h>\n")))))
          (add-before 'check 'start-xorg-server
            (lambda* (#:key tests? inputs #:allow-other-keys)
              (if tests?
@@ -6296,10 +6277,8 @@ throughout GNOME for API documentation).")
                    ;; The test suite requires a running X server.
                    (system (format #f "~a/bin/Xvfb :1 +extension GLX &"
                                    (assoc-ref inputs "xorg-server")))
-                   (setenv "DISPLAY" ":1")
-                   #t)
-                 (format #t "test suite not run~%"))
-             #t)))))
+                   (setenv "DISPLAY" ":1"))
+                 (format #t "test suite not run~%")))))))
     (home-page "http://www.clutter-project.org")
     (synopsis "Object oriented GL/GLES Abstraction/Utility Layer")
     (description
@@ -7194,8 +7173,7 @@ almost all of them.")
            ;; Don't create 'icon-theme.cache'.
            (lambda _
              (substitute* "meson_post_install.py"
-               (("gtk-update-icon-cache") "true"))
-             #t))
+               (("gtk-update-icon-cache") "true"))))
          (add-after 'wrap 'wrap-more
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out  (assoc-ref outputs "out"))
@@ -7211,8 +7189,7 @@ almost all of them.")
                (wrap-program (string-append out "/bin/eolie")
                  `("LD_LIBRARY_PATH" ":" prefix (,path))
                  `("GUIX_PYTHONPATH" ":" prefix (,(getenv "GUIX_PYTHONPATH")))
-                 `("GI_TYPELIB_PATH" = (,(getenv "GI_TYPELIB_PATH")))))
-             #t)))))
+                 `("GI_TYPELIB_PATH" = (,(getenv "GI_TYPELIB_PATH"))))))))))
     (native-inputs
      `(("intltool" ,intltool)
        ("itstool" ,itstool)
@@ -8294,8 +8271,7 @@ Evolution (hence the name), but is now used by other packages as well.")
               (substitute* "libcaribou/Makefile"
                 (("--shared-library=libcaribou.so")
                  (string-append "--shared-library="
-                                out "/lib/libcaribou.so")))
-              #t)))
+                                out "/lib/libcaribou.so"))))))
          (add-after 'install 'wrap-programs
           (lambda* (#:key outputs #:allow-other-keys)
             (let* ((out (assoc-ref outputs "out"))
@@ -8307,8 +8283,7 @@ Evolution (hence the name), but is now used by other packages as well.")
                    `("GUIX_PYTHONPATH"      ":" prefix (,python-path))
                    `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))))
                (list (string-append out "/bin/caribou-preferences")
-                     (string-append out "/libexec/antler-keyboard"))))
-            #t)))))
+                     (string-append out "/libexec/antler-keyboard")))))))))
     (native-inputs
      `(("glib:bin" ,glib "bin") ; for glib-compile-schemas, etc.
        ("gobject-introspection" ,gobject-introspection)
@@ -9909,8 +9884,7 @@ software that do not provide their own configuration interface.")
                (format port "[Default Applications]\n")
                (format port "inode/directory=org.gnome.Nautilus.desktop\n")
                (format port "application/pdf=evince.desktop\n")
-               (format port "application/postscript=evince.desktop\n")))
-           #t))))
+               (format port "application/postscript=evince.desktop\n")))))))
     (synopsis "Default MIME type associations for the GNOME desktop")
     (description
      "Given many installed packages which might handle a given MIME type, a
@@ -10151,8 +10125,7 @@ documents and diagrams, playing media, scanning, and much more.")
                ;; Unsurprisingly, there is a warning during compilation that
                ;; causes the build to fail unnecessarily, so we remove the flag.
                (substitute* '("configure.ac")
-                 (("-Werror") ""))
-               #t)))))
+                 (("-Werror") "")))))))
       (native-inputs
        (list autoconf
              automake
@@ -10857,8 +10830,7 @@ basically a text box in which notes can be written.")
                  (for-each (match-lambda
                              ((file _)
                               (install-file (assoc-ref inputs file) ".")))
-                           ',unicode-files))
-               #t)))))
+                           ',unicode-files)))))))
       (native-inputs
        `(("desktop-file-utils" ,desktop-file-utils)
          ("glib:bin" ,glib "bin")       ; for glib-compile-resources.
@@ -11493,8 +11465,7 @@ mp3, Ogg Vorbis and FLAC")
                    (gst-plugin-path   (getenv "GST_PLUGIN_SYSTEM_PATH")))
                (wrap-program (string-append out "/bin/soundconverter")
                  `("GI_TYPELIB_PATH"        ":" prefix (,gi-typelib-path))
-                 `("GST_PLUGIN_SYSTEM_PATH" ":" prefix (,gst-plugin-path))))
-             #t)))))
+                 `("GST_PLUGIN_SYSTEM_PATH" ":" prefix (,gst-plugin-path)))))))))
     (native-inputs
      `(("intltool" ,intltool)
        ("pkg-config" ,pkg-config)
@@ -12039,8 +12010,7 @@ repository and commit your work.")
                             "server/gam_subscription.h"
                             "server/gam_node.h"
                             "server/gam_subscription.c")
-               (("G_CONST_RETURN") "const"))
-             #t))
+               (("G_CONST_RETURN") "const"))))
          ;; The configure script runs a test program unconditionally,
          ;; without an option to manually set the test result.
          ;; Override this test anyway.
@@ -12671,8 +12641,7 @@ It uses pandoc as back-end for parsing Markdown.")
                     (python-wrap
                      `("GUIX_PYTHONPATH" = (,evdev ,pygo))))
                (wrap-program (string-append out "/bin/" "ratbagctl")
-                 python-wrap)
-               #t))))))
+                 python-wrap)))))))
     (native-inputs
      (append
        (list check pkg-config swig)
