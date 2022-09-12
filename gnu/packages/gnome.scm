@@ -2825,7 +2825,7 @@ know, from small tasks to large projects.")
         "1mc3v28fdfqanx3lqx233vcr4glb4c2376k0kx2v91a4vxwqcdxi"))))
     (build-system gnu-build-system)
     (inputs
-     (list perl perl-xml-simple))
+     (list bash-minimal perl perl-xml-simple))
     (arguments
      '(#:phases
        (modify-phases %standard-phases
