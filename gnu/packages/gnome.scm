@@ -11910,6 +11910,27 @@ higher level porcelain stuff.")
     (home-page "https://wiki.gnome.org/Projects/Libgit2-glib")
     (license license:gpl2+)))
 
+(define-public gi-docgen
+  (package
+    (name "gi-docgen")
+    (version "2022.1")
+    (source (origin
+              (method git-fetch)
+			  (uri (git-reference
+			  (url "https://gitlab.gnome.org/GNOME/gi-docgen")
+			  (commit version)))
+              (sha256
+               (base32
+                "0yhh0isa351g2ikdxbvqi0nga8wmidh3h7q7gh7mhifhckzlp6nz"))))
+    (build-system meson-build-system)
+	(inputs (list python))
+	(propagated-inputs (list python-jinja2 python-toml python-markdown python-markupsafe python-pygments python-typogrify))
+    (home-page "https://gitlab.gnome.org/GNOME/gnome-font-viewer")
+    (synopsis "Documentation generator for GObject-based libraries")
+    (description "This package provides GI-DocGen is a document generator for
+GObject-based libraries.")
+    (license (list license:asl2.0 license:gpl3+))))
+
 (define-public gitg
   (package
     (name "gitg")
