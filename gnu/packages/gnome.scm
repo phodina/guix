@@ -2917,9 +2917,9 @@ guidelines.")
     (inputs
      (list glib libxml2))
     (native-inputs
-     `(("gettext" ,gettext-minimal)
-       ("itstool" ,itstool)
-       ("pkg-config" ,pkg-config)))
+     (list gettext-minimal
+           itstool
+           pkg-config))
     (home-page "https://www.freedesktop.org/wiki/Software/shared-mime-info")
     (synopsis "Database of common MIME types")
     (description
