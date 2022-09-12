@@ -4328,6 +4328,27 @@ web server.")
 GLib applications.")
     (license license:lgpl2.1+)))
 
+(define-public packagekit-qt5
+  (package
+    (name "packagekit-qt5")
+    (version "1.0.2")
+    (source (origin
+              (method url-fetch)
+			  (uri (string-append
+			  "https://github.com/hughsie/PackageKit-Qt/archive/refs/tags/v"
+			  version ".tar.gz"))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1y01yf1gh4rbn55zbs44r08b2lgjf02nn9l03ci0vk2q6rvrrh35"))))
+    (build-system cmake-build-system)
+    (home-page "https://www.freedesktop.org/software/PackageKit/pk-intro.html")
+    (synopsis "Qt5 bindings for PackageKit")
+    (description "Provides Qt5 bindings to PackageKit which is a DBUS
+abstraction layer that allows the session user to manage packages in
+a secure way.")
+    (license license:lgpl2.1+)))
+
 (define-public signond
   (package
     (name "signond")
