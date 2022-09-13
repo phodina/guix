@@ -4252,8 +4252,8 @@ Hints specification (EWMH).")
     (outputs '("out"
                "doc"))                  ; 4.0 MiB of gtk-doc
     (arguments
-     '(#:configure-flags (list (string-append "--with-html-dir="
-                                              (assoc-ref %outputs "doc")
+     (list #:configure-flags #~(list (string-append "--with-html-dir="
+                                              #$output:doc
                                               "/share/gtk-doc/html"))))
     (inputs
      (list gtk+ libgsf librsvg libxslt libxml2))
