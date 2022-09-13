@@ -4309,11 +4309,12 @@ Hints specification (EWMH).")
                 "0fw201j0sks95wgvns3vydgprhwf6z4v4xb2a0ldi892k8277kvk"))))
     (build-system glib-or-gtk-build-system)
     (arguments
-     `(;; The gnumeric developers don't worry much about failing tests.
-       ;; See https://bugzilla.gnome.org/show_bug.cgi?id=732387
+     (;; The gnumeric developers don't worry much about failing tests.
+      ;; See https://bugzilla.gnome.org/show_bug.cgi?id=732387
+	  list
        #:tests? #f
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-before
           'configure 'pre-conf
            (lambda* (#:key outputs #:allow-other-keys)
@@ -4324,7 +4325,7 @@ Hints specification (EWMH).")
              (substitute* "configure"
                (("^GOFFICE_PLUGINS_DIR=.*")
                 (string-append "GOFFICE_PLUGINS_DIR="
-                               (assoc-ref outputs "out")
+                               #$output
                                "/goffice/plugins"))))))))
     (inputs
      (list glib
