@@ -3057,17 +3057,17 @@ configuring CUPS.")
          "0mr5wvs79qkk07z78hax3z56vcv1nsj2h5n36sj4dgycsvafccyh"))))
     (build-system meson-build-system)
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'fix-docbook
            (lambda* (#:key inputs #:allow-other-keys)
              ;; Don't attempt to download XSL schema.
              (substitute* "meson.build"
                (("http://docbook.sourceforge.net/release/xsl-ns/current\
 /manpages/docbook.xsl")
-                (string-append (assoc-ref inputs "docbook-xsl")
+                (string-append #$docbook-xsl
                                "/xml/xsl/docbook-xsl-"
-                               ,(package-version docbook-xsl)
+                               #$(package-version docbook-xsl)
                                "/manpages/docbook.xsl"))))))))
     (propagated-inputs
      (list ;; In Requires of libnotify.pc.
@@ -3075,14 +3075,14 @@ configuring CUPS.")
     (inputs
      (list gtk+ libpng))
     (native-inputs
-     `(("pkg-config" ,pkg-config)
-       ("glib" ,glib "bin")
-       ("gobject-introspection" ,gobject-introspection)
+     (list pkg-config
+       `(,glib "bin")
+       gobject-introspection
 
        ;; For the documentation.
-       ("gtk-doc" ,gtk-doc/stable)
-       ("xsltproc" ,libxslt)
-       ("docbook-xsl" ,docbook-xsl)))
+       gtk-doc/stable
+       libxslt
+       docbook-xsl))
     (home-page "https://developer-next.gnome.org/libnotify/")
     (synopsis
      "GNOME desktop notification library")
