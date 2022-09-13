@@ -4864,21 +4864,21 @@ GLib and GObject, and integrates JSON with GLib data types.")
               (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
-     '(#:configure-flags
-       (list (string-append "--with-xkb-base="
-                            (assoc-ref %build-inputs "xkeyboard-config")
+     (list #:configure-flags
+       #~(list (string-append "--with-xkb-base="
+                            #$xkeyboard-config
                             "/share/X11/xkb")
              "--disable-xmodmap-support")))
     (native-inputs
-     `(("glib:bin"              ,glib "bin") ; for glib-mkenums, etc.
-       ("gobject-introspection" ,gobject-introspection)
-       ("pkg-config"            ,pkg-config)
-       ("gtk-doc" ,gtk-doc/stable)
-       ("intltool" ,intltool)
-       ("which" ,which)
-       ("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("libtool" ,libtool)))
+     (list `(,glib "bin") ; for glib-mkenums, etc.
+            gobject-introspection
+            pkg-config
+            gtk-doc/stable
+            intltool
+            which
+            autoconf
+            automake
+            libtool))
     (propagated-inputs
      ;; Required by libxklavier.pc.
      (list glib libxml2))
