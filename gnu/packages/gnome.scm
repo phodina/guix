@@ -6696,7 +6696,8 @@ discovery protocols.")
     (propagated-inputs
      (list dconf))
     (inputs
-     (list gtk+
+     (list bash-minimal
+           gtk+
            gdk-pixbuf
            atk
            cairo
