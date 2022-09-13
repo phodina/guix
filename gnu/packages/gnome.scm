@@ -4777,11 +4777,11 @@ configuration storage systems.")
                 "03j9ba2sccbz954smk3n1swwnvpzl8yhwwin6vixvxligaz9iv4n"))))
     (build-system meson-build-system)
     (arguments
-     `(#:glib-or-gtk? #t))           ; To wrap binaries and/or compile schemas
+     '(#:glib-or-gtk? #t))           ; To wrap binaries and/or compile schemas
     (native-inputs
-     `(("gettext" ,gettext-minimal)
-       ("glib" ,glib "bin")             ;for glib-mkenums and glib-genmarshal
-       ("pkg-config" ,pkg-config)))
+     (list gettext-minimal
+           `(,glib "bin")             ;for glib-mkenums and glib-genmarshal
+           pkg-config))
     (inputs
      (list bash-minimal))
     (propagated-inputs
