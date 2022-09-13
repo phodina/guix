@@ -3158,8 +3158,8 @@ API.")
                         "gtkglext-disable-disable-deprecated.patch"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          ;; Fix a collision between a local variable and a definition from
          ;; glibc's string.h.
          (add-after 'unpack 'fix-collision
