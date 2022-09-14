@@ -9530,12 +9530,12 @@ endpoint and it understands SPARQL.")
                 "151w6ljq1gk9idqfq9qs3w16vms91jnxy59c9kx6jaf0fb9cdp9y"))))
     (build-system meson-build-system)
     (arguments
-     `(#:glib-or-gtk? #t
+     (list #:glib-or-gtk? #t
        #:configure-flags
        (list "-Dminer_rss=false"        ; libgrss is required.
              ;; Ensure the RUNPATH contains all installed library locations.
              (string-append "-Dc_link_args=-Wl,-rpath="
-                            (assoc-ref %outputs "out")
+                            #$output
                             "/lib/tracker-miners-3.0")
              ;; TODO: Enable functional tests. Currently, the following error
              ;; appears:
@@ -9544,7 +9544,7 @@ endpoint and it understands SPARQL.")
              "-Dfunctional_tests=false"
              "-Dsystemd_user_services=false")
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-before 'configure 'set-shell
            (lambda _
              (setenv "SHELL" (which "bash"))))
