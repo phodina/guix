@@ -12631,28 +12631,27 @@ It uses pandoc as back-end for parsing Markdown.")
         (base32 "0jjf6xc3a37icp5dvbxla3ai9is2ns31m0llbfq1bmb6dk8cd4n0"))))
     (build-system meson-build-system)
     (arguments
-     `(#:configure-flags
-       (list "-Dsystemd=false"
+     (list #:configure-flags
+       #~(list "-Dsystemd=false"
              "-Dlogind-provider=elogind"
              ,@(if (not (package? (this-package-native-input "valgrind")))
                  `("-Dtests=false")     ; Some tests still run.
                  `()))
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'install 'wrap
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
-                    (site (string-append
+             (let* ((site (string-append
                            "/lib/python"
-                           ,(version-major+minor (package-version python))
+                           #$(version-major+minor (package-version python))
                            "/site-packages"))
                     (evdev (string-append
-                            (assoc-ref inputs "python-evdev") site))
+                            #$python-evdev site))
                     (pygo (string-append
-                           (assoc-ref inputs "python-pygobject") site))
+                           #$python-pygobject site))
                     (python-wrap
                      `("GUIX_PYTHONPATH" = (,evdev ,pygo))))
-               (wrap-program (string-append out "/bin/" "ratbagctl")
+               (wrap-program (string-append #$output "/bin/" "ratbagctl")
                  python-wrap)))))))
     (native-inputs
      (append
@@ -12661,15 +12660,15 @@ It uses pandoc as back-end for parsing Markdown.")
          (list valgrind)
          '())))
     (inputs
-     `(("glib" ,glib)
-       ("json-glib" ,json-glib)
-       ("libevdev" ,libevdev)
-       ("libsystemd" ,elogind)
-       ("libunistring" ,libunistring)
-       ("python" ,python)
-       ("python-evdev" ,python-evdev)
-       ("python-pygobject" ,python-pygobject)
-       ("udev" ,eudev)))
+     (list glib
+           json-glib
+           libevdev
+           elogind
+           libunistring
+           python
+           python-evdev
+           python-pygobject
+           eudev))
     (home-page "https://github.com/libratbag/libratbag")
     (synopsis "DBus daemon and utility for configuring gaming mice")
     (description "libratbag provides @command{ratbagd}, a DBus daemon to
