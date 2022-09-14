@@ -9868,12 +9868,11 @@ software that do not provide their own configuration interface.")
     (propagated-inputs
      (list nautilus evince))
     (arguments
-     `(#:modules ((guix build utils))
+     (list #:modules ((guix build utils))
        #:builder
-       (begin
+       #~(begin
          (use-modules (guix build utils))
-         (let* ((out (assoc-ref %outputs "out"))
-                (apps (string-append out "/share/applications")))
+         (let* ((apps (string-append #$output "/share/applications")))
            (mkdir-p apps)
            (call-with-output-file (string-append apps "/gnome-mimeapps.list")
              (lambda (port)
