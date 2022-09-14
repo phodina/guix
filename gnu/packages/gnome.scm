@@ -6225,10 +6225,10 @@ throughout GNOME for API documentation).")
     ;; cogl, corresponding changes may be appropriate in mutter as well.
     (build-system gnu-build-system)
     (native-inputs
-     `(("glib:bin" ,glib "bin")     ; for glib-mkenums
-       ("gobject-introspection" ,gobject-introspection)
-       ("xorg-server" ,xorg-server-for-tests)
-       ("pkg-config" ,pkg-config)))
+     (list `(,glib "bin")     ; for glib-mkenums
+           gobject-introspection
+           xorg-server-for-tests
+           pkg-config))
     (propagated-inputs
      (list glib
            gdk-pixbuf
@@ -6246,18 +6246,18 @@ throughout GNOME for API documentation).")
            gst-plugins-base
            wayland))
     (arguments
-     `(#:disallowed-references (,xorg-server-for-tests)
-       #:configure-flags (list "--enable-cogl-gst"
+     (list #:disallowed-references #~(#$xorg-server-for-tests)
+       #:configure-flags #~(list "--enable-cogl-gst"
                                "--enable-wayland-egl-platform"
                                "--enable-wayland-egl-server"
 
                                ;; Arrange to pass an absolute file name to
                                ;; dlopen for libGL.so.
                                (string-append "--with-gl-libname="
-                                              (assoc-ref %build-inputs "mesa")
+                                              #$mesa
                                               "/lib/libGL.so"))
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'fix-build-with-mesa-20
            (lambda _
              ;; Work around a problem with Mesa 20 where some macros used by
@@ -6274,7 +6274,7 @@ throughout GNOME for API documentation).")
                  (begin
                    ;; The test suite requires a running X server.
                    (system (format #f "~a/bin/Xvfb :1 +extension GLX &"
-                                   (assoc-ref inputs "xorg-server")))
+                                   #$xorg-server))
                    (setenv "DISPLAY" ":1"))
                  (format #t "test suite not run~%")))))))
     (home-page "http://www.clutter-project.org")
