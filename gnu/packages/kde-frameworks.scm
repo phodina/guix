@@ -1092,12 +1092,10 @@ protocols used in KDE Plasma.")
              ;; PlasmaWindowModelTest::testChangeWindowAfterModelDestroy(icon)
              (substitute* "autotests/client/test_plasma_window_model.cpp"
                ((".*changedSpy\\.wait.*") ""))))
-         (replace 'check
+         (add-before 'check 'setup-check
            (lambda* (#:key tests? #:allow-other-keys)
              (setenv "XDG_RUNTIME_DIR" (getcwd))
-             (setenv "QT_QPA_PLATFORM" "offscreen")
-             (when tests? ;; One test fails.
-               (invoke "ctest" "-E" "kwayland-testWaylandRegistry")))))))
+             (setenv "QT_QPA_PLATFORM" "offscreen"))))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Qt-style API to interact with the wayland client and server")
     (description "As the names suggest they implement a Client respectively a
