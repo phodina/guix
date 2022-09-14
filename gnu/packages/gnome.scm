@@ -12115,21 +12115,20 @@ and a high score table.")
          "06aqg9asq2vqi9wr29bs4v8z2bf4manhbhfghf4nvw01y2zs0jvw"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:configure-flags
+     (list #:configure-flags
        ;; Don't create 'icon-theme.cache'.
-       (let* ((coreutils (assoc-ref %build-inputs "coreutils"))
-              (true      (string-append coreutils "/bin/true")))
+       #~(let* ((true      (string-append #$coreutils "/bin/true")))
          (list (string-append "GTK_UPDATE_ICON_CACHE=" true)))))
     (native-inputs
-     `(("glib:bin" ,glib "bin")
-       ("intltool" ,intltool)
-       ("pkg-config" ,pkg-config)))
+     (list `(,glib "bin")
+           intltool)
+           pkg-config))
     (inputs
-     `(("glib" ,glib)
-       ("gtk+" ,gtk+)
-       ("gtk+-2" ,gtk+-2)
-       ("librsvg" ,librsvg)
-       ("libxml2" ,libxml2)))
+     (list glib
+           gtk+
+           gtk+-2
+           librsvg
+           libxml2))
     (home-page "https://gitlab.gnome.org/GNOME/gnome-themes-extra")
     (synopsis "GNOME Extra Themes")
     (description "This package provides themes and related elements that don't
