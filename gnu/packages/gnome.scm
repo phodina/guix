@@ -11742,38 +11742,38 @@ advanced image management tool")
         (base32 "0xdgmam7ghnxw6g38a4gjw3kk3rhga8c66lns18k928jlr9fmddw"))))
     (build-system python-build-system)
     (native-inputs
-     `(("gettext" ,gettext-minimal)
-       ("glib:bin" ,glib "bin")         ; for glib-compile-resources
-       ("gobject-introspection" ,gobject-introspection)
-       ("intltool" ,intltool)
-       ("pkg-config" ,pkg-config)
-       ("python-psutil" ,python-psutil)
-       ("python-pytest-runner" ,python-pytest-runner)
-       ("python-pytest" ,python-pytest)))
+     (list gettext-minimal
+           `(,glib "bin")         ; for glib-compile-resources
+           gobject-introspection
+           intltool
+           pkg-config
+           python-psutil
+           python-pytest-runner
+           python-pytest))
     (inputs
-     `(("cairo" ,cairo)
-       ("dbus-glib" ,dbus-glib)
-       ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
-       ("gtk+" ,gtk+)
-       ("python" ,python-wrapper)
-       ("python-dbus" ,python-dbus)
-       ("python-notify2" ,python-notify2)
-       ("python-pycairo" ,python-pycairo)
-       ("python-pygobject" ,python-pygobject)
-       ("vte" ,vte)))
+     (list cairo
+           dbus-glib
+           gsettings-desktop-schemas
+           gtk+
+           python-wrapper
+           python-dbus
+           python-notify2
+           python-pycairo
+           python-pygobject
+           vte))
     (propagated-inputs
      (list python-configobj))
     (arguments
      ;; One test out of 28 fails due to dbus-python and python-notify; skip
      ;; tests.
-     `(#:tests? #f
-       #:imported-modules ((guix build glib-or-gtk-build-system)
+     (list #:tests? #f
+       #:imported-modules `((guix build glib-or-gtk-build-system)
                            ,@%python-build-system-modules)
-       #:modules ((guix build python-build-system)
+       #:modules `((guix build python-build-system)
                   ((guix build glib-or-gtk-build-system) #:prefix glib-or-gtk:)
                   (guix build utils))
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'handle-dbus-python
            (lambda _
              ;; python-dbus cannot be found but it's really there.  See
@@ -11782,11 +11782,11 @@ advanced image management tool")
                (("'dbus-python',") ""))))
          (add-after 'install 'wrap-program
            (lambda* (#:key outputs #:allow-other-keys)
-             (let ((prog (string-append (assoc-ref outputs "out")
+             (let ((prog (string-append #$output
                                         "/bin/terminator"))
-                   (pylib (string-append (assoc-ref outputs "out")
+                   (pylib (string-append #$output)
                                          "/lib/python"
-                                         ,(version-major+minor
+                                         #$(version-major+minor
                                            (package-version python))
                                          "/site-packages")))
                (wrap-program prog
