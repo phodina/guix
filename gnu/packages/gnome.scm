@@ -12082,13 +12082,13 @@ library which detects when a file or a directory has been modified.")
      `(#:meson ,meson-0.59
        #:glib-or-gtk? #t))
     (native-inputs
-     `(("appstream-glib" ,appstream-glib)
-       ("gettext" ,gettext-minimal)
-       ("glib:bin" ,glib "bin") ;; For glib-compile-resources
-       ("gtk+" ,gtk+ "bin")     ;; For gtk-update-icon-cache
-       ("itstool" ,itstool)
-       ("pkg-config" ,pkg-config)
-       ("vala" ,vala)))
+     (list appstream-glib
+           gettext-minimal
+           `(,glib "bin") ;; For glib-compile-resources
+           `(,gtk+ "bin")     ;; For gtk-update-icon-cache
+           itstool
+           pkg-config
+           vala))
     (propagated-inputs
      (list dconf))
     (inputs
