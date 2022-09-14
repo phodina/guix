@@ -13337,18 +13337,16 @@ historical battery usage and related statistics.")
                 "0gwbgmjzlgv9ba95cgaigjnc9njzi7qznhvzp0qrnnlq3nbcm1k1"))))
     (build-system cmake-build-system)
     (arguments
-     `(#:tests? #f ; No tests exist
+     (list #:tests? #f ; No tests exist
        #:configure-flags
-       (let ((shared-mime-info (assoc-ref %build-inputs "shared-mime-info"))
-             (out (assoc-ref %outputs "out")))
-         (list (string-append "-DFREEDESKTOP_GLOBS=" shared-mime-info
+         #~(list (string-append "-DFREEDESKTOP_GLOBS=" #$shared-mime-info
                               "/share/mime/globs")
-               (string-append "-DFREEDESKTOP_ALIAS=" shared-mime-info
+               (string-append "-DFREEDESKTOP_ALIAS=" #$shared-mime-info
                               "/share/mime/aliases")
-               (string-append "-DFREEDESKTOP_ICONS=" shared-mime-info
+               (string-append "-DFREEDESKTOP_ICONS=" #$shared-mime-info
                               "/share/mime/generic-icons")
-               (string-append "-DCMAKE_INSTALL_PREFIX=" out)
-               (string-append "-DPREFIX_BIN=" out "/bin")))
+               (string-append "-DCMAKE_INSTALL_PREFIX=" #$output)
+               (string-append "-DPREFIX_BIN=" #$output "/bin"))
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'patch-installation-destination
