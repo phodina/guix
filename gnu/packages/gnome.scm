@@ -12767,10 +12767,10 @@ provided there is a DBus service present:
         (base32 "0cqrzbkyksfsm57riirmjkwf2nf2dgl1xpps1wvqxpij475qcb9b"))))
     (build-system meson-build-system)
     (arguments
-     `(#:glib-or-gtk? #t
+     (list #:glib-or-gtk? #t
        #:tests? #f                      ;require internet access
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'skip-gtk-update-icon-cache
            (lambda _
              (substitute* "data/meson_post_install.py"
@@ -12779,12 +12779,11 @@ provided there is a DBus service present:
            ;; Add gstreamer plugin provided in this package to system's
            ;; plugins.
            (lambda* (#:key outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
-                    (gst-plugin-path (string-append
-                                      out "/lib/gstreamer-1.0/"
+             (let* ((gst-plugin-path (string-append
+                                      #$output "/lib/gstreamer-1.0/"
                                       ":"
                                       (getenv "GST_PLUGIN_SYSTEM_PATH"))))
-               (wrap-program (string-append out "/bin/parlatype")
+               (wrap-program (string-append #$output "/bin/parlatype")
                  `("GST_PLUGIN_SYSTEM_PATH" ":" = (,gst-plugin-path)))))))))
     (native-inputs
      (list appstream-glib
