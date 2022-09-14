@@ -8259,45 +8259,43 @@ Evolution (hence the name), but is now used by other packages as well.")
                 "0mfychh1q3dx0b96pjz9a9y112bm9yqyim40yykzxx1hppsdjhww"))))
     (build-system glib-or-gtk-build-system)
     (arguments
-     '(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          (add-before
           'build 'pre-build
           (lambda* (#:key outputs #:allow-other-keys)
-            (let ((out (assoc-ref outputs "out")))
               ;; Use absolute shared library path in Caribou-1.0.typelib.
               (substitute* "libcaribou/Makefile"
                 (("--shared-library=libcaribou.so")
                  (string-append "--shared-library="
-                                out "/lib/libcaribou.so"))))))
+                                #$output "/lib/libcaribou.so"))))))
          (add-after 'install 'wrap-programs
           (lambda* (#:key outputs #:allow-other-keys)
-            (let* ((out (assoc-ref outputs "out"))
-                   (python-path (getenv "GUIX_PYTHONPATH"))
+            (let* ((python-path (getenv "GUIX_PYTHONPATH"))
                    (gi-typelib-path (getenv "GI_TYPELIB_PATH")))
               (for-each
                (lambda (prog)
                  (wrap-program prog
                    `("GUIX_PYTHONPATH"      ":" prefix (,python-path))
                    `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))))
-               (list (string-append out "/bin/caribou-preferences")
-                     (string-append out "/libexec/antler-keyboard")))))))))
+               (list (string-append #$output "/bin/caribou-preferences")
+                     (string-append #$output "/libexec/antler-keyboard")))))))))
     (native-inputs
-     `(("glib:bin" ,glib "bin") ; for glib-compile-schemas, etc.
-       ("gobject-introspection" ,gobject-introspection)
-       ("intltool" ,intltool)
-       ("pkg-config" ,pkg-config)
-       ("python" ,python)
-       ("vala" ,vala)
-       ("xsltproc" ,libxslt)))
+     (list `(,glib "bin") ; for glib-compile-schemas, etc.
+       gobject-introspection
+       intltool
+       pkg-config
+       python
+       vala
+       libxslt))
     (propagated-inputs
      ;; caribou-1.0.pc refers to all these.
      (list libgee libxklavier libxtst gtk+))
     (inputs
-     `(("clutter" ,clutter)
-       ("dconf" ,dconf)
-       ("gtk+-2" ,gtk+-2)
-       ("python-pygobject" ,python-pygobject)))
+     (list clutter
+       dconf
+       gtk+-2
+       python-pygobject))
     (synopsis "Text entry and UI navigation application")
     (home-page "https://wiki.gnome.org/Projects/Caribou")
     (description
