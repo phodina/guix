@@ -13212,48 +13212,48 @@ world.")
                 "1vaaphzk6zn7pp2x9scphdzlbsma910wnbhd9xry50nx95cjlgdh"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          (add-after
           'install 'wrap-program
           (lambda* (#:key outputs #:allow-other-keys)
-            (let ((prog (string-append (assoc-ref outputs "out")
+            (let ((prog (string-append #$output
                                        "/bin/" "ocrfeeder"))
-                  (pylib (string-append (assoc-ref outputs "out")
+                  (pylib (string-append #$output
                                         "/lib/python"
-                                        ,(version-major+minor
+                                        #$(version-major+minor
                                           (package-version python))
                                         "/site-packages")))
               (wrap-program prog
                 `("PYTHONPATH" = (,(getenv "GUIX_PYTHONPATH") ,pylib))
                 `("GI_TYPELIB_PATH" = (,(getenv "GI_TYPELIB_PATH"))))))))))
     (native-inputs
-     `(("glib:bin" ,glib "bin")                   ; for glib-compile-resources
-       ("gobject-introspection" ,gobject-introspection)
-       ("gtk+:bin" ,gtk+ "bin")                   ; for gtk-update-icon-cache
-       ("intltool" ,intltool)
-       ("itstool" ,itstool)
-       ("pkg-config" ,pkg-config)
-       ("xmllint" ,libxml2)))
+     (list `(,glib "bin")                   ; for glib-compile-resources
+           gobject-introspection
+           `(,gtk+ "bin")                   ; for gtk-update-icon-cache
+           intltool
+           itstool
+           pkg-config
+           libxml2))
     (inputs
-     `(("enchant" ,enchant)
-       ("glib" ,glib)
-       ("goocanvas" ,goocanvas)
-       ("gtk" ,gtk+)
-       ("gtkspell3" ,gtkspell3)
-       ("libjpeg" ,libjpeg-turbo)
-       ("libtiff" ,libtiff)
-       ("libraw" ,libraw)
-       ("ocrad" ,ocrad)
-       ("python" ,python-wrapper)
-       ("python-pygobject" ,python-pygobject)
-       ("python-odfpy" ,python-odfpy)
-       ("python-pillow" ,python-pillow)
-       ("python-pyenchant" ,python-pyenchant)
-       ("python-reportlab" ,python-reportlab)
-       ("python-sane" ,python-sane)
-       ("sane-backends" ,sane-backends)
-       ("tesseract-ocr" ,tesseract-ocr)))
+     (list enchant
+           glib
+           goocanvas
+           gtk+
+           gtkspell3
+           libjpeg-turbo
+           libtiff
+           libraw
+           ocrad
+           python-wrapper
+           python-pygobject
+           python-odfpy
+           python-pillow
+           python-pyenchant
+           python-reportlab
+           python-sane
+           sane-backends
+           tesseract-ocr))
     (home-page "https://wiki.gnome.org/Apps/OCRFeeder")
     (synopsis "Complete OCR Suite")
     (description "OCRFeeder is a complete Optical Character Recognition and
