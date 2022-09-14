@@ -9844,11 +9844,11 @@ beautifying border effects.")
     (arguments
      (list #:meson meson-0.60))
     (native-inputs
-     `(("glib:bin" ,glib "bin") ; for glib-compile-schemas, gio-2.0.
-       ("gtk+-bin" ,gtk+ "bin") ; for gtk-update-icon-cache
-       ("intltool" ,intltool)
-       ("pkg-config" ,pkg-config)
-       ("vala" ,vala)))
+     (list `(,glib "bin") ; for glib-compile-schemas, gio-2.0.
+           `(,gtk+ "bin") ; for gtk-update-icon-cache
+           intltool
+           pkg-config
+           vala))
     (inputs
      (list dconf gtk+ libxml2))
     (home-page "https://gitlab.gnome.org/GNOME/dconf-editor")
