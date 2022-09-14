@@ -10687,10 +10687,10 @@ environment, which can notably display keyboard layouts.")
                            "--disable-dbus" ; use gdbus
                            "--enable-introspection")))
     (native-inputs
-     `(("pkg-config" ,pkg-config)
-       ("gobject-introspection" ,gobject-introspection)
-       ("glib:bin" ,glib "bin")
-       ("gtk-doc" ,gtk-doc/stable)))
+     (list pkg-config
+           gobject-introspection
+           `(,glib "bin")
+           gtk-doc/stable))
     (propagated-inputs
      ;; Referred to in .h files and .pc.
      (list gtk+))
