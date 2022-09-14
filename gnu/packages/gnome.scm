@@ -12442,11 +12442,11 @@ to.")
         (base32 "0f2rki8i27pkd9r0gz03cdl1g4vnmvp0j49nhxqn275vi8lmgr0q"))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
-     `(("gettext" ,gettext-minimal)
-       ("glib:bin" ,glib "bin")
-       ("intltool" ,intltool)
-       ("itstool" ,itstool)
-       ("pkg-config" ,pkg-config)))
+     (list gettext-minimal
+           `(,glib "bin")
+           intltool
+           itstool
+           pkg-config))
     (inputs
      (list gtk+ librsvg libxml2))
     (arguments
