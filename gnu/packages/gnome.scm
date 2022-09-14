@@ -7165,9 +7165,9 @@ almost all of them.")
                 "1v8n21y75abdzsnx5idyd0q6yfb6cd0sqbknlbkwh5fdgvjzyvwn"))))
     (build-system meson-build-system)
     (arguments
-     `(#:glib-or-gtk? #t
+     (list #:glib-or-gtk? #t
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'skip-gtk-update-icon-cache
            ;; Don't create 'icon-theme.cache'.
            (lambda _
@@ -7175,9 +7175,8 @@ almost all of them.")
                (("gtk-update-icon-cache") "true"))))
          (add-after 'wrap 'wrap-more
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let* ((out  (assoc-ref outputs "out"))
-                    ;; These libraries must be on LD_LIBRARY_PATH.
-                    (libs '("gtkspell3" "webkitgtk" "libsoup" "libsecret"
+             (let* ;; These libraries must be on LD_LIBRARY_PATH.
+                   ((libs '("gtkspell3" "webkitgtk" "libsoup" "libsecret"
                             "atk" "gtk+" "gsettings-desktop-schemas"
                             "gobject-introspection"))
                     (path (string-join
@@ -7185,34 +7184,34 @@ almost all of them.")
                                   (string-append (assoc-ref inputs lib) "/lib"))
                                 libs)
                            ":")))
-               (wrap-program (string-append out "/bin/eolie")
+               (wrap-program (string-append #$output "/bin/eolie")
                  `("LD_LIBRARY_PATH" ":" prefix (,path))
                  `("GUIX_PYTHONPATH" ":" prefix (,(getenv "GUIX_PYTHONPATH")))
                  `("GI_TYPELIB_PATH" = (,(getenv "GI_TYPELIB_PATH"))))))))))
     (native-inputs
-     `(("intltool" ,intltool)
-       ("itstool" ,itstool)
-       ("pkg-config" ,pkg-config)
-       ("python" ,python)
-       ("glib:bin" ,glib "bin")))
+     (list intltool
+           itstool
+           pkg-config
+           python
+           glib "bin"))
     (inputs
-     `(("gobject-introspection" ,gobject-introspection)
-       ("glib-networking" ,glib-networking)
-       ("cairo" ,cairo)
-       ("gtk+" ,gtk+)
-       ("atk" ,atk)    ; propagated by gtk+, but we need it in LD_LIBRARY_PATH
-       ("python" ,python-wrapper)
-       ("python-dateutil" ,python-dateutil)
-       ("python-pyfxa" ,python-pyfxa)
-       ("python-pygobject" ,python-pygobject)
-       ("python-pycairo" ,python-pycairo)
-       ("python-pycrypto" ,python-pycrypto)
-       ("libhandy" ,libhandy)
-       ("libsecret" ,libsecret)
-       ("gtkspell3" ,gtkspell3)
-       ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
-       ("gnome-settings-daemon" ,gnome-settings-daemon) ; desktop-schemas are not enough
-       ("webkitgtk" ,webkitgtk)))
+     (list gobject-introspection)
+           glib-networking)
+           cairo)
+           gtk+)
+           atk)    ; propagated by gtk+, but we need it in LD_LIBRARY_PATH
+           python-wrapper)
+           python-dateutil)
+           python-pyfxa)
+           python-pygobject)
+           python-pycairo)
+           python-pycrypto)
+           libhandy)
+           libsecret)
+           gtkspell3)
+           gsettings-desktop-schemas)
+           gnome-settings-daemon) ; desktop-schemas are not enough
+           webkitgtk)))
     (home-page "https://wiki.gnome.org/Apps/Eolie")
     (synopsis "Web browser for GNOME")
     (description
