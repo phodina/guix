@@ -10153,17 +10153,17 @@ specified duration and save it as a GIF encoded animated image file.")
         (base32 "1c4r9rnrz5gazrfg0z2rcwax4nscs7z391bcjcl74k6ln3blwzpr"))))
     (build-system meson-build-system)
     (arguments
-     `(#:meson ,meson-0.59
+     (list #:meson ,meson-0.59
        #:glib-or-gtk? #t
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'glib-or-gtk-wrap 'python-and-gi-wrap
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let ((prog (string-append (assoc-ref outputs "out")
+             (let ((prog (string-append #$output
                                         "/bin/authenticator"))
-                   (pylib (string-append (assoc-ref outputs "out")
+                   (pylib (string-append #$output
                                          "/lib/python"
-                                         ,(version-major+minor
+                                         #$(version-major+minor
                                            (package-version
                                             (this-package-input "python")))
                                          "/site-packages")))
