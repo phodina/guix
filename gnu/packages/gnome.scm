@@ -12337,10 +12337,10 @@ these services on the Guix System.")
                 "04hvw86r8sczvjm1z3ls5y5y5h6nyfb648rjkfx05ib00mqq5v1x"))))
     (build-system meson-build-system)
     (arguments
-     `(#:glib-or-gtk? #t
+     (list #:glib-or-gtk? #t
        #:configure-flags
        '("-Dprofile=release")
-       #:phases (modify-phases %standard-phases
+       #:phases #~(modify-phases %standard-phases
                   (add-after 'unpack 'disable-failing-tests
                     (lambda _
                       (substitute* "test/test-client.vala"
@@ -12352,9 +12352,7 @@ these services on the Guix System.")
                       ;; there’s custom metadata that gmime didn’t
                       ;; install. Thus, the vapi should be built and installed
                       ;; with gmime.
-                      (define gmime
-                        (assoc-ref inputs "gmime"))
-                      (copy-file (string-append gmime "/share/vala/vapi/gmime-3.0.vapi")
+                      (copy-file (string-append #$gmime "/share/vala/vapi/gmime-3.0.vapi")
                                  "bindings/vapi/gmime-3.0.vapi")))
                   (add-after 'unpack 'disable-postinstall-script
                     (lambda _
