@@ -6121,12 +6121,12 @@ playlists in a variety of formats.")
        '("--with-platform=gtk-only"
          "--with-card-theme-formats=svg")))
     (native-inputs
-     `(("desktop-file-utils" ,desktop-file-utils)
-       ("glib:bin" ,glib "bin") ; for glib-compile-schemas, etc.
-       ("intltool" ,intltool)
-       ("itstool" ,itstool)
-       ("pkg-config" ,pkg-config)
-       ("xmllint" ,libxml2)))
+     (list desktop-file-utils
+           `(,glib "bin") ; for glib-compile-schemas, etc.
+           intltool
+           itstool
+           pkg-config
+           libxml2))
     (inputs
      (list gtk+ guile-2.2 libcanberra librsvg))
     (home-page "https://wiki.gnome.org/Apps/Aisleriot")
