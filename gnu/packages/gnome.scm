@@ -7075,10 +7075,10 @@ DAV, and others.")
                 "0d8lk7mw8zmcl5xlq00dvhsjib4mdi0f1n827hg9wkgj78vp74h4"))))
     (build-system meson-build-system)
     (arguments
-     `(#:tests? #f          ;libusb fails to initialize.  Wonder what that is.
+     (list #:tests? #f          ;libusb fails to initialize.  Wonder what that is.
        #:configure-flags
-       (cons "-Ddocs=false"
-             (if ,(%current-target-system)
+       #~(cons "-Ddocs=false"
+             (if #$(%current-target-system)
                  ;; Introspection data cannot currently be cross-compiled.
                  '("-Dintrospection=false"
                    ;; Requires introspection data.
