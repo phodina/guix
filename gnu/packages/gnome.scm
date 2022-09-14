@@ -7444,9 +7444,9 @@ freedesktop.org help system specification.")
      (list yelp-xsl))
     (propagated-inputs
      ;; Needed by `yelp-build', `yelp-check' or 'yelp.m4'.
-     `(("itstool" ,itstool)
-       ("xmllint" ,libxml2)
-       ("xsltproc" ,libxslt)))
+     (list itstool
+           libxml2
+           libxslt))
     (synopsis "Yelp documentation tools")
     (description
      "Yelp-tools is a collection of scripts and build utilities to help create,
