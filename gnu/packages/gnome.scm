@@ -1011,6 +1011,27 @@ and straightforward controls.")
     (home-page "https://wiki.gnome.org/Apps/Music")
     (license license:gpl2+)))
 
+(define-public picplanner
+  (package
+    (name "picplanner")
+    (version "0.3.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append
+		"https://gitlab.com/Zwarf/picplanner/-/archive/v" version "/" name
+		"-v" version ".tar.gz"))
+       (sha256
+        (base32
+         "1b77ipvvi520nv7rr6jb1c3xryhc3m2mywhby7m48kfgag8vvx2w"))))
+    (build-system meson-build-system)
+    (synopsis "Calculate the position of the Sun, Moon and Milky Way")
+    (description "Calculate the position of the Sun, Moon and Milky Way
+in order to plan the position and time for the best spot for a photograph.")
+    (home-page "https://gitlab.com/Zwarf/picplanner")
+    (license license:gpl3+)))
+
 (define-public portablexdr
   (package
     (name "portablexdr")
