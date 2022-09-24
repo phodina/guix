@@ -1372,6 +1372,34 @@ conjunction with the KDE Plasma Desktop.")
     (description "This package provides access to system notifications.")
     (license license:gpl2+)))
 
+(define-public lightly
+  (package
+    (name "lightly")
+    (version "0.4.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/Luwx/Lightly/archive/refs/tags/v"
+                    version ".tar.gz"))
+              (sha256
+               (base32
+                "0q9jpxppzainyp3yapnqp9dr0nfnw5s2ji4v5li56s48jrbrw2m5"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list kdecoration
+                  kcoreaddons
+                  kguiaddons
+                  kconfigwidgets
+                  kwindowsystem
+                  ki18n
+                  kiconthemes
+                  qtx11extras))
+    (home-page "https://github.com/Luwx/Lightly")
+    (synopsis "Modern style for qt applications")
+    (description "Lightly is a fork of breeze theme style that aims to be
+visually modern and minimalistic.")
+    (license license:gpl2+)))
+
 (define-public milou
   (package
     (name "milou")
