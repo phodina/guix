@@ -62,29 +62,21 @@
               (patches (search-patches "ark-skip-xar-test.patch"))))
     (build-system qt-build-system)
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          (add-before 'check 'start-xserver
            ;; adddialogtest requires DISPLAY.
            (lambda* (#:key inputs #:allow-other-keys)
-             (let ((xorg-server (assoc-ref inputs "xorg-server")))
                (setenv "HOME" (getcwd))
-               (system (format #f "~a/bin/Xvfb :1 &" xorg-server))
-               (setenv "DISPLAY" ":1"))))
+               (system (format #f "~a/bin/Xvfb :1 &" #$xorg-server))
+               (setenv "DISPLAY" ":1")))
          (add-after 'install 'wrap-executable
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
-                    (lrzip (assoc-ref inputs "lrzip"))
-                    (lzop  (assoc-ref inputs "lzop"))
-                    (p7zip (assoc-ref inputs "p7zip"))
-                    (unzip (assoc-ref inputs "unzip"))
-                    (zip   (assoc-ref inputs "zip"))
-                    (zstd  (assoc-ref inputs "zstd")))
-               (wrap-program (string-append out "/bin/ark")
+               (wrap-program (string-append #$output "/bin/ark")
                  `("PATH" suffix
                    ,(map (lambda (p)
                            (string-append p "/bin"))
-                         (list lrzip lzop p7zip unzip zip zstd))))))))))
+                         (list #$lrzip #$lzop #$p7zip #$unzip #$zip #$zstd)))))))))
     (native-inputs
      (list extra-cmake-modules pkg-config kdoctools xorg-server))
     (inputs
