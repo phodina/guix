@@ -659,9 +659,8 @@ propagate their changes to their respective configuration files.")
            (lambda* (#:key tests? #:allow-other-keys)
              (setenv "HOME" (getcwd))
              (setenv "TMPDIR" (getcwd))
-             (when tests? ;; kdirwatch test fails inconsistently. kprocesstest fails.
-               (invoke "ctest" "-E" "(kdirwatch_qfswatch_unittest|kprocesstest|\
-kdirwatch_stat_unittest)")))))))
+             (when tests?
+               (invoke "ctest" "-E" "kprocesstest")))))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Qt addon library with a collection of non-GUI utilities")
     (description "KCoreAddons provides classes built on top of QtCore to
