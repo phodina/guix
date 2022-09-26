@@ -2916,6 +2916,22 @@ applications. dogtail scripts are written in Python and executed like any
 other Python program.")
     (license license:gpl2+)))
 
+(define-public python-doxyqml
+  (package
+    (name "python-doxyqml")
+    (version "0.5.1")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "doxyqml" version))
+              (sha256
+               (base32
+                "1f0jjqvamly4hn7f1palvq27z6yr694rfzyxrb6g0ysbbawxkvq9"))))
+    (build-system python-build-system)
+    (home-page "http://agateau.com/projects/doxyqml")
+    (synopsis "Doxygen input filter for QML files")
+    (description "This package provides doxygen input filter for QML files.")
+    (license license:bsd-3)))
+
 (define-public python-empy
   (package
     (name "python-empy")
