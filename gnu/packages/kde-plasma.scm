@@ -2271,6 +2271,32 @@ sensors, process information and other system resources.")
     (home-page "https://invent.kde.org/plasma/plasma-systemmonitor")
     (license (list license:gpl2 license:gpl3))))
 
+(define-public plasma-welcome
+(let  ((commit "dac7569078782a96f122782c15d34e51737d2b89") ; no tags
+       (revision "1"))
+  (package
+    (name "plasma-welcome")
+    (version (git-version "0.1-pre" revision commit))
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+			  "https://invent.kde.org/plasma/plasma-welcome/-/archive/"
+			  commit "/plasma-welcome-" commit ".tar.gz"))
+              (sha256
+               (base32
+                "0wck87icm6xmfcqs548aqaj7rypl6xmqxibfaappr4k58qcrr5hy"))))
+    (build-system qt-build-system)
+    (native-inputs (list extra-cmake-modules pkg-config))
+	(inputs (list kirigami kcoreaddons kdbusaddons kdeclarative
+  ki18n kio networkmanager-qt knotifications plasma-framework kservice
+  kwindowsystem qtdeclarative-5 qtgraphicaleffects qtquickcontrols2-5 qtsvg-5
+  system-settings))
+    (home-page "Wizard for Plasma")
+    (synopsis "This package provides wizard for Plasma to configure the
+settings.")
+    (description "This package provides Wallpapers for the KDE desktop.")
+    (license (list license:gpl2 license:gpl3)))))
+
 (define-public plasma-workspace
   (package
     (name "plasma-workspace")
