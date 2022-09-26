@@ -81,6 +81,7 @@
   #:use-module (gnu packages polkit)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages textutils)
@@ -417,29 +418,36 @@ It is the default icon theme for the KDE Plasma 5 desktop.")
     (version "5.98.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append
-                    "mirror://kde/stable/frameworks/"
-                    (version-major+minor version) "/"
-                    name "-" version ".tar.xz"))
+              (uri (string-append "mirror://kde/stable/frameworks/"
+                                  (version-major+minor version)
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
               (sha256
                (base32
                 "1k2qk8ibv5dqdhkn2992n8rlmslpmngz83hxb7zrh3pkphdg8v2n"))))
     (build-system python-build-system)
     (arguments
-     `(#:tests? #f  ; has no test target
-       #:phases (modify-phases %standard-phases
+     (list #:tests? #f ;has no test target
+       #:phases #~(modify-phases %standard-phases
                   (delete 'sanity-check)))) ;its insane.
     (propagated-inputs
-     ;; kapidox is a python programm
-     ;; TODO: check if doxygen has to be installed, the readme does not
-     ;; mention it. The openSuse .rpm lists doxygen, graphviz, graphviz-gd,
-     ;; and python-xml.
-     (list python python-jinja2 python-pyyaml))
-    (inputs
-     (list qtbase-5))
+                       ;; TODO: Unknown 'gv' module, maybe graphviz with python
+                       ;; support
+                       (list graphviz
+                             python
+                             python-doxyqml
+                             python-doxypypy
+                             python-requests
+                             python-jinja2
+                             python-pyyaml))
+    (inputs (list qtbase-5))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "KDE Doxygen Tools")
-    (description "This framework contains scripts and data for building API
+    (description
+     "This framework contains scripts and data for building API
 documentation (dox) in a standard format and style for KDE.
 
 For the actual documentation extraction and formatting the Doxygen tool is
