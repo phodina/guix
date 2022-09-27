@@ -90,6 +90,7 @@
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages autogen)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages attr)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages bison)
@@ -1524,6 +1525,29 @@ routers.  It sends Router Advertisement messages specified by RFC 2461
 periodically and when requested by a node sending a Router Solicitation
 message.  These messages are required for IPv6 stateless autoconfiguration.")
     (license (license:non-copyleft "file://COPYRIGHT"))))
+
+(define-public libacl
+  (package
+    (name "libacl")
+    (version "2.3.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://download.savannah.gnu.org/releases/"
+                                  "acl/acl-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1bqi7hj0xkpivwg7lx5cv3yvs9ks1i6azvpgbvfpzcq1i736233n"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:tests? #f)) ;; TODO: Some test require root and patching shell scripts
+    (native-inputs
+     (list bash coreutils gawk perl))
+    (inputs (list attr))
+    (home-page "https://savannah.nongnu.org/projects/acl")
+    (synopsis "Access control list utilities, libraries and headers")
+    (description
+     "This package provides POSIX.1e API for ACL (Access Control Lists).")
+    (license license:bsd-2)))
 
 (define-public libpcap
   (package
