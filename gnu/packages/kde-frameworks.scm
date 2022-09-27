@@ -32,6 +32,7 @@
   #:use-module (guix build-system python)
   #:use-module (guix build-system qt)
   #:use-module (guix build-system trivial)
+  #:use-module (guix build utils)
   #:use-module (guix download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
@@ -690,8 +691,8 @@ many more.")
      (list qtbase-5 qtx11extras kinit-bootstrap))
     ;; kinit-bootstrap: kinit package which does not depend on kdbusaddons.
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          (add-before 'configure 'patch-source
           (lambda* (#:key inputs #:allow-other-keys)
             ;; look for the kdeinit5 executable in kinit's store directory,
@@ -699,7 +700,8 @@ many more.")
             (substitute* "src/kdeinitinterface.cpp"
               (("<< QCoreApplication::applicationDirPath..")
                (string-append
-                "<< QString::fromUtf8(\"" (assoc-ref inputs "kinit") "/bin\")" )))))
+                "<< QString::fromUtf8(\"/" (dirname (search-input-file inputs
+                "bin/kdeinit5")) "\")" )))))
          (replace 'check
            (lambda* (#:key tests? #:allow-other-keys)
              (when tests?
@@ -3444,11 +3446,11 @@ need.")
     (source (origin
               (inherit (package-source kdbusaddons))
               (patches '())))
-    (inputs (alist-delete "kinit" (package-inputs kdbusaddons)))
+    (inputs (modify-inputs (package-inputs kdbusaddons) (delete "kinit")))
     (arguments
      (substitute-keyword-arguments (package-arguments kdbusaddons)
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (delete 'patch-source)))))))
 
 (define kinit-bootstrap
