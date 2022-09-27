@@ -240,7 +240,7 @@ continuous display of high-volume data.")
      (list qtbase-5))
     (arguments
      (list #:configure-flags
-       #~'("-DCMAKE_CXX_FLAGS=-fPIC"
+       #~(list "-DCMAKE_CXX_FLAGS=-fPIC"
          "-DPHONON_BUILD_PHONON4QT5=ON")
        #:phases
        #~(modify-phases %standard-phases
