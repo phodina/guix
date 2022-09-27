@@ -2940,7 +2940,8 @@ to easily extend the contacts collection.")
            ;; For tests.
            dbus))
     (inputs
-     (list kauth
+     (list kactivities
+           kauth
            kbookmarks
            kcodecs
            kcompletion
@@ -2961,8 +2962,8 @@ to easily extend the contacts collection.")
            solid
            threadweaver))
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          (add-after 'unpack 'fix-paths-for-test
            ;; This test tries to access paths like /home, /usr/bin and /bin/ls
            ;; which don't exist in the build-container. Change to existing paths.
@@ -2977,10 +2978,7 @@ to easily extend the contacts collection.")
              (when tests?
                (setenv "HOME" (getcwd))
                (setenv "QT_QPA_PLATFORM" "offscreen")
-               (invoke "dbus-launch" "ctest"
-                       "-E" ;; Some tests fail
-                       "(runnercontexttest|dbusrunnertest|\
-runnermanagersinglerunnermodetest|runnermanagertest)")))))))
+               (invoke "dbus-launch" "ctest")))))))
     (home-page "https://community.kde.org/Frameworks")
     (synopsis "Framework for Plasma runners")
     (description "The Plasma workspace provides an application called KRunner
