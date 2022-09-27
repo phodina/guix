@@ -1320,7 +1320,12 @@ which are used in DBus communication.")
     (native-inputs
      (list extra-cmake-modules))
     (inputs
-     (list libdmtx qrencode qtbase-5)) ;; TODO: rethink: nix propagates this
+     (list libdmtx
+           qrencode
+           qtbase-5
+           qtdeclarative-5
+           qtmultimedia-5
+           zxing-cpp)) ;; TODO: rethink: nix propagates this
     (home-page "https://api.kde.org/frameworks/prison/html/index.html")
     (synopsis "Barcode generation abstraction layer")
     (description "Prison is a Qt-based barcode abstraction layer/library and
