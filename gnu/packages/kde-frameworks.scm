@@ -2683,6 +2683,7 @@ consumption.")
            kservice
            kwindowsystem
            kxmlgui
+           libacl
            solid))
     (native-inputs
      (list extra-cmake-modules dbus kdoctools qttools-5))
