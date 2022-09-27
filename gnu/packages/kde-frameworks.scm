@@ -2575,12 +2575,12 @@ window does not need focus for them to be activated.")
            qtdeclarative-5
            qtsvg-5))
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          (add-before 'check 'check-setup
            (lambda* (#:key inputs #:allow-other-keys)
              (setenv "XDG_DATA_DIRS"
-                     (string-append (assoc-ref inputs "shared-mime-info")
+                     (string-append #$shared-mime-info
                                     "/share"))
              (setenv "HOME" (getcwd))
              ;; make Qt render "offscreen", required for tests
