@@ -1287,7 +1287,7 @@ consume data received from the server, or both.")
      (substitute-keyword-arguments (package-arguments qtsvg-5)
        ((#:parallel-tests? _ #f) #f) ; can lead to race condition
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (add-after 'unpack 'fix-tests
              (lambda _
                (substitute* "tests/auto/qsensorgestures_gestures/tst_sensorgestures_gestures.cpp"
