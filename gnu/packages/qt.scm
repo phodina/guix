@@ -1323,10 +1323,10 @@ recognition API for devices.")))
     (arguments
      (substitute-keyword-arguments (package-arguments qtsvg-5)
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (replace 'configure
              (lambda* (#:key outputs #:allow-other-keys)
-               (let ((out (assoc-ref outputs "out")))
+               (let ((out #$output))
                  (invoke "qmake" "QT_BUILD_PARTS = libs tools tests"
                          (string-append "QMAKE_LFLAGS_RPATH=-Wl,-rpath," out "/lib -Wl,-rpath,")
                          (string-append "PREFIX=" out)))))))
