@@ -1005,7 +1005,7 @@ from within Qt 5.")))
     (arguments
      (substitute-keyword-arguments (package-arguments qtsvg-5)
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (add-after 'unpack 'disable-network-tests
              (lambda _ (substitute* "tests/auto/auto.pro"
                          (("qxmlquery") "# qxmlquery")
