@@ -367,8 +367,8 @@ system, and the core design of Django is reused in Grantlee.")
            vulkan-headers
            ruby))
     (arguments
-     `(#:configure-flags
-       (let ((out (assoc-ref %outputs "out")))
+     (list #:configure-flags
+       #~(let ((out #$output))
          (list "-verbose"
                "-prefix" out
                "-docdir" (string-append out "/share/doc/qt5")
@@ -409,7 +409,7 @@ system, and the core design of Django is reused in Grantlee.")
                "-no-pch"
                ;; drop special machine instructions that do not have
                ;; runtime detection
-               ,@(if (string-prefix? "x86_64"
+               #$@(if (string-prefix? "x86_64"
                                      (or (%current-target-system)
                                          (%current-system)))
                      '()
@@ -417,7 +417,7 @@ system, and the core design of Django is reused in Grantlee.")
                "-no-mips_dsp"
                "-no-mips_dspr2"))
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-after 'configure 'patch-bin-sh
            (lambda _
              (substitute* '("config.status"
@@ -436,7 +436,6 @@ system, and the core design of Django is reused in Grantlee.")
            ;; Overridden to not pass "--enable-fast-install", which makes the
            ;; configure process fail.
            (lambda* (#:key outputs configure-flags #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
                (substitute* "configure"
                  (("/bin/pwd") (which "pwd")))
                (substitute* "src/corelib/global/global.pri"
@@ -450,10 +449,10 @@ system, and the core design of Django is reused in Grantlee.")
                  (("NO_DEFAULT_PATH") ""))
                (format #t "build directory: ~s~%" (getcwd))
                (format #t "configure flags: ~s~%" configure-flags)
-               (apply invoke "./configure" configure-flags))))
+               (apply invoke "./configure" configure-flags)))
          (add-after 'install 'patch-mkspecs
            (lambda* (#:key outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
+             (let* ((out #$output)
                     (archdata (string-append out "/lib/qt5"))
                     (mkspecs (string-append archdata "/mkspecs"))
                     (qt_config.prf (string-append
@@ -485,20 +484,19 @@ system, and the core design of Django is reused in Grantlee.")
                  (("\\$\\$\\[QT_HOST_DATA/src\\]") archdata)))))
          (add-after 'patch-mkspecs 'patch-prl-files
            (lambda* (#:key outputs #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
                ;; Insert absolute references to the qtbase libraries because
                ;; QT_INSTALL_LIBS does not always resolve correctly, depending
                ;; on context.  See <https://bugs.gnu.org/38405>
-               (substitute* (find-files (string-append out "/lib") "\\.prl$")
+               (substitute* (find-files (string-append #$output "/lib") "\\.prl$")
                  (("\\$\\$\\[QT_INSTALL_LIBS\\]")
-                  (string-append out "/lib"))))))
+                  (string-append #$output "/lib")))))
          (add-after 'unpack 'patch-paths
            ;; Use the absolute paths for dynamically loaded libs, otherwise
            ;; the lib will be searched in LD_LIBRARY_PATH which typically is
            ;; not set in guix.
            (lambda* (#:key inputs #:allow-other-keys)
              ;; libresolve
-             (let ((glibc (assoc-ref inputs ,(if (%current-target-system)
+             (let ((glibc (assoc-ref inputs #$(if (%current-target-system)
                                                  "cross-libc" "libc"))))
                (substitute* '("src/network/kernel/qdnslookup_unix.cpp"
                               "src/network/kernel/qhostinfo_unix.cpp")
@@ -507,13 +505,13 @@ system, and the core design of Django is reused in Grantlee.")
              ;; libGL
              (substitute* "src/plugins/platforms/xcb/gl_integrations/xcb_glx/qglxintegration.cpp"
                (("^\\s*(QLibrary lib\\(QLatin1String\\(\")(GL\"\\)\\);)" _ a b)
-                (string-append a (assoc-ref inputs "mesa") "/lib/lib" b)))
+                (string-append a #$mesa "/lib/lib" b)))
              ;; libXcursor
              (substitute* "src/plugins/platforms/xcb/qxcbcursor.cpp"
                (("^\\s*(QLibrary xcursorLib\\(QLatin1String\\(\")(Xcursor\"\\), 1\\);)" _ a b)
-                (string-append a (assoc-ref inputs "libxcursor") "/lib/lib" b))
+                (string-append a #$libxcursor "/lib/lib" b))
                (("^\\s*(xcursorLib.setFileName\\(QLatin1String\\(\")(Xcursor\"\\)\\);)" _ a b)
-                (string-append a (assoc-ref inputs "libxcursor") "/lib/lib" b))))))))
+                (string-append a #$libxcursor "/lib/lib" b))))))))
     (native-search-paths
      (list (search-path-specification
             (variable "QMAKEPATH")
