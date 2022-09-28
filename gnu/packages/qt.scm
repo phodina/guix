@@ -1504,7 +1504,7 @@ compositor libraries.")))
     (arguments
      (substitute-keyword-arguments (package-arguments qtsvg-5)
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (add-after 'unpack 'patch-dlopen-paths
            (lambda* (#:key inputs #:allow-other-keys)
              (substitute* "src/serialport/qtudev_p.h"
@@ -1512,7 +1512,7 @@ compositor libraries.")))
                ;; otherwise the lib will be searched in LD_LIBRARY_PATH which
                ;; typically is not set in guix.
                (("^\\s*(udevLibrary->setFileNameAndVersion\\(QStringLiteral\\(\")(udev\"\\),\\s*[0-9]+\\);)" _ a b)
-                (string-append a (assoc-ref inputs "eudev") "/lib/lib" b)))))))))
+                (string-append a #$eudev "/lib/lib" b)))))))))
     (synopsis "Qt Serial Port module")
     (description "The Qt Serial Port module provides the library for
 interacting with serial ports from within Qt.")))
