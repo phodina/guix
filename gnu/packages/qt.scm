@@ -219,10 +219,10 @@ window managers, that don't provide Qt integration by themselves.")
       (native-inputs
        (list cmake-shared extra-cmake-modules pkg-config))
       (inputs
-       `(("qtbase" ,qtbase-5)
-         ("qtwayland" ,qtwayland)
-         ("wayland" ,wayland)
-         ("xkbcommon" ,libxkbcommon)))
+       (list qtbase-5
+             qtwayland
+             wayland
+             libxkbcommon))
       (synopsis "Material Decoration for Qt")
       (description "MaterialDecoration is a client-side decoration for Qt
 applications on Wayland.")
