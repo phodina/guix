@@ -2994,49 +2994,47 @@ module provides support functions to the automatically generated code.")
     (propagated-inputs
      (list python-sip python-pyqt5-sip))
     (inputs
-     `(("python" ,python-wrapper)
-       ("qtbase" ,qtbase-5)
-       ("qtconnectivity" ,qtconnectivity)
-       ("qtdeclarative-5" ,qtdeclarative-5)
-       ("qtlocation" ,qtlocation)
-       ("qtmultimedia-5" ,qtmultimedia-5)
-       ("qtsensors" ,qtsensors)
-       ("qtserialport" ,qtserialport)
-       ("qtsvg-5" ,qtsvg-5)
-       ("qttools-5" ,qttools-5)
-       ("qtwebchannel-5" ,qtwebchannel-5)
-       ("qtwebkit" ,qtwebkit)
-       ("qtwebsockets-5" ,qtwebsockets-5)
-       ("qtx11extras" ,qtx11extras)
-       ("qtxmlpatterns" ,qtxmlpatterns)))
+     (list python-wrapper
+           qtbase-5
+           qtconnectivity
+           qtdeclarative-5
+           qtlocation
+           qtmultimedia-5
+           qtsensors
+           qtserialport
+           qtsvg-5
+           qttools-5
+           qtwebchannel-5
+           qtwebkit
+           qtwebsockets-5
+           qtx11extras
+           qtxmlpatterns))
     (arguments
-     `(#:modules ((srfi srfi-1)
+     (list #:modules `((srfi srfi-1)
                   ((guix build python-build-system) #:select (python-version))
                   ,@%gnu-build-system-modules)
-       #:imported-modules ((guix build python-build-system)
+       #:imported-modules `((guix build python-build-system)
                            ,@%gnu-build-system-modules)
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          ;; When building python-pyqtwebengine, <qprinter.h> can not be
          ;; included.  Here we substitute the full path to the header in the
          ;; store.
          (add-before 'configure 'substitute-source
            (lambda* (#:key inputs  #:allow-other-keys)
-             (let* ((qtbase (assoc-ref inputs "qtbase"))
-                    (qtprinter.h (string-append "\"" qtbase "/include/qt5/QtPrintSupport/qprinter.h\"")))
+             (let* ((qtprinter.h (string-append "\"" #$qtbase-5 "/include/qt5/QtPrintSupport/qprinter.h\"")))
                (substitute* "sip/QtPrintSupport/qprinter.sip"
                  (("<qprinter.h>") qtprinter.h)))))
          (replace 'configure
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
+             (let* ((out #$output)
                     (bin (string-append out "/bin"))
                     (sip (string-append out "/share/sip"))
                     (plugins (string-append out "/lib/qt5/plugins"))
                     (designer (string-append plugins "/designer"))
                     (qml (string-append plugins "/PyQt5"))
-                    (python (assoc-ref inputs "python"))
                     (lib (string-append out "/lib/python"
-                                        (python-version python)
+                                        (python-version #$python-wrapper)
                                         "/site-packages"))
                     (stubs (string-append lib "/PyQt5")))
                (invoke "python" "configure.py"
