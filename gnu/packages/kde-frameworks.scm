@@ -236,18 +236,18 @@ continuous display of high-volume data.")
     (inputs
      (list qtbase-5))
     (arguments
-     `(#:configure-flags
-       '("-DCMAKE_CXX_FLAGS=-fPIC"
+     (list #:configure-flags
+       #~'("-DCMAKE_CXX_FLAGS=-fPIC"
          "-DPHONON_BUILD_PHONON4QT5=ON")
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (add-before 'install 'patch-installdir
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let ((regex (string-append "(INSTALL DESTINATION \")"
-                                         (assoc-ref inputs "qtbase"))))
+                                         #$qtbase-5)))
                (substitute* "cmake_install.cmake"
                  ((regex all dest)
-                  (string-append dest (assoc-ref outputs "out"))))))))))
+                  (string-append dest #$output)))))))))
     (home-page "https://community.kde.org/Phonon")
     (synopsis "KDE's multimedia library")
     (description "KDE's multimedia library.")
