@@ -1662,7 +1662,7 @@ native APIs where it makes sense.")))
      (substitute-keyword-arguments (package-arguments qtsvg-5)
        ((#:tests? _ #f) #f)   ; TODO: Enable the tests
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (add-before 'check 'pre-check
              (lambda _
                (setenv "HOME" "/tmp")))))))
