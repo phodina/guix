@@ -1530,11 +1530,10 @@ interacting with serial ports from within Qt.")))
     (arguments
      (substitute-keyword-arguments (package-arguments qtsvg-5)
        ((#:phases phases '%standard-phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (add-after 'unpack 'patch-libsocketcan-reference
              (lambda* (#:key inputs #:allow-other-keys)
-               (let* ((libcansocket (assoc-ref inputs "libsocketcan"))
-                      (libcansocket.so (string-append libcansocket
+               (let* ((libcansocket.so (string-append #$libsocketcan
                                                       "/lib/libsocketcan.so")))
                  (substitute* "src/plugins/canbus/socketcan/libsocketcan.cpp"
                    (("QStringLiteral\\(\"socketcan\"\\)")
