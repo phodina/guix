@@ -2436,10 +2436,10 @@ using the Enchant spell-checking library.")
           (guix build utils)
           (ice-9 textual-ports)))
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (add-before 'configure 'substitute-source
              (lambda* (#:key inputs outputs #:allow-other-keys)
-               (let ((out (assoc-ref outputs "out")))
+               (let ((out #$output))
                  (with-atomic-file-replacement
                   "src/buildtools/config/linux.pri"
                   (lambda (in out)
