@@ -2861,19 +2861,17 @@ system libraries.")
            "163aa2x2qb0h8w26si5ql833ilj427jjbdwlz1p2p8iaq6dh0vq1"))))
       (build-system cmake-build-system)
       (arguments
-       `(#:tests? #f                    ; no check target
+       (list #:tests? #f                    ; no check target
          ;; Projects can decide how to build this library.  You might need to
          ;; override this flag (QApplication, QGuiApplication or
          ;; QCoreApplication).
-         #:configure-flags '("-DQAPPLICATION_CLASS=QApplication")
+         #:configure-flags #~(list "-DQAPPLICATION_CLASS=QApplication")
          #:phases
-         (modify-phases %standard-phases
+         #~(modify-phases %standard-phases
            ;; No install target, install things manually
            (replace 'install
              (lambda* (#:key inputs outputs source #:allow-other-keys)
-               (let* ((qt (assoc-ref inputs "qtbase"))
-                      (qt-version ,(version-major (package-version qtbase-5)))
-                      (out (assoc-ref outputs "out")))
+               (let ((out #$output))
                  (install-file
                   "libSingleApplication.a" (string-append out "/lib"))
                  (for-each
