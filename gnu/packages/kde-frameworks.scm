@@ -270,8 +270,7 @@ continuous display of high-volume data.")
     (native-inputs
      (list extra-cmake-modules pkg-config qttools-5))
     (inputs
-     (list qtbase-5
-           phonon
+     (list phonon
            qtbase-5
            qtx11extras
            gstreamer
