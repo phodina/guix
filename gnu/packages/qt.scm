@@ -558,7 +558,7 @@ developers using C++ or QML, a CSS & JavaScript like language.")
     (arguments
      (substitute-keyword-arguments (package-arguments qtbase-5)
        ((#:configure-flags _ ''())
-        `(let ((out (assoc-ref %outputs "out")))
+        #~(let ((out #$output))
            (list "-GNinja"              ;the build fails otherwise
                  "-DQT_BUILD_TESTS=ON"
                  (string-append "-DINSTALL_ARCHDATADIR=" out "/lib/qt6")
@@ -588,7 +588,7 @@ developers using C++ or QML, a CSS & JavaScript like language.")
                  "-DBUILD_WITH_PCH=OFF"
                  ;; Drop special machine instructions that do not have runtime
                  ;; detection.
-                 ,@(if (string-prefix? "x86_64"
+                 #$@(if (string-prefix? "x86_64"
                                        (or (%current-target-system)
                                            (%current-system)))
                        '()              ;implicitly enabled
