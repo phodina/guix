@@ -1454,7 +1454,7 @@ set of plugins for interacting with pulseaudio and GStreamer.")
     (arguments
      (substitute-keyword-arguments (package-arguments qtsvg-5)
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (add-after 'unpack 'disable-failing-tests
              (lambda _
                ;; FIXME: tst_seatv4::animatedCursor() fails for no good
