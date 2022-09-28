@@ -2945,25 +2945,24 @@ module provides support functions to the automatically generated code.")
           "04a23cgsnx150xq86w1z44b6vr2zyazysy9mqax0fy346zlr77dk"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("python" ,python-wrapper)))
+     (list python-wrapper))
     (propagated-inputs `())
     (arguments
-     `(#:tests? #f ; no check target
-       #:imported-modules ((guix build python-build-system)
+     (list #:tests? #f ; no check target
+       #:imported-modules `((guix build python-build-system)
                            ,@%gnu-build-system-modules)
-       #:modules ((srfi srfi-1)
+       #:modules `((srfi srfi-1)
                   ((guix build python-build-system) #:select (python-version))
                   ,@%gnu-build-system-modules)
        #:phases
-       (modify-phases %standard-phases
+       #~(modify-phases %standard-phases
          (replace 'configure
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
+             (let* ((out #$output)
                     (bin (string-append out "/bin"))
                     (include (string-append out "/include"))
-                    (python (assoc-ref inputs "python"))
                     (lib (string-append out "/lib/python"
-                                        (python-version python)
+                                        (python-version #$python-wrapper)
                                         "/site-packages")))
                (invoke "python" "configure.py"
                        "--bindir" bin
