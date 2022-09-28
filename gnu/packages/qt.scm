@@ -1959,7 +1959,7 @@ purchasing goods and services.")))
     (arguments
      (substitute-keyword-arguments (package-arguments qtsvg-5)
        ((#:phases phases)
-        `(modify-phases ,phases
+        #~(modify-phases #$phases
            (add-after 'unpack 'remove-failing-test
              (lambda _
                (substitute* "tests/auto/auto.pro"
