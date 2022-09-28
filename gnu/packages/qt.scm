@@ -861,12 +861,12 @@ came with the @{qtgraphicaleffects} Qt 5 package.")
     (inputs
      (list mesa qtbase-5 zlib))
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
+     (list #:phases
+       #~(modify-phases %standard-phases
          (add-before 'configure 'configure-qmake
            (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
-                    (qtbase (assoc-ref inputs "qtbase"))
+             (let* ((out #$output)
+                    (qtbase #$qtbase-5)
                     (tmpdir (string-append (getenv "TMPDIR")))
                     (qmake (string-append tmpdir "/qmake"))
                     (qt.conf (string-append tmpdir "/qt.conf")))
