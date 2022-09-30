@@ -1225,6 +1225,28 @@ protocol either in Wayland core, or some other protocol in wayland-protocols.")
                (base32
                 "04vgllmpmrv14x3x64ns01vgwx4hriljayjkz9idgbv83i63hly5"))))))
 
+(define-public wayland-utils
+  (package
+    (name "wayland-utils")
+    (version "1.1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+			  "https://gitlab.freedesktop.org/wayland/wayland-utils/-/archive/"
+			  version "/wayland-utils-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1p42vnfi1h7f78dqmvjkg14jlbcih8xmhx13mb6vcziyp5gawvvk"))))
+    (build-system meson-build-system)
+	(native-inputs (list pkg-config))
+	(inputs (list libdrm wayland wayland-protocols-next))
+    (home-page "https://wayland.freedesktop.org/")
+    (synopsis "Display information about the Wayland protocols")
+    (description "This package provides @code{wayland-info} tool that can be
+used to check which Wayland protocols and versions are advertised by the Wayland
+compositor.")
+    (license license:expat)))
+
 (define-public waylandpp
   (package
     (name "waylandpp")
