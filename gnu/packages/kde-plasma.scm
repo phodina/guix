@@ -2196,6 +2196,30 @@ adding, modifying and removing contacts.")
 and customizable platform for mobile devices.")
     (license (list license:gpl3+ license:lgpl2.1+))))
 
+(define-public plasma-redshift-control
+  (let ((commit "d9f38a5f0bcf030be16db1776166581c16e802cb")
+        (revision "1"))
+    (package
+      (name "plasma-redshift-control")
+      (version (git-version "0.1-pre" revision commit))
+      (source (origin
+                (method url-fetch)
+                (uri (string-append
+                      "https://invent.kde.org/plasma/plasma-redshift-control/-/archive/"
+                      commit "/plasma-redshift-control-" commit ".tar.gz"))
+                (sha256
+                 (base32
+                  "1f61n5xm6rbvsfdgs847did5wx4gq3glbqzjfs3dq6ivhxvpvwgl"))))
+      (build-system qt-build-system)
+      (native-inputs (list extra-cmake-modules pkg-config))
+      (inputs (list kwindowsystem plasma-framework redshift))
+      (home-page "https://invent.kde.org/plasma/plasma-redshift-control")
+      (synopsis "Redshift control applet for the Plasma Desktop")
+      (description
+       "This package provides Redshift control applet for the Plasma
+Desktop.")
+      (license (list license:lgpl2.1 license:lgpl3)))))
+
 (define-public plasma-vault
   (package
     (name "plasma-vault")
