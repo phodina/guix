@@ -357,6 +357,64 @@ Akonadi PIM data server.  It uses Xapian for indexing and querying.")
     (license ;; GPL for programs, LGPL for libraries
      (list license:gpl2+ license:lgpl2.0+))))
 
+(define-public itinerary
+  (package
+    (name "itinerary")
+    (version "22.08.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/stable/release-service/"
+                                  version
+                                  "/src/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1w1gl4lz8gwf8cmxhsfyp4afiaq9anc8glrxay407bqp28andp3a"))))
+    (properties `((upstream-name . "incidenceeditor")))
+    (build-system qt-build-system)
+    (arguments
+     `(#:tests? #f)) ;Fails 20/27
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list karchive
+                  kdbusaddons
+                  ki18n
+                  kio
+                  kirigami
+                  kitinerary
+                  kitemmodels
+                  kcoreaddons
+                  kcontacts
+                  kholidays
+                  kmime
+                  knotifications
+                  kpublictransport
+                  kcalendarcore
+                  khealthcertificate
+                  kosmindoormap
+                  kopeninghours
+                  kpkpass
+                  kunitconversion
+                  kwindowsystem
+                  prison
+                  qtdeclarative-5
+                  qtgraphicaleffects
+                  qtlocation
+                  qtmultimedia-5
+                  qtquickcontrols2-5
+                  qqc2-desktop-style
+                  shared-mime-info
+                  solid
+                  sonnet
+                  zlib))
+    (home-page "https://invent.kde.org/pim/incidenceeditor")
+    (synopsis "KDE PIM library for editing incidences")
+    (description "This library provides an incidence editor for KDE PIM.")
+    (license ;GPL for programs, LGPL for libraries
+             (list license:gpl2+ license:lgpl2.0+))))
+
 (define-public kincidenceeditor
   (package
     (name "kincidenceeditor")
