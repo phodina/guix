@@ -265,13 +265,9 @@ driver.")
                   gusb
                   sqlite
                   libarchive
-                  libjcat
-                  json-glib
-                  curl
                   polkit
                   eudev
                   gcab
-                  gnutls
                   libelf
                   tpm2-tss
                   cairo
@@ -281,6 +277,10 @@ driver.")
                   mingw-w64-tools
                   libsmbios
                   gnu-efi))
+	(propagated-inputs (list curl
+                             gnutls
+                             json-glib
+                             libjcat))
     (home-page "https://fwupd.org/")
     (synopsis "Daemon to allow session software to update firmware")
     (description "This package aims to make updating firmware on GNU/Linux
