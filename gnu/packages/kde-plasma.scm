@@ -1516,6 +1516,55 @@ on top of Baloo.")
     (description "Meta package containing packages for Plasma Desktop")
     (license license:gpl2+)))
 
+(define-public plasma-bigscreen
+  (package
+    (name "plasma-bigscreen")
+    (version "5.25.90")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://kde/unstable/plasma/"
+                                  version
+                                  "/"
+                                  name
+                                  "-"
+                                  version
+                                  ".tar.xz"))
+              (sha256
+               (base32
+                "1445j8hzfvh2z91fa8nxrc0z576c67cq5fxcs19pmzpnjjli1ads"))))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:phases #~(modify-phases %standard-phases
+                        (add-after 'unpack 'fix-startplasma
+                          (lambda* _
+                            (substitute* "bin/plasma-bigscreen-wayland.in"
+                              (("^startplasma-wayland")
+                               (string-append #$plasma-framework
+                                              "/bin/startplasma-wayland")))
+                            (substitute* "bin/plasma-bigscreen-x11"
+                              (("startplasma-x11")
+                               (string-append #$plasma-framework
+                                              "/bin/startplasma-x11"))))))))
+    (native-inputs (list extra-cmake-modules))
+    (inputs (list kactivities
+                  kactivities-stats
+                  plasma-framework
+                  ki18n
+                  kirigami
+                  kdeclarative
+                  kcmutils
+                  knotifications
+                  kio
+                  kwayland
+                  kwindowsystem
+                  plasma-workspace
+                  qtbase-5
+                  qtmultimedia-5))
+    (home-page "https://invent.kde.org/plasma/plasma-bigscreen")
+    (synopsis "Plasma shell for TVs")
+    (description "")
+    (license license:gpl2+)))
+
 (define-public plasmatube
   (package
     (name "plasmatube")

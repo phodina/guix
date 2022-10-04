@@ -915,6 +915,7 @@ or user activity.")
            ;;("plasma-frameworks" ,plasma-framework) ;; Tier 3!
            qtbase-5
            qtdeclarative-5
+           qtquickcontrols-5
            qtquickcontrols2-5
            qtsvg-5
            ;; Run-time dependency
