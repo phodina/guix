@@ -2,7 +2,7 @@
 ;; for a "desktop" setup with GNOME and Xfce where the
 ;; root partition is encrypted with LUKS, and a swap file.
 
-(use-modules (gnu) (gnu system nss) (guix utils))
+(use-modules (gnu) (gnu system nss) (guix utils) (srfi srfi-1))
 (use-service-modules desktop sddm xorg)
 (use-package-modules certs gnome)
 
@@ -75,13 +75,12 @@
   ;; include the X11 log-in service, networking with
   ;; NetworkManager, and more.
   (services (if (target-x86-64?)
-                (append (list (service gnome-desktop-service-type)
+                (append (list 
                               (service plasma-desktop-service-type)
-                              (service xfce-desktop-service-type)
-                              (set-xorg-configuration
-                               (xorg-configuration
-                                (keyboard-layout keyboard-layout))))
-                        %desktop-services)
+							  (service sddm-service-type))
+				(remove (lambda (service)
+       (eq? (service-kind service) gdm-service-type))
+                        %desktop-services))
 
                 ;; FIXME: Since GDM depends on Rust (gdm -> gnome-shell -> gjs
                 ;; -> mozjs -> rust) and Rust is currently unavailable on
