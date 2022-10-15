@@ -1346,7 +1346,10 @@ basic input/output.")
     (build-system cargo-build-system)
     (arguments
      `(#:install-source? #f     ; virtual manifest
-       #:cargo-test-flags '("--release" "--" "--skip=config_read_eof")
+       #:cargo-test-flags '("--release" "--" "--skip=config_read_eof"
+         ,@(if (string-prefix? "aarch64" (or (%current-system)
+                                  (%current-target-system)))
+                            '("--skip=mock_term") '()))
        #:cargo-inputs
        (("rust-alacritty-config-derive" ,rust-alacritty-config-derive-0.1)
         ("rust-alacritty-terminal" ,rust-alacritty-terminal-0.15)
