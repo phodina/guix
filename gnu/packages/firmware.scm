@@ -7,7 +7,7 @@
 ;;; Copyright © 2018 Vagrant Cascadian <vagrant@debian.org>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020, 2021, 2022 Marius Bakke <marius@gnu.org>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2022 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -287,6 +287,38 @@ driver.")
     (description "This package aims to make updating firmware on GNU/Linux
 automatic, safe and reliable.  It is used by tools such as GNOME Software.")
     (license license:lgpl2.1+)))
+
+(define-public coreboot
+  (package
+    (name "coreboot")
+    (version "4.17")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://review.coreboot.org/coreboot.git")
+             (commit version)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1z6yi4a1m1r7imy9b2pyfdsgcgjjvbvvn0agykf8702k3na6ryjw"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list #:phases
+       #~(modify-phases %standard-phases
+	     (add-after 'unpack 'select-config
+		 (lambda* _
+		 (substitute* "util/genbuild_h/genbuild_h.sh"
+		 (("printf \"#define COREBOOT_MAJOR_VERSION.*") " printf \"#define COREBOOT_MAJOR_VERSION 4 \n#define COREBOOT_MINOR_VERSION 16\n\""))
+		 (copy-file "configs/" ".config")))
+         (delete 'configure))))
+    (native-inputs (list acpica perl python python-2 pkg-config))
+    (synopsis "Bootloader for modern computers and embedded systems")
+    (description "This package provides extended firmware platform that
+delivers a lightning fast and secure boot experience on modern computers
+and embedded systems")
+    (home-page "https://www.coreboot.org/")
+    (license license:gpl2+)))
 
 (define-public openfwwf-firmware
   (package
