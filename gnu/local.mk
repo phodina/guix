@@ -865,6 +865,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/akonadi-paths.patch		\
   %D%/packages/patches/akonadi-not-relocatable.patch		\
   %D%/packages/patches/akonadi-timestamps.patch		\
+  %D%/packages/patches/alacritty-use-OpenGL-3.1-with-extensions-instead-of-OpenGL-3.3.patch \
   %D%/packages/patches/allegro-mesa-18.2.5-and-later.patch	\
   %D%/packages/patches/anki-mpv-args.patch			\
   %D%/packages/patches/antiword-CVE-2014-8123.patch			\

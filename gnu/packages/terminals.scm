@@ -1341,6 +1341,14 @@ basic input/output.")
              (url "https://github.com/jwilm/alacritty")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
+       ;; This patch enables to run Alacritty on aarch64 targets such as
+       ;; PineBook Pro which run Panfrost driver and support OpenGL 3.1
+       (patches
+         `,(if (string-prefix? "aarch64" (or (%current-system)
+                                  (%current-target-system)))
+         (search-patches
+          "alacritty-use-OpenGL-3.1-with-extensions-instead-of-OpenGL-3.3.patch")
+          '()))
        (sha256
         (base32 "068y0b1a0m33r7a3j2xf6k602sc8062gm4d5568ynfx6w5n481lj"))))
     (build-system cargo-build-system)
