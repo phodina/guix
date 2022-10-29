@@ -21402,6 +21402,36 @@ Git.")
 Rust Python extensions implemented with @code{PyO3} or @code{rust-cpython}.")
     (license license:expat)))
 
+(define-public python-pyclip
+  (package
+    (name "python-pyclip")
+    (version "0.6.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+			  "https://github.com/spyoungtech/pyclip/archive/refs/tags/v" version ".tar.gz"))
+              (sha256
+               (base32
+                "05psqms1varh0q9dlcp0wz6rpd79y7jhjpx1wk24vqnqdn9jrc30"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key tests? inputs outputs #:allow-other-keys)
+             (when tests?
+               (add-installed-pythonpath inputs outputs)
+               (system "Xvfb :1 &")
+               (setenv "DISPLAY" ":1")
+               (invoke "dbus-run-session" "--" "pytest")))))))
+	(native-inputs (list dbus python-pytest xorg-server-for-tests))
+	(inputs (list xclip wl-clipboard))
+    (home-page "https://github.com/aristocratos/btop")
+    (synopsis "Clipboard utilities supporting both binary and text data")
+    (description "This package provides clipboard dor both X11 and Wayland that
+supports binary and text data.")
+    (license license:asl2.0)))
+
 (define-public python-pyclipper
   (package
     (name "python-pyclipper")
