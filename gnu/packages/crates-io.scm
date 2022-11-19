@@ -48625,17 +48625,17 @@ sub-processes using a fork-like interface.")
     (description "Rkyv is a zero-copy deserialization framework for Rust.")
     (license license:expat)))
 
-(define-public rust-rkyv-derive-0.6
+(define-public rust-rkyv-derive-0.7
   (package
     (name "rust-rkyv-derive")
-    (version "0.6.7")
+    (version "0.7.39")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "rkyv_derive" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1mc7rnps41gdywahsffqlypsp9jqmp0r6hlh2nxm31bddfgli3xs"))))
+        (base32 "1i1lmir3lm8zj8k1an7j2rchv1admqhysh6r6bfkcgmmi3fdmbkf"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
