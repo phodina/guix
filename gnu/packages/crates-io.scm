@@ -8314,25 +8314,25 @@ of built-in fundamental numeric types.")
      "This package provides a library for interaction with units of bytes.")
     (license license:expat)))
 
-(define-public rust-bytecheck-0.5
+(define-public rust-bytecheck-0.6
   (package
     (name "rust-bytecheck")
-    (version "0.5.2")
+    (version "0.6.9")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "bytecheck" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0q11ap6nqj0rsc8ypwjh918916zlrcrzdgqm175gnpb2yn9axyh1"))))
+        (base32 "0vs0a8p3bpaz3vc15zknqkd5ajgzgswf2bmd1mbwdbdm28naq76i"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-bytecheck-derive" ,rust-bytecheck-derive-0.5)
-        ("rust-log" ,rust-log-0.4)
+       (("rust-bytecheck-derive" ,rust-bytecheck-derive-0.6)
         ("rust-ptr-meta" ,rust-ptr-meta-0.1)
-        ("rust-simdutf8" ,rust-simdutf8-0.1))))
+        ("rust-simdutf8" ,rust-simdutf8-0.1)
+        ("rust-uuid" ,rust-uuid-1))))
     (home-page "https://github.com/rkyv/bytecheck")
     (synopsis "Type validation framework")
     (description "This package provides a type validation framework for
