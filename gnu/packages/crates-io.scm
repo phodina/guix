@@ -10520,7 +10520,7 @@ traits.")
 (define-public rust-clap-derive-3
   (package
     (name "rust-clap-derive")
-    (version "3.0.0-beta.2")
+    (version "3.1.18")
     (source
      (origin
        (method url-fetch)
@@ -10529,12 +10529,12 @@ traits.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "18cn82jhcha7m0nkpi1a03jx8k7aaq5kxfcxnsqpaa8ih5dp23rp"))))
+         "0g53w6qkqcc122bqh51jzfg51147il643idvq1czxkr2x5306ci5"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
        #:cargo-inputs
-       (("rust-heck" ,rust-heck-0.3)
+       (("rust-heck" ,rust-heck-0.4)
         ("rust-proc-macro-error"
          ,rust-proc-macro-error-1)
         ("rust-proc-macro2" ,rust-proc-macro2-1)
