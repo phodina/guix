@@ -2694,6 +2694,26 @@ it outputs messages to Android's logcat.")
     (description "This package provides Android system properties wrapper.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-anes-0.1
+  (package
+    (name "rust-anes")
+    (version "0.1.6")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "anes" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "16bj1ww1xkwzbckk32j2pnbn5vk6wgsl3q4p3j9551xbcarwnijb"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-bitflags" ,rust-bitflags-1))))
+    (home-page "https://github.com/zrzka/anes-rs")
+    (synopsis "ANSI Escape Sequences provider & parser")
+    (description "ANSI Escape Sequences provider & parser")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-ansi-parser-0.6
   (package
     (name "rust-ansi-parser")
