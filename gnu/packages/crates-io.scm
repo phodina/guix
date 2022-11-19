@@ -8339,17 +8339,17 @@ of built-in fundamental numeric types.")
 Rust.")
     (license license:expat)))
 
-(define-public rust-bytecheck-derive-0.5
+(define-public rust-bytecheck-derive-0.6
   (package
     (name "rust-bytecheck-derive")
-    (version "0.5.2")
+    (version "0.6.9")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "bytecheck_derive" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0grbkwwv5j91n7zrimci6fh4k79flxga3mkjg50jysnyraizi088"))))
+        (base32 "1gxr63mi91rrjzfzcb8pfwsnarp9i2w1n168nc05aq4fx7mpdr8k"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
