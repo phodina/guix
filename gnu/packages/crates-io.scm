@@ -31892,8 +31892,30 @@ parallelize and optimize.")
      "This package provides MaybeUninit for friends of backwards compatibility.")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-md-5-0.10
+  (package
+    (name "rust-md-5")
+    (version "0.10.5")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "md-5" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1jmrykh705dfclkgxwjysj5y8l1nyrn1gddw5xpgyjyla1l50rb3"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-digest" ,rust-digest-0.10)
+                       ("rust-md5-asm" ,rust-md5-asm-0.5))))
+    (home-page "https://github.com/RustCrypto/hashes")
+    (synopsis "MD5 hash function")
+    (description "MD5 hash function.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-md-5-0.9
   (package
+    (inherit rust-md-5-0.10)
     (name "rust-md-5")
     (version "0.9.1")
     (source
@@ -31905,7 +31927,6 @@ parallelize and optimize.")
         (sha256
          (base32
           "059ajjacz1q3cms7vl6cvhdqs4qdw2nnwj9dq99ryzv0p6djfnkv"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
        (("rust-block-buffer" ,rust-block-buffer-0.9)
@@ -31914,11 +31935,7 @@ parallelize and optimize.")
         ("rust-opaque-debug" ,rust-opaque-debug-0.3))
        #:cargo-development-inputs
        (("rust-digest" ,rust-digest-0.9)
-        ("rust-hex-literal" ,rust-hex-literal-0.2))))
-    (home-page "https://github.com/RustCrypto/hashes")
-    (synopsis "MD5 hash function")
-    (description "MD5 hash function.")
-    (license (list license:expat license:asl2.0))))
+        ("rust-hex-literal" ,rust-hex-literal-0.2))))))
 
 (define-public rust-md-5-0.8
   (package
