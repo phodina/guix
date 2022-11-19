@@ -13277,8 +13277,30 @@ Rust.")
 criterion.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-criterion-plot-0.5
+  (package
+    (name "rust-criterion-plot")
+    (version "0.5.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "criterion-plot" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1c866xkjqqhzg4cjvg01f8w6xc1j3j7s58rdksl52skq89iq4l3b"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-cast" ,rust-cast-0.3)
+                       ("rust-itertools" ,rust-itertools-0.10))))
+    (home-page "https://github.com/bheisler/criterion.rs")
+    (synopsis "Criterion's plotting library")
+    (description "This package provides criterion's plotting library.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-criterion-plot-0.4
   (package
+    (inherit rust-criterion-plot-0.5)
     (name "rust-criterion-plot")
     (version "0.4.4")
     (source
@@ -13289,7 +13311,6 @@ criterion.")
         (string-append name "-" version ".tar.gz"))
        (sha256
         (base32 "0mys2zkizh5az6ax77m5aqifk0vz35rn0a6wykvmjx9gkzg9c2fh"))))
-    (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
        (("rust-cast" ,rust-cast-0.2)
@@ -13297,11 +13318,7 @@ criterion.")
        #:cargo-development-inputs
        (("rust-itertools-num" ,rust-itertools-num-0.1)
         ("rust-num-complex" ,rust-num-complex-0.2)
-        ("rust-rand" ,rust-rand-0.4))))
-    (home-page "https://github.com/bheisler/criterion.rs")
-    (synopsis "Criterion's plotting library")
-    (description "This package provides criterion's plotting library.")
-    (license (list license:expat license:asl2.0))))
+        ("rust-rand" ,rust-rand-0.4))))))
 
 (define-public rust-criterion-plot-0.3
   (package
