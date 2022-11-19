@@ -3686,17 +3686,17 @@ Askama.")
      "This package provides a type-safe, compiled Jinja-like templates for Rust.")
     (license (list license:expat license:asl2.0))))
 
-(define-public rust-asn1-derive-0.8
+(define-public rust-asn1-derive-0.12
   (package
     (name "rust-asn1-derive")
-    (version "0.8.7")
+    (version "0.12.2")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "asn1_derive" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "098w0mxz4bx9w7v72gsl5wva6f0qbvzyc52m0s0n8svqbyh4z2dw"))))
+        (base32 "1dz130zdi1k8azsp45vfjk2ncbrkvkif8nlg5z9fhh8jl1a1i3fl"))))
     (build-system cargo-build-system)
     (arguments
      `(#:skip-build? #t
