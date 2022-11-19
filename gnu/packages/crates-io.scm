@@ -3710,21 +3710,21 @@ Askama.")
      "This package provides #[derive] support for @code{asn1}.")
     (license license:bsd-3)))
 
-(define-public rust-asn1-0.8
+(define-public rust-asn1-0.12
   (package
     (name "rust-asn1")
-    (version "0.8.7")
+    (version "0.12.2")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "asn1" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1caacmvgn463n1yc4ac6vl9phrh56ij7l3xgf6qgzbpyjm8v7zyg"))))
+        (base32 "047j8hsbzzvgy4597h3pj9wxzlkk5dssmhf7fd1vzhbirn2prhi2"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-asn1-derive" ,rust-asn1-derive-0.8)
+       (("rust-asn1-derive" ,rust-asn1-derive-0.12)
         ("rust-chrono" ,rust-chrono-0.4))
        #:cargo-development-inputs
        (("rust-libc" ,rust-libc-0.2))))
