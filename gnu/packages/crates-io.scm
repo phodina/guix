@@ -10308,6 +10308,27 @@ transfer coding.")
     (description "Simplified Read/Write traits for no_std usage")
     (license license:asl2.0)))
 
+(define-public rust-ciborium-ll-0.2
+  (package
+    (name "rust-ciborium-ll")
+    (version "0.2.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "ciborium-ll" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "06ygqh33k3hp9r9mma43gf189b6cyq62clk65f4w1q54nni30c11"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-ciborium-io" ,rust-ciborium-io-0.2)
+                       ("rust-half" ,rust-half-1))))
+    (home-page "https://github.com/enarx/ciborium")
+    (synopsis "Low-level CBOR codec primitives")
+    (description "Low-level CBOR codec primitives")
+    (license license:asl2.0)))
+
 (define-public rust-clang-ast-0.1
   (package
     (name "rust-clang-ast")
