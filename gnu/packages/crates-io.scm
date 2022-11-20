@@ -10289,6 +10289,25 @@ transfer coding.")
      "This package provides current CI environment information.")
     (license license:asl2.0)))
 
+(define-public rust-ciborium-io-0.2
+  (package
+    (name "rust-ciborium-io")
+    (version "0.2.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "ciborium-io" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0sdkk7l7pqi2nsbm9c6g8im1gb1qdd83l25ja9xwhg07mx9yfv9l"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "https://github.com/enarx/ciborium")
+    (synopsis "Simplified Read/Write traits for no_std usage")
+    (description "Simplified Read/Write traits for no_std usage")
+    (license license:asl2.0)))
+
 (define-public rust-clang-ast-0.1
   (package
     (name "rust-clang-ast")
