@@ -10289,6 +10289,28 @@ transfer coding.")
      "This package provides current CI environment information.")
     (license license:asl2.0)))
 
+(define-public rust-ciborium-0.2
+  (package
+    (name "rust-ciborium")
+    (version "0.2.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "ciborium" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "13vqkm88kaq8nvxhaj6qsl0gsc16rqsin014fx5902y6iib3ghdh"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-ciborium-io" ,rust-ciborium-io-0.2)
+                       ("rust-ciborium-ll" ,rust-ciborium-ll-0.2)
+                       ("rust-serde" ,rust-serde-1))))
+    (home-page "https://github.com/enarx/ciborium")
+    (synopsis "serde implementation of CBOR using ciborium-basic")
+    (description "serde implementation of CBOR using ciborium-basic")
+    (license license:asl2.0)))
+
 (define-public rust-ciborium-io-0.2
   (package
     (name "rust-ciborium-io")
