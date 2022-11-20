@@ -556,14 +556,14 @@ is used by the Requests library to verify HTTPS requests.")
 (define-public python-cryptography-next
   (package
     (name "python-cryptography")
-    (version "37.0.4")
+    (version "38.0.3")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "cryptography" version))
        (sha256
         (base32
-         "10haq7sn8mrdlhcfs791rczknnxm0wpww0lkpjzcqx141ryc3yb3"))))
+         "1gaw9py5xn142fqlbvj9bdrk9xvkc1m7sa6jn6c7mc0mjvhnxgmz"))))
     (build-system python-build-system)
     (arguments
      (list
@@ -610,8 +610,8 @@ is used by the Requests library to verify HTTPS requests.")
            ;; the Rust requirements (see src/rust/cargo.toml).  Surely
            ;; there is a better way than manually listing everything..?
            rust-aliasable-0.1
-           rust-asn1-0.8
-           rust-asn1-derive-0.8
+           rust-asn1-0.12
+           rust-asn1-derive-0.12
            rust-autocfg-1
            rust-base64-0.13
            rust-bitflags-1
