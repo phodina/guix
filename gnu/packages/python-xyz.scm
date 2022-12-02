@@ -22324,16 +22324,21 @@ Included are implementations of:
   (package
     (inherit python-typing-extensions)
     (name "python-typing-extensions")
-    (version "4.2.0")
+    (version "4.3.0")
     (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/python/typing")
-                    (commit version)))
-              (file-name (git-file-name name version))
+             (method url-fetch)
+              (uri (string-append
+                         "https://github.com/python/typing_extensions/archive/refs/tags/"
+                         version ".tar.gz"))
               (sha256
                (base32
-                "1bbry1rg7q5ppkgzdk4nwl7q1w8bbhajm4q68wb9dm6rf7hg1023"))))))
+                "0c6f8xd5hi6c3yc2py5vncx5ki5101vnj9h744ys4f98xn595g4x"))))
+    (arguments
+     (substitute-keyword-arguments (package-arguments
+	 python-typing-extensions)
+       ((#:phases phases)
+        #~(modify-phases #$phases
+            (delete 'enter-source-directory)))))))
 
 (define-public bpython
   (package
