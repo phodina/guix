@@ -142,7 +142,9 @@
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-build)
   #:use-module (gnu packages python-check)
+  #:use-module (gnu packages python-compression)
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
@@ -161,6 +163,7 @@
   #:use-module (gnu packages valgrind)
   #:use-module (gnu packages web)
   #:use-module (gnu packages wxwidgets)
+  #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml)
   #:use-module (ice-9 match))
 
@@ -1078,6 +1081,53 @@ or, more generally, MAC addresses of the same category of hardware.")
 specification, which provides IPv6 Internet connectivity to IPv6 enabled hosts
 residing in IPv4-only networks, even when they are behind a NAT device.")
     (license license:gpl2+)))
+
+(define-public mitmproxy
+  (package
+    (name "mitmproxy")
+    (version "8.1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/mitmproxy/mitmproxy/archive/refs/tags/v"
+                    version ".tar.gz"))
+              (sha256
+               (base32
+                "0al1d9x4b0lmrkxhcd6fkvki0k5rdsgvzg2xpcff8yf4mxlnm821"))))
+    (build-system python-build-system)
+    (native-inputs (list python-pytest))
+    (arguments
+     (list #:tests? #f)) ;Python error during test
+    (inputs (list python-publicsuffix2
+                  python-wsproto-next
+                  python-urwid
+                  python-tornado-6
+                  python-pyopenssl
+                  python-protobuf
+                  python-passlib
+                  python-msgpack
+                  python-ldap3
+                  python-ruamel.yaml
+                  python-pyperclip
+                  python-pyopenssl
+                  python-pyparsing
+                  python-kaitaistruct
+                  python-hyperframe
+                  python-h2
+                  python-flask
+                  python-cryptography-next
+                  python-brotli
+                  python-blinker
+                  python-typing-extensions-next
+                  python-sortedcontainers
+                  python-zstandard-0.15))
+    (home-page "https://mitmproxy.org/")
+    (synopsis "Interactive TLS-capable intercepting HTTP proxy")
+    (description "@code{mitmproxy} is your swiss-army knife for debugging,
+testing, privacy measurements, and penetration testing. It can be used to
+intercept, inspect, modify and replay web traffic such as HTTP/1, HTTP/2,
+WebSockets, or any other SSL/TLS-protected protocols.")
+    (license license:expat)))
 
 (define-public ndisc6
   (package
