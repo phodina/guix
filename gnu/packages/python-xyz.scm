@@ -26515,7 +26515,7 @@ enforcement of that policy.")
 (define-public python-ldap3
   (package
     (name "python-ldap3")
-    (version "2.7")
+    (version "2.8")
     (home-page "https://github.com/cannatag/ldap3")
     (source
      (origin
@@ -26524,7 +26524,7 @@ enforcement of that policy.")
                            (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0xw9fkqld21xsvdpaqir8ccc2l805xnn9gxahsnl70xzp3mwl0xv"))))
+        (base32 "12yyrz1hr7j14i65hrzbppmcfcwjvwnnjcpwh3ylqsqdsxd13d8g"))))
     (build-system python-build-system)
     (arguments
      '(#:tests? #f ;TODO: Tests need a real LDAP server to run
