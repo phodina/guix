@@ -17112,6 +17112,26 @@ It uses LR parsing and does extensive error checking.")
 data in Python.")
     (license license:expat)))
 
+(define-public python-kaitaistruct
+  (package
+    (name "python-kaitaistruct")
+    (version "0.9")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "kaitaistruct" version))
+              (sha256
+               (base32
+                "1b97sfqqz34rq05mii29xr88h0qbayyi3k3r8d8db968gs0lan1x"))))
+    (build-system python-build-system)
+    (home-page "https://kaitai.io")
+    (synopsis
+     "Parsers for binary structure")
+    (description
+     "Kaitai Struct is a declarative language used to describe various
+binary data structures, laid out in files or in memory: i.e. binary file
+formats, network stream packet formats, etc.")
+    (license license:expat)))
+
 (define-public python-kazoo
   (package
     (name "python-kazoo")
