@@ -561,6 +561,19 @@ the Zstandard compression library.  A C extension and CFFI interface are
 provided.")
     (license license:bsd-3)))
 
+(define-public python-zstandard-0.15
+  (package
+    (inherit python-zstandard)
+    (name "python-zstandard")
+    (version "0.15.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "zstandard" version))
+       (sha256
+        (base32
+		"1mv80ai0vjain1p542sx3v7gyqnpkrrzizd4dlj25cpxpjbmwf92"))))))
+
 (define-public python-pyzstd
   (package
     (name "python-pyzstd")
