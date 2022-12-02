@@ -1993,8 +1993,33 @@ teams extension for python-openid.")
 set out in RFC 7540 Section 5.3 (Stream Priority).")
     (license license:expat)))
 
+(define-public python-wsproto-next
+  (package
+    (name "python-wsproto")
+    (version "1.0.0")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "wsproto" version))
+              (sha256
+               (base32
+                "0f4cghvmjiljgw5jjnqvfn9r3gkbfhmk5xr0jw6sv5v98pw7d1w6"))))
+    (build-system python-build-system)
+	(arguments (list #:tests? #f)) ;; Python error during test
+	;; https://github.com/python-hyper/wsproto/issues/179
+	(native-inputs (list python-pytest))
+    (propagated-inputs (list python-h11))
+    (home-page "https://github.com/python-hyper/wsproto/")
+    (synopsis "WebSockets state-machine based protocol implementation")
+    (description
+     "@code{wsproto} is a pure-Python implementation of a WebSocket protocol
+stack.  It's written from the ground up to be embeddable in whatever program you
+choose to use, ensuring that you can communicate via WebSockets, as defined in
+RFC6455, regardless of your programming paradigm.")
+    (license license:expat)))
+
 (define-public python-wsproto
   (package
+    (inherit python-wsproto-next)
     (name "python-wsproto")
     (version "0.15.0")
     (source
@@ -2014,15 +2039,7 @@ set out in RFC 7540 Section 5.3 (Stream Priority).")
     (native-inputs
      (list python-pytest))
     (propagated-inputs
-     (list python-h11))
-    (home-page "https://github.com/python-hyper/wsproto/")
-    (synopsis "WebSockets state-machine based protocol implementation")
-    (description
-     "@code{wsproto} is a pure-Python implementation of a WebSocket protocol
-stack.  It's written from the ground up to be embeddable in whatever program you
-choose to use, ensuring that you can communicate via WebSockets, as defined in
-RFC6455, regardless of your programming paradigm.")
-    (license license:expat)))
+     (list python-h11))))
 
 (define-public hypercorn
   (package
