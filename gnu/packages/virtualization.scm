@@ -153,6 +153,29 @@
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match))
 
+(define-public vixl
+(let ((commit "af65c2974e56b6f4a338732a08719563fd4d5660")
+      (revision "1"))
+  (package
+    (name "vixl")
+    (version "")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/FEX-Emu/vixl")
+                    (commit commit)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0rwx9kl8mk9xmjd5ap0n7w9cgmk8qbrpbmy5p5sgwim588mrnfbv"))))
+    (build-system cmake-build-system)
+    (arguments
+      (list #:tests? #f)) ; no test suite
+    (synopsis "AArch32 and AArch64 Runtime Code Generation Library")
+    (description "This package provides AArch32 and AArch64 Runtime Code Generation Library.")
+    (home-page "https://github.com/FEX-Emu/vixl")
+    (license license:bsd-3))))
+
 (define-public fex
   (package
     (name "fex")
