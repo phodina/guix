@@ -62,6 +62,7 @@
   #:use-module (gnu packages high-availability)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages lua)
   #:use-module (gnu packages lxqt)
   #:use-module (gnu packages mtools)
   #:use-module (gnu packages package-management)
@@ -81,6 +82,7 @@
   #:use-module (gnu packages qt)
   #:use-module (gnu packages scanner)
   #:use-module (gnu packages security-token)
+  #:use-module (gnu packages readline)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages video)
   #:use-module (gnu packages virtualization)
@@ -1363,6 +1365,33 @@ confused with the @code{cpuid} command line utility from package @code{cpuid}.")
      "LAN eXtensions for Instrumentation library")
     (description
      "This package provides library for LAN eXtensions for Instrumentation
+based on the LXI Consortium standard which defines the communication
+protocols for modern instrumentation and data acquision systems using
+Ethernet.")
+    (license license:bsd-3)))
+
+(define-public lxi-tools
+  (package
+    (name "lxi-tools")
+    (version "2.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+          (url "https://github.com/lxi-tools/lxi-tools")
+          (commit (string-append "v" version))))
+       (sha256
+        (base32
+         "17l70b8whwp0a7j23vsrav1abjzhw78k7rg77q78q07rdqn9fwnd"))))
+    (build-system meson-build-system)
+       (native-inputs (list cmake pkg-config readline))
+       (inputs (list liblxi lua))
+    (home-page
+     "https://lxi-tools.github.io/")
+    (synopsis
+     "LAN eXtensions for Instrumentation tools")
+    (description
+     "This package provides tools for LAN eXtensions for Instrumentation
 based on the LXI Consortium standard which defines the communication
 protocols for modern instrumentation and data acquision systems using
 Ethernet.")
