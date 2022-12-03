@@ -68,6 +68,7 @@
   #:use-module (gnu packages cyrus-sasl)
   #:use-module (gnu packages debian)
   #:use-module (gnu packages disk)
+  #:use-module (gnu packages digest)
   #:use-module (gnu packages dns)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages documentation)
@@ -92,9 +93,11 @@
   #:use-module (gnu packages haskell-web)
   #:use-module (gnu packages haskell-xyz)
   #:use-module (gnu packages image)
+  #:use-module (gnu packages jemalloc)
   #:use-module (gnu packages libbsd)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages llvm)
   #:use-module (gnu packages m4)
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages ncurses)
@@ -116,6 +119,7 @@
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages pulseaudio)
+  #:use-module (gnu packages pretty-print)
   #:use-module (gnu packages readline)
   #:use-module (gnu packages rsync)
   #:use-module (gnu packages selinux)
@@ -126,8 +130,10 @@
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages textutils)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages toolkits)
   #:use-module (gnu packages web)
   #:use-module (gnu packages wget)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
@@ -146,6 +152,56 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match))
+
+(define-public fex
+  (package
+    (name "fex")
+    (version "2211")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/FEX-Emu/FEX")
+                    (commit (string-append "FEX-" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0m07qjf43fdzmfb6llgrm5a0470a6j7vgc9l43ddf8yw78rqxp6p"))))
+    (build-system cmake-build-system)
+    (arguments
+      (list #:configure-flags #~(list "-DENABLE_X86_HOST_DEBUG=True")
+            #:phases
+      #~(modify-phases %standard-phases
+               ;; Use Clang instead of GCC.
+               (add-before 'configure 'prepare-build-environment
+                 (lambda _
+                   (setenv "AR" "llvm-ar")
+                   (setenv "NM" "llvm-nm")
+                   (setenv "CC" "clang")
+                   (setenv "CXX" "clang++")))
+	   (add-after 'unpack 'fix-external
+	   (lambda* _
+	   (substitute* "CMakeLists.txt"
+	   ((".*External/Catch2.*") "")
+	   ((".*External/fmt.*") "")
+	   ((".*External/imgui.*") "")
+	   ((".*External/xxhash.*") "")
+	   ((".*External/vixl.*") "")
+	   ((".*External/vixl/src.*") "")
+	   ((".*External/jemalloc/.*") "")
+       ((".*External/jemalloc/pregen/include.*") ""))
+	   )))))
+    (native-inputs (list linux-libre-headers
+	                     clang
+						 git
+                         pkg-config))
+    (inputs (list catch2 fmt imgui jemalloc libepoxy python sdl2 xxhash));vixl))
+    (synopsis "Fast x86 emulation frontend")
+    (description "This packages allow you to run x86 and x86-64 binaries on
+an AArch64host, similar to qemu-user and box86.  It supports rootfs overlay
+so there is no nteed to chroot.  Also thunklibs forward things like GL to
+the host.")
+    (home-page "https://fex-emu.org/")
+    (license license:expat)))
 
 (define (qemu-patch commit file-name sha256-bv)
   "Return an origin for COMMIT."
