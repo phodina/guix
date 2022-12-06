@@ -1,0 +1,14 @@
+--- a/Cargo.toml	2022-12-06 13:51:49.230286687 +0100
++++ b/Cargo.toml	2022-12-06 13:52:33.577871799 +0100
+@@ -80,11 +80,3 @@
+ [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies.zvariant_derive]
+ version = "2"
+ optional = true
+-[target."cfg(target_os=\"macos\")".dependencies.chrono]
+-version = "0.4"
+-optional = true
+-
+-[target."cfg(target_os=\"macos\")".dependencies.mac-notification-sys]
+-version = "0.3"
+-[target."cfg(target_os=\"windows\")".dependencies.winrt-notification]
+-version = "0.2"

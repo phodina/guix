@@ -36235,6 +36235,37 @@ with all line endings.")
        (("rust-tempfile" ,rust-tempfile-3))))
     (license license:cc0)))
 
+(define-public rust-notify-rust-4
+  (package
+    (name "rust-notify-rust")
+    (version "4.5.2")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "notify-rust" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (patches (search-patches
+                        "rust-notify-rust-remove-mac-and-win.patch"))
+              (sha256
+               (base32
+                "0iq2wwyfn4rhrxy1b3h8hadvpcghay1k33c26l6bcs3jrm1afb1a"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-chrono" ,rust-chrono-0.4)
+                       ("rust-dbus" ,rust-dbus-0.9)
+                       ("rust-image" ,rust-image-0.23)
+                       ("rust-lazy-static" ,rust-lazy-static-1)
+                       ("rust-serde" ,rust-serde-1)
+                       ("rust-zbus" ,rust-zbus-1)
+                       ("rust-zvariant" ,rust-zvariant-2)
+                       ("rust-zvariant-derive" ,rust-zvariant-derive-2))
+       #:cargo-development-inputs (("rust-color-backtrace" ,rust-color-backtrace-0.5)
+                                   ("rust-maplit" ,rust-maplit-1))))
+    (home-page "https://github.com/hoodie/notify-rust")
+    (synopsis "Show desktop notifications")
+    (description "This packages provides show desktop notification.")
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-notmuch-0.6
   (package
     (name "rust-notmuch")
