@@ -8414,19 +8414,18 @@ of built-in fundamental numeric types.")
 (define-public rust-byte-unit-4
   (package
     (name "rust-byte-unit")
-    (version "4.0.9")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (crate-uri "byte-unit" version))
-       (file-name (string-append name "-" version ".tar.gz"))
-       (sha256
-        (base32 "0lxi11qf6h1rqr0yhsh7i6755l325qrkv9r4bgismyik531mi1qw"))))
+    (version "4.0.12")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "byte-unit" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1n5w327g55ly5r4yjh71rhv2ifw615xdxv8d2rj5nxsbxgk9fc86"))))
     (build-system cargo-build-system)
     (arguments
-     `(#:cargo-inputs
-       (("rust-serde" ,rust-serde-1)
-        ("rust-utf8-width" ,rust-utf8-width-0.1))))
+     `(#:cargo-inputs (("rust-serde" ,rust-serde-1)
+                       ("rust-utf8-width" ,rust-utf8-width-0.1))))
     (home-page "https://magiclen.org/byte-unit")
     (synopsis "Library for interaction with units of bytes")
     (description
