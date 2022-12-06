@@ -17764,6 +17764,27 @@ from macros.")
 parameters, associated types, and type constraints.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-downcast-0.10
+  (package
+    (name "rust-downcast")
+    (version "0.10.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "downcast" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "07bh0l95gwrzak6rj29v8kkm577d8vivxsxhqgscf64b4bq59d2b"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "https://github.com/fkoep/downcast-rs")
+    (synopsis "Downcasting trait")
+    (description
+     "This package provides trait for downcasting trait objects back to their
+original types.")
+    (license license:expat)))
+
 (define-public rust-dogged-0.2
   (package
     (name "rust-dogged")
