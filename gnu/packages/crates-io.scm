@@ -64519,6 +64519,33 @@ The former can be used to unwrap values of type @code{Result} or @code{Option}
 comparable to calling @code{unwrap_err()}.")
     (license (list license:expat license:bsd-3))))
 
+(define-public rust-uom-0.30
+  (package
+    (name "rust-uom")
+    (version "0.30.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "uom" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1vg59hnb7hh0p8kjjhgmrsnn3597722lkfdkp481wksq6vk06rg7"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-num-bigint" ,rust-num-bigint-0.3)
+                       ("rust-num-rational" ,rust-num-rational-0.3)
+                       ("rust-num-traits" ,rust-num-traits-0.2)
+                       ("rust-serde" ,rust-serde-1)
+                       ("rust-typenum" ,rust-typenum-1))))
+    (home-page "https://github.com/iliekturtles/uom")
+    (synopsis "Units of measurement")
+    (description
+     "This package provides units of measurement based on the International
+System of Quantities.")
+    ;; Licensed under one of these
+    (license (list license:asl2.0 license:expat))))
+
 (define-public rust-ureq-2
   (package
     (name "rust-ureq")
