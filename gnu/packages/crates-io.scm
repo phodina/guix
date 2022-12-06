@@ -33648,6 +33648,34 @@ IOCP and Async I/O abstractions.")
        #:cargo-development-inputs
        (("rust-rand" ,rust-rand-0.3))))))
 
+(define-public rust-mockall-0.10
+  (package
+    (name "rust-mockall")
+    (version "0.10.2")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "mockall" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1h4s2bpkkm0zyd6mnc3718p0ysmcxyiwrjlk4hrawy7si8r73dba"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-cfg-if" ,rust-cfg-if-1)
+                       ("rust-downcast" ,rust-downcast-0.10)
+                       ("rust-fragile" ,rust-fragile-1)
+                       ("rust-lazy-static" ,rust-lazy-static-1)
+                       ("rust-mockall-derive" ,rust-mockall-derive-0.10)
+                       ("rust-predicates" ,rust-predicates-1)
+                       ("rust-predicates-tree" ,rust-predicates-tree-1))
+       #:cargo-development-inputs (("rust-mockall-double" ,rust-mockall-double-0.2))))
+    (home-page "https://github.com/asomers/mockall")
+    (synopsis "Mock object library for Rust")
+    (description "This package provides a mock object library for Rust.")
+    ;; Dual-licensed
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-mockall-derive-0.10
   (package
     (name "rust-mockall-derive")
