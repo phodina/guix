@@ -67273,6 +67273,28 @@ UTF-32 types are provided, including support for malformed encoding.")
 command-line, uniformly on all platforms")
     (license (list license:asl2.0 license:expat))))
 
+(define-public rust-wildmatch-1
+  (package
+    (name "rust-wildmatch")
+    (version "1.1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "wildmatch" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "02i7qwjy1rkhzp80v9i9khzf09rhr4d534wcap7i6hfkc9gvji3z"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t))
+    (home-page "https://github.com/becheran/wildmatch")
+    (synopsis
+     "String matching with questionmark and star wildcard operator")
+    (description
+     "This package provides string matching with questionmark and
+star wildcard operator.")
+    (license license:expat)))
+
 (define-public rust-winapi-0.3
   (package
     (name "rust-winapi")
