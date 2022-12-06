@@ -42787,6 +42787,30 @@ macro use case.")
 @code{proc_macro_derive} pretend to be @code{proc_macro}.")
     (license (list license:expat license:asl2.0))))
 
+(define-public rust-process-control-3
+  (package
+    (name "rust-process-control")
+    (version "3.1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "process_control" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1v5j6ajr3fprpay8754874rmi622a1vk5rld88p1jk04wha413pm"))))
+    (build-system cargo-build-system)
+    (arguments
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-crossbeam-channel" ,rust-crossbeam-channel-0.5)
+                       ("rust-libc" ,rust-libc-0.2)
+                       ("rust-winapi" ,rust-winapi-0.3))))
+    (home-page "https://github.com/dylni/process_control")
+    (synopsis "Methods for ergonomically running processes with timeouts")
+    (description "This package provides methods for ergonomically running
+processes with timeouts.")
+    ;; Dual licensed
+    (license (list license:expat license:asl2.0))))
+
 (define-public rust-progress-0.2
   (package
     (name "rust-progress")
