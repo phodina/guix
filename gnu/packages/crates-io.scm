@@ -64783,16 +64783,17 @@ System of Quantities.")
 (define-public rust-urlencoding-1
   (package
     (name "rust-urlencoding")
-    (version "1.1.1")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (crate-uri "urlencoding" version))
-       (file-name (string-append name "-" version ".tar.gz"))
-       (sha256
-        (base32 "14sm5c8idb5jzib8dwf85p5yhd65vxjh946p80p49d2j6fsjw8y9"))))
+    (version "1.3.3")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "urlencoding" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1yqgq2qigm1s8zyv23j0422j4vn20ppnnizx9b7p629sw1sh27ss"))))
     (build-system cargo-build-system)
-    (arguments `(#:skip-build? #t))
+    (arguments
+     `(#:skip-build? #t))
     (home-page "https://lib.rs/urlencoding")
     (synopsis "Rust library for doing URL percentage encoding")
     (description
