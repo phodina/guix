@@ -36286,18 +36286,17 @@ with all line endings.")
 enhances the built-in library with some useful features.")
     (license license:expat)))
 
-(define-public rust-ntest-test-cases-0.3
+(define-public rust-ntest-test-cases-0.7
   (package
     (name "rust-ntest-test-cases")
-    (version "0.3.4")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (crate-uri "ntest_test_cases" version))
-       (file-name (string-append name "-" version ".tar.gz"))
-       (sha256
-        (base32
-         "0b67m368599b2zgwx19psqz6n3m9m5532h1257x6vz1pym3gd2na"))))
+    (version "0.7.5")
+    (source (origin
+              (method url-fetch)
+              (uri (crate-uri "ntest_test_cases" version))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1ghal2rb03cnj7ciqgdq0dvifdf8qp2hnmi9z1ip1j5b02s1xa4r"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
@@ -36308,6 +36307,20 @@ enhances the built-in library with some useful features.")
     (synopsis "Test cases for ntest framework")
     (description "This package provides test cases for ntest framework.")
     (license license:expat)))
+
+(define-public rust-ntest-test-cases-0.3
+  (package
+    (inherit rust-ntest-test-cases-0.7)
+    (name "rust-ntest-test-cases")
+    (version "0.3.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (crate-uri "ntest_test_cases" version))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0b67m368599b2zgwx19psqz6n3m9m5532h1257x6vz1pym3gd2na"))))))
 
 (define-public rust-ntest-timeout-0.3
   (package
