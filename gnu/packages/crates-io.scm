@@ -42585,18 +42585,19 @@ losslessly as possible.")
 (define-public rust-proc-macro-crate-1
   (package
     (name "rust-proc-macro-crate")
-    (version "1.0.0")
+    (version "1.2.1")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "proc-macro-crate" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "14pzgkpnlzq6y7yc749h2lwd1mv44min4iszjk2znmi1yqfvvza1"))))
+        (base32 "1sclzva81n2lpjyfpdpdcd03f5ys9684vqap2xipbjdp1wxzr87d"))))
     (build-system cargo-build-system)
     (arguments
      `(#:cargo-inputs
-       (("rust-thiserror" ,rust-thiserror-1)
+       (("rust-once-cell" ,rust-once-cell-1)
+        ("rust-thiserror" ,rust-thiserror-1)
         ("rust-toml" ,rust-toml-0.5))
        #:cargo-development-inputs
        (("rust-proc-macro2" ,rust-proc-macro2-1)
