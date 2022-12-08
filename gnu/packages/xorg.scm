@@ -4687,17 +4687,17 @@ protocol and arbitrary X extension protocol.")
 (define-public libxv
   (package
     (name "libxv")
-    (version "1.0.11")
+    (version "1.0.12")
     (source
       (origin
         (method url-fetch)
         (uri (string-append
                "mirror://xorg/individual/lib/libXv-"
                version
-               ".tar.bz2"))
+               ".tar.xz"))
         (sha256
           (base32
-            "125hn06bd3d8y97hm2pbf5j55gg4r2hpd3ifad651i4sr7m16v6j"))))
+            "0j1qqrhbhdi3kqz0am5i1lhs31ql9pbc14z41w0a5xw9yq4zmxxa"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '(,@(malloc0-flags) "--disable-static")))
