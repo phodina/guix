@@ -2371,6 +2371,36 @@ sensors, process information and other system resources.")
                                    "startkde/startplasma-x11.cpp")
                        (("kdeinit5_shutdown")
                         (string-append kinit "/bin/kdeinit5_shutdown"))))))
+           (add-after 'install 'wrap-executable
+             (lambda* (#:key inputs outputs #:allow-other-keys)
+               (let ((out (assoc-ref outputs "out"))
+                     (qml "/lib/qt5/qml"))
+		  (wrap-program (string-append #$output "/bin/startplasma-wayland")
+                   `("QT_QPA_PLATFORM_PLUGIN_PATH" ":" prefix
+                     (,(string-append out qml)
+                      ,@(map (lambda (i)
+                               (string-append (assoc-ref inputs i) qml))
+					  '("qtbase" "qtwayland"))))
+                   `("QML2_IMPORT_PATH" ":" prefix
+                     (,(string-append out qml)
+                      ,@(map (lambda (i)
+                               (string-append (assoc-ref inputs i) qml))
+                             '("qtdeclarative"
+                               "qtgraphicaleffects"
+                               "qtquickcontrols2")))))
+		  (wrap-program (string-append #$output "/bin/startplasma-x11")
+                   `("QT_QPA_PLATFORM_PLUGIN_PATH" ":" prefix
+                     (,(string-append out qml)
+                      ,@(map (lambda (i)
+                               (string-append (assoc-ref inputs i) qml))
+					  '("qtbase"))))
+                   `("QML2_IMPORT_PATH" ":" prefix
+                     (,(string-append out qml)
+                      ,@(map (lambda (i)
+                               (string-append (assoc-ref inputs i) qml))
+                             '("qtdeclarative"
+                               "qtgraphicaleffects"
+                               "qtquickcontrols2"))))))))
                (delete 'check)
                (add-after 'install 'check-after-install
                  (lambda* (#:key tests? #:allow-other-keys)
