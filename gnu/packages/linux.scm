@@ -9535,6 +9535,38 @@ older system-wide @file{/sys} interface.")
                    license:gpl2+      ;; gpio-tools
                    license:lgpl3+)))) ;; C++ bindings
 
+(define-public libtraceevent
+  (package
+    (name "libtraceevent")
+    (version "1.6.4")
+    (source (origin
+              (method url-fetch)
+                    (uri
+                     (string-append "https://git.kernel.org/pub/scm/libs/libtrace/libtraceevent.git/snapshot/libtraceevent-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1vnnhkwqy9ds3fqh7c9fvbhi2k2h701ga842j5nggdkyp0wp5c8c"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list #:tests? #f ;no test suite
+           #:phases #~(modify-phases %standard-phases
+                        (delete 'configure)
+                        (add-after 'unpack 'fix-makefile
+                          (lambda* _
+                            (substitute* "Makefile"
+                              (("\\$\\(pkgconfig_dir\\)")
+                               (string-append #$output "/lib/pkgconfig"))
+                              (("/usr/local") #$output)
+                              (("/bin/pwd") (which "pwd")))
+                            (substitute* "scripts/utils.mk"
+                              (("/bin/pwd") (which "pwd"))))))))
+    (native-inputs (list pkg-config which))
+    (home-page "https://git.kernel.org/pub/scm/libs/libtrace/libtraceevent.git/")
+    (synopsis "Linux kernel trace event library")
+    (description "This package provides library to parse raw trace event
+formats.")
+    (license license:gpl3+)))
+
 (define-public libtree
   (package
     (name "libtree")
