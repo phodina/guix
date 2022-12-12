@@ -9567,6 +9567,44 @@ older system-wide @file{/sys} interface.")
 formats.")
     (license license:gpl3+)))
 
+(define-public libtracefs
+  (package
+    (name "libtracefs")
+    (version "1.6.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://git.kernel.org/pub/scm/libs/libtrace/libtracefs.git/snapshot/libtracefs-libracefs-"
+                    version ".tar.gz"))
+              (sha256
+               (base32
+                "14y5rqqyb5syi6nc31kwq6605acpr4w6g2mjqx0ppx2jan6g5djf"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list #:tests? #f ;no test suite
+           #:phases #~(modify-phases %standard-phases
+                        (delete 'configure)
+                        (add-after 'unpack 'fix-makefile
+                          (lambda* _
+                            (substitute* "Makefile"
+                              (("/usr/local") #$output)
+                              (("\\$\\(shell which valgrind\\)")
+                               #$(this-package-input "valgrind"))
+                              (("\\$\\(gcc\\)") #$(cc-for-target))
+                              (("/bin/pwd") (which "pwd")))
+                            (substitute* "scripts/utils.mk"
+                              (("\\$\\(pkgconfig_dir\\)")
+                               (string-append #$output "/lib/pkgconfig"))
+                              (("\\$\\(CC\\)") #$(cc-for-target))
+                              (("/bin/pwd") (which "pwd"))))))))
+    (native-inputs (list pkg-config which valgrind))
+    (inputs (list libtraceevent))
+    (home-page "https://git.kernel.org/pub/scm/libs/libtrace/libtracefs.git")
+    (synopsis "Linux kernel trace file system library")
+    (description "This package provides interface for enabling and
+reading trace events.")
+    (license license:gpl3+)))
+
 (define-public libtree
   (package
     (name "libtree")
