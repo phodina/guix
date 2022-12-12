@@ -1389,6 +1389,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/lightdm-vnc-color-depth.patch		\
   %D%/packages/patches/localed-xorg-keyboard.patch		\
   %D%/packages/patches/kcontacts-incorrect-country-name.patch	\
+  %D%/packages/patches/kernelshark-disable-tests.patch	\
   %D%/packages/patches/kde-cli-tools-delay-mime-db.patch	\
   %D%/packages/patches/kdiagram-Fix-missing-link-libraries.patch \
   %D%/packages/patches/kiki-level-selection-crash.patch		\

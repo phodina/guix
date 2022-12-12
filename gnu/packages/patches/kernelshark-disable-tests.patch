@@ -1,0 +1,43 @@
+From 81171884b9b8e8e054447bd982b81671e5cf0bc3 Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Mon, 12 Dec 2022 16:52:43 +0100
+Subject: [PATCH] Remove problematic tests.
+
+
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 1814c72..1280bdd 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -9,10 +9,6 @@ target_compile_definitions(kshark-tests PRIVATE "BOOST_TEST_DYN_LINK=1")
+ target_link_libraries(kshark-tests   kshark
+                                      ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+ 
+-add_test(NAME              "get_test_data"
+-         COMMAND           ${KS_TEST_DIR}/get_test_data.sh
+-         WORKING_DIRECTORY ${KS_TEST_DIR})
+-
+ add_library(dummy_dpi             SHARED  test-plugin_dpi.c)
+ set_target_properties(dummy_dpi   PROPERTIES PREFIX "plugin-")
+ target_link_libraries(dummy_dpi   kshark)
+@@ -37,18 +33,3 @@ message(STATUS "libkshark-tests")
+ add_test(NAME              "libkshark_tests"
+          COMMAND           ${KS_TEST_DIR}/kshark-tests --log_format=HRF
+          WORKING_DIRECTORY ${KS_TEST_DIR})
+-
+-if (Qt5Widgets_FOUND AND TT_FONT_FILE)
+-
+-    add_executable(kshark-gui-tests          libkshark-gui-tests.cpp)
+-    target_include_directories(kshark-gui-tests PRIVATE ${Boost_INCLUDE_DIRS})
+-    target_compile_definitions(kshark-gui-tests PRIVATE "BOOST_TEST_DYN_LINK=1")
+-    target_link_libraries(kshark-gui-tests   kshark-gui
+-                          ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+-
+-    message(STATUS "libkshark-gui_tests")
+-    add_test(NAME              "libkshark-gui_tests"
+-             COMMAND           ${KS_TEST_DIR}/kshark-gui-tests --log_format=HRF
+-             WORKING_DIRECTORY ${KS_TEST_DIR})
+-
+-endif (Qt5Widgets_FOUND AND TT_FONT_FILE)
+-- 
+2.38.1
+

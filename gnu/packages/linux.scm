@@ -112,11 +112,13 @@
   #:use-module (gnu packages elf)
   #:use-module (gnu packages file)
   #:use-module (gnu packages flex)
+  #:use-module (gnu packages fonts)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gawk)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
+  #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gnupg)
@@ -141,6 +143,7 @@
   #:use-module (gnu packages nss)
   #:use-module (gnu packages onc-rpc)
   #:use-module (gnu packages perl)
+  #:use-module (gnu packages qt)
   #:use-module (gnu packages pciutils)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages popt)
@@ -9859,6 +9862,52 @@ Modprobed-db simply logs every module ever probed on the target system to a
 text-based database (@file{$XDG_CONFIG_HOME/modprobed-db}), which can be read
 directly by @code{make localmodconfig} as described above.")
     (license license:expat)))
+
+(define-public kernelshark
+  (package
+    (name "kernelshark")
+    (version "2.1.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://git.kernel.org/pub/scm/utils/trace-cmd/kernel-shark.git/snapshot/kernel-shark-kernelshark-v"
+                    version ".tar.gz"))
+              ;; These require conectivity and GUI
+              (patches (search-patches "kernelshark-disable-tests.patch"))
+              (sha256
+               (base32
+                "0jw9nngyarnasqrqgc3f5yzjjc7351ydvzavj737cc14f75zkkfl"))))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:configure-flags #~(list (string-append "-DPKG_CONGIG_DIR="
+                                                    #$output "/lib/pkgconfig")
+                                     (string-append "-D_POLKIT_INSTALL_PREFIX="
+                                      #$output)
+                                     (string-append "-D_INSTALL_PREFIX="
+                                                    #$output))
+           #:phases #~(modify-phases %standard-phases
+                        (add-after 'unpack 'fix-font
+                          (lambda* _
+                            ;; Use libre font
+                            (substitute* "CMakeLists.txt"
+                              (("FreeSans")
+                               "FiraSans-Regular")))))))
+    (native-inputs (list doxygen pkg-config))
+    (inputs (list boost
+                  fontconfig
+                  font-fira-sans
+                  freeglut
+                  json-c
+                  qtbase-5
+                  libtracefs
+                  libtraceevent
+                  trace-cmd))
+    (home-page "https://git.kernel.org/pub/scm/utils/trace-cmd/kernel-shark.git/")
+    (synopsis
+     "GUI frontend for @code{trace-cmd} based Linux kernel Ftrace captures")
+    (description
+     "This package provides a frontend reader of @code{trace-cmd}.")
+    (license license:gpl3+)))
 
 (define-public kconfig-hardened-check
   (package
