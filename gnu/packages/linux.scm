@@ -179,6 +179,7 @@
   #:use-module (guix build-system go)
   #:use-module (guix build-system meson)
   #:use-module (guix build-system python)
+  #:use-module (guix build-system qt)
   #:use-module (guix build-system trivial)
   #:use-module (guix build-system linux-module)
   #:use-module (guix download)
@@ -6331,6 +6332,35 @@ by hand is no trivial task: @command{tmon} aims to make it understandable.")
     (description
      "This application provides the front-end application to
 @code{ftrace} and the back-end application to @code{KernelShark}.")
+    (license license:gpl3+)))
+
+(define-public traceshark
+  (package
+    (name "traceshark")
+    (version "0.9.13")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/cunctator/traceshark")
+                    (commit (string-append "v" version "-beta"))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "167isad5kfv8cv3k3z1hcpv3yc2i7wlabakr6ji0b17zhl68vn8h"))))
+    (build-system qt-build-system)
+    (arguments
+     (list #:tests? #f ; no test suite
+           #:phases #~(modify-phases %standard-phases
+                        (replace 'configure
+                          (lambda* _
+                            (substitute* "traceshark.pro"
+                              (("/usr") #$output))
+                            (invoke "qmake"))))))
+    (inputs (list qtbase-5))
+    (home-page "https://github.com/cunctator/traceshark")
+    (synopsis "Kernel ftrace and perf events visualization")
+    (description "This package provides a graphical viewer for the Ftrace and
+Perf events that can be captured by the Linux kernel.")
     (license license:gpl3+)))
 
 (define-public turbostat
