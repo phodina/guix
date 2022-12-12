@@ -6294,6 +6294,42 @@ by hand is no trivial task: @command{tmon} aims to make it understandable.")
     (license (list license:gpl2         ; the man page
                    license:gpl2+))))    ; the actual rest
 
+(define-public trace-cmd
+  (package
+    (name "trace-cmd")
+    (version "3.1.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://git.kernel.org/pub/scm/utils/trace-cmd/trace-cmd.git/snapshot/trace-cmd-v"
+                    version ".tar.gz"))
+              (sha256
+               (base32
+                "1ddzw7069h0cdf7rpw5fcz7jwnhcv1i6s262p0m3c3gvpmfhjzj4"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list #:tests? #f
+           #:make-flags #~(list (string-append "pkgconfig_dir="
+                                               #$output "/lib/pkgconfig")
+                                (string-append "etcdir=" #$output "/etc")
+                                (string-append "prefix=" #$output)
+                                (string-append "CC=" #$(cc-for-target)) "libs")
+           #:phases #~(modify-phases %standard-phases
+                        (delete 'configure)
+                        (add-after 'unpack 'populate-pc
+                          (lambda* _
+                            (substitute* "Makefile"
+                              (("^install:") "install: install_libs ")
+                              (("^all:") "all: libs")))))))
+    (native-inputs (list pkg-config swig))
+    (inputs (list audit libtraceevent libtracefs python zstd))
+    (home-page "https://git.kernel.org/pub/scm/utils/trace-cmd/trace-cmd.git")
+    (synopsis "The front-end application to @code{ftrace}")
+    (description
+     "This application provides the front-end application to
+@code{ftrace} and the back-end application to @code{KernelShark}.")
+    (license license:gpl3+)))
+
 (define-public turbostat
   (package
     (name "turbostat")
