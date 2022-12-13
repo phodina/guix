@@ -34,6 +34,7 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system meson)
+  #:use-module (guix build-system python)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages autotools)
@@ -67,12 +68,31 @@
   #:use-module (gnu packages polkit)
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-build)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages sqlite)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages version-control)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml))
+
+(define-public pyamlboot
+  (package
+    (name "pyamlboot")
+    (version "1.0.0")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "pyamlboot" version))
+              (sha256
+               (base32
+                "0ivm6h118y6fsk4xfan5nkdsbyds52qpr98zjfa1ilrswyyddj49"))))
+    (build-system python-build-system)
+    (propagated-inputs (list python-pyusb python-setuptools))
+    (home-page "https://github.com/superna9999/pyamlboot")
+    (synopsis "Amlogic SoC USB Boot utility")
+    (description "This package provides USB Boot utility to interact with the
+	MaskROM on Amlogic SoC.")
+    (license license:asl2.0)))
 
 (define-public ath9k-htc-firmware
   (package
