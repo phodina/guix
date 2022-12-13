@@ -950,6 +950,28 @@ trees removed so that it fits within common partitioning schemes."))
 (define-public u-boot-a20-olinuxino-micro
   (make-u-boot-package "A20-OLinuXino_MICRO" "arm-linux-gnueabihf"))
 
+(define-public u-boot-vision-five
+  (let ((base (make-u-boot-package "starfive_visionfive2"
+                                   "riscv64-linux-gnu"
+                                   #:append-description "This version is for
+the VisionFive."))
+       (commit "5ac796dddad5065c586360d01563db4c25a6865b")
+	   (revision "1"))
+    (package
+      (inherit base)
+      (version "")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/starfive-tech/u-boot")
+					  (commit commit)))
+                (sha256
+                 (base32
+                  "1674r9pxjnvxfcb6r0k4fzzw839pplfwhhkhq7jb2jsxym36v0x2"))))
+    (inputs
+     (modify-inputs (package-inputs base)
+       (append openssl))))))
+
 (define-public u-boot-nintendo-nes-classic-edition
   (let ((base (make-u-boot-package "Nintendo_NES_Classic_Edition"
                                    "arm-linux-gnueabihf"
