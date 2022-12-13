@@ -21,15 +21,20 @@
 
 (define-module (gnu packages kde-systemtools)
   #:use-module (guix build-system qt)
+  #:use-module (guix build-system cmake)
   #:use-module (guix download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
   #:use-module (gnu packages)
+  #:use-module (gnu packages boost)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages debug)
+  #:use-module (gnu packages datastructures)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages kde)
   #:use-module (gnu packages kde-frameworks)
+  #:use-module (gnu packages libunwind)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages qt)
@@ -330,6 +335,64 @@ who want to quickly see problems occurring on their server.
 
 This package is part of the KDE administration module.")
     (license license:gpl2+)))
+
+(define-public heaptrack
+  (package
+    (name "heaptrack")
+    (version "1.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://invent.kde.org/sdk/heaptrack/-/archive/" version
+                    "/heaptrack-" version ".tar.gz"))
+              (modules '((guix build utils)))
+              (snippet '(begin
+                          delete-file-recursively "3rdparty"))
+              (sha256
+               (base32
+                "0r6fha800iisg2vqgaaj05h11a96rcgavavx7s7vng6kd47rsj1j"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f ;fails due to missing zstd (tst_parser)
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'fix-cmake-3rdparty-files
+                    (lambda* _
+                      (substitute* "CMakeLists.txt"
+                        (("add_subdirectory\\(3rdparty\\)")
+                         "")
+                        (("include_directories\\(3rdparty/robin-map/include\\)")
+                         "")))))))
+    (native-inputs (list pkg-config extra-cmake-modules))
+    (inputs (list boost
+                  ;; elfutils
+                  libbacktrace
+                  libunwind
+                  kcoreaddons
+                  ki18n
+                  kitemmodels
+                  threadweaver
+                  kconfigwidgets
+                  kio
+                  kdiagram
+                  kiconthemes
+                  qtbase-5
+                  qtsvg-5
+                  robin-map
+                  zstd
+                  zlib))
+    (synopsis "Heap memory profiler for Linux")
+    (description
+     "Heaptrack traces all memory allocations and annotates these
+events with stack traces.  Dedicated analysis tools then allow you to interpret
+the heap memory profile to:
+@enumerate
+@item to optimize memory footprint
+@item find memory leaks
+@item find allocation hotspots
+@item find temporary allocations
+@end enumerate")
+    (home-page "https://github.com/KDE/heaptrack")
+    (license license:lgpl2.1+)))
 
 (define-public yakuake
   (package
