@@ -399,6 +399,23 @@ executing in M-mode.")
 (define-public opensbi-generic
   (make-opensbi-package "generic" "opensbi-generic"))
 
+(define-public opensbi-vision-five
+  (let ((base (make-opensbi-package "VisionFive"
+                                   "riscv64-linux-gnu"))
+        (commit "6f1fe98c2f565a394f258178b0daa3843672395c")
+		(revision "1"))
+    (package
+      (inherit base)
+      (version "")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/starfive-tech/opensbi")
+					  (commit commit)))
+                (sha256
+                 (base32
+                  "0v1dinli7l8cgd6by1k6dw5ysbhlbjbz692gvzfigqi37nyc7zzf")))))))
+
 (define-public seabios
   (package
     (name "seabios")
