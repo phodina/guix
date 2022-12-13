@@ -1626,7 +1626,8 @@ bindings for Python, Java, OCaml and more.")
      (list capstone))
     (build-system python-build-system)
     (arguments
-     `(#:phases
+     `(#:tests? #f
+       #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'chdir-and-fix-setup-py
            (lambda _
