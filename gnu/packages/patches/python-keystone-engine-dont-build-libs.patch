@@ -1,0 +1,16 @@
+--- a/setup.py	2022-11-14 14:27:56.167776515 +0100
++++ b/setup.py	2022-11-14 14:28:53.912037545 +0100
+@@ -135,13 +135,11 @@
+ class build(_build):
+     def run(self):
+         log.info("Building C++ extensions")
+-        build_libraries()
+         return _build.run(self)
+
+ class develop(_develop):
+     def run(self):
+         log.info("Building C++ extensions")
+-        build_libraries()
+         return _develop.run(self)
+
+ class bdist_egg(_bdist_egg):

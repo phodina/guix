@@ -1735,6 +1735,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/python-ipython-documentation-chars.patch	\
   %D%/packages/patches/python-ipython-documentation-repro.patch	\
   %D%/packages/patches/python-keras-integration-test.patch	\
+  %D%/packages/patches/python-keystone-engine-dont-build-libs.patch	\
   %D%/packages/patches/python-pdoc3-tests.patch			\
   %D%/packages/patches/python-peachpy-determinism.patch	\
   %D%/packages/patches/python-pep8-stdlib-tokenize-compat.patch \

@@ -885,6 +885,36 @@ in conjunction with the existing OpenStack clients and for simplifying the
 process of writing new clients.")
     (license asl2.0)))
 
+(define-public python-keystone-engine
+  (package
+    (name "python-keystone-engine")
+    (version "0.9.2")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "keystone-engine" version))
+			  (patches
+	 (search-patches
+"python-keystone-engine-dont-build-libs.patch"
+))
+              (sha256
+               (base32
+                "1xahdr6bh3dw5swrc2r8kqa8ljhqlb7k2kxv5mrw5rhcmcnzcyig"))))
+    (build-system python-build-system)
+	(arguments
+	(list #:tests? #f ; TODO: Fails to find the shared object
+	   #:phases
+     #~(modify-phases %standard-phases
+	   (add-after 'unpack 'lib-path
+	   (lambda* _
+	   (substitute* "keystone/keystone.py"
+	   ((".usr.local.lib") (string-append #$keystone "/lib")))))
+	   )))
+    (inputs (list keystone))
+    (home-page "https://www.keystone-engine.org")
+    (synopsis "Keystone assembler engine")
+    (description "Keystone assembler engine")
+    (license gpl2+)))
+
 (define-public python-keystoneclient
   (package
     (name "python-keystoneclient")
