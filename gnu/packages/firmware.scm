@@ -7,7 +7,7 @@
 ;;; Copyright © 2018 Vagrant Cascadian <vagrant@debian.org>
 ;;; Copyright © 2019 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2020, 2021, 2022 Marius Bakke <marius@gnu.org>
-;;; Copyright © 2021 Petr Hodina <phodina@protonmail.com>
+;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2022 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -75,6 +75,36 @@
   #:use-module (gnu packages version-control)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml))
+
+(define-public ampart
+  (package
+    (name "ampart")
+    (version "1.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+			  "https://github.com/7Ji/ampart/archive/refs/tags/v" version
+			  ".tar.gz"))
+              (sha256
+               (base32
+                "0b7j48iddcr9gld5dsmcqjxa97759xkgbda971cqdd29y3q5p9fb"))))
+    (build-system gnu-build-system)
+	(arguments (list
+	            #:tests? #f ; no test suite
+	            #:make-flags #~(list (string-append "CC=" #$(cc-for-target)))
+	            #:phases
+	            #~(modify-phases %standard-phases
+				   (delete 'configure)
+				   (replace 'install
+				   (lambda _
+				   (mkdir-p (string-append #$output "/bin"))
+				   (install-file "ampart" (string-append #$output "/bin")))))))
+    (propagated-inputs (list zlib))
+    (home-page "https://github.com/superna9999/pyamlboot")
+    (synopsis "Partition tool for Amlogic's proprietary eMMC partition format")
+    (description "This packages provides partition tool for Amlogic's
+proprietary eMMC partition format.")
+    (license license:gpl3+)))
 
 (define-public pyamlboot
   (package
