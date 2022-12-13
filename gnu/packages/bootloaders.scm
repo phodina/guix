@@ -886,6 +886,14 @@ appended to the package description."
                   uboot-files)
                  #t)))))))))
 
+(define %u-boot-amlogic-description-64-bit
+  "This is a common 64-bit build of U-Boot for all 64-bit capable Amlogic s905x 
+variants.")
+
+(define-public u-boot-amlogic
+  (make-u-boot-package "p212" "aarch64-linux-gnu"
+                       #:append-description %u-boot-amlogic-description-64-bit))
+
 (define-public u-boot-malta
   (make-u-boot-package "malta" "mips64el-linux-gnuabi64"))
 
