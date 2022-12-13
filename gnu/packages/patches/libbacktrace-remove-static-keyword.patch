@@ -1,0 +1,40 @@
+From c866f91b07d6d366a88c3fb50f69cfa8eefa10d3 Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Mon, 12 Dec 2022 22:16:37 +0100
+Subject: [PATCH] Remove static keyword from several function.
+
+
+diff --git a/elf.c b/elf.c
+index ab21d2e..e62b328 100644
+--- a/elf.c
++++ b/elf.c
+@@ -557,7 +557,7 @@ elf_crc32_file (struct backtrace_state *state, int descriptor,
+ /* A dummy callback function used when we can't find a symbol
+    table.  */
+ 
+-static void
++void
+ elf_nosyms (struct backtrace_state *state ATTRIBUTE_UNUSED,
+ 	    uintptr_t addr ATTRIBUTE_UNUSED,
+ 	    backtrace_syminfo_callback callback ATTRIBUTE_UNUSED,
+@@ -758,7 +758,7 @@ elf_add_syminfo_data (struct backtrace_state *state,
+ 
+ /* Return the symbol name and value for an ADDR.  */
+ 
+-static void
++void
+ elf_syminfo (struct backtrace_state *state, uintptr_t addr,
+ 	     backtrace_syminfo_callback callback,
+ 	     backtrace_error_callback error_callback ATTRIBUTE_UNUSED,
+@@ -6467,7 +6467,7 @@ backtrace_uncompress_lzma (struct backtrace_state *state,
+    elf_add will need to be called on the descriptor again after
+    base_address is determined.  */
+ 
+-static int
++int
+ elf_add (struct backtrace_state *state, const char *filename, int descriptor,
+ 	 const unsigned char *memory, size_t memory_size,
+ 	 uintptr_t base_address, backtrace_error_callback error_callback,
+-- 
+2.38.1
+

@@ -695,6 +695,8 @@ fun.")
                 (uri (git-reference
                       (url "https://github.com/ianlancetaylor/libbacktrace")
                       (commit commit)))
+                (patches
+                 (search-patches "libbacktrace-remove-static-keyword.patch"))
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
