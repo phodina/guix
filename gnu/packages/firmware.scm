@@ -338,6 +338,29 @@ driver.")
 automatic, safe and reliable.  It is used by tools such as GNOME Software.")
     (license license:lgpl2.1+)))
 
+(define-public gxlimg
+(let ((commit "15be56b1f1e2a319227d599a0b7afb0673e9cb9b")
+      (revision "1"))
+  (package
+    (name "gxlimg")
+    (version "1.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+			  (url "https://github.com/repk/gxlimg")
+			  (commit commit)))
+              (sha256
+               (base32
+                "0h96834i27sfzn7nvmqk0rwzxk5axiq9mm6ql3yaz81qd8slpljv"))))
+    (build-system meson-build-system)
+    (inputs (list openssl))
+    (native-inputs (list pkg-config))
+    (home-page "https://github.com/repk/gxlimg")
+    (synopsis "Boot Image creation tool for amlogic s905x")
+    (description "@code{Gxlimg} is an amlogic s905x boot image creation
+tools.")
+    (license license:bsd-2))))
+
 (define-public openfwwf-firmware
   (package
     (name "openfwwf-firmware")
