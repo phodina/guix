@@ -123,6 +123,7 @@
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages mpi)
   #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages openstack)
   #:use-module (gnu packages parallel)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
@@ -1328,6 +1329,45 @@ use on a given system.")
     (description
      "GNU LibreDWG is a C library to handle DWG files.  It aims to be a free
 replacement for the OpenDWG libraries.")
+    (license license:gpl3+)))
+
+(define-public mtkclient
+  (package
+    (name "mtkclient")
+    (version "1.52")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/bkerler/mtkclient/archive/refs/tags/"
+                    version ".tar.gz"))
+              (patches (search-patches
+                                      "mtkclient-remove-usb.patch"))
+              (sha256
+               (base32
+                "1wlz9sipwzgfph57jzmnjlhhsmphfcnl9y0rvpa2wfb5rg6n74ss"))))
+    (build-system python-build-system)
+    (arguments
+     (list #:tests? #f ;no test suite
+           #:phases #~(modify-phases %standard-phases
+                        (add-after 'install 'install-udev-rules
+                          (lambda* _
+                            (let ((udev (string-append #$output "/lib/udev.d")))
+                              (mkdir-p udev)
+                              (install-file "Setup/Linux/50-android.rules"
+                                            udev)
+                              (install-file "Setup/Linux/51-edl.rules" udev)))))))
+    (native-inputs (list python-keystone-engine))
+    (inputs (list python-pyusb
+                  python-pycryptodome
+                  python-colorama
+                  python-capstone
+                  python-mock
+                  python-pyserial
+                  libusb))
+    (home-page "https://github.com/bkerler/mtkclient")
+    (synopsis "MTK reverse engineering and flash tool")
+    (description "This package provides a tool for reading/writing flash
+Mediatek chips.")
     (license license:gpl3+)))
 
 (define-public minicom

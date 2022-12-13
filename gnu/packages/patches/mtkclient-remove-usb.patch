@@ -1,0 +1,44 @@
+From d1ade84a4d320fd26cc77414f53d87293f41a70f Mon Sep 17 00:00:00 2001
+From: Petr Hodina <phodina@protonmail.com>
+Date: Mon, 14 Nov 2022 14:08:43 +0100
+Subject: [PATCH] Remove usb.
+
+
+diff --git a/pyproject.toml b/pyproject.toml
+index 348cdce..36d4168 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -4,7 +4,6 @@ requires = [
+     "wheel",
+     "pyusb",
+     "pycryptodome",
+-    "colorama",
+-    "usb"
++    "colorama"
+ ]
+ build-backend = "setuptools.build_meta"
+diff --git a/requirements.txt b/requirements.txt
+index 946fe9a..cde3398 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -2,5 +2,3 @@ wheel
+ pyusb
+ pycryptodome
+ colorama
+-usb
+-
+diff --git a/setup.py b/setup.py
+index 9031d23..3bd7cd9 100755
+--- a/setup.py
++++ b/setup.py
+@@ -22,7 +22,6 @@ setup(
+     license='MIT License',
+     install_requires=[
+     'colorama',
+-    'usb',
+     'pyusb',
+     'pycryptodome'
+     ],
+-- 
+2.37.2
+
