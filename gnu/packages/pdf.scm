@@ -23,6 +23,7 @@
 ;;; Copyright © 2020, 2022 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2022 Paul A. Patience <paul@apatience.com>
+;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -1201,6 +1202,37 @@ information for every pixel as the input.")
     (description
       "fbida contains a few applications for viewing and editing images on
 the framebuffer.")
+    (license license:gpl2+)))
+
+(define-public pdfcrack
+  (package
+    (name "pdfcrack")
+    (version "0.20")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://salsa.debian.org/debian/pdfcrack")
+                    (commit (string-append "upstream/" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "15vrl4c14nqrcgwqqv26p73dzipy8n15d3f0pgi8mywcr5d4p33w"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list #:tests? #f ;no test suite
+           #:make-flags #~(list (string-append "CC="
+                                               #$(cc-for-target)))
+           #:phases #~(modify-phases %standard-phases
+                        (delete 'configure)
+                        (replace 'install
+                          (lambda* _
+                            (mkdir-p (string-append #$output "/bin"))
+                            (install-file "pdfcrack"
+                                          (string-append #$output "/bin")))))))
+    (home-page "https://pdfcrack.sourceforge.net/")
+    (synopsis "Password Recovery Tool for PDF-files")
+    (description "This package provides a simple tool for recovering passwords
+from pdf-documents that use the standard security handler.")
     (license license:gpl2+)))
 
 (define-public pdf2svg
