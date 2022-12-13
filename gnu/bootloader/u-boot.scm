@@ -80,6 +80,17 @@
         (write-file-on-device u-boot (stat:size (stat u-boot))
                               image (* 40 1024)))))
 
+;; https://u-boot.readthedocs.io/en/latest/board/amlogic/p212.html
+;; https://gist.github.com/hangst/d5107efc4bc32678df2a46989fef9875
+(define install-amlogic-s905x-u-boot
+  #~(lambda (bootloader root-index image)
+      (let ((idb (string-append bootloader "/libexec/idbloader.img"))
+            (u-boot (string-append bootloader "/libexec/u-boot.itb")))
+        (write-file-on-device idb (stat:size (stat idb))
+                              image (* 64 512))
+        (write-file-on-device u-boot (stat:size (stat u-boot))
+                              image (* 16384 512)))))
+
 (define install-imx-u-boot
   #~(lambda (bootloader root-index image)
       (let ((spl (string-append bootloader "/libexec/SPL"))
