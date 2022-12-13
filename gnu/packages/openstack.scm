@@ -42,12 +42,48 @@
   #:use-module (gnu packages tls)
   #:use-module (gnu packages version-control)
   #:use-module (gnu packages xml)
+  #:use-module (gnu packages pkg-config)
+  #:use-module (guix build-system cmake)
   #:use-module (guix build-system python)
   #:use-module (guix download)
-  #:use-module ((guix licenses)
-                #:select (asl2.0))
+  #:use-module (guix gexp)
+  #:use-module (guix licenses)
   #:use-module (guix packages)
   #:use-module (srfi srfi-1))
+
+(define-public keystone
+  (package
+    (name "keystone")
+    (version "0.9.2")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/keystone-engine/keystone/archive/refs/tags/"
+                    version ".tar.gz"))
+              (sha256
+               (base32
+                "093wbddxa8cy5ly81ikl5kxyzydg42cgini9ilbfw19yxm1s7cy9"))))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:configure-flags #~(list "-DBUILD_SHARED_LIBS=ON")
+           #:tests? #f)) ;TODO: enable test suite
+    (native-inputs (list pkg-config))
+    (inputs (list python))
+    (home-page "https://www.keystone-engine.org/")
+    (synopsis "Keystone assembler framework")
+    (description
+     "The @code{keystone} provides assembler framework:
+	 @itemize
+@item Multi-architecture, with support for Arm, Arm64 (AArch64/Armv8),
+Ethereum Virtual Machine, Hexagon, Mips, PowerPC, Sparc, SystemZ,
+& X86 (include 16/32/64bit)
+@item Clean/simple/lightweight/intuitive architecture-neutral API
+@item Implemented in C/C++ languages, with bindings for Java, Masm,
+Visual Basic, C#, PowerShell, Perl, Python, NodeJS, Ruby, Go, Rust,
+Haskell & OCaml available
+@item Thread-safe by design
+@end itemize")
+    (license gpl2+)))
 
 (define-public python-bandit
   (package
