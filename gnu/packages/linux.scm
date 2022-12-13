@@ -1286,6 +1286,90 @@ Linux-Libre, as an Info manual.  To consult it, run @samp{info linux}.")))
                         ("CONFIG_SND_SOC_ES8316" . m))
                       %default-extra-linux-options)))
 
+(define-public linux-libre-arm64-amlogic
+    (package
+      (inherit linux-libre-arm64-generic)
+      (source (origin
+                (inherit (package-source linux-libre-arm64-generic))
+                ;; Patches from https://github.com/chewitt/LibreELEC.tv.git
+                ;; branch origin/amlogic-upstream
+                ;; commit 38506614e64563cc70be87fe3762d18d49be21d4
+                (patches (append (search-patches
+"amlogic-0001-LOCAL-set-meson-gx-cma-pool-to-896MB.patch"
+"amlogic-0002-LOCAL-set-meson-g12-cma-pool-to-896MB.patch"
+"amlogic-0003-LOCAL-arm64-fix-Kodi-sysinfo-CPU-information.patch"
+"amlogic-0004-LOCAL-arm64-meson-add-Amlogic-Meson-GX-PM-Suspend.patch"
+"amlogic-0005-LOCAL-arm64-dts-meson-add-support-for-GX-PM-and-Virt.patch"
+"amlogic-0006-LOCAL-arm64-dts-meson-add-rtc-vrtc-aliases-to-Khadas.patch"
+"amlogic-0007-LOCAL-arm64-dts-meson-add-rtc-vrtc-aliases-to-Khadas.patch"
+"amlogic-0008-LOCAL-arm64-dts-meson-add-rtc-vrtc-aliases-to-Minix-.patch"
+"amlogic-0009-LOCAL-ALSA-Assign-internal-PCM-chmap-ELD-IEC958-kctl.patch"
+"amlogic-0010-LOCAL-usb-hub-disable-autosuspend-for-Genesys-Logic-.patch"
+"amlogic-0011-LOCAL-of-partial-revert-of-fdt.c-changes.patch"
+"amlogic-0013-FROMGIT-6.1-dt-bindings-arm-amlogic-add-Beelink-GT1-.patch"
+"amlogic-0014-FROMGIT-6.1-arm64-dts-meson-add-support-for-Beelink-.patch"
+"amlogic-0015-FROMLIST-v2-arm64-dts-meson-make-dts-use-gpio-fan-ma.patch"
+"amlogic-0016-FROMLIST-v1-mmc-meson-gx-fix-deferred-probing.patch"
+"amlogic-0017-FROMLIST-v5-dt-bindings-vendor-prefixes-Add-Titan-Mi.patch"
+"amlogic-0018-FROMLIST-v5-dt-bindings-auxdisplay-Add-Titan-Micro-E.patch"
+"amlogic-0019-FROMLIST-v5-docs-ABI-document-tm1628-attribute-displ.patch"
+"amlogic-0020-FROMLIST-v5-auxdisplay-add-support-for-Titanmec-TM16.patch"
+"amlogic-0021-FROMLIST-v5-arm64-dts-meson-gxl-s905w-tx3-mini-add-s.patch"
+"amlogic-0022-FROMLIST-v5-MAINTAINERS-Add-entry-for-tm1628-auxdisp.patch"
+"amlogic-0023-FROMLIST-v1-drm-bridge-dw_hdmi-fix-preference-of-RGB.patch"
+"amlogic-0024-WIP-ASoC-hdmi-codec-reorder-channel-allocation-list.patch"
+"amlogic-0025-WIP-mmc-meson-gx-mmc-set-core-clock-phase-to-270-deg.patch"
+"amlogic-0026-WIP-arm64-dts-meson-add-Broadcom-WiFi-to-P212-dtsi.patch"
+"amlogic-0027-WIP-arm64-dts-meson-move-pwm_ef-node-in-P212-dtsi.patch"
+"amlogic-0028-WIP-arm64-dts-meson-remove-WiFi-BT-nodes-from-Khadas.patch"
+"amlogic-0029-WIP-arm64-dts-meson-set-p212-p23x-q20x-SDIO-to-100MH.patch"
+"amlogic-0030-WIP-arm64-dts-meson-add-UHS-SDIO-capabilities-to-p21.patch"
+"amlogic-0031-WIP-arm64-dts-meson-remove-SDIO-node-from-Khadas-VIM.patch"
+"amlogic-0032-WIP-arm64-dts-meson-add-audio-playback-to-S905X-P212.patch"
+"amlogic-0033-WIP-drivers-meson-vdec-remove-redundant-if-statement.patch"
+"amlogic-0034-WIP-drivers-meson-vdec-improve-mmu-and-fbc-handling-.patch"
+"amlogic-0035-WIP-drivers-meson-vdec-add-HEVC-decode-codec.patch"
+"amlogic-0036-WIP-drivers-meson-vdec-add-handling-to-HEVC-decoder-.patch"
+"amlogic-0037-WIP-drivers-meson-vdec-add-HEVC-support-to-GXBB.patch"
+"amlogic-0038-WIP-drivers-meson-vdec-check-if-parser-has-really-pa.patch"
+"amlogic-0039-WIP-arm64-dts-meson-radxa-zero-add-support-for-the-u.patch"
+"amlogic-0040-WIP-dt-bindings-arm-amlogic-add-support-for-Radxa-Ze.patch"
+"amlogic-0041-WIP-arm64-dts-meson-add-support-for-Radxa-Zero2.patch"
+"amlogic-0042-WIP-arm64-dts-meson-add-audio-playback-to-p201.patch"
+"amlogic-0043-WIP-arm64-dts-meson-add-audio-playback-to-p200.patch"
+"amlogic-0044-WIP-arm64-dts-meson-add-audio-playback-to-u200.patch"
+"amlogic-0045-WIP-arm64-dts-meson-add-Headphone-output-to-Beelink-.patch"
+"amlogic-0046-WIP-dt-bindings-arm-amlogic-add-support-for-the-Tani.patch"
+"amlogic-0047-WIP-arm64-dts-meson-add-support-for-the-Tanix-TX5-Ma.patch"
+"amlogic-0048-WIP-arm64-dts-meson-add-multiple-MeCool-device-trees.patch"
+"amlogic-0049-WIP-dt-bindings-arm-amlogic-add-support-for-Minix-NE.patch"
+"amlogic-0050-WIP-arm64-dts-meson-add-initial-device-tree-for-Mini.patch"
+"amlogic-0051-LOCAL-arm64-dts-meson-add-rtc-vrtc-aliases-to-Minix-.patch"
+"amlogic-0052-WIP-media-rc-add-keymap-for-Beelink-Mini-MXIII-remot.patch"
+"amlogic-0053-WIP-dt-bindings-arm-amlogic-add-support-for-Beelink-.patch"
+"amlogic-0054-WIP-arm64-dts-meson-add-support-for-Beelink-Mini-MXI.patch"
+"amlogic-0055-WIP-media-rc-add-keymap-for-MeCool-M8S-Pro-W-remote.patch"
+"amlogic-0056-WIP-dt-bindings-arm-amlogic-add-support-for-MeCool-M.patch"
+"amlogic-0057-WIP-arm64-dts-meson-add-support-for-MeCool-M8S-Pro-W.patch"
+"amlogic-0058-WIP-dt-bindings-arm-amlogic-add-Vero-4K-binding.patch"
+"amlogic-0059-WIP-arm64-dts-meson-add-support-for-OSMC-Vero-4K.patch"
+"amlogic-0060-WIP-arm64-dts-meson-add-RTL8822CS-bluetooth-to-X96-A.patch"
+"amlogic-0061-WIP-media-rc-add-keymap-for-Venz-V10-remote.patch"
+"amlogic-0062-WIP-dt-bindings-arm-amlogic-add-S905L-and-Venz-V10-b.patch"
+"amlogic-0063-WIP-arm64-dts-meson-add-support-for-Venz-V10.patch"
+"amlogic-0064-WIP-dt-bindings-vendor-prefixes-add-tbee-prefix.patch"
+"amlogic-0065-WIP-dt-bindings-arm-amlogic-add-TBee-Box-binding.patch"
+"amlogic-0066-WIP-arm64-dts-meson-add-support-for-TBee-Box.patch"
+"amlogic-0067-WIP-dt-bindings-arm-amlogic-add-Beelink-GT1-binding.patch"
+"amlogic-0068-WIP-arm64-dts-meson-add-support-for-Beelink-GT1.patch"
+"amlogic-0069-WIP-arm64-dts-meson-add-vcc_5v-regulator-to-WeTek-dt.patch"
+"amlogic-0070-WIP-arm64-dts-meson-add-audio-lineout-to-WeTek-Play2.patch"
+"amlogic-0071-WIP-arm64-dts-amlogic-fix-cvbs-disable-on-WeTek-Hub.patch"
+"amlogic-0072-WIP-ASoC-dt-bindings-add-compatible-for-es8323-i2c.patch"
+"amlogic-0073-WIP-ASoC-codecs-add-support-for-ES8323.patch")
+                                 (origin-patches (package-source
+								 linux-libre-arm64-generic))))))))
+
 (define-public linux-libre-arm64-generic-5.10
   (make-linux-libre* linux-libre-5.10-version
                      linux-libre-5.10-gnu-revision
