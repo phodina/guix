@@ -1332,6 +1332,26 @@ Linux-Libre, as an Info manual.  To consult it, run @samp{info linux}.")))
                      '("riscv64-linux")
                      #:extra-version "riscv64-generic"))
 
+(define-public linux-libre-vision-five
+  (let ((base (make-linux-libre* linux-libre-5.15-version
+                                 linux-libre-5.15-gnu-revision
+                                 linux-libre-5.15-source
+                                 '("riscv64-linux")
+                                 #:extra-version "riscv64-generic"))
+        (commit "7b7b4eddd8d5ae55f6e0ee09b93e16e23ab4f97b")
+		(revision "1"))
+    (package
+      (inherit base)
+      (version "")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/starfive-tech/linux")
+					  (commit commit)))
+                (sha256
+                 (base32
+                  "0cz4xkrnpcrsmxzbsz9jgrp1pg5rh6wgi81p1j82ldxpqdi5084n")))))))
+
 (define-public linux-libre-mips64el-fuloong2e
   (make-linux-libre* linux-libre-version
                      linux-libre-gnu-revision
