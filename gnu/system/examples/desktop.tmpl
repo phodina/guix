@@ -3,7 +3,7 @@
 ;; root partition is encrypted with LUKS, and a swap file.
 
 (use-modules (gnu) (gnu system nss) (guix utils))
-(use-service-modules desktop sddm xorg)
+(use-service-modules desktop sddm xorg linux)
 (use-package-modules certs gnome)
 
 (operating-system
@@ -76,6 +76,7 @@
   ;; NetworkManager, and more.
   (services (if (target-x86-64?)
                 (append (list (service gnome-desktop-service-type)
+				(service bolt-service-type)
                               (service xfce-desktop-service-type)
                               (set-xorg-configuration
                                (xorg-configuration
