@@ -1416,7 +1416,7 @@ on top of Baloo.")
                              plasma-nm
                              plasma-pa
                              plasma-systemmonitor
-                             ;; plasma-thunderbolt ;; waiting for bolt
+                             plasma-thunderbolt
                              plasma-vault
                              plasma-workspace
                              plasma-workspace-wallpapers
