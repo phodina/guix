@@ -2552,7 +2552,9 @@ of a Plasma shell.")
                   knotifications
                   krunner
                   plasma-workspace
-                  qtdeclarative-5))
+                  qtdeclarative-5
+                  qtgraphicaleffects
+                  qtquickcontrols2-5))
     (synopsis "Control center to configure Plasma Desktop")
     (description "This package provides configuration UI for Plasma Desktop.")
     (home-page "https://invent.kde.org/plasma/systemsettings")
