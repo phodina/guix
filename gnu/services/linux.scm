@@ -83,6 +83,7 @@
            (default bolt)))
 
 (define (bolt-shepherd-service config)
+  (let ((package (bolt-configuration-package config)))
      (with-imported-modules (source-module-closure
                              '((gnu build shepherd)))
        (shepherd-service
@@ -92,7 +93,7 @@
         (modules '((gnu build shepherd)))
         (start #~(make-forkexec-constructor/container
                   (list #$(file-append package "/libexec/boltd"))))
-        (stop #~(make-kill-destructor)))))
+        (stop #~(make-kill-destructor))))))
 
 (define %bolt-activation
   #~(begin
@@ -116,7 +117,9 @@
 ;	 (shell "/run/current-system/profile/sbin/nologin"))))
 
 (define (bolt-udev-rule config)
-  (file->udev-rule "90-bolt.rules" (file-append package "/lib/udev/rules.d/90-bolt.rules")))
+  (let ((package (bolt-configuration-package config)))
+  (file->udev-rule "90-bolt.rules" (file-append package
+  "/lib/udev/rules.d/90-bolt.rules"))))
 
 (define bolt-service-type
   (service-type
