@@ -1090,6 +1090,46 @@ animation of closing windowed applications.")
 GNOME Shell, including the top panel, dash and overview.")
     (license license:gpl3)))
 
+(define-public gnome-shell-extension-fly-pie
+  (package
+    (name "gnome-shell-extension-fly-pie")
+    (version "17")
+    (home-page "https://github.com/Schneegans/Fly-Pie")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url home-page)
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0ifkqlg2bp2vz2abakghv3zqkay0gzfljp9y252b6kpnm3fh4wvw"))))
+    (build-system copy-build-system)
+    (arguments
+     `(#:install-plan '(("."
+                         "share/gnome-shell/extensions/flypie@schneegans.github.com"
+                         #:include-regexp ("\\.js(on)?$" "\\.css$"
+                                           "\\.ui$"
+                                           "\\.png$"
+                                           "\\.xml$"
+                                           "\\.compiled$"
+                                           "\\.gresource$")))
+       #:phases (modify-phases %standard-phases
+                  (add-before 'install 'compile-resources
+                    (lambda _
+                      (invoke "make" "resources/flypie.gresource")))
+                  (add-before 'install 'compile-schemas
+                    (lambda _
+                      (with-directory-excursion "schemas"
+                        (invoke "glib-compile-schemas" ".")))))))
+    (native-inputs (list `(,glib "bin") gettext-minimal))
+    (synopsis "Fly-Pie is an innovative marking menu written as a GNOME Shell
+extension")
+    (description
+     "Unite is a GNOME Shell extension which lets you launch applications,
+simulate hotkeys, open URLs using seamless marking menu.")
+    (license license:expat)))
+
 (define-public gnome-shell-extension-radio
   (package
     (name "gnome-shell-extension-radio")
